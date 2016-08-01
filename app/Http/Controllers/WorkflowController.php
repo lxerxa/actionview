@@ -96,6 +96,6 @@ class WorkflowController extends Controller
         }
 
         Definition::destroy($id);
-        return Response()->json([ 'ecode' => 0, data => [ 'id' => $id ] ]);
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'id' => $id ] ]);
     }
 }

@@ -97,6 +97,6 @@ class StateController extends Controller
         }
 
         State::destroy($id);
-        return Response()->json(['ecode' => 0, data => ['id' => $id]]);
+        return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }
 }

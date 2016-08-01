@@ -156,7 +156,7 @@ class ScreenController extends Controller
             throw new \UnexpectedValueException('the screen does not exist or is not in the project.', -10002);
         }
         Screen::destroy($id);
-        return Response()->json(['ecode' => 0, data => ['id' => $id]]);
+        return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }
 
     /**

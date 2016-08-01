@@ -120,6 +120,6 @@ class RoleController extends Controller
 
         Role::destroy($id);
         $user_ids && Event::fire(new DelUserFromRoleEvent($user_ids, $project_key));
-        return Response()->json([ 'ecode' => 0, data => [ 'id' => $id ] ]);
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'id' => $id ] ]);
     }
 }

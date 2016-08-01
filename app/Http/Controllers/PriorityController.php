@@ -105,7 +105,7 @@ class PriorityController extends Controller
         Priority::destroy($id);
         // trigger to change priority field config
         Event::fire(new PriorityConfigChangeEvent($project_key));
-        return Response()->json(['ecode' => 0, data => ['id' => $id]]);
+        return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }
 
     /**

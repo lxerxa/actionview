@@ -28,17 +28,22 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        if ( ! $email = $request->input('email') )
+        if (! $email = $request->input('email'))
         {
             throw new \UnexpectedValueException('the email can not be empty.', -10002);
         }
-
-        if ( ! $password = $request->input('password') )
+        if (! $password = $request->input('password'))
         {
             throw new \UnexpectedValueException('the password can not be empty.', -10002);
         }
 
-        return Sentinel::register([ 'email' => $email, 'password' => $password ], true);
+        if (Sentinel::findByCredentials([ 'email' => $email ]))
+        {
+            throw new \InvalidArgumentException('email has already existed.', -10002);
+        }
+
+        $user = Sentinel::register([ 'email' => $email, 'password' => $password ], true);
+        return Response()->json([ 'ecode' => 0, 'data' => $user ]);
     }
 
     /**
@@ -49,20 +54,7 @@ class UserController extends Controller
      */
     public function show($id)
     {
-        //
-        $user = Sentry::findUserById($id);
-        var_dump($user);exit;
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function edit($id)
-    {
-        //
+        return Response()->json([ 'ecode' => 0, 'data' => Sentinel::findById($id) ]);
     }
 
     /**
@@ -74,7 +66,23 @@ class UserController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
+        $password = $request->input('password');
+        if (isset($password))
+        {
+            if (!$password || trim($password) == '')
+            {
+                throw new \UnexpectedValueException('the password can not be empty.', -10002);
+            }
+        }
+
+        $user = Sentinel::findById($id);
+        if (!$user)
+        {
+            throw new \UnexpectedValueException('the user does not exist.', -10002);
+        }
+
+        $user = Sentinel::update($user, $request->except('email'));
+        return Response()->json([ 'ecode' => 0, 'data' => $user ]);
     }
 
     /**
@@ -85,6 +93,13 @@ class UserController extends Controller
      */
     public function destroy($id)
     {
-        //
+        $user = Sentinel::findById($id);
+        if (!$user)
+        {
+            throw new \UnexpectedValueException('the user does not exist.', -10002);
+        }
+        
+        $user->delete();
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'id' => $id ] ]);
     }
 }

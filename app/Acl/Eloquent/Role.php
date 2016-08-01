@@ -10,7 +10,7 @@ class Role extends Model
 
     protected $fillable = array(
         'name',
-        'actions',
+        'permissions',
         'user_ids',
         'project_key',
         'description'

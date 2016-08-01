@@ -2,7 +2,7 @@
 namespace App\Acl;
 
 use App\Acl\Eloquent\Role;
-use App\Acl\Eloquent\Action;
+use App\Acl\Eloquent\Permission;
 
 class Acl {
 
@@ -18,15 +18,15 @@ class Acl {
     }
 
     /**
-     * get user list who has the action allow in the project.
+     * get user list who has the permission allow in the project.
      *
-     * @var string action
+     * @var string permission
      * @var string project_key
      * @return array
      */
-    public static function getUserIdsByAction($action, $project_key)
+    public static function getUserIdsByPermission($permission, $project_key)
     {
-        $roles = Role::whereRaw([ 'actions' => $action, 'project_key' => $project_key ])->get();
+        $roles = Role::whereRaw([ 'permissions' => $permission, 'project_key' => $project_key ])->get();
         $user_ids = [];
         foreach ($roles as $role)
         {
@@ -36,44 +36,44 @@ class Acl {
     }
 
     /**
-     * check if user has action allow.
+     * check if user has permission allow.
      *
      * @var string $user_id
-     * @var string $action
+     * @var string $permission
      * @var string $project_key
      * @return boolean
      */
-    public static function isAllowed($user_id, $action, $project_key)
+    public static function isAllowed($user_id, $permission, $project_key)
     {
-        return Role::whereRaw([ 'actions' => $action, 'user_ids' => $user_id, 'project_key' => $project_key ])->get() ? true : false;
+        return Role::whereRaw([ 'permissions' => $permission, 'user_ids' => $user_id, 'project_key' => $project_key ])->get() ? true : false;
     }
 
     /**
-     * get user's all actions in the project.
+     * get user's all permissions in the project.
      *
      * @var string $user_id
      * @var string $project_key
      * @return array
      */
-    public static function getActions($user_id, $project_key)
+    public static function getPermissions($user_id, $project_key)
     {
-        $actions_list = Role::whereRaw([ 'user_ids' => $user_id, 'project_key' => $project_key ])->get(['actions']);
+        $permissions_list = Role::whereRaw([ 'user_ids' => $user_id, 'project_key' => $project_key ])->get(['permissions']);
 
-        $all_actions = [];
-        foreach ($actions_list as $val)
+        $all_permissions = [];
+        foreach ($permissions_list as $val)
         {
-            $all_actions += $val['actions'] ?: [];
+            $all_permissions += $val['permissions'] ?: [];
         }
-        return array_unique($all_actions);
+        return array_unique($all_permissions);
     }
 
     /**
-     * get action list.
+     * get permission list.
      *
      * @return array
      */
-    public static function getAllActions()
+    public static function getAllPermissions()
     {
-        return Action::all();
+        return Permission::all();
     }
 }

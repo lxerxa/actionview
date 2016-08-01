@@ -117,6 +117,6 @@ class FieldController extends Controller
         }
         Field::destroy($id);
         Event::fire(new FieldDeleteEvent($id));
-        return Response()->json(['ecode' => 0, data => ['id' => $id]]);
+        return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }
 }

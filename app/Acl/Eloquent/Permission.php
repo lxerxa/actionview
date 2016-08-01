@@ -4,7 +4,7 @@ namespace App\Acl\Eloquent;
 
 use Jenssegers\Mongodb\Eloquent\Model;
 
-class Action {
+class Permission {
 
     const CREATE_ISSUE = 'create_issue';
     const ASSIGN_ISSUE = 'assign_issue';
@@ -16,7 +16,7 @@ class Action {
     /**
      * Return an object representing all actions.
      *
-     * @return Actions
+     * @return Permissions
      */
     public static function all()
     {

@@ -19,6 +19,8 @@ Route::get('/', function () {
 
 Route::resource('project', 'ProjectController');
 
+Route::resource('user', 'UserController');
+
 Route::group(['prefix' => 'project/{project_key}'], function () {
     Route::resource('type', 'TypeController');
     Route::post('type/batch', 'TypeController@handle');

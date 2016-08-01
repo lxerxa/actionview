@@ -106,7 +106,7 @@ class ResolutionController extends Controller
         Resolution::destroy($id);
         // trigger to change resolution field config
         Event::fire(new ResolutionConfigChangeEvent($project_key));
-        return Response()->json(['ecode' => 0, data => ['id' => $id]]);
+        return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }
 
     /**
