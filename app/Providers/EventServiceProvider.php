@@ -13,9 +13,24 @@ class EventServiceProvider extends ServiceProvider
      * @var array
      */
     protected $listen = [
-        'App\Events\SomeEvent' => [
-            'App\Listeners\EventListener',
+       'App\Events\FieldChangeEvent' => [
+            'App\Listeners\FieldConfigChangeListener',
         ],
+       'App\Events\FieldDeleteEvent' => [
+            'App\Listeners\FieldConfigChangeListener',
+        ],
+       'App\Events\ResolutionConfigChangeEvent' => [
+            'App\Listeners\PropertyConfigChangeListener',
+        ],
+       'App\Events\PriorityConfigChangeEvent' => [
+            'App\Listeners\PropertyConfigChangeListener',
+        ],
+       'App\Events\AddUserToRoleEvent' => [
+            'App\Listeners\UserRoleSetListener',
+        ],
+       'App\Events\DelUserFromRoleEvent' => [
+            'App\Listeners\UserRoleSetListener',
+        ]
     ];
 
     /**

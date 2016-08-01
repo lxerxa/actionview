@@ -6,7 +6,9 @@
     "type": "project",
     "require": {
         "php": ">=5.5.9",
-        "laravel/framework": "5.2.*"
+        "laravel/framework": "5.2.*",
+        "jenssegers/mongodb": "^3.0",
+        "cartalyst/sentinel": "^2.0"
     },
     "require-dev": {
         "fzaninotto/faker": "~1.4",
