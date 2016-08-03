@@ -30,6 +30,9 @@ class EventServiceProvider extends ServiceProvider
         ],
        'App\Events\DelUserFromRoleEvent' => [
             'App\Listeners\UserRoleSetListener',
+        ],
+       'App\Events\DelUserEvent' => [
+            'App\Listeners\UserDelListener',
         ]
     ];
 

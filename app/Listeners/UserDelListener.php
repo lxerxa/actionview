@@ -3,10 +3,10 @@
 namespace App\Listeners;
 
 use App\Events\Event;
-use App\Events\AddUserToRoleEvent;
-use App\Events\DelUserFromRoleEvent;
-
+use App\Events\DelUserEvent;
+use App\Acl\Eloquent\Role;
 use App\Project\UserProject;
+
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
@@ -30,6 +30,8 @@ class UserDelListener
      */
     public function handle(Event $event)
     {
+        $this->delUserFromRole($event->user_id);
+        $this->delUserProject($event->user_id);
     }
 
     /**
@@ -40,6 +42,21 @@ class UserDelListener
      */
     public function delUserFromRole($user_id)
     {
+        $roles = Role::whereRaw([ 'user_ids' => $user_id ])->get([ 'user_ids' ]);
+        foreach ($roles as $role)
+        {
+           $new_user_ids = [];
+           $old_user_ids = $role->user_ids ?: [];
+           foreach ($old_user_ids as $uid)
+           {
+               if ($uid != $user_id)
+               {
+                   $new_user_ids[] = $uid;
+               }
+           }
+           $role->user_ids = $new_user_ids;
+           $role->save();
+        }
     }
 
     /**
@@ -50,5 +67,10 @@ class UserDelListener
      */
     public function delUserProject($user_id)
     {
+        $links = UserProject::where('user_id', $user_id)->get([ 'user_id' ]);
+        foreach ($links as $link)
+        {
+            $link->delete();
+        }
     }
 }

@@ -15,26 +15,33 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-//Route::resource('user', 'UserController');
-
-Route::resource('project', 'ProjectController');
+Route::get('project', [ 'middleware' => 'can', 'uses' => 'ProjectController@index' ]);
 
 Route::resource('user', 'UserController');
 
-Route::group(['prefix' => 'project/{project_key}'], function () {
+// session router
+Route::post('session', 'SessionController@create');
+Route::delete('session', [ 'middleware' => 'can', 'uses' => 'SessionController@destroy' ]);
+
+// project config
+Route::group([ 'prefix' => 'project/{project_key}', 'middleware' => [ 'can', 'permission:admin_project' ] ], function () {
+    // project type config 
     Route::resource('type', 'TypeController');
     Route::post('type/batch', 'TypeController@handle');
-
+    // project field config 
     Route::resource('field', 'FieldController');
+    // project screen config 
     Route::resource('screen', 'ScreenController');
+    // project workflow config 
     Route::resource('workflow', 'WorkflowController');
+    // project role config 
     Route::resource('role', 'RoleController');
-
+    // project priority config 
     Route::resource('priority', 'PriorityController');
     Route::post('priority/batch', 'PriorityController@handle');
-
+    // project state config 
     Route::resource('state', 'StateController');
-
+    // project resolution config
     Route::resource('resolution', 'ResolutionController');
     Route::post('resolution/batch', 'ResolutionController@handle');
 });
