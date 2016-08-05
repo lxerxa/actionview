@@ -15,16 +15,17 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('project', [ 'middleware' => 'can', 'uses' => 'ProjectController@index' ]);
-
-Route::resource('user', 'UserController');
+Route::resource('project', [ 'middleware' => [ 'can', 'privilege:global:manange_project' ], 'uses' => 'ProjectController' ]);
+Route::resource('user', [ 'middleware' => [ 'can', 'privilege:global:manange_user' ] , 'uses' => 'UserController' ]);
+// get project users
+Route::get('project/{project_key}/users', [ 'middleware' => [ 'can', 'privilege:project:any' ], 'uses' => 'ProjectController@users' ]);
 
 // session router
 Route::post('session', 'SessionController@create');
 Route::delete('session', [ 'middleware' => 'can', 'uses' => 'SessionController@destroy' ]);
 
 // project config
-Route::group([ 'prefix' => 'project/{project_key}', 'middleware' => [ 'can', 'permission:admin_project' ] ], function () {
+Route::group([ 'prefix' => 'project/{project_key}', 'middleware' => [ 'can', 'privilege:admin_project' ] ], function () {
     // project type config 
     Route::resource('type', 'TypeController');
     Route::post('type/batch', 'TypeController@handle');
@@ -46,18 +47,9 @@ Route::group([ 'prefix' => 'project/{project_key}', 'middleware' => [ 'can', 'pe
     Route::post('resolution/batch', 'ResolutionController@handle');
 });
 
+Route::get('project/{project_key}/issue', [ 'middleware' => [ 'can', 'privilege:project:any' ], 'uses' => 'IssueController@index' ]);
+Route::post('project/{project_key}/issue', [ 'middleware' => [ 'can', 'privilege:project:create_issue' ], 'uses' => 'IssueController@store' ]);
+Route::put('project/{project_key}/issue/{id}', [ 'middleware' => [ 'can', 'privilege:project:edit_issue' ], 'uses' => 'IssueController@update' ]);
+Route::delete('project/{project_key}/issue/{id}', [ 'middleware' => [ 'can', 'privilege:project:delete_issue' ], 'uses' => 'IssueController@destroy' ]);
 
-/*
-|--------------------------------------------------------------------------
-| Application Routes
-|--------------------------------------------------------------------------
-|
-| This route group applies the "web" middleware group to every route
-| it contains. The "web" middleware group is defined in your HTTP
-| kernel and includes session state, CSRF protection, and more.
-|
-*/
-
-Route::group(['middleware' => ['web']], function () {
-    //
-});
+Route::resource('project/{project_key}/issue',  [ 'middleware' => [ 'can' ], 'uses' => 'UserController' ]);

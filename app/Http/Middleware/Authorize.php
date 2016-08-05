@@ -5,7 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Sentinel;
 
-class CheckPersistenceCode 
+class Authorize 
 {
     /**
      * Handle an incoming request.
