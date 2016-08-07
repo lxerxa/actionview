@@ -18,7 +18,7 @@ class Authorize
     {
         if (! Sentinel::check())
         {
-            return Response()->json(['ecode' => -10001, 'data' => 'aaa']);
+            return Response()->json([ 'ecode' => -10001, 'data' => 'aaa' ]);
         }
         return $next($request);
     }

@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
+use App\Events\DelUserEvent;
 
 use Sentinel; 
 
@@ -98,8 +100,9 @@ class UserController extends Controller
         {
             throw new \UnexpectedValueException('the user does not exist.', -10002);
         }
-        
+
         $user->delete();
+        Event::fire(new DelUserEvent($id));
         return Response()->json([ 'ecode' => 0, 'data' => [ 'id' => $id ] ]);
     }
 }

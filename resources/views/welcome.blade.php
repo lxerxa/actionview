@@ -1,45 +1,19 @@
+
 <!DOCTYPE html>
-<html>
-    <head>
-        <title>Laravel</title>
+<html lang='en'>
+<head>
+  <meta charset='UTF-8' />
+  <meta name='viewport' content='width=device-width, initial-scale=1'>
+  <title>Universal Redux Boilerplate</title>
+  
+  
+</head>
 
-        <link href="https://fonts.googleapis.com/css?family=Lato:100" rel="stylesheet" type="text/css">
+<body class='day-mode'>
 
-        <style>
-            html, body {
-                height: 100%;
-            }
+  <div class='top-box' id='content'></div>
 
-            body {
-                margin: 0;
-                padding: 0;
-                width: 100%;
-                display: table;
-                font-weight: 100;
-                font-family: 'Lato', sans-serif;
-            }
-
-            .container {
-                text-align: center;
-                display: table-cell;
-                vertical-align: middle;
-            }
-
-            .content {
-                text-align: center;
-                display: inline-block;
-            }
-
-            .title {
-                font-size: 96px;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="content">
-                <div class="title">Laravel 5</div>
-            </div>
-        </div>
-    </body>
+  <script>window.__state = {};</script>
+  <script type="text/javascript" src='/app-56e73170c7eb1b46c358.js'></script>
+</body>
 </html>

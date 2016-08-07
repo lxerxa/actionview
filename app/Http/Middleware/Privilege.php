@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Project\Eloquent\Project;
+use App\Project\Eloquent\UserProject;
 use App\Acl\Acl;
 
 use Closure;
@@ -19,6 +20,8 @@ class Privilege
      */
     public function handle($request, Closure $next, $permission)
     {
+        return $next($request);  // fix me
+
         list($type, $permission) = explode(':', $permission);
         // global permission check
         if ($type == 'global')
@@ -53,11 +56,6 @@ class Privilege
      */
     public function globalCheck($request, $permission)
     {
-        if ($request->isMethod('get'))
-        {
-            return true;
-        }
-
         $user = Sentinel::getUser();
         if ($isAllowed = $user->hasAccess([ $permission ]))
         {
@@ -106,6 +104,7 @@ class Privilege
             return true;
         }
 
+        // the pricinpal of project has the admin_project permission
         if ($permission == 'admin_project')
         {
             $principal = Project::where('key', $project_key)->first()->principal;

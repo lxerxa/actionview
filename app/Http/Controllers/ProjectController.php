@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
-use App\Project\Project;
+use App\Project\Eloquent\Project;
 use App\Acl\Acl;
 
 use Sentinel;
@@ -14,6 +14,11 @@ use Activation;
 
 class ProjectController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('privilege:global:manage_project', [ 'except' => [ 'index' ] ]);
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -38,9 +43,11 @@ class ProjectController extends Controller
 //    'slug' => 'subscribers',
 //]);
 
-$user = Sentinel::findById('579c8db86803fac3386d3f5a');
-$role = Sentinel::findRoleByName('Subscribers');
-$role->users()->attach($user);
+//$user = Sentinel::findById('579c8db86803fac3386d3f5a');
+//$role = Sentinel::findRoleByName('Subscribers');
+//$role->users()->attach($user);
+
+echo 'aaaa';
 
 exit;
 

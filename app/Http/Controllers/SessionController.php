@@ -18,13 +18,13 @@ class SessionController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function create(Request $request)
     {
         $email = $request->input('email');
         $password = $request->input('password');
 
         $user = Sentinel::authenticate([ 'email' => $email, 'password' => $password ], true);
-        return Response()->json([ 'ecode' => 0, 'data' => $user ]);
+        return Response()->json([ 'ecode' => 0, 'data' => $user ?: '' ]);
     }
 
     /**

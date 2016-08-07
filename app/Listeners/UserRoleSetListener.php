@@ -6,7 +6,7 @@ use App\Events\Event;
 use App\Events\AddUserToRoleEvent;
 use App\Events\DelUserFromRoleEvent;
 
-use App\Project\UserProject;
+use App\Project\Eloquent\UserProject;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 

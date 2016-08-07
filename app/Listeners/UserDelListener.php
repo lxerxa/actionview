@@ -5,7 +5,7 @@ namespace App\Listeners;
 use App\Events\Event;
 use App\Events\DelUserEvent;
 use App\Acl\Eloquent\Role;
-use App\Project\UserProject;
+use App\Project\Eloquent\UserProject;
 
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
