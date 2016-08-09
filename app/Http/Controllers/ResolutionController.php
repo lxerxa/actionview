@@ -159,5 +159,8 @@ class ResolutionController extends Controller
         }
         // trigger to change resolution field config
         Event::fire(new ResolutionConfigChangeEvent($project_key));
+
+        $resolutions = Resolution::where([ 'project_key' => $project_key ])->orderBy('sn', 'asc')->get();
+        return Response()->json(['ecode' => 0, 'data' => $resolutions]);
     }
 }

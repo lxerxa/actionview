@@ -26,31 +26,6 @@ class ProjectController extends Controller
      */
     public function index(Request $request)
     {
-//Sentinel::registerAndActivate(array(
-//    'email'    => 'june.doe@example.com',
-//    'password' => 'foobar',
-//));
-//$user = Sentinel::findById('579c88ca6803fac2386d3f5c');
-//var_dump(Activation::complete($user, 'iwdo58tv8AMYK1lFeMegJc9iSHdicTtO'));
-//$a = Sentinel::authenticate(array(
-//    'email'    => 'john.doe@example.com',
-//    'password' => 'foobar',
-//));
-//var_dump($a);
-
-//$role = Sentinel::getRoleRepository()->createModel()->create([
-//    'name' => 'Subscribers',
-//    'slug' => 'subscribers',
-//]);
-
-//$user = Sentinel::findById('579c8db86803fac3386d3f5a');
-//$role = Sentinel::findRoleByName('Subscribers');
-//$role->users()->attach($user);
-
-echo 'aaaa';
-
-exit;
-
         // fix me
         $wheres = [];
         $projects = Project::whereRaw($wheres)->get();
@@ -103,7 +78,7 @@ exit;
             throw new \UnexpectedValueException('the project does not exist.', -10002);
         }
         // get action allow of the project.
-        $actions = Acl::getActions('mm', $project->key); // fix me
+        $actions = Acl::getPermissions('mm', $project->key); // fix me
         return Response()->json([ 'ecode' => 0, 'data' => $project, 'acl' => $actions ]);
     }
 

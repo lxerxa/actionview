@@ -159,5 +159,8 @@ class PriorityController extends Controller
         }
         // trigger to change priority field config
         Event::fire(new PriorityConfigChangeEvent($project_key));
+
+        $priorities = Priority::whereRaw([ 'project_key' => $project_key ])->orderBy('sn', 'asc')->get();
+        return Response()->json(['ecode' => 0, 'data' => $priorities]);
     }
 }

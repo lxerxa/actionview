@@ -54,6 +54,10 @@ class PropertyConfigChangeListener
     public function updateField($field_key, $project_key)
     {
         $field = Field::whereRaw([ 'key' => $field_key, 'project_key' => $project_key ])->first();
+        if (!$field)
+        {
+            return;
+        }
         // get resolution or priority list for optionValues and defaultValue
         $optionValues = []; $defalutValue = '';
         if ($field_key == 'resolution')

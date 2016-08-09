@@ -12,7 +12,7 @@ class Project extends Model
     protected $fillable = array(
         'name',
         'key',
-        'creator',
+        'principal',
         'type',
         'description'
     );

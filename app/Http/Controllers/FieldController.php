@@ -70,6 +70,9 @@ class FieldController extends Controller
         {
             throw new \UnexpectedValueException('the field does not exist or is not in the project.', -10002);
         }
+        // get related screen
+        $field->screens = Screen::whereRaw([ 'field_ids' => $id ])->get(['name']);
+
         return Response()->json(['ecode' => 0, 'data' => $field]);
     }
 
@@ -95,7 +98,7 @@ class FieldController extends Controller
         {
             throw new \UnexpectedValueException('the field does not exist or is not in the project.', -10002);
         }
-        $field->fill($request->except(['project_key', 'key']))->save();
+        $field->fill($request->except(['project_key', 'key', 'type']))->save();
 
         Event::fire(new FieldChangeEvent($id));
 

@@ -44,10 +44,21 @@ class ScreenController extends Controller
             throw new \UnexpectedValueException('the name can not be empty.', -10002);
         }
 
-        $field_ids = $request->input('fields') ?: [];
-        $required_field_ids = $request->input('required_fields') ?: [];
-        // create screen schema
-        $schema = $this->createSchema($field_ids, $required_field_ids);
+        $source_id = $request->input('source_id');
+        if (isset($source_id) && $source_id)
+        {
+            $source_screen = Screen::find($source_id);
+            $schema = $source_screen->schema;
+            $field_ids = $source_screen->field_ids; 
+        }
+        else
+        {
+            $field_ids = $request->input('fields') ?: [];
+            $required_field_ids = $request->input('required_fields') ?: [];
+            // create screen schema
+            $schema = $this->createSchema($field_ids, $required_field_ids);
+        }
+        
 
         $screen = Screen::create(['schema' => $schema, 'field_ids' => $field_ids, 'project_key' => $project_key ] + $request->all());
         return Response()->json(['ecode' => 0, 'data' => $screen]);
@@ -66,6 +77,8 @@ class ScreenController extends Controller
         {
             throw new \UnexpectedValueException('the screen does not exist or is not in the project.', -10002);
         }
+        $screen->fields = $screen->schema;
+
         return Response()->json(['ecode' => 0, 'data' => $screen]);
     }
 
@@ -105,7 +118,7 @@ class ScreenController extends Controller
             $new_schema = [];
             foreach ($field_ids as $field_id)
             {
-                if ($mapFields[$field_id])
+                if (array_key_exists($field_id, $mapFields))
                 {
                     $new_schema[] = $mapFields[$field_id];
                 }
