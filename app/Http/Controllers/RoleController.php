@@ -11,6 +11,7 @@ use App\Events\DelUserFromRoleEvent;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Acl\Eloquent\Role;
+use App\Acl\Acl;
 
 class RoleController extends Controller
 {
@@ -38,6 +39,20 @@ class RoleController extends Controller
         {
             throw new \UnexpectedValueException('the name can not be empty.', -10002);
         }
+
+        $permissions = $request->input('permissions');
+        if (isset($permissions))
+        {
+            $allPermissions = Acl::getAllPermissions();
+            foreach ($permissions as $permission)
+            {
+                if (!in_array($permission, $allPermissions))
+                {
+                    throw new \UnexpectedValueException('the illegal permission.', -10002);
+                }
+            }
+        }
+
         $role = Role::create($request->all() + [ 'project_key' => $project_key ]);
         return Response()->json([ 'ecode' => 0, 'data' => $role ]);
     }
@@ -81,10 +96,18 @@ class RoleController extends Controller
             throw new \UnexpectedValueException('the role does not exist or is not in the project.', -10002);
         }
 
-        $actions = $request->input('actions');
-        if (isset($actions))
+        $permissions = $request->input('permissions');
+        if (isset($permissions))
         {
-            $role->actions = $actions;
+            $allPermissions = Acl::getAllPermissions();
+            foreach ($permissions as $permission)
+            {
+                if (!in_array($permission, $allPermissions))
+                {
+                    throw new \UnexpectedValueException('the illegal permission.', -10002);
+                }
+            }
+            $role->permissions = $permissions;
         }
 
         $new_user_ids = $request->input('users');
@@ -97,8 +120,8 @@ class RoleController extends Controller
         }
         $role->fill($request->except(['project_key']))->save();
 
-        $add_user_ids && Event::fire(new AddUserToRoleEvent($add_user_ids, $role->project_key)); 
-        $del_user_ids && Event::fire(new DelUserFromRoleEvent($del_user_ids, $role->project_key)); 
+        isset($add_user_ids) && Event::fire(new AddUserToRoleEvent($add_user_ids, $role->project_key)); 
+        isset($del_user_ids) && Event::fire(new DelUserFromRoleEvent($del_user_ids, $role->project_key)); 
 
         return Response()->json([ 'ecode' => 0, 'data' => Role::find($id) ]);
     }

@@ -9,8 +9,10 @@ use App\Http\Controllers\Controller;
 use App\Project\Eloquent\Project;
 use App\Acl\Acl;
 
+use App\Events\AddUserToRoleEvent;
+use App\Events\DelUserFromRoleEvent;
+
 use Sentinel;
-use Activation;
 
 class ProjectController extends Controller
 {
@@ -29,8 +31,9 @@ class ProjectController extends Controller
         // fix me
         $wheres = [];
         $projects = Project::whereRaw($wheres)->get();
-        foreach ($projects as $project)
+        foreach ($projects as $key => $project)
         {
+            $projects[$key]->principal = Sentinel::findById($project->principal);
             //var_dump($field->toArray());
         }
         return Response()->json([ 'ecode' => 0, 'data' => $projects ]);
@@ -60,7 +63,21 @@ class ProjectController extends Controller
             throw new \InvalidArgumentException('project key has already existed.', -10002);
         }
 
-        $project = Project::create($request->all() + [ 'creator_id' => 'liuxu' ]); //fix me
+        $principal = $request->input('principal');
+        if (!$principal)
+        {
+            throw new \InvalidArgumentException('the principal must be appointed.', -10002);
+        }
+        if (!Sentinel::findById($principal))
+        {
+            throw new \InvalidArgumentException('the user is not exists.', -10002);
+        }
+        // fix me check if user is available
+        // save the project
+        $project = Project::create($request->all()); //fix me
+        // trigger add user to usrproject
+        Event::fire(new AddUserToRoleEvent([ $principal ], $key));
+
         return Response()->json([ 'ecode' => 0, 'data' => $project ]);
     }
 
@@ -99,6 +116,19 @@ class ProjectController extends Controller
                 throw new \UnexpectedValueException('the name can not be empty.', -10002);
             }
         }
+        // check is user is available
+        $principal = $request->input('principal');
+        if (isset($principal))
+        {
+            if (!$principal)
+            {
+                throw new \InvalidArgumentException('the principal must be appointed.', -10002);
+            }
+            if (!Sentinel::findById($principal))
+            {
+                throw new \InvalidArgumentException('the user is not exists.', -10002);
+            }
+        }
 
         $project = Project::find($id);
         if (!$project)
@@ -106,6 +136,15 @@ class ProjectController extends Controller
             throw new \UnexpectedValueException('the project does not exist.', -10002);
         }
         $project->fill($request->except(['key']))->save();
+
+        if (isset($principal))
+        {
+            if ($project->principal != $principal)
+            {
+                Event::fire(new AddUserToRoleEvent([ $principal ], $project->key));
+                Event::fire(new DelUserFromRoleEvent([ $project->principal ], $project->key));
+            }
+        }
 
         return Response()->json([ 'ecode' => 0, 'data' => Project::find($id) ]);
     }

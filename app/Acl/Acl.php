@@ -2,7 +2,7 @@
 namespace App\Acl;
 
 use App\Acl\Eloquent\Role;
-use App\Acl\Eloquent\Permission;
+use App\Acl\Permissions;
 
 class Acl {
 
@@ -74,6 +74,6 @@ class Acl {
      */
     public static function getAllPermissions()
     {
-        return Permission::all();
+        return Permissions::all();
     }
 }
