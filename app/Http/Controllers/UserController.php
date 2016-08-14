@@ -9,6 +9,7 @@ use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Events\DelUserEvent;
 
+use Cartalyst\Sentinel\Users\EloquentUser;
 use Sentinel; 
 
 class UserController extends Controller
@@ -18,8 +19,24 @@ class UserController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
+        if ($s = $request->input('s'))
+        {
+            $users = EloquentUser::where('first_name', 'like', '%' . $s .  '%')->get([ 'first_name', 'last_name' ])->toArray();
+            foreach ($users as $key => $user)
+            {
+                //$users[$key]['name'] = $user['first_name'] . (isset($user['last_name']) && $user['last_name'] ? ' ' . $user['last_name'] : '');
+                $users[$key]['name'] = $user['first_name'];
+                unset($users[$key]['first_name']);
+                unset($users[$key]['last_name']);
+            }
+        }
+        else
+        {
+            $users = EloquentUser::all(); 
+        }
+        return Response()->json([ 'ecode' => 0, 'data' => $users ]); 
     }
 
     /**

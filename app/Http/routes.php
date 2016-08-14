@@ -17,6 +17,7 @@ Route::get('/', function () {
 
 // session router
 Route::post('api/session', 'SessionController@create');
+Route::post('api/register', 'UserController@regist');
 
 Route::group([ 'middleware' => 'can' ], function ()
 {

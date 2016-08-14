@@ -12,6 +12,7 @@ use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Acl\Eloquent\Role;
 use App\Acl\Acl;
+use Sentinel;
 
 class RoleController extends Controller
 {
@@ -22,7 +23,22 @@ class RoleController extends Controller
      */
     public function index($project_key)
     {
-        $roles = Role::where([ 'project_key' => $project_key ])->orderBy('created_at', 'asc')->get();
+        $roles = Role::where([ 'project_key' => $project_key ])->orderBy('created_at', 'asc')->get()->toArray();
+        foreach ($roles as $key => $role)
+        {
+            $users = [];
+            $user_ids = isset($role['user_ids']) ? $role['user_ids'] : [];
+            foreach ($user_ids as $uid)
+            {
+                $user = Sentinel::findById($uid);
+                $users[] = [ 'id' => $user->id, 'name' => $user->first_name ];
+            }
+            $roles[$key]['users'] = $users;
+            if (isset($role['user_ids']))
+            {
+                unset($roles[$key]['user_ids']);
+            }
+        }
         return Response()->json([ 'ecode' => 0, 'data' => $roles ]);
     }
 
@@ -53,7 +69,9 @@ class RoleController extends Controller
             }
         }
 
-        $role = Role::create($request->all() + [ 'project_key' => $project_key ]);
+        $user_ids = $request->users ?: [];
+
+        $role = Role::create($request->all() + [ 'project_key' => $project_key, 'user_ids' => $user_ids ]);
         return Response()->json([ 'ecode' => 0, 'data' => $role ]);
     }
 
@@ -123,7 +141,20 @@ class RoleController extends Controller
         isset($add_user_ids) && Event::fire(new AddUserToRoleEvent($add_user_ids, $role->project_key)); 
         isset($del_user_ids) && Event::fire(new DelUserFromRoleEvent($del_user_ids, $role->project_key)); 
 
-        return Response()->json([ 'ecode' => 0, 'data' => Role::find($id) ]);
+        $data = Role::find($id);
+        if (isset($data->user_ids))
+        {
+            $users = [];
+            foreach ($data->user_ids as $uid)
+            {
+                $user = Sentinel::findById($uid);
+                $users[] = [ 'id' => $user->id, 'name' => $user->first_name ];
+            }
+            $data->users = $users;
+            unset($data->user_ids);
+        }
+
+        return Response()->json([ 'ecode' => 0, 'data' => $data ]);
     }
 
     /**
