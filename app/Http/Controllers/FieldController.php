@@ -21,7 +21,7 @@ class FieldController extends Controller
      */
     public function index($project_key)
     {
-        $fields = Field::where([ 'project_key' => $project_key ])->orderBy('created_at', 'asc')->get(['key', 'name', 'type']);
+        $fields = Field::where([ 'project_key' => $project_key ])->orderBy('created_at', 'asc')->get(['key', 'name', 'type', 'description']);
         foreach ($fields as $key => $field)
         {
             $fields[$key]->screens = Screen::whereRaw([ 'field_ids' => $field->id ])->get(['name']);

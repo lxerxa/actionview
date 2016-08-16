@@ -26,14 +26,7 @@ class RoleController extends Controller
         $roles = Role::where([ 'project_key' => $project_key ])->orderBy('created_at', 'asc')->get()->toArray();
         foreach ($roles as $key => $role)
         {
-            $users = [];
-            $user_ids = isset($role['user_ids']) ? $role['user_ids'] : [];
-            foreach ($user_ids as $uid)
-            {
-                $user = Sentinel::findById($uid);
-                $users[] = [ 'id' => $user->id, 'name' => $user->first_name ];
-            }
-            $roles[$key]['users'] = $users;
+            $roles[$key]['users'] = $this->getUsers(isset($role['user_ids']) ? $role['user_ids'] : []);
             if (isset($role['user_ids']))
             {
                 unset($roles[$key]['user_ids']);
@@ -142,15 +135,9 @@ class RoleController extends Controller
         isset($del_user_ids) && Event::fire(new DelUserFromRoleEvent($del_user_ids, $role->project_key)); 
 
         $data = Role::find($id);
+        $data->users = $this->getUsers($data->user_ids);
         if (isset($data->user_ids))
         {
-            $users = [];
-            foreach ($data->user_ids as $uid)
-            {
-                $user = Sentinel::findById($uid);
-                $users[] = [ 'id' => $user->id, 'name' => $user->first_name ];
-            }
-            $data->users = $users;
             unset($data->user_ids);
         }
 
@@ -175,5 +162,27 @@ class RoleController extends Controller
         Role::destroy($id);
         $user_ids && Event::fire(new DelUserFromRoleEvent($user_ids, $project_key));
         return Response()->json([ 'ecode' => 0, 'data' => [ 'id' => $id ] ]);
+    }
+
+    /**
+     * get users by array id.
+     *
+     * @param  array  $uid
+     * @return array 
+     */
+    public function getUsers($uids)
+    {
+        if (!isset($uids))
+        {
+            return [];
+        }
+
+        $users = [];
+        foreach ($uids as $uid)
+        {
+            $user = Sentinel::findById($uid);
+            $users[] = [ 'id' => $user->id, 'name' => $user->first_name ];
+        }
+        return $users;
     }
 }

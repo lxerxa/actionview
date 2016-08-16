@@ -10,8 +10,12 @@ class Definition extends Model
 
     protected $fillable = array(
         'name',
-        'screens',
+        'screen_ids',
         'project_key',
+        'description',
+        'latest_modifier',
+        'latest_modified_time',
+        'steps',
         'contents'
     );
 

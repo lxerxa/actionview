@@ -22,7 +22,7 @@ class ScreenController extends Controller
         $screens = Screen::where([ 'project_key' => $project_key ])->orderBy('created_at', 'asc')->get([ 'name', 'description' ]);
         foreach ($screens as $screen)
         {
-            $workflows = Definition::whereRaw([ 'screen' => $screen->id ])->get([ 'name' ]);
+            $workflows = Definition::whereRaw([ 'screen_ids' => $screen->id ])->get([ 'name' ]);
             $screen->workflows = $workflows;
         }
 
@@ -58,7 +58,6 @@ class ScreenController extends Controller
             // create screen schema
             $schema = $this->createSchema($field_ids, $required_field_ids);
         }
-        
 
         $screen = Screen::create(['schema' => $schema, 'field_ids' => $field_ids, 'project_key' => $project_key ] + $request->all());
         return Response()->json(['ecode' => 0, 'data' => $screen]);

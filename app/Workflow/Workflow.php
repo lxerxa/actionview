@@ -79,14 +79,12 @@ class Workflow {
     /**
      * create workflow.
      *
-     * @param string $related_oid
      * @param string $definition_id
      * @return string
      */
-    public static function createInstance($related_oid, $definition_id)
+    public static function createInstance($definition_id)
     {
         $entry = new Entry;
-        $entry->related_oid = $related_oid;
         $entry->definition_id = $definition_id;
         $entry->state = self::OSWF_CREATED;
         $entry->save();
@@ -597,12 +595,12 @@ class Workflow {
      */
     private function executeFunction($function)
     {
-        $class = explode('@', $function['class']);
-        $handle_class = new $class[0];
-        $handle_function = $class[1] ?: 'handler';
+        $method = explode('@', $function['name']);
+        $class = new $method[0];
+        $action = $method[1] ?: 'handle';
 
         // check handle function exists
-        if (!method_exists($handle_class, $handle_function))
+        if (!method_exists($class, $action))
         {
             throw new FunctionNotFoundException();
         }
@@ -610,7 +608,7 @@ class Workflow {
         // generate temporary vars
         $tmp_vars = $this->genTmpVars($args);
         // call handle function
-        return $handle_class->$handle_function($tmp_vars);
+        return $class->$action($tmp_vars);
     }
 
     /**
@@ -669,5 +667,45 @@ class Workflow {
     public function removePropertySet($key)
     {
         $this->entry->unset($key ? ('propertysets.' . $key) : 'propertysets');
+    }
+
+    /**
+     * get used screens in the workflow 
+     *
+     * @return array 
+     */
+    public static function getScreens($contents)
+    {
+        $screen_ids = [];
+        $steps = isset($contents['steps']) && $contents['steps'] ? $contents['steps'] : [];
+        foreach ($steps as $step)
+        {
+            if (!isset($step['actions']) || !$step['actions'])
+            {
+                continue;
+            }
+            foreach ($step['actions'] as $action)
+            {
+                if (!isset($action['screen-id']) || !$action['screen-id'])
+                {
+                    continue;
+                }
+                $screen_ids[] = $action['screen-id'];
+            }
+        }
+
+        return array_unique($screen_ids);
+    }
+
+    /**
+     * get step num 
+     *
+     * @return int 
+     */
+    public static function getStepNum($contents)
+    {
+        $screen_ids = [];
+        $steps = isset($contents['steps']) && $contents['steps'] ? $contents['steps'] : [];
+        return count($steps);
     }
 }
