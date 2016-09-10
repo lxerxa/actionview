@@ -8,9 +8,11 @@ use Illuminate\Support\Facades\Event;
 use App\Events\AddUserToRoleEvent;
 use App\Events\DelUserFromRoleEvent;
 
+use App\Project\Provider;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Acl\Eloquent\Role;
+use App\Acl\Eloquent\Roleactor;
 use App\Acl\Acl;
 use Sentinel;
 
@@ -23,10 +25,11 @@ class RoleController extends Controller
      */
     public function index($project_key)
     {
-        $roles = Role::where([ 'project_key' => $project_key ])->orderBy('created_at', 'asc')->get()->toArray();
+
+        $roles = Provider::getRoleList($project_key)->toArray();
         foreach ($roles as $key => $role)
         {
-            $roles[$key]['users'] = $this->getUsers(isset($role['user_ids']) ? $role['user_ids'] : []);
+            $roles[$key]['users'] = $this->getUsers($project_key, $role['_id']);
             if (isset($role['user_ids']))
             {
                 unset($roles[$key]['user_ids']);
@@ -62,9 +65,9 @@ class RoleController extends Controller
             }
         }
 
-        $user_ids = $request->users ?: [];
+        //$user_ids = $request->users ?: [];
 
-        $role = Role::create($request->all() + [ 'project_key' => $project_key, 'user_ids' => $user_ids ]);
+        $role = Role::create($request->all() + [ 'project_key' => $project_key ]);
         return Response()->json([ 'ecode' => 0, 'data' => $role ]);
     }
 
@@ -120,26 +123,24 @@ class RoleController extends Controller
             }
             $role->permissions = $permissions;
         }
+        $role->fill($request->except(['project_key']))->save();
 
         $new_user_ids = $request->input('users');
         if (isset($new_user_ids))
         {
-            $old_user_ids = $role->user_ids ?: [];
+            $this->setUsers($project_key, $id, $new_user_ids ?: []);
+
+            $actor = Roleactor::where([ 'project_key' => $project_key, 'role_id' => $id ])->first();
+            $old_user_ids = $actor && $actor->user_ids ? $actor->user_ids : [];
             $add_user_ids = array_diff($new_user_ids, $old_user_ids);
             $del_user_ids = array_diff($old_user_ids, $new_user_ids);
-            $role->user_ids = $new_user_ids;
-        }
-        $role->fill($request->except(['project_key']))->save();
 
-        isset($add_user_ids) && Event::fire(new AddUserToRoleEvent($add_user_ids, $role->project_key)); 
-        isset($del_user_ids) && Event::fire(new DelUserFromRoleEvent($del_user_ids, $role->project_key)); 
+            Event::fire(new AddUserToRoleEvent($add_user_ids, $project_key)); 
+            Event::fire(new DelUserFromRoleEvent($del_user_ids, $project_key)); 
+        }
 
         $data = Role::find($id);
-        $data->users = $this->getUsers($data->user_ids);
-        if (isset($data->user_ids))
-        {
-            unset($data->user_ids);
-        }
+        $data->users = $this->getUsers($project_key, $id);
 
         return Response()->json([ 'ecode' => 0, 'data' => $data ]);
     }
@@ -165,20 +166,37 @@ class RoleController extends Controller
     }
 
     /**
+     * set users.
+     *
+     * @param  string $project_key
+     * @param  array $uids
+     * @return array
+     */
+    public function setUsers($project_key, $role_id, $uids)
+    {
+        $actor = Roleactor::where([ 'project_key' => $project_key, 'role_id' => $role_id ])->first();
+        $actor && $actor->delete();
+        
+        Roleactor::create([ 'role_id' => $role_id, 'project_key' => $project_key, 'user_ids' => $uids ]);
+    }
+
+    /**
      * get users by array id.
      *
-     * @param  array  $uid
+     * @param  string $project_key
+     * @param  string $role_id
      * @return array 
      */
-    public function getUsers($uids)
+    public function getUsers($project_key, $role_id)
     {
-        if (!isset($uids))
+        $actor = Roleactor::where([ 'project_key' => $project_key, 'role_id' => $role_id ])->first();
+        if (!$actor || !isset($actor['user_ids']))
         {
             return [];
         }
 
         $users = [];
-        foreach ($uids as $uid)
+        foreach ($actor['user_ids'] as $uid)
         {
             $user = Sentinel::findById($uid);
             $users[] = [ 'id' => $user->id, 'name' => $user->first_name ];

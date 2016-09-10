@@ -9,6 +9,7 @@ use App\Events\PriorityConfigChangeEvent;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Customization\Eloquent\Priority;
+use App\Project\Provider;
 
 class PriorityController extends Controller
 {
@@ -19,7 +20,7 @@ class PriorityController extends Controller
      */
     public function index($project_key)
     {
-        $priorities = Priority::whereRaw([ 'project_key' => $project_key ])->orderBy('sn', 'asc')->get();
+        $priorities = Provider::getPriorityList($project_key);
         return Response()->json(['ecode' => 0, 'data' => $priorities]);
     }
 
@@ -37,7 +38,12 @@ class PriorityController extends Controller
             throw new \UnexpectedValueException('the name can not be empty.', -10002);
         }
 
-        $priority = Priority::create($request->all() + [ 'project_key' => $project_key, 'sn' => time() ]);
+        if (Provider::isPriorityExisted($project_key, $name))
+        {
+            throw new \UnexpectedValueException('priority name cannot be repeated', -10002);
+        }
+
+        $priority = Priority::create([ 'project_key' => $project_key, 'sn' => time() ] + $request->all());
         // trigger to change priority field config
         Event::fire(new PriorityConfigChangeEvent($project_key));
         return Response()->json(['ecode' => 0, 'data' => $priority]);
@@ -80,6 +86,11 @@ class PriorityController extends Controller
         if (!$priority || $project_key != $priority->project_key)
         {
             throw new \UnexpectedValueException('the priority does not exist or is not in the project.', -10002);
+        }
+
+        if ($priority->name !== $name && Provider::isPriorityExisted($project_key, $name))
+        {
+            throw new \UnexpectedValueException('priority name cannot be repeated', -10002);
         }
 
         $priority->fill($request->except(['project_key']))->save();

@@ -8,7 +8,7 @@ use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Workflow\Eloquent\Definition;
 use App\Workflow\Workflow;
-use App\Customization\Eloquent\Screen;
+use App\Project\Provider;
 
 class WorkflowController extends Controller
 {
@@ -19,7 +19,8 @@ class WorkflowController extends Controller
      */
     public function index($project_key)
     {
-        $workflows = Definition::where([ 'project_key' => $project_key ])->orderBy('created_at', 'asc')->get([ 'name', 'description', 'latest_modified_time', 'latest_modifier', 'steps' ]);
+        $workflows = Provider::getWorkflowList($project_key, [ 'name', 'category', 'description', 'latest_modified_time', 'latest_modifier', 'steps' ]);
+
         return Response()->json([ 'ecode' => 0, 'data' => $workflows ]);
     }
 
@@ -58,9 +59,10 @@ class WorkflowController extends Controller
             $latest_modified_time = $source_definition->latest_modified_time;
             $screen_ids = $source_definition->screen_ids;
             $steps = $source_definition->steps;
+            $contents = $source_definition->contents;
         }
 
-        $workflow = Definition::create($request->all() + [ 'project_key' => $project_key, 'latest_modifier' => $latest_modifier, 'latest_modified_time' => $latest_modified_time, 'screen_ids' => $screen_ids, 'steps' => $steps ]);
+        $workflow = Definition::create([ 'project_key' => $project_key, 'latest_modifier' => $latest_modifier, 'latest_modified_time' => $latest_modified_time, 'screen_ids' => $screen_ids, 'steps' => $steps, 'contents' => $contents ] + $request->all());
         return Response()->json([ 'ecode' => 0, 'data' => $workflow ]);
     }
 
@@ -77,7 +79,13 @@ class WorkflowController extends Controller
         {
             throw new \UnexpectedValueException('the workflow does not exist or is not in the project.', -10002);
         }
-        return Response()->json([ 'ecode' => 0, 'data' => $workflow ]);
+
+        $states = Provider::getStateList($project_key, ['name']);
+        $screens = Provider::getScreenList($project_key, ['name']);
+        $resolutions = Provider::getResolutionList($project_key, ['name']);
+        $roles = Provider::getRoleList($project_key, ['name']);
+
+        return Response()->json([ 'ecode' => 0, 'data' => $workflow, 'options' => [ 'states' => $states, 'screens' => $screens, 'resolutions' => $resolutions, 'roles' => $roles ] ]);
     }
 
     /**

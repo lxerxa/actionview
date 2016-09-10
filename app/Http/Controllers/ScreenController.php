@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Customization\Eloquent\Screen;
 use App\Customization\Eloquent\Field;
 use App\Workflow\Eloquent\Definition;
+use App\Project\Provider;
 
 class ScreenController extends Controller
 {
@@ -19,7 +20,7 @@ class ScreenController extends Controller
      */
     public function index($project_key)
     {
-        $screens = Screen::where([ 'project_key' => $project_key ])->orderBy('created_at', 'asc')->get([ 'name', 'description' ]);
+        $screens = Provider::getScreenList($project_key, [ 'name', 'category', 'description' ]);
         foreach ($screens as $screen)
         {
             $workflows = Definition::whereRaw([ 'screen_ids' => $screen->id ])->get([ 'name' ]);

@@ -11,6 +11,7 @@ use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Customization\Eloquent\Field;
 use App\Customization\Eloquent\Screen;
+use App\Project\Provider;
 
 class FieldController extends Controller
 {
@@ -21,7 +22,7 @@ class FieldController extends Controller
      */
     public function index($project_key)
     {
-        $fields = Field::where([ 'project_key' => $project_key ])->orderBy('created_at', 'asc')->get(['key', 'name', 'type', 'description']);
+        $fields = Provider::getFieldList($project_key, ['key', 'name', 'category', 'type', 'description']);
         foreach ($fields as $key => $field)
         {
             $fields[$key]->screens = Screen::whereRaw([ 'field_ids' => $field->id ])->get(['name']);
@@ -48,12 +49,12 @@ class FieldController extends Controller
         {
             throw new \InvalidArgumentException('field key cannot be empty.', -10002);
         }
-        if (Field::where('key', $key)->where('project_key', $project_key)->exists())
+        if (Provider::isFieldExisted($project_key, $key))
         {
             throw new \InvalidArgumentException('field key cannot be repeated.', -10002);
         }
 
-        $field = Field::create($request->all() + [ 'project_key' => $project_key ]);
+        $field = Field::create([ 'project_key' => $project_key ] + $request->all());
         return Response()->json(['ecode' => 0, 'data' => $field]);
     }
 

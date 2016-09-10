@@ -1,0 +1,113 @@
+{
+  "initial-actions": [
+    {
+      "id": 0,
+      "name": "initial-action",
+      "results": [
+        {
+          "step": 1,
+          "status": "Underway"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": 1,
+      "name": "step1",
+      "actions": [
+        {
+          "id": 1,
+          "name": "action1",
+          "restrict-to": {
+            "conditions": {
+              "type": "or",
+              "list": [
+                {
+                  "name": "App\\Workflow\\Util@trueCondition1",
+                  "args": {
+                    "owner": "aaa"
+                  }
+                },
+                {
+                  "name": "App\\Workflow\\Util@falseCondition2",
+                  "args": {
+                    "owner": "aaa"
+                  }
+                }
+              ]
+            }
+          },
+          "results": [
+            {
+              "step": 2,
+              "old-status": "Finished",
+              "status": "Underway"
+            },
+            {
+              "step": "3",
+              "old-status": "Finished",
+              "status": "Underway"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "name": "action2",
+          "results": [
+            {
+              "step": "4",
+              "old-status": "Finished",
+              "status": "Underway"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "step2",
+      "actions": [
+        {
+          "id": 3,
+          "name": "action3",
+          "results": [
+            {
+              "step": "3",
+              "old-status": "Finished",
+              "status": "Underway"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "step3",
+      "actions": [
+        {
+          "id": 4,
+          "name": "action4",
+          "results": [
+            {
+              "step": "4",
+              "old-status": "Finished",
+              "status": "Underway"
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "name": "action5",
+          "results": [
+            {
+              "step": "1",
+              "old-status": "Finished",
+              "status": "Underway"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

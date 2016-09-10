@@ -4,7 +4,7 @@ namespace App\Listeners;
 
 use App\Events\Event;
 use App\Events\DelUserEvent;
-use App\Acl\Eloquent\Role;
+use App\Acl\Eloquent\Roleactor;
 use App\Project\Eloquent\UserProject;
 
 use Illuminate\Queue\InteractsWithQueue;
@@ -42,11 +42,11 @@ class UserDelListener
      */
     public function delUserFromRole($user_id)
     {
-        $roles = Role::whereRaw([ 'user_ids' => $user_id ])->get([ 'user_ids' ]);
-        foreach ($roles as $role)
+        $roleactors = Roleactor::whereRaw([ 'user_ids' => $user_id ])->get([ 'user_ids' ]);
+        foreach ($roleactors as $roleactor)
         {
            $new_user_ids = [];
-           $old_user_ids = $role->user_ids ?: [];
+           $old_user_ids = $roleactor->user_ids ?: [];
            foreach ($old_user_ids as $uid)
            {
                if ($uid != $user_id)
@@ -54,8 +54,15 @@ class UserDelListener
                    $new_user_ids[] = $uid;
                }
            }
-           $role->user_ids = $new_user_ids;
-           $role->save();
+           if ($new_user_ids)
+           {
+               $roleactor->user_ids = $new_user_ids;
+               $roleactor->save();
+           }
+           else
+           {
+               $roleactor->delete();
+           }
         }
     }
 

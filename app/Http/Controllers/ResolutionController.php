@@ -9,6 +9,7 @@ use App\Events\ResolutionConfigChangeEvent;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Customization\Eloquent\Resolution;
+use App\Project\Provider;
 
 class ResolutionController extends Controller
 {
@@ -19,7 +20,7 @@ class ResolutionController extends Controller
      */
     public function index($project_key)
     {
-        $resolutions = Resolution::where([ 'project_key' => $project_key ])->orderBy('sn', 'asc')->get();
+        $resolutions = Provider::getResolutionList($project_key);
         return Response()->json(['ecode' => 0, 'data' => $resolutions]);
     }
 
@@ -37,7 +38,12 @@ class ResolutionController extends Controller
             throw new \UnexpectedValueException('the name can not be empty.', -10002);
         }
 
-        $resolution = Resolution::create($request->all() + [ 'project_key' => $project_key, 'sn' => time() ]);
+        if (Provider::isResolutionExisted($project_key, $name))
+        {
+            throw new \UnexpectedValueException('resolution name cannot be repeated', -10002);
+        }
+
+        $resolution = Resolution::create([ 'project_key' => $project_key, 'sn' => time() ] + $request->all());
         // trigger to change resolution field config
         Event::fire(new ResolutionConfigChangeEvent($project_key));
         return Response()->json(['ecode' => 0, 'data' => $resolution]);
@@ -81,6 +87,11 @@ class ResolutionController extends Controller
         if (!$resolution || $project_key != $resolution->project_key)
         {
             throw new \UnexpectedValueException('the resolution does not exist or is not in the project.', -10002);
+        }
+
+        if ($resolution->name !== $name && Provider::isResolutionExisted($project_key, $name))
+        {
+            throw new \UnexpectedValueException('resolution name cannot be repeated', -10002);
         }
 
         $resolution->fill($request->except(['project_key']))->save();

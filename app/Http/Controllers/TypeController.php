@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Customization\Eloquent\Type;
 use App\Workflow\Eloquent\Definition;
 use App\Customization\Eloquent\Screen;
+use App\Customization\Provider;
 
 class TypeController extends Controller
 {
@@ -19,22 +20,13 @@ class TypeController extends Controller
      */
     public function index($project_key)
     {
-        $alltypes = [];
         $types = Type::where([ 'project_key' => $project_key ])->orderBy('sn', 'asc')->get();
-        foreach ($types as $key => $type)
-        {
-            $screen = $type->screen;
-            $workflow = $type->workflow;
-            $alltypes[$key]['_id'] = $type->_id;
-            $alltypes[$key]['name'] = $type->name;
-            $alltypes[$key]['screen'] = $screen ? [ '_id' => $screen->_id, 'name' => $screen->name ] : [];
-            $alltypes[$key]['workflow'] = $workflow ? [ '_id' => $workflow->_id, 'name' => $workflow->name ] : []; 
-        }
 
-        $screens = Screen::Where([ 'project_key' => $project_key ])->orderBy('created_at', 'asc')->get(['name']);
-        $workflows = Definition::Where([ 'project_key' => $project_key ])->orderBy('created_at', 'asc')->get(['name']);
+        $screens = Provider::getScreenList($project_key, ['name']);
+        $workflows = Provider::getWorkflowList($project_key, ['name']);
         $options = [ 'screens' => $screens, 'workflows' => $workflows ];
-        return Response()->json([ 'ecode' => 0, 'data' => $alltypes, 'options' => $options ]);
+
+        return Response()->json([ 'ecode' => 0, 'data' => $types, 'options' => $options ]);
     }
 
     /**
@@ -73,7 +65,7 @@ class TypeController extends Controller
             throw new \UnexpectedValueException('the related workflow is not exists.', -10002);
         }
 
-        $type = Type::create($request->all() + [ 'project_key' => $project_key, 'sn' => time() ]);
+        $type = Type::create([ 'project_key' => $project_key, 'sn' => time() ] + $request->all());
         return Response()->json(['ecode' => 0, 'data' => $type]);
     }
 

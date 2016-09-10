@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Customization\Eloquent\State;
+use App\Project\Provider;
 
 class StateController extends Controller
 {
@@ -17,7 +18,7 @@ class StateController extends Controller
      */
     public function index($project_key)
     {
-        $states = State::where([ 'project_key' => $project_key ])->orderBy('created_at', 'asc')->get([ 'name', 'description' ]);
+        $states = Provider::getStateList($project_key);
         return Response()->json(['ecode' => 0, 'data' => $states]);
     }
 
@@ -34,7 +35,13 @@ class StateController extends Controller
         {
             throw new \UnexpectedValueException('the name can not be empty.', -10002);
         }
-        $state = State::create($request->all() + [ 'project_key' => $project_key ]);
+
+        if (Provider::isStateExisted($project_key, $name))
+        {
+            throw new \UnexpectedValueException('state name cannot be repeated', -10002);
+        }
+
+        $state = State::create([ 'project_key' => $project_key ] + $request->all());
         return Response()->json(['ecode' => 0, 'data' => $state]);
     }
 
@@ -75,6 +82,11 @@ class StateController extends Controller
         if (!$state || $project_key != $state->project_key)
         {
             throw new \UnexpectedValueException('the state does not exist or is not in the project.', -10002);
+        }
+
+        if ($state->name !== $name && Provider::isStateExisted($project_key, $name))
+        {
+            throw new \UnexpectedValueException('state name cannot be repeated', -10002);
         }
 
         $state->fill($request->except(['project_key']))->save();
