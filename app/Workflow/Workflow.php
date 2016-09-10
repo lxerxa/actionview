@@ -99,9 +99,9 @@ class Workflow {
      */
     private function isActionAvailable($action_descriptor)
     {
-        if ($action_descriptor['restrict-to'] && $action_descriptor['restrict-to']['conditions'])
+        if ($action_descriptor['restrict_to'] && $action_descriptor['restrict_to']['conditions'])
         {
-            if (!$this->passesConditions($action_descriptor['restrict-to']['conditions']))
+            if (!$this->passesConditions($action_descriptor['restrict_to']['conditions']))
             {
                 return false;
             }
@@ -116,13 +116,13 @@ class Workflow {
      */
     public function initialize()
     {
-        if (!$this->wf_config['initial-actions'])
+        if (!$this->wf_config['initial_actions'])
         {
             throw new ActionNotFoundException();
         }
 
         $available_action_flg = false;
-        foreach ($this->wf_config['initial-actions'] as $action_descriptor)
+        foreach ($this->wf_config['initial_actions'] as $action_descriptor)
         {
             if ($this->isActionAvailable($action_descriptor))
             {
@@ -235,7 +235,7 @@ class Workflow {
 
         // trigger before step
         $step_descriptor = $this->getStepDescriptor($result_descriptor['step']);
-        $this->executeFunctions($step_descriptor['pre-functions']);
+        $this->executeFunctions($step_descriptor['pre_functions']);
     }
 
     /**
@@ -266,14 +266,14 @@ class Workflow {
         }
 
         // triggers before action
-        $this->executeFunctions($action_descriptor['pre-functions']);
+        $this->executeFunctions($action_descriptor['pre_functions']);
 
         // confirm result whose condition is satified.
         $available_result_descriptor = $this->getAvailableResult($action_descriptor['results'] ?: array());
         // triggers before result
-        $this->executeFunctions($available_result_descriptor['pre-functions']);
+        $this->executeFunctions($available_result_descriptor['pre_functions']);
         // triggers after step
-        $this->executeFunctions($step_descriptor['post-functions']);
+        $this->executeFunctions($step_descriptor['post_functions']);
         // split workflow
         if ($available_result_descriptor['split'])
         {
@@ -285,7 +285,7 @@ class Workflow {
             }
 
             // move current to history step
-            $prevoius_id = $this->moveToHistory($current_step, $available_result_descriptor['old-status']);
+            $prevoius_id = $this->moveToHistory($current_step, $available_result_descriptor['old_status']);
             foreach ($split_descriptor['list'] as $result_descriptor)
             {
                 $this->createNewCurrentStep($result_descriptor, $action_id, $prevoius_id);
@@ -302,7 +302,7 @@ class Workflow {
             }
 
             // move current to history step
-            $prevoius_id = $this->moveToHistory($current_step, $available_result_descriptor['old-status']);
+            $prevoius_id = $this->moveToHistory($current_step, $available_result_descriptor['old_status']);
             if ($this->passesConditions($join_descriptor['conditions']))
             {
                 // record other previous_ids by propertyset
@@ -312,14 +312,14 @@ class Workflow {
         else
         {
             // move current to history step
-            $prevoius_id = $this->moveToHistory($current_step, $available_result_descriptor['old-status']);
+            $prevoius_id = $this->moveToHistory($current_step, $available_result_descriptor['old_status']);
             // create current step
             $this->createNewCurrentStep($available_result_descriptor, $action_id, $prevoius_id);
         }
         // triggers after result
-        $this->executeFunctions($available_result_descriptor['post-functions']);
+        $this->executeFunctions($available_result_descriptor['post_functions']);
         // triggers after action
-        $this->executeFunctions($action_descriptor['post-functions']);
+        $this->executeFunctions($action_descriptor['post_functions']);
     }
 
     /**
@@ -686,15 +686,16 @@ class Workflow {
             }
             foreach ($step['actions'] as $action)
             {
-                if (!isset($action['screen-id']) || !$action['screen-id'])
+                if (!isset($action['screen']) || !$action['screen'])
                 {
                     continue;
                 }
-                $screen_ids[] = $action['screen-id'];
+
+                $action['screen'] !=  '-1' && !in_array($action['screen'], $screen_ids) && $screen_ids[] = $action['screen'];
             }
         }
 
-        return array_unique($screen_ids);
+        return $screen_ids;
     }
 
     /**
