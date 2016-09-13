@@ -80,10 +80,10 @@ class RoleController extends Controller
     public function show($project_key, $id)
     {
         $role = Role::find($id);
-        if (!$role || $project_key != $role->project_key)
-        {
-            throw new \UnexpectedValueException('the role does not exist or is not in the project.', -10002);
-        }
+        //if (!$role || $project_key != $role->project_key)
+        //{
+        //    throw new \UnexpectedValueException('the role does not exist or is not in the project.', -10002);
+        //}
         return Response()->json([ 'ecode' => 0, 'data' => $role ]);
     }
 

@@ -73,10 +73,10 @@ class ScreenController extends Controller
     public function show($project_key, $id)
     {
         $screen = Screen::find($id);
-        if (!$screen || $project_key != $screen->project_key)
-        {
-            throw new \UnexpectedValueException('the screen does not exist or is not in the project.', -10002);
-        }
+        //if (!$screen || $project_key != $screen->project_key)
+        //{
+        //    throw new \UnexpectedValueException('the screen does not exist or is not in the project.', -10002);
+        //}
         $screen->fields = $screen->schema;
 
         return Response()->json(['ecode' => 0, 'data' => $screen]);

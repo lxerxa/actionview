@@ -5,10 +5,11 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 
-use App\Events\ResolutionConfigChangeEvent;
+//use App\Events\ResolutionConfigChangeEvent;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Customization\Eloquent\Resolution;
+use App\Customization\Eloquent\ResolutionProperty;
 use App\Project\Provider;
 
 class ResolutionController extends Controller
@@ -45,7 +46,7 @@ class ResolutionController extends Controller
 
         $resolution = Resolution::create([ 'project_key' => $project_key, 'sn' => time() ] + $request->all());
         // trigger to change resolution field config
-        Event::fire(new ResolutionConfigChangeEvent($project_key));
+        //Event::fire(new ResolutionConfigChangeEvent($project_key));
         return Response()->json(['ecode' => 0, 'data' => $resolution]);
     }
 
@@ -58,10 +59,10 @@ class ResolutionController extends Controller
     public function show($project_key, $id)
     {
         $resolution = Resolution::find($id);
-        if (!$resolution || $project_key != $resolution->project_key)
-        {
-            throw new \UnexpectedValueException('the resolution does not exist or is not in the project.', -10002);
-        }
+        //if (!$resolution || $project_key != $resolution->project_key)
+        //{
+        //    throw new \UnexpectedValueException('the resolution does not exist or is not in the project.', -10002);
+        //}
         return Response()->json(['ecode' => 0, 'data' => $resolution]);
     }
 
@@ -96,7 +97,7 @@ class ResolutionController extends Controller
 
         $resolution->fill($request->except(['project_key']))->save();
         // trigger to change resolution field config
-        Event::fire(new ResolutionConfigChangeEvent($project_key));
+        //Event::fire(new ResolutionConfigChangeEvent($project_key));
         return Response()->json(['ecode' => 0, 'data' => Resolution::find($id)]);
     }
 
@@ -116,7 +117,7 @@ class ResolutionController extends Controller
 
         Resolution::destroy($id);
         // trigger to change resolution field config
-        Event::fire(new ResolutionConfigChangeEvent($project_key));
+        // Event::fire(new ResolutionConfigChangeEvent($project_key));
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }
 
@@ -128,50 +129,33 @@ class ResolutionController extends Controller
      */
     public function handle(Request $request, $project_key)
     {
+        $properties = [];
         // set resolution sort.
-        $sequence_resolutions = $request->input('sequence');
-        if (isset($sequence_resolutions))
+        $sequence = $request->input('sequence');
+        if (isset($sequence))
         {
-            $i = 1;
-            foreach ($sequence_resolutions as $resolution_id)
-            {
-                $resolution = Resolution::find($resolution_id);
-                if (!$resolution || $resolution->project_key != $project_key)
-                {
-                    continue;
-                }
-                $resolution->sn = $i++;
-                $resolution->save();
-            }
+            $properties['sequence'] = $sequence;
         }
+
         // set default value
-        $default_resolution_id = $request->input('defaultValue');
-        if (isset($default_resolution_id))
+        $defaultValue = $request->input('defaultValue');
+        if (isset($defaultValue))
         {
-            $resolution = Resolution::find($default_resolution_id);
-            if (!$resolution || $resolution->project_key != $project_key)
-            {
-                throw new \UnexpectedValueException('the resolution does not exist or is not in the project.', -10002);
-            }
-
-            $resolutions = Resolution::where('project_key', $project_key)->get();
-            foreach ($resolutions as $resolution)
-            {
-                if ($resolution->id == $default_resolution_id)
-                {
-                    $resolution->default = true;
-                    $resolution->save();
-                }
-                else if (isset($resolution->default))
-                {
-                    $resolution->unset('default');
-                }
-            }
+            $properties['defaultValue'] = $defaultValue;
         }
-        // trigger to change resolution field config
-        Event::fire(new ResolutionConfigChangeEvent($project_key));
 
-        $resolutions = Resolution::where([ 'project_key' => $project_key ])->orderBy('sn', 'asc')->get();
+        $resolution_property = ResolutionProperty::Where('project_key', $project_key)->first();
+        if ($resolution_property)
+        {
+             $resolution_property->fill($properties);
+             $resolution_property->save();
+        }
+        else
+        {
+             ResolutionProperty::create([ 'project_key' => $project_key ] + $properties);
+        }
+
+        $resolutions = Provider::getResolutionList($project_key);
         return Response()->json(['ecode' => 0, 'data' => $resolutions]);
     }
 }

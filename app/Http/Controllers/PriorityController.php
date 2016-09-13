@@ -5,10 +5,11 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 
-use App\Events\PriorityConfigChangeEvent;
+//use App\Events\PriorityConfigChangeEvent;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Customization\Eloquent\Priority;
+use App\Customization\Eloquent\PriorityProperty;
 use App\Project\Provider;
 
 class PriorityController extends Controller
@@ -45,7 +46,7 @@ class PriorityController extends Controller
 
         $priority = Priority::create([ 'project_key' => $project_key, 'sn' => time() ] + $request->all());
         // trigger to change priority field config
-        Event::fire(new PriorityConfigChangeEvent($project_key));
+        // Event::fire(new PriorityConfigChangeEvent($project_key));
         return Response()->json(['ecode' => 0, 'data' => $priority]);
     }
 
@@ -58,10 +59,10 @@ class PriorityController extends Controller
     public function show($project_key, $id)
     {
         $priority = Priority::find($id);
-        if (!$priority || $project_key != $priority->project_key)
-        {
-            throw new \UnexpectedValueException('the priority does not exist or is not in the project.', -10002);
-        }
+        //if (!$priority || $project_key != $priority->project_key)
+        //{
+        //    throw new \UnexpectedValueException('the priority does not exist or is not in the project.', -10002);
+        //}
         return Response()->json(['ecode' => 0, 'data' => $priority]);
     }
 
@@ -95,7 +96,7 @@ class PriorityController extends Controller
 
         $priority->fill($request->except(['project_key']))->save();
         // trigger to change priority field config
-        Event::fire(new PriorityConfigChangeEvent($project_key));
+        // Event::fire(new PriorityConfigChangeEvent($project_key));
         return Response()->json(['ecode' => 0, 'data' => Priority::find($id)]);
     }
 
@@ -115,7 +116,7 @@ class PriorityController extends Controller
 
         Priority::destroy($id);
         // trigger to change priority field config
-        Event::fire(new PriorityConfigChangeEvent($project_key));
+        // Event::fire(new PriorityConfigChangeEvent($project_key));
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }
 
@@ -127,51 +128,33 @@ class PriorityController extends Controller
      */
     public function handle(Request $request, $project_key)
     {
-        // set priority sort.
-        $sequence_priorities = $request->input('sequence');
-        if (isset($sequence_priorities))
+        $properties = [];
+        // set resolution sort.
+        $sequence = $request->input('sequence');
+        if (isset($sequence))
         {
-            $i = 1;
-            foreach ($sequence_priorities as $priority_id)
-            {
-                $priority = Priority::find($priority_id);
-                if (!$priority || $priority->project_key != $project_key)
-                {
-                    continue;
-                }
-                $priority->sn = $i++;
-                $priority->save();
-            }
+            $properties['sequence'] = $sequence;
         }
 
         // set default value
-        $default_priority_id = $request->input('defaultValue');
-        if (isset($default_priority_id))
+        $defaultValue = $request->input('defaultValue');
+        if (isset($defaultValue))
         {
-            $priority = Priority::find($default_priority_id);
-            if (!$priority || $priority->project_key != $project_key)
-            {
-                throw new \UnexpectedValueException('the priority does not exist or is not in the project.', -10002);
-            }
-
-            $priorities = Priority::where('project_key', $project_key)->get();
-            foreach ($priorities as $priority)
-            {
-                if ($priority->id == $default_priority_id)
-                {
-                    $priority->default = true;
-                    $priority->save();
-                }
-                else if (isset($priority->default))
-                {
-                    $priority->unset('default');
-                }
-            }
+            $properties['defaultValue'] = $defaultValue;
         }
-        // trigger to change priority field config
-        Event::fire(new PriorityConfigChangeEvent($project_key));
 
-        $priorities = Priority::whereRaw([ 'project_key' => $project_key ])->orderBy('sn', 'asc')->get();
+        $priority_property = PriorityProperty::Where('project_key', $project_key)->first();
+        if ($priority_property)
+        {
+             $priority_property->fill($properties);
+             $priority_property->save();
+        }
+        else
+        {
+             PriorityProperty::create([ 'project_key' => $project_key ] + $properties);
+        }
+
+        $priorities = Provider::getPriorityList($project_key);
         return Response()->json(['ecode' => 0, 'data' => $priorities]);
     }
 }

@@ -3,7 +3,9 @@ namespace App\Project;
 
 use App\Customization\Eloquent\State;
 use App\Customization\Eloquent\Resolution;
+use App\Customization\Eloquent\ResolutionProperty;
 use App\Customization\Eloquent\Priority;
+use App\Customization\Eloquent\PriorityProperty;
 use App\Customization\Eloquent\Type;
 use App\Customization\Eloquent\Field;
 use App\Customization\Eloquent\Screen;
@@ -36,7 +38,7 @@ class Provider {
     {
         $category = self::getProjectCategory($project_key);
 
-        $states = State::whereIn('category', [ 'Z', $category ])
+        $states = State::Where('category', $category)
             ->orWhere('project_key', $project_key)
             ->orderBy('category', 'desc')
             ->orderBy('created_at', 'asc')
@@ -56,11 +58,43 @@ class Provider {
     {
         $category = self::getProjectCategory($project_key);
 
-        $priorities = Priority::whereIn('category', [ 'Z', $category ])
+        $priorities = Priority::Where('category', $category)
             ->orWhere('project_key', $project_key)
             ->orderBy('category', 'desc')
             ->orderBy('sn', 'asc')
-            ->get($fields);
+            ->get($fields)
+            ->toArray();
+
+        $priorityProperty = PriorityProperty::Where('project_key', $project_key)->first();
+        if ($priorityProperty)
+        {
+           if ($sequence = $priorityProperty->sequence)
+           {
+               $func = function($v1, $v2) use ($sequence) {
+                   $i1 = array_search($v1['_id'], $sequence);
+                   $i1 = $i1 !== false ? $i1 : 999;
+                   $i2 = array_search($v2['_id'], $sequence);
+                   $i2 = $i2 !== false ? $i2 : 999;
+                   return $i1 >= $i2 ? 1 : -1;
+               };
+               usort($priorities, $func);
+           }
+
+           if ($defaultValue = $priorityProperty->defaultValue)
+           {
+               foreach($priorities as $key => $val)
+               {
+                   if ($val['_id'] == $defaultValue)
+                   {
+                       $priorities[$key]['default'] = true;
+                   }
+                   else if (isset($val['default']))
+                   {
+                       unset($priorities[$key]['default']);
+                   }
+               }
+           }
+        }
 
         return $priorities;
     }
@@ -76,11 +110,43 @@ class Provider {
     {
         $category = self::getProjectCategory($project_key);
 
-        $resolutions = Resolution::whereIn('category', [ 'Z', $category ])
+        $resolutions = Resolution::Where('category', $category)
             ->orWhere('project_key', $project_key)
             ->orderBy('category', 'desc')
             ->orderBy('sn', 'asc')
-            ->get($fields);
+            ->get($fields)
+            ->toArray();
+
+        $resolutionProperty = ResolutionProperty::Where('project_key', $project_key)->first();
+        if ($resolutionProperty)
+        {
+           if ($sequence = $resolutionProperty->sequence)
+           {
+               $func = function($v1, $v2) use ($sequence) {
+                   $i1 = array_search($v1['_id'], $sequence);
+                   $i1 = $i1 !== false ? $i1 : 999;
+                   $i2 = array_search($v2['_id'], $sequence);
+                   $i2 = $i2 !== false ? $i2 : 999;
+                   return $i1 >= $i2 ? 1 : -1;
+               };
+               usort($resolutions, $func);
+           }
+
+           if ($defaultValue = $resolutionProperty->defaultValue)
+           {
+               foreach($resolutions as $key => $val)
+               {
+                   if ($val['_id'] == $defaultValue)
+                   {
+                       $resolutions[$key]['default'] = true;
+                   }
+                   else if (isset($val['default']))
+                   {
+                       unset($resolutions[$key]['default']);
+                   }
+               }
+           }
+        }
 
         return $resolutions;
     }
@@ -96,7 +162,7 @@ class Provider {
     {
         $category = self::getProjectCategory($project_key);
 
-        $screens = Screen::whereIn('category', [ 'Z', $category ])
+        $screens = Screen::Where('category', $category)
             ->orWhere('project_key', $project_key)
             ->orderBy('category', 'desc')
             ->orderBy('created_at', 'asc')
@@ -116,7 +182,7 @@ class Provider {
     {
         $category = self::getProjectCategory($project_key);
 
-        $fields = Field::whereIn('category', [ 'Z', $category ])
+        $fields = Field::Where('category', $category)
             ->orWhere('project_key', $project_key)
             ->orderBy('category', 'desc')
             ->orderBy('created_at', 'asc')
@@ -136,7 +202,7 @@ class Provider {
     {
         $category = self::getProjectCategory($project_key);
 
-        $workflows = Definition::whereIn('category', [ 'Z', $category ])
+        $workflows = Definition::Where('category', $category)
             ->orWhere('project_key', $project_key)
             ->orderBy('category', 'desc')
             ->orderBy('created_at', 'asc')
@@ -173,7 +239,7 @@ class Provider {
     {
         $category = self::getProjectCategory($project_key);
 
-        $roles = Role::whereIn('category', [ 'Z', $category ])
+        $roles = Role::Where('category', $category)
             ->orWhere('project_key', $project_key)
             ->orderBy('category', 'desc')
             ->orderBy('created_at', 'asc')
@@ -193,7 +259,7 @@ class Provider {
     {
         $category = self::getProjectCategory($project_key);
         
-        $isExisted = State::whereIn('category', [ 'Z', $category ])
+        $isExisted = State::Where('category', $category)
             ->orWhere('project_key', $project_key)
             ->Where('name', $name)
             ->exists();
@@ -212,7 +278,7 @@ class Provider {
     {
         $category = self::getProjectCategory($project_key);
 
-        $isExisted = Priority::whereIn('category', [ 'Z', $category ])
+        $isExisted = Priority::Where('category', $category)
             ->orWhere('project_key', $project_key)
             ->Where('name', $name)
             ->exists();
@@ -231,7 +297,7 @@ class Provider {
     {
         $category = self::getProjectCategory($project_key);
 
-        $isExisted = Resolution::whereIn('category', [ 'Z', $category ])
+        $isExisted = Resolution::Where('category', $category)
             ->orWhere('project_key', $project_key)
             ->Where('name', $name)
             ->exists();
@@ -246,11 +312,11 @@ class Provider {
      * @param string $key
      * @return bool
      */
-    public static function isFieldExisted($project_key, $key)
+    public static function isFieldKeyExisted($project_key, $key)
     {
         $category = self::getProjectCategory($project_key);
 
-        $isExisted = Resolution::whereIn('category', [ 'Z', $category ])
+        $isExisted = Resolution::Where('category', $category)
             ->orWhere('project_key', $project_key)
             ->Where('key', $key)
             ->exists();

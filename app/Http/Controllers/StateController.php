@@ -54,10 +54,10 @@ class StateController extends Controller
     public function show($project_key, $id)
     {
         $state = State::find($id);
-        if (!$state || $project_key != $state->project_key)
-        {
-            throw new \UnexpectedValueException('the state does not exist or is not in the project.', -10002);
-        }
+        //if (!$state || $project_key != $state->project_key)
+        //{
+        //    throw new \UnexpectedValueException('the state does not exist or is not in the project.', -10002);
+        //}
         return Response()->json(['ecode' => 0, 'data' => $state]);
     }
 

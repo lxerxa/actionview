@@ -49,7 +49,7 @@ class FieldController extends Controller
         {
             throw new \InvalidArgumentException('field key cannot be empty.', -10002);
         }
-        if (Provider::isFieldExisted($project_key, $key))
+        if (Provider::isFieldKeyExisted($project_key, $key))
         {
             throw new \InvalidArgumentException('field key cannot be repeated.', -10002);
         }
@@ -67,10 +67,10 @@ class FieldController extends Controller
     public function show($project_key, $id)
     {
         $field = Field::find($id);
-        if (!$field || $project_key != $field->project_key)
-        {
-            throw new \UnexpectedValueException('the field does not exist or is not in the project.', -10002);
-        }
+        //if (!$field || $project_key != $field->project_key)
+        //{
+        //    throw new \UnexpectedValueException('the field does not exist or is not in the project.', -10002);
+        //}
         // get related screen
         $field->screens = Screen::whereRaw([ 'field_ids' => $id ])->get(['name']);
 

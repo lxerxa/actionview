@@ -9,7 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Customization\Eloquent\Type;
 use App\Workflow\Eloquent\Definition;
 use App\Customization\Eloquent\Screen;
-use App\Customization\Provider;
+use App\Project\Provider;
 
 class TypeController extends Controller
 {
@@ -49,10 +49,10 @@ class TypeController extends Controller
         {
             throw new \UnexpectedValueException('the related screen can not be empty.', -10002);
         }
-        if (Screen::find($screen_id)->project_key != $project_key)
-        {
-            throw new \UnexpectedValueException('the related screen is not exists.', -10002);
-        }
+        //if (Screen::find($screen_id)->project_key != $project_key)
+        //{
+        //    throw new \UnexpectedValueException('the related screen is not exists.', -10002);
+        //}
 
         // check workflow_id, workflow is too required? fix me
         $workflow_id = $request->input('workflow_id');
@@ -60,10 +60,10 @@ class TypeController extends Controller
         {
             throw new \UnexpectedValueException('the related workflow can not be empty.', -10002);
         }
-        if (Definition::find($workflow_id)->project_key != $project_key)
-        {
-            throw new \UnexpectedValueException('the related workflow is not exists.', -10002);
-        }
+        //if (Definition::find($workflow_id)->project_key != $project_key)
+        //{
+        //    throw new \UnexpectedValueException('the related workflow is not exists.', -10002);
+        //}
 
         $type = Type::create([ 'project_key' => $project_key, 'sn' => time() ] + $request->all());
         return Response()->json(['ecode' => 0, 'data' => $type]);
@@ -78,10 +78,10 @@ class TypeController extends Controller
     public function show($project_key, $id)
     {
         $type = Type::find($id);
-        if (!$type || $project_key != $type->project_key)
-        {
-            throw new \UnexpectedValueException('the type does not exist or is not in the project.', -10002);
-        }
+        //if (!$type || $project_key != $type->project_key)
+        //{
+        //    throw new \UnexpectedValueException('the type does not exist or is not in the project.', -10002);
+        //}
         return Response()->json(['ecode' => 0, 'data' => $type]);
     }
 
@@ -109,10 +109,10 @@ class TypeController extends Controller
         {
             throw new \UnexpectedValueException('the related screen can not be empty.', -10002);
         }
-        if (Screen::find($screen_id)->project_key != $project_key)
-        {
-            throw new \UnexpectedValueException('the related screen is not exists.', -10002);
-        }
+        //if (Screen::find($screen_id)->project_key != $project_key)
+        //{
+        //    throw new \UnexpectedValueException('the related screen is not exists.', -10002);
+        //}
 
         // check workflow_id
         $workflow_id = $request->input('workflow_id');
@@ -120,10 +120,10 @@ class TypeController extends Controller
         {
             throw new \UnexpectedValueException('the related workflow can not be empty.', -10002);
         }
-        if (Definition::find($workflow_id)->project_key != $project_key)
-        {
-            throw new \UnexpectedValueException('the related workflow is not exists.', -10002);
-        }
+        //if (Definition::find($workflow_id)->project_key != $project_key)
+        //{
+        //    throw new \UnexpectedValueException('the related workflow is not exists.', -10002);
+        //}
 
         $type = Type::find($id);
         if (!$type || $project_key != $type->project_key)
@@ -202,5 +202,8 @@ class TypeController extends Controller
                 }
             }
         }
+
+        $types = Type::where([ 'project_key' => $project_key ])->orderBy('sn', 'asc')->get();
+        return Response()->json(['ecode' => 0, 'data' => $types]);
     }
 }
