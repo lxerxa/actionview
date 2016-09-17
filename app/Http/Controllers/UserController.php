@@ -23,11 +23,11 @@ class UserController extends Controller
     {
         if ($s = $request->input('s'))
         {
-            $users = EloquentUser::where('first_name', 'like', '%' . $s .  '%')->get([ 'first_name', 'last_name' ])->toArray();
+            $users = EloquentUser::Where('first_name', 'like', '%' . $s .  '%')->orWhere('email', 'like', '%' . $s .  '%')->get([ 'first_name', 'last_name', 'email' ])->toArray();
             foreach ($users as $key => $user)
             {
-                //$users[$key]['name'] = $user['first_name'] . (isset($user['last_name']) && $user['last_name'] ? ' ' . $user['last_name'] : '');
-                $users[$key]['name'] = $user['first_name'];
+                //$users[$key]['name'] = $user['first_name'];
+                $users[$key]['nameAndEmail'] = $user['first_name'] . '('. $user['email']  .')';
                 unset($users[$key]['first_name']);
                 unset($users[$key]['last_name']);
             }

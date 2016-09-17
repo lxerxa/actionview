@@ -11,6 +11,7 @@ class Priority extends Model
 
     protected $fillable = array(
         'name',
+        'color',
         'description',
         'project_key',
         'sn'

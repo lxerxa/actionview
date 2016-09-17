@@ -12,6 +12,8 @@ use App\Customization\Eloquent\Screen;
 use App\Acl\Eloquent\Role;
 use App\Workflow\Eloquent\Definition;
 use App\Project\Eloquent\Project;
+use App\Project\Eloquent\UserProject;
+use Sentinel;
 
 class Provider {
 
@@ -246,6 +248,36 @@ class Provider {
             ->get($fields);
 
         return $roles;
+    }
+
+    /**
+     * get user list.
+     *
+     * @param string $project_key
+     * @param array $fields
+     * @return collection
+     */
+    public static function getUserList($project_key)
+    {
+        $users = UserProject::Where('project_key', $project_key)
+            ->Where('link_count', '>', 0)
+            ->get(['user_id']);
+
+        $user_list = [];
+        foreach ($users as $user)
+        {
+            $user_info = Sentinel::findById($user['user_id']);
+            $user_info && $user_list[] = ['id' => $user['user_id'], 'name' => $user_info->first_name ];
+        }
+
+        $func = function($v1, $v2) {
+          $a = iconv('UTF-8', 'GBK', $v1['name']);
+          $b = iconv('UTF-8', 'GBK', $v2['name']);
+          return $a >= $b ? 1 : -1;
+        };
+        usort($user_list, $func);
+
+        return $user_list;
     }
 
     /**

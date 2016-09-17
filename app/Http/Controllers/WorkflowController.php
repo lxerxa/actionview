@@ -84,8 +84,9 @@ class WorkflowController extends Controller
         $screens = Provider::getScreenList($project_key, ['name']);
         $resolutions = Provider::getResolutionList($project_key, ['name']);
         $roles = Provider::getRoleList($project_key, ['name']);
+        $users = Provider::getUserList($project_key);
 
-        return Response()->json([ 'ecode' => 0, 'data' => $workflow, 'options' => [ 'states' => $states, 'screens' => $screens, 'resolutions' => $resolutions, 'roles' => $roles ] ]);
+        return Response()->json([ 'ecode' => 0, 'data' => $workflow, 'options' => [ 'states' => $states, 'screens' => $screens, 'resolutions' => $resolutions, 'roles' => $roles, 'users' => $users ] ]);
     }
 
     /**

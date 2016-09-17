@@ -86,7 +86,7 @@ class PriorityController extends Controller
         $priority = Priority::find($id);
         if (!$priority || $project_key != $priority->project_key)
         {
-            throw new \UnexpectedValueException('the priority does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the priority does not exist, or is not in the project, or is a global definition.', -10002);
         }
 
         if ($priority->name !== $name && Provider::isPriorityExisted($project_key, $name))
@@ -129,7 +129,7 @@ class PriorityController extends Controller
     public function handle(Request $request, $project_key)
     {
         $properties = [];
-        // set resolution sort.
+        // set priority sort.
         $sequence = $request->input('sequence');
         if (isset($sequence))
         {

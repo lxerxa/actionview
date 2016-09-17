@@ -56,12 +56,9 @@ class RoleController extends Controller
         if (isset($permissions))
         {
             $allPermissions = Acl::getAllPermissions();
-            foreach ($permissions as $permission)
+            if (array_diff($permissions, $allPermissions))
             {
-                if (!in_array($permission, $allPermissions))
-                {
-                    throw new \UnexpectedValueException('the illegal permission.', -10002);
-                }
+                throw new \UnexpectedValueException('the illegal permission.', -10002);
             }
         }
 
@@ -114,12 +111,9 @@ class RoleController extends Controller
         if (isset($permissions))
         {
             $allPermissions = Acl::getAllPermissions();
-            foreach ($permissions as $permission)
+            if (array_diff($permissions, $allPermissions))
             {
-                if (!in_array($permission, $allPermissions))
-                {
-                    throw new \UnexpectedValueException('the illegal permission.', -10002);
-                }
+                throw new \UnexpectedValueException('the illegal permission.', -10002);
             }
             $role->permissions = $permissions;
         }
@@ -128,10 +122,11 @@ class RoleController extends Controller
         $new_user_ids = $request->input('users');
         if (isset($new_user_ids))
         {
-            $this->setUsers($project_key, $id, $new_user_ids ?: []);
-
             $actor = Roleactor::where([ 'project_key' => $project_key, 'role_id' => $id ])->first();
             $old_user_ids = $actor && $actor->user_ids ? $actor->user_ids : [];
+
+            $this->setUsers($project_key, $id, $new_user_ids ?: []);
+
             $add_user_ids = array_diff($new_user_ids, $old_user_ids);
             $del_user_ids = array_diff($old_user_ids, $new_user_ids);
 
@@ -199,7 +194,7 @@ class RoleController extends Controller
         foreach ($actor['user_ids'] as $uid)
         {
             $user = Sentinel::findById($uid);
-            $users[] = [ 'id' => $user->id, 'name' => $user->first_name ];
+            $users[] = [ 'id' => $user->id, 'name' => $user->first_name, 'nameAndEmail' => $user->first_name . '('. $user->email . ')' ];
         }
         return $users;
     }
