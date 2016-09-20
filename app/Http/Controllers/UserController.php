@@ -10,7 +10,8 @@ use App\Http\Controllers\Controller;
 use App\Events\DelUserEvent;
 
 use Cartalyst\Sentinel\Users\EloquentUser;
-use Sentinel; 
+use Sentinel;
+use Activation; 
 
 class UserController extends Controller
 {
@@ -23,13 +24,26 @@ class UserController extends Controller
     {
         if ($s = $request->input('s'))
         {
-            $users = EloquentUser::Where('first_name', 'like', '%' . $s .  '%')->orWhere('email', 'like', '%' . $s .  '%')->get([ 'first_name', 'last_name', 'email' ])->toArray();
-            foreach ($users as $key => $user)
+            $search_users = EloquentUser::Where('first_name', 'like', '%' . $s .  '%')
+                                ->orWhere('email', 'like', '%' . $s .  '%')
+                                ->get([ 'first_name', 'last_name', 'email' ]);
+
+            $i = 0;
+            $users = [];
+            foreach ($search_users as $key => $user)
             {
-                //$users[$key]['name'] = $user['first_name'];
-                $users[$key]['nameAndEmail'] = $user['first_name'] . '('. $user['email']  .')';
-                unset($users[$key]['first_name']);
-                unset($users[$key]['last_name']);
+                if (Activation::completed($user) === false)
+                {
+                    continue;
+                }
+
+                $users[$i]['id'] = $user->id;
+                $users[$i]['name'] = $user->first_name ?: '';
+                $users[$i]['nameAndEmail'] = $user->first_name . '('. $user->email  .')';
+                if (++$i >= 10)
+                {
+                    break;
+                }
             }
         }
         else

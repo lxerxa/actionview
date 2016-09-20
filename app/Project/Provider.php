@@ -267,15 +267,8 @@ class Provider {
         foreach ($users as $user)
         {
             $user_info = Sentinel::findById($user['user_id']);
-            $user_info && $user_list[] = ['id' => $user['user_id'], 'name' => $user_info->first_name ];
+            $user_info && $user_list[] = ['id' => $user['user_id'], 'name' => $user_info->first_name, 'nameAndEmail' => $user_info->first_name . '(' . $user_info->email . ')' ];
         }
-
-        $func = function($v1, $v2) {
-          $a = iconv('UTF-8', 'GBK', $v1['name']);
-          $b = iconv('UTF-8', 'GBK', $v2['name']);
-          return $a >= $b ? 1 : -1;
-        };
-        usort($user_list, $func);
 
         return $user_list;
     }

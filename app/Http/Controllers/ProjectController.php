@@ -8,10 +8,10 @@ use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Project\Eloquent\Project;
 use App\Acl\Acl;
+use App\Project\Provider;
 
 use App\Events\AddUserToRoleEvent;
 use App\Events\DelUserFromRoleEvent;
-
 use Sentinel;
 
 class ProjectController extends Controller
@@ -95,8 +95,11 @@ class ProjectController extends Controller
             throw new \UnexpectedValueException('the project does not exist.', -10002);
         }
         // get action allow of the project.
-        $actions = Acl::getPermissions('mm', $project->key); // fix me
-        return Response()->json([ 'ecode' => 0, 'data' => $project, 'acl' => $actions ]);
+        $permissions = Acl::getPermissions('mm', $project->key); // fix me
+        // get project users
+        $users = Provider::getUserList($project->key);
+
+        return Response()->json([ 'ecode' => 0, 'data' => $project, 'options' => [ 'permissions' => $permissions, 'users' => $users ] ]);
     }
 
     /**

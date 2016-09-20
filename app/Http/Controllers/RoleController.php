@@ -194,7 +194,7 @@ class RoleController extends Controller
         foreach ($actor['user_ids'] as $uid)
         {
             $user = Sentinel::findById($uid);
-            $users[] = [ 'id' => $user->id, 'name' => $user->first_name, 'nameAndEmail' => $user->first_name . '('. $user->email . ')' ];
+            $user && $users[] = [ 'id' => $user->id, 'name' => $user->first_name, 'nameAndEmail' => $user->first_name . '('. $user->email . ')' ];
         }
         return $users;
     }

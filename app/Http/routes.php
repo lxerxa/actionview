@@ -51,6 +51,8 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     // project resolution config
     Route::resource('resolution', 'ResolutionController');
     Route::post('resolution/batch', 'ResolutionController@handle');
+    // project module config
+    Route::resource('module', 'ModuleController');
 });
 
 Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can' ] ], function ()
