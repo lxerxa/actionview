@@ -40,7 +40,7 @@ class ModuleController extends Controller
 
         if (DB::collection($table)->where('name', $name)->exists())
         {
-            throw new \UnexpectedValueException('state name cannot be repeated', -10002);
+            throw new \UnexpectedValueException('module name cannot be repeated', -10002);
         }
 
         $id = DB::collection($table)->insertGetId(array_only($request->all(), ['name', 'principal_id', 'defaultAssignee_id', 'description']));
@@ -109,7 +109,7 @@ class ModuleController extends Controller
         $module = DB::collection($table)->find($id);
         if (!$module)
         {
-            throw new \UnexpectedValueException('the state does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the module does not exist or is not in the project.', -10002);
         }
 
         DB::collection($table)->where('_id', $id)->delete();

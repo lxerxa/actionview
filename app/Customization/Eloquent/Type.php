@@ -13,6 +13,7 @@ class Type extends Model
         'name',
         'screen_id',
         'workflow_id',
+        'description',
         'project_key',
         'sn'
     );
