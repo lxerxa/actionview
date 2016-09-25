@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 
+use MongoDB\BSON\UTCDateTime;
 use DB;
 
 class ModuleController extends Controller
@@ -43,7 +44,7 @@ class ModuleController extends Controller
             throw new \UnexpectedValueException('module name cannot be repeated', -10002);
         }
 
-        $id = DB::collection($table)->insertGetId(array_only($request->all(), ['name', 'principal_id', 'defaultAssignee_id', 'description']));
+        $id = DB::collection($table)->insertGetId(array_only($request->all(), ['name', 'principal_id', 'defaultAssignee_id', 'description']) + [ 'created_at' => new UTCDateTime(time()*1000) ]);
 
         $module = DB::collection($table)->where('_id', $id)->first();
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($module) ]);
@@ -92,7 +93,7 @@ class ModuleController extends Controller
             throw new \UnexpectedValueException('module name cannot be repeated', -10002);
         }
 
-        DB::collection($table)->where('_id', $id)->update(array_only($request->all(), ['name', 'principal_id', 'defaultAssignee_id', 'description']));
+        DB::collection($table)->where('_id', $id)->update(array_only($request->all(), ['name', 'principal_id', 'defaultAssignee_id', 'description']) + [ 'updated_at' => new UTCDateTime(time()*1000) ]);
 
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange(DB::collection($table)->find($id)) ]);
     }

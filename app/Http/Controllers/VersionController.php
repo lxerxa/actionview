@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 
+use MongoDB\BSON\UTCDateTime;
 use DB;
 
 class VersionController extends Controller
@@ -18,7 +19,7 @@ class VersionController extends Controller
      */
     public function index($project_key)
     {
-        $versions = DB::collection('version_' . $project_key)->orderBy('created_at', 'asc')->get();
+        $versions = DB::collection('version_' . $project_key)->orderBy('created_at', 'desc')->get();
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($versions) ]);
     }
 
@@ -48,7 +49,7 @@ class VersionController extends Controller
             throw new \UnexpectedValueException('start-time must less then end-time', -10002);
         }
 
-        $id = DB::collection($table)->insertGetId(array_only($request->all(), ['name', 'start_time', 'end_time', 'description']));
+        $id = DB::collection($table)->insertGetId(array_only($request->all(), ['name', 'start_time', 'end_time', 'description']) + [ 'created_at' => new UTCDateTime(time()*1000) ]);
 
         $version = DB::collection($table)->where('_id', $id)->first();
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($version) ]);
@@ -101,7 +102,7 @@ class VersionController extends Controller
             throw new \UnexpectedValueException('start-time must less then end-time', -10002);
         }
 
-        DB::collection($table)->where('_id', $id)->update(array_only($request->all(), ['name', 'start_time', 'end_time', 'description']));
+        DB::collection($table)->where('_id', $id)->update(array_only($request->all(), ['name', 'start_time', 'end_time', 'description']) + [ 'updated_at' => new UTCDateTime(time()*1000) ]);
 
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange(DB::collection($table)->find($id)) ]);
     }
