@@ -42,6 +42,12 @@ class TypeController extends Controller
         {
             throw new \UnexpectedValueException('the name can not be empty.', -10002);
         }
+
+        $abb = $request->input('abb');
+        if (!$abb || trim($abb) == '')
+        {
+            throw new \UnexpectedValueException('the abb can not be empty.', -10002);
+        }
         
         // check screen_id
         $screen_id = $request->input('screen_id');
@@ -60,6 +66,17 @@ class TypeController extends Controller
         {
             throw new \UnexpectedValueException('the related workflow can not be empty.', -10002);
         }
+
+        if (Provider::isTypeExisted($project_key, $name))
+        {
+            throw new \UnexpectedValueException('type name cannot be repeated', -10002);
+        }
+
+        if (Provider::isTypeAbbExisted($project_key, $abb))
+        {
+            throw new \UnexpectedValueException('type abb cannot be repeated', -10002);
+        }
+
         //if (Definition::find($workflow_id)->project_key != $project_key)
         //{
         //    throw new \UnexpectedValueException('the related workflow is not exists.', -10002);
@@ -129,6 +146,17 @@ class TypeController extends Controller
         if (!$type || $project_key != $type->project_key)
         {
             throw new \UnexpectedValueException('the type does not exist or is not in the project.', -10002);
+        }
+
+        if ($type->name !== $name && Provider::isTypeExisted($project_key, $name))
+        {
+            throw new \UnexpectedValueException('type name cannot be repeated', -10002);
+        }
+
+        $abb = $request->input('abb');
+        if ($type->abb !== $abb && Provider::isTypeAbbExisted($project_key, $abb))
+        {
+            throw new \UnexpectedValueException('type abb cannot be repeated', -10002);
         }
 
         $type->fill($request->except(['project_key']))->save();

@@ -98,8 +98,20 @@ class ProjectController extends Controller
         $permissions = Acl::getPermissions('mm', $project->key); // fix me
         // get project users
         $users = Provider::getUserList($project->key);
+        // get state list
+        $states = Provider::getStateList($project->key, ['name']);
+        // get resolution list
+        $resolutions = Provider::getResolutionList($project->key, ['name']);
+        // get priority list
+        $priorities = Provider::getPriorityList($project->key, ['color', 'name']);
+        // get version list
+        $versions = Provider::getVersionList($project->key, ['name']);
+        // get module list
+        $modules = Provider::getModuleList($project->key, ['name']);
+        // get project types
+        $types = Provider::getTypeListExt($project->key, [ 'assignee' => $users, 'state' => $states, 'resolution' => $resolutions, 'priority' => $priorities, 'version' => $versions, 'module' => $modules ]);
 
-        return Response()->json([ 'ecode' => 0, 'data' => $project, 'options' => [ 'permissions' => $permissions, 'users' => $users ] ]);
+        return Response()->json([ 'ecode' => 0, 'data' => $project, 'options' => [ 'permissions' => $permissions, 'users' => $users, 'config' => [ 'types' => $types, 'states' => $states, 'resolutions' => $resolutions, 'priorities' => $priorities ] ] ]);
     }
 
     /**

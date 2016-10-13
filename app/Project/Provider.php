@@ -14,6 +14,8 @@ use App\Workflow\Eloquent\Definition;
 use App\Project\Eloquent\Project;
 use App\Project\Eloquent\UserProject;
 use Sentinel;
+use MongoDB\BSON\ObjectID;
+use DB;
 
 class Provider {
 
@@ -27,6 +29,18 @@ class Provider {
     {
         $project = Project::where('key', $project_key)->first();
         return $project && $project->category ? $project->category : '';
+    }
+
+    /**
+     * get project principal.
+     *
+     * @param string $project_key
+     * @return array 
+     */
+    public static function getProjectPrincipal($project_key)
+    {
+        $project = Project::where('key', $project_key)->first()->toArray();
+        return $project && isset($project['principal']) ? $project['principal'] : [];
     }
 
     /**
@@ -274,6 +288,70 @@ class Provider {
     }
 
     /**
+     * get version list.
+     *
+     * @param string $project_key
+     * @param array $fields
+     * @return collection
+     */
+    public static function getVersionList($project_key, $fields=[])
+    {
+        $versions = DB::collection('version_' . $project_key)
+            ->orderBy('created_at', 'desc')
+            ->get($fields);
+
+        return $versions;
+    }
+
+    /**
+     * get module list.
+     *
+     * @param string $project_key
+     * @param array $fields
+     * @return collection
+     */
+    public static function getModuleList($project_key, $fields=[])
+    {
+        $versions = DB::collection('module_' . $project_key)
+            ->orderBy('created_at', 'desc')
+            ->get($fields);
+
+        return $versions;
+    }
+
+    /**
+     * check if type has existed.
+     *
+     * @param string $project_key
+     * @param string $name 
+     * @return bool
+     */
+    public static function isTypeExisted($project_key, $name)
+    {
+        $isExisted = Type::Where('project_key', $project_key)
+            ->Where('name', $name)
+            ->exists();
+
+        return $isExisted;
+    }
+
+    /**
+     * check if type abb has existed.
+     *
+     * @param string $project_key
+     * @param string $abb 
+     * @return bool
+     */
+    public static function isTypeAbbExisted($project_key, $abb)
+    {
+        $isExisted = Type::Where('project_key', $project_key)
+            ->Where('abb', $abb)
+            ->exists();
+
+        return $isExisted;
+    }
+
+    /**
      * check if state has existed.
      *
      * @param string $project_key
@@ -347,5 +425,97 @@ class Provider {
             ->exists();
 
         return $isExisted;
+    }
+
+    /**
+     * get issue type schema 
+     *
+     * @param string $project_key
+     * @return array 
+     */
+    public static function getTypeListExt($project_key, $options)
+    {
+        $typeOptions = [];
+        $types = self::getTypeList($project_key);
+        foreach ($types as $key => $type)
+        {
+            $schema = self::_repairSchema($type->screen->schema, $options);
+
+            $tmp = [ 'id' => $type->id, 'name' => $type->name, 'abb' => $type->abb, 'schema' => $schema ];
+            if ($type->default) 
+            {
+              $tmp['default'] = true;
+            }
+            $typeOptions[] = $tmp;
+        }
+        return $typeOptions;
+    }
+
+    /**
+     * get issue type schema
+     *
+     * @param string $project_key
+     * @return array
+     */
+    private static function _repairSchema($schema, $options)
+    {
+        foreach ($schema as $key => $val)
+        {
+            if ($val['type'] == 'SingleVersion' || $val['type'] == 'MultiVersion')
+            {
+                $schema[$key]['optionValues'] = array_only($options['version'], ['_id', 'name']);
+            }
+            else if ($val['key'] == 'module')
+            {
+                // defaultValue is not existed in the field
+                $schema[$key]['optionValues'] = array_only($options['module'], ['_id', 'name']);
+            }
+            else if ($val['key'] == 'assignee')
+            {
+                $schema[$key]['optionValues'] = array_only($options['assignee'], ['id', 'nameAndEmail']);
+            }
+            else if (array_key_exists($val['key'], $options))
+            {
+                $schema[$key]['optionValues'] = array_only($options[$val['key']], ['_id', 'name']);
+                foreach ($options[$val['key']] as $key2 => $val2) 
+                {
+                    if (isset($val2['default']) && $val2['default'])
+                    {
+                        $schema[$key]['defaultValue'] = $val2['_id'];
+                        break;
+                    }
+                }
+            }
+        }
+        return $schema;
+    }
+
+    /**
+     * get module principal.
+     *
+     * @param string $project_key
+     * @param string $mid
+     * @return array 
+     */
+    public static function getModulePrincipal($project_key, $mid)
+    {
+        $module = DB::collection('module_' . $project_key)
+            ->where('_id', new ObjectId($module_id))
+            ->first();
+
+        return $module && isset($module['principal']) ? $module['principal'] : [];
+    }
+
+    /**
+     * get schema by type_id
+     *
+     * @param string $type_id
+     * @return array
+     */
+    public static function getSchemaByType($type_id)
+    {
+        $type = Type::find($type_id);
+        $screen = $type->screen;
+        return $screen->schema ?: [];
     }
 }

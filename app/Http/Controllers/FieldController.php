@@ -22,7 +22,7 @@ class FieldController extends Controller
      */
     public function index($project_key)
     {
-        $fields = Provider::getFieldList($project_key, ['key', 'name', 'category', 'type', 'description']);
+        $fields = Provider::getFieldList($project_key);
         foreach ($fields as $key => $field)
         {
             $fields[$key]->screens = Screen::whereRaw([ 'field_ids' => $field->id ])->get(['name']);
@@ -48,6 +48,10 @@ class FieldController extends Controller
         if (!$key || trim($key) == '')
         {
             throw new \InvalidArgumentException('field key cannot be empty.', -10002);
+        }
+        if (in_array($key, [ 'type', 'reporter', 'created_at', 'updated_at', 'no', 'page', 'orderBy' ]))
+        {
+            throw new \InvalidArgumentException('field key has been used by system.', -10002);
         }
         if (Provider::isFieldKeyExisted($project_key, $key))
         {

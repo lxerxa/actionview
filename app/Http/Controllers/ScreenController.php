@@ -20,7 +20,7 @@ class ScreenController extends Controller
      */
     public function index($project_key)
     {
-        $screens = Provider::getScreenList($project_key, [ 'name', 'category', 'description' ]);
+        $screens = Provider::getScreenList($project_key, [ 'name', 'category', 'schema', 'description' ]);
         foreach ($screens as $screen)
         {
             $workflows = Definition::whereRaw([ 'screen_ids' => $screen->id ])->get([ 'name' ]);
@@ -138,7 +138,7 @@ class ScreenController extends Controller
             $new_schema = [];
             foreach ($screen->schema as $field)
             {
-                if (in_array($field['_id'], $required_field_ids))
+                if (in_array($field['_id'], $required_field_ids ?: []))
                 {
                     $field['required'] = true;
                 }

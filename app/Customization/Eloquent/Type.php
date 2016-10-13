@@ -11,6 +11,7 @@ class Type extends Model
 
     protected $fillable = array(
         'name',
+        'abb',
         'screen_id',
         'workflow_id',
         'description',

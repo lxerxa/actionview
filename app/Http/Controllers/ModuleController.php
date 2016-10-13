@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 
+use Sentinel;
 use MongoDB\BSON\UTCDateTime;
 use DB;
 
@@ -44,7 +45,15 @@ class ModuleController extends Controller
             throw new \UnexpectedValueException('module name cannot be repeated', -10002);
         }
 
-        $id = DB::collection($table)->insertGetId(array_only($request->all(), ['name', 'principal_id', 'defaultAssignee_id', 'description']) + [ 'created_at' => new UTCDateTime(time()*1000) ]);
+        $principal = [];
+        $principal_id = $request->input('principal');
+        if (isset($principal_id))
+        {
+            $user_info = Sentinel::findById($principal_id);
+            $principal = [ 'id' => $principal_id, 'name' => $user_info->first_name ];
+        }
+
+        $id = DB::collection($table)->insertGetId(array_only($request->all(), ['name', 'defaultAssignee', 'description']) + [ 'principal' => $principal, 'created_at' => new UTCDateTime(time()*1000) ]);
 
         $module = DB::collection($table)->where('_id', $id)->first();
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($module) ]);
@@ -93,7 +102,18 @@ class ModuleController extends Controller
             throw new \UnexpectedValueException('module name cannot be repeated', -10002);
         }
 
-        DB::collection($table)->where('_id', $id)->update(array_only($request->all(), ['name', 'principal_id', 'defaultAssignee_id', 'description']) + [ 'updated_at' => new UTCDateTime(time()*1000) ]);
+        $principal_id = $request->input('principal');
+        if (isset($principal_id))
+        {
+            $user_info = Sentinel::findById($principal_id);
+            $principal = [ 'id' => $principal_id, 'name' => $user_info->first_name ];
+        }
+        else
+        {
+            $principal = isset($module['principal']) ? $module['principal'] : [];
+        }
+
+        DB::collection($table)->where('_id', $id)->update(array_only($request->all(), ['name', 'defaultAssignee', 'description']) + [ 'principal' => $principal ?: [], 'updated_at' => new UTCDateTime(time()*1000) ]);
 
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange(DB::collection($table)->find($id)) ]);
     }
