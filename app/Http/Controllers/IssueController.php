@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Project\Provider;
-
+use Sentinel;
 use MongoDB\BSON\UTCDateTime;
 use DB;
 
@@ -34,7 +34,7 @@ class IssueController extends Controller
         $orderBy = $request->input('orderBy') ?: '';
         if ($orderBy)
         {
-            $orderBy = explode('&', $orderBy);
+            $orderBy = explode(',', $orderBy);
         }
 
         $page = $request->input('page') ?: 1;
@@ -87,6 +87,7 @@ class IssueController extends Controller
         array_push($valid_keys, 'type');
 
         // handle assignee
+        $assignee = [];
         $assignee_id = $request->input('assignee');
         if (!$assignee_id)
         {
@@ -112,14 +113,6 @@ class IssueController extends Controller
             {
                 $assignee = [ 'id' => $assignee_id, 'name' => $user_info->first_name ];
             }
-            else
-            {
-                $assignee = [];
-            }
-        }
-        else
-        {
-            $assignee = [];
         }
 
         // get reporter(creator)

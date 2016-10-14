@@ -281,7 +281,7 @@ class Provider {
         foreach ($users as $user)
         {
             $user_info = Sentinel::findById($user['user_id']);
-            $user_info && $user_list[] = ['id' => $user['user_id'], 'name' => $user_info->first_name, 'nameAndEmail' => $user_info->first_name . '(' . $user_info->email . ')' ];
+            $user_info && $user_list[] = ['id' => $user['user_id'], 'name' => $user_info->first_name . '(' . $user_info->email . ')' ];
         }
 
         return $user_list;
@@ -439,7 +439,7 @@ class Provider {
         $types = self::getTypeList($project_key);
         foreach ($types as $key => $type)
         {
-            $schema = self::_repairSchema($type->screen->schema, $options);
+            $schema = self::_repairSchema($type->screen && $type->screen->schema ? $type->screen->schema : [] , $options);
 
             $tmp = [ 'id' => $type->id, 'name' => $type->name, 'abb' => $type->abb, 'schema' => $schema ];
             if ($type->default) 
@@ -463,20 +463,15 @@ class Provider {
         {
             if ($val['type'] == 'SingleVersion' || $val['type'] == 'MultiVersion')
             {
-                $schema[$key]['optionValues'] = array_only($options['version'], ['_id', 'name']);
-            }
-            else if ($val['key'] == 'module')
-            {
-                // defaultValue is not existed in the field
-                $schema[$key]['optionValues'] = array_only($options['module'], ['_id', 'name']);
+                $schema[$key]['optionValues'] = self::pluckFields($options['version'], ['_id', 'name']);
             }
             else if ($val['key'] == 'assignee')
             {
-                $schema[$key]['optionValues'] = array_only($options['assignee'], ['id', 'nameAndEmail']);
+                $schema[$key]['optionValues'] = self::pluckFields($options['assignee'], ['id', 'name']);
             }
             else if (array_key_exists($val['key'], $options))
             {
-                $schema[$key]['optionValues'] = array_only($options[$val['key']], ['_id', 'name']);
+                $schema[$key]['optionValues'] = self::pluckFields($options[$val['key']], ['_id', 'name']);
                 foreach ($options[$val['key']] as $key2 => $val2) 
                 {
                     if (isset($val2['default']) && $val2['default'])
@@ -488,6 +483,28 @@ class Provider {
             }
         }
         return $schema;
+    }
+
+    /**
+     * filter the fields.
+     *
+     * @param array $srcData
+     * @param array $fields
+     * @return array 
+     */
+    public static function pluckFields($srcData, $fields)
+    {
+        $destData = [];
+        foreach ($srcData as $val)
+        {
+            $tmp = [];
+            foreach ($fields as $field)
+            {
+                $tmp[$field] = isset($val[$field]) ? $val[$field] : '';
+            }
+            $destData[] = $tmp;
+        } 
+        return $destData;
     }
 
     /**

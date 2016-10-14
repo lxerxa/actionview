@@ -111,7 +111,7 @@ class ProjectController extends Controller
         // get project types
         $types = Provider::getTypeListExt($project->key, [ 'assignee' => $users, 'state' => $states, 'resolution' => $resolutions, 'priority' => $priorities, 'version' => $versions, 'module' => $modules ]);
 
-        return Response()->json([ 'ecode' => 0, 'data' => $project, 'options' => [ 'permissions' => $permissions, 'users' => $users, 'config' => [ 'types' => $types, 'states' => $states, 'resolutions' => $resolutions, 'priorities' => $priorities ] ] ]);
+        return Response()->json([ 'ecode' => 0, 'data' => $project, 'options' => parent::arrange([ 'permissions' => $permissions, 'users' => $users, 'config' => [ 'types' => $types, 'states' => $states, 'resolutions' => $resolutions, 'priorities' => $priorities ] ]) ]);
     }
 
     /**
