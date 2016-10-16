@@ -58,7 +58,35 @@ class FieldController extends Controller
             throw new \InvalidArgumentException('field key cannot be repeated.', -10002);
         }
 
-        $field = Field::create([ 'project_key' => $project_key ] + $request->all());
+        $type = $request->input('type');
+        if (!$type)
+        {
+            throw new \UnexpectedValueException('the type cannot be empty.', -10002);
+        }
+
+        $allTypes = [ 'Tags', 'Number', 'Text', 'TextArea', 'Select', 'MultiSelect', 'RadioGroup', 'CheckboxGroup', 'DatePicker', 'DateTimePicker', 'SingleVersion', 'MultiVersion', 'Url' ];
+        if (!in_array($type, $allTypes))
+        {
+            throw new \UnexpectedValueException('the type is incorrect type.', -10002);
+        }
+
+        $optionTypes = [ 'Select', 'MultiSelect', 'RadioGroup', 'CheckboxGroup' ];
+        if (in_array($type, $optionTypes))
+        {
+            $optionValues = $request->input('optionValues') ?: [];
+            $defaultValue = $request->input('defaultValue') ?: '';
+            if ($defaultValue)
+            {
+                $defaults = explode(',', $defaultValue);
+                $options = array_column($optionValues, 'id');
+                $defaultValue = implode(',', array_intersect($defaults, $options));
+            }
+            $field = Field::create([ 'project_key' => $project_key, 'optionValues' => $optionValues, 'defaultValue' => $defaultValue ] + $request->all());
+        }
+        else
+        {
+            $field = Field::create([ 'project_key' => $project_key ] + $request->all());
+        }
         return Response()->json(['ecode' => 0, 'data' => $field]);
     }
 
@@ -103,6 +131,24 @@ class FieldController extends Controller
         {
             throw new \UnexpectedValueException('the field does not exist or is not in the project.', -10002);
         }
+
+        $optionTypes = [ 'Select', 'MultiSelect', 'RadioGroup', 'CheckboxGroup' ];
+        if (in_array($field->type, $optionTypes))
+        {
+            $optionValues = $request->input('optionValues');
+            $defaultValue = $request->input('defaultValue');
+            if (isset($optionValues) || isset($defaultValue))
+            {
+                $optionValues = isset($optionValues) ? $optionValues : ($field->optionValues ?: []);
+                $options = array_column($optionValues, 'id');
+                $defaultValue = isset($defaultValue) ? $defaultValue : ($field->defaultValue ?: '');
+                $defaults = explode(',', $defaultValue);
+                $defaultValue = implode(',', array_intersect($defaults, $options));
+
+                $field->fill([ 'optionValues' => $optionValues, 'defaultValue' => $defaultValue ] + $request->except(['project_key', 'key', 'type']))->save();
+            }
+        }
+
         $field->fill($request->except(['project_key', 'key', 'type']))->save();
 
         Event::fire(new FieldChangeEvent($id));

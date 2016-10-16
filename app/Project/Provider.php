@@ -84,32 +84,32 @@ class Provider {
         $priorityProperty = PriorityProperty::Where('project_key', $project_key)->first();
         if ($priorityProperty)
         {
-           if ($sequence = $priorityProperty->sequence)
-           {
-               $func = function($v1, $v2) use ($sequence) {
-                   $i1 = array_search($v1['_id'], $sequence);
-                   $i1 = $i1 !== false ? $i1 : 999;
-                   $i2 = array_search($v2['_id'], $sequence);
-                   $i2 = $i2 !== false ? $i2 : 999;
-                   return $i1 >= $i2 ? 1 : -1;
-               };
-               usort($priorities, $func);
-           }
+            if ($sequence = $priorityProperty->sequence)
+            {
+                $func = function($v1, $v2) use ($sequence) {
+                    $i1 = array_search($v1['_id'], $sequence);
+                    $i1 = $i1 !== false ? $i1 : 998;
+                    $i2 = array_search($v2['_id'], $sequence);
+                    $i2 = $i2 !== false ? $i2 : 999;
+                    return $i1 >= $i2 ? 1 : -1;
+                };
+                usort($priorities, $func);
+            }
 
-           if ($defaultValue = $priorityProperty->defaultValue)
-           {
-               foreach($priorities as $key => $val)
-               {
-                   if ($val['_id'] == $defaultValue)
-                   {
-                       $priorities[$key]['default'] = true;
-                   }
-                   else if (isset($val['default']))
-                   {
-                       unset($priorities[$key]['default']);
-                   }
-               }
-           }
+            if ($defaultValue = $priorityProperty->defaultValue)
+            {
+                foreach($priorities as $key => $val)
+                {
+                    if ($val['_id'] == $defaultValue)
+                    {
+                        $priorities[$key]['default'] = true;
+                    }
+                    else if (isset($val['default']))
+                    {
+                        unset($priorities[$key]['default']);
+                    }
+                }
+            }
         }
 
         return $priorities;
@@ -136,32 +136,32 @@ class Provider {
         $resolutionProperty = ResolutionProperty::Where('project_key', $project_key)->first();
         if ($resolutionProperty)
         {
-           if ($sequence = $resolutionProperty->sequence)
-           {
-               $func = function($v1, $v2) use ($sequence) {
-                   $i1 = array_search($v1['_id'], $sequence);
-                   $i1 = $i1 !== false ? $i1 : 999;
-                   $i2 = array_search($v2['_id'], $sequence);
-                   $i2 = $i2 !== false ? $i2 : 999;
-                   return $i1 >= $i2 ? 1 : -1;
-               };
-               usort($resolutions, $func);
-           }
+            if ($sequence = $resolutionProperty->sequence)
+            {
+                $func = function($v1, $v2) use ($sequence) {
+                    $i1 = array_search($v1['_id'], $sequence);
+                    $i1 = $i1 !== false ? $i1 : 998;
+                    $i2 = array_search($v2['_id'], $sequence);
+                    $i2 = $i2 !== false ? $i2 : 999;
+                    return $i1 >= $i2 ? 1 : -1;
+                };
+                usort($resolutions, $func);
+            }
 
-           if ($defaultValue = $resolutionProperty->defaultValue)
-           {
-               foreach($resolutions as $key => $val)
-               {
-                   if ($val['_id'] == $defaultValue)
-                   {
-                       $resolutions[$key]['default'] = true;
-                   }
-                   else if (isset($val['default']))
-                   {
-                       unset($resolutions[$key]['default']);
-                   }
-               }
-           }
+            if ($defaultValue = $resolutionProperty->defaultValue)
+            {
+                foreach($resolutions as $key => $val)
+                {
+                    if ($val['_id'] == $defaultValue)
+                    {
+                        $resolutions[$key]['default'] = true;
+                    }
+                    else if (isset($val['default']))
+                    {
+                        unset($resolutions[$key]['default']);
+                    }
+                }
+            }
         }
 
         return $resolutions;
@@ -313,7 +313,7 @@ class Provider {
     public static function getModuleList($project_key, $fields=[])
     {
         $versions = DB::collection('module_' . $project_key)
-            ->orderBy('created_at', 'desc')
+            ->orderBy('created_at', 'asc')
             ->get($fields);
 
         return $versions;
@@ -472,6 +472,10 @@ class Provider {
             else if (array_key_exists($val['key'], $options))
             {
                 $schema[$key]['optionValues'] = self::pluckFields($options[$val['key']], ['_id', 'name']);
+                if ($val['key'] == 'module')
+                {
+                    continue;
+                }
                 foreach ($options[$val['key']] as $key2 => $val2) 
                 {
                     if (isset($val2['default']) && $val2['default'])
@@ -514,13 +518,13 @@ class Provider {
      * @param string $mid
      * @return array 
      */
-    public static function getModulePrincipal($project_key, $mid)
+    public static function getModuleById($project_key, $mid)
     {
         $module = DB::collection('module_' . $project_key)
-            ->where('_id', new ObjectId($module_id))
+            ->where('_id', new ObjectId($mid))
             ->first();
 
-        return $module && isset($module['principal']) ? $module['principal'] : [];
+        return $module ?: [];
     }
 
     /**

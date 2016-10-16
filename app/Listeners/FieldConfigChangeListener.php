@@ -64,7 +64,12 @@ class FieldConfigChangeListener
 
                 if ($flag == 1)
                 {
-                    $new_schema[] = Field::Find($field_id, ['name', 'key', 'type', 'defaultValue', 'optionValues'])->toArray(); 
+                    $new_field = Field::Find($field_id, ['name', 'key', 'type', 'defaultValue', 'optionValues'])->toArray();
+                    if (isset($field['required']) && $field['required'])
+                    {
+                        $new_field['required'] = true;
+                    }
+                    $new_schema[] = $new_field;; 
                 }
             }
             $screen->schema = $new_schema; 

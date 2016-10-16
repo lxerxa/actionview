@@ -40,6 +40,8 @@ class IssueController extends Controller
         $page = $request->input('page') ?: 1;
 
         $query = DB::collection('issue_' . $project_key);
+        $total = $query->count();
+
         if ($where)
         {
             $query = $query->whereRaw($where);
@@ -54,14 +56,16 @@ class IssueController extends Controller
                 $query = $query->orderBy($field, $sort);
             }
         }
+
         if ($page)
         {
             $query = $query->skip($page_size * ($page - 1))->take($page_size);
         }
 
+        $query->orderBy('created_at', 'desc');
         $issues = $query->get();
 
-        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($issues) ]);
+        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($issues), 'options' => [ 'total' => $total ] ]);
     }
 
     /**
@@ -94,15 +98,16 @@ class IssueController extends Controller
             $module_id = $request->input('module');
             if ($module_id)
             {
-                if ($module['defaultAssignee'] === 'modulePrincipal')
+                $module = Provider::getModuleById($project_key, $module_id);
+                if (isset($module['defaultAssignee']) && $module['defaultAssignee'] === 'modulePrincipal')
                 {
-                    $assignee = Provider::getModulePrincipal($project_key, $module_id) ?: '';
-                    $assignee_id = isset($assignee['_id']) ? $assignee['_id'] : '';
+                    $assignee = $module['principal'] ?: '';
+                    $assignee_id = isset($assignee['id']) ? $assignee['id'] : '';
                 }
-                else if ($module['defaultAssignee'] === 'projectPrincipal') 
+                else if (isset($module['defaultAssignee']) && $module['defaultAssignee'] === 'projectPrincipal') 
                 {
                     $assignee = Provider::getProjectPrincipal($project_key) ?: '';
-                    $assignee_id = isset($assignee['_id']) ? $assignee['_id'] : ''; 
+                    $assignee_id = isset($assignee['id']) ? $assignee['id'] : ''; 
                 }
             }
         }
@@ -120,7 +125,7 @@ class IssueController extends Controller
 
         $table = 'issue_' . $project_key;
         $max_no = DB::collection($table)->count() + 1;
-        $id = DB::collection($table)->insertGetId([ 'no' => $max_no, 'assignee' => $assignee, 'reporter' => $reporter, 'created_at' => new UTCDateTime(time()*1000) ] + array_only($request->all(), $valid_keys));
+        $id = DB::collection($table)->insertGetId([ 'no' => $max_no, 'assignee' => $assignee, 'reporter' => $reporter, 'created_at' => time() ] + array_only($request->all(), $valid_keys));
 
         $issue = DB::collection($table)->where('_id', $id)->first();
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($issue) ]);

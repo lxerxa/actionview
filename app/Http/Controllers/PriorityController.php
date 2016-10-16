@@ -115,6 +115,30 @@ class PriorityController extends Controller
         }
 
         Priority::destroy($id);
+
+        $priority_property = PriorityProperty::Where('project_key', $project_key)->first();
+        if ($priority_property)
+        {
+             $properties = [];
+             if ($priority_property->defaultValue == $id)
+             {
+                 $properties['defaultValue'] = '';
+             }
+             if ($priority_property->sequence && in_array($id, $priority_property->sequence))
+             {
+                 $sequence = [];
+                 foreach ($priority_property->sequence as $val)
+                 {
+                     if ($val == $id) { continue; }
+                     $sequence[] = $val;
+                 }
+                 $properties['sequence'] = $sequence;
+             }
+
+             $priority_property->fill($properties);
+             $priority_property->save();
+        }
+
         // trigger to change priority field config
         // Event::fire(new PriorityConfigChangeEvent($project_key));
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);

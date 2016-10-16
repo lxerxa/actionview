@@ -116,6 +116,30 @@ class ResolutionController extends Controller
         }
 
         Resolution::destroy($id);
+
+        $resolution_property = ResolutionProperty::Where('project_key', $project_key)->first();
+        if ($resolution_property)
+        {
+             $properties = [];
+             if ($resolution_property->defaultValue == $id)
+             {
+                 $properties['defaultValue'] = '';
+             }
+             if ($resolution_property->sequence && in_array($id, $resolution_property->sequence))
+             {
+                 $sequence = [];
+                 foreach ($resolution_property->sequence as $val)
+                 {
+                     if ($val == $id) { continue; }
+                     $sequence[] = $val;
+                 }
+                 $properties['sequence'] = $sequence;
+             }
+
+             $resolution_property->fill($properties);
+             $resolution_property->save();
+        }
+
         // trigger to change resolution field config
         // Event::fire(new ResolutionConfigChangeEvent($project_key));
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
