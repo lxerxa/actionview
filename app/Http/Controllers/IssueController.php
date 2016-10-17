@@ -20,14 +20,15 @@ class IssueController extends Controller
      */
     public function index(Request $request, $project_key)
     {
-        $page_size = 3;
+        $page_size = 10;
 
         $where = array_except($request->all(), [ 'orderBy', 'page' ]) ?: [];
         foreach ($where as $key => $val)
         {
             if ($key === 'assignee' || $key === 'reporter')
             {
-                $where[$key] = [ 'id' => $val ];
+                $where[ $key . '.' . 'id' ] = $val;
+                unset($where[$key]);
             }
         }
 
@@ -37,15 +38,16 @@ class IssueController extends Controller
             $orderBy = explode(',', $orderBy);
         }
 
-        $page = $request->input('page') ?: 1;
+        $page = $request->input('page');
 
         $query = DB::collection('issue_' . $project_key);
-        $total = $query->count();
-
         if ($where)
         {
             $query = $query->whereRaw($where);
         }
+        // get total num
+        $total = $query->count();
+
         if ($orderBy)
         {
             foreach ($orderBy as $val)
@@ -65,7 +67,7 @@ class IssueController extends Controller
         $query->orderBy('created_at', 'desc');
         $issues = $query->get();
 
-        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($issues), 'options' => [ 'total' => $total ] ]);
+        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($issues), 'options' => [ 'total' => $total, 'sizePerPage' => $page_size ] ]);
     }
 
     /**
