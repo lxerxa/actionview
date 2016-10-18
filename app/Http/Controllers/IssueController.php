@@ -22,7 +22,7 @@ class IssueController extends Controller
     {
         $page_size = 10;
 
-        $where = array_except($request->all(), [ 'orderBy', 'page' ]) ?: [];
+        $where = array_except($request->all(), [ 'orderBy', 'page', 'created_at', 'updated_at', 'title' ]) ?: [];
         foreach ($where as $key => $val)
         {
             if ($key === 'assignee' || $key === 'reporter')
@@ -31,6 +31,10 @@ class IssueController extends Controller
                 unset($where[$key]);
             }
         }
+
+        $created_at = $request->input('created_at');
+        $updated_at = $request->input('updated_at');
+        $title = $request->input('title');
 
         $orderBy = $request->input('orderBy') ?: '';
         if ($orderBy)
@@ -45,6 +49,49 @@ class IssueController extends Controller
         {
             $query = $query->whereRaw($where);
         }
+        if (isset($title) && $title)
+        {
+            $query->where('title', 'like', '%' . $title . '%');
+        }
+        if (isset($created_at) && $created_at)
+        {
+            if ($created_at == '1w')
+            {
+                $query->where('created_at', '>=', strtotime('-1 week'));
+            }
+            else if ($created_at == '2w')
+            {
+                $query->where('created_at', '>=', strtotime('-2 weeks'));
+            }
+            else if ($created_at == '1m')
+            {
+                $query->where('created_at', '>=', strtotime('-1 month'));
+            }
+            else if ($created_at == '-1m')
+            {
+                $query->where('created_at', '<', strtotime('-1 month'));
+            }
+        }
+        if (isset($updated_at) && $updated_at)
+        {
+            if ($updated_at == '1w')
+            {
+                $query->where('updated_at', '>=', strtotime('-1 week'));
+            }
+            else if ($updated_at == '2w')
+            {
+                $query->where('updated_at', '>=', strtotime('-2 weeks'));
+            }
+            else if ($updated_at == '1m')
+            {
+                $query->where('updated_at', '>=', strtotime('-1 month'));
+            }
+            else if ($updated_at == '-1m')
+            {
+                $query->where('updated_at', '<', strtotime('-1 month'));
+            }
+        }
+
         // get total num
         $total = $query->count();
 
