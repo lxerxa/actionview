@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use Sentinel;
 use MongoDB\BSON\UTCDateTime;
 use DB;
+use App\Project\Provider;
 
 class ModuleController extends Controller
 {
@@ -21,7 +22,8 @@ class ModuleController extends Controller
     public function index($project_key)
     {
         $modules = DB::collection('module_' . $project_key)->orderBy('created_at', 'asc')->get();
-        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($modules) ]);
+        $users = Provider::getUserList($project_key);
+        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($modules), 'options' => [ 'users' => $users ] ]);
     }
 
     /**

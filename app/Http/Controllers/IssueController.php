@@ -168,6 +168,10 @@ class IssueController extends Controller
                 $assignee = [ 'id' => $assignee_id, 'name' => $user_info->first_name ];
             }
         }
+        if (!$assignee) 
+        {
+            $assignee = [ 'id' => $this->user->id, 'name' => $this->user->first_name ];
+        }
 
         // get reporter(creator)
         $reporter = [ 'id' => $this->user->id, 'name' => $this->user->first_name ];
@@ -190,6 +194,33 @@ class IssueController extends Controller
     {
         $issue = DB::collection('issue_' . $project_key)->where('_id', $id)->first();
         return Response()->json(['ecode' => 0, 'data' => parent::arrange($issue)]);
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function getOptions($project_key)
+    {
+        // get project users
+        $users = Provider::getUserList($project_key);
+        // get state list
+        $states = Provider::getStateList($project_key, ['name']);
+        // get resolution list
+        $resolutions = Provider::getResolutionList($project_key, ['name']);
+        // get priority list
+        $priorities = Provider::getPriorityList($project_key, ['color', 'name']);
+        // get version list
+        $versions = Provider::getVersionList($project_key, ['name']);
+        // get module list
+        $modules = Provider::getModuleList($project_key, ['name']);
+        // get project types
+        $types = Provider::getTypeListExt($project_key, [ 'assignee' => $users, 'state' => $states, 'resolution' => $resolutions, 'priority' => $priorities, 'version' => $versions, 'module' => $modules ]);
+        $searchers = $this->getSearchers($project_key);
+
+        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange([ 'users' => $users, 'types' => $types, 'states' => $states, 'resolutions' => $resolutions, 'priorities' => $priorities, 'searchers' => $searchers ]) ]);
     }
 
     /**
@@ -233,6 +264,64 @@ class IssueController extends Controller
         if (!$issue)
         {
             throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -10002);
+        }
+
+        DB::collection($table)->where('_id', $id)->delete();
+
+        return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
+    }
+
+    /**
+     * Display a listing of the resource.
+     *
+     * @return array 
+     */
+    public function getSearchers($project_key)
+    {
+        $searchers = DB::collection('searcher_' . $project_key)->where('user', $this->user->id)->orderBy('created_at', 'asc')->get();
+        return $searchers ?: [];
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function addSearcher(Request $request, $project_key)
+    {
+        $name = $request->input('name');
+        if (!$name || trim($name) == '')
+        {
+            throw new \UnexpectedValueException('the name can not be empty.', -10002);
+        }
+
+        $table = 'searcher_' . $project_key;
+
+        if (DB::collection($table)->where('name', $name)->where('user', $this->user->id)->exists())
+        {
+            throw new \UnexpectedValueException('searcher name cannot be repeated', -10002);
+        }
+
+        $id = DB::collection($table)->insertGetId([ 'user' => $this->user->id, 'created_at' => new UTCDateTime(time()*1000) ] + array_only($request->all(), [ 'name', 'query' ] ));
+
+        $searcher = DB::collection($table)->where('_id', $id)->first();
+        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($searcher) ]);
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function delSearcher($project_key, $id)
+    {
+        $table = 'searcher_' . $project_key;
+        $searcher = DB::collection($table)->find($id);
+        if (!$searcher)
+        {
+            throw new \UnexpectedValueException('the searcher does not exist or is not in the project.', -10002);
         }
 
         DB::collection($table)->where('_id', $id)->delete();

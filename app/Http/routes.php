@@ -59,6 +59,9 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
 
 Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can' ] ], function ()
 {
+    Route::get('issue/searcher', 'IssueController@getSearchers');
+    Route::post('issue/searcher', 'IssueController@addSearcher');
+    Route::delete('issue/searcher/{id}', 'IssueController@delSearcher');
+    Route::get('issue/options', 'IssueController@getOptions');
     Route::resource('issue', 'IssueController');
-    //Route::resource('issue/{issue_id}/comments', 'CommentsController');
 });
