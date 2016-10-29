@@ -15,6 +15,17 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/api/phpinfo', function () {
+   $src_image = imagecreatefrompng('/tmp/bb');
+   $dst_image = imagecreatetruecolor(100,41);
+   imagecopyresized($dst_image,$src_image,0,0,0,0,100,41,200,43);
+   imagejpeg($dst_image,'/tmp/sbb');
+   //var_dump(getimagesize('/tmp/bb'));
+   exit();
+});
+
+Route::post('api/uploadfile', 'FileController@upload');
+
 // session router
 Route::post('api/session', 'SessionController@create');
 Route::post('api/register', 'UserController@regist');

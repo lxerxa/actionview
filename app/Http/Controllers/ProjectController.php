@@ -97,21 +97,21 @@ class ProjectController extends Controller
         // get action allow of the project.
         $permissions = Acl::getPermissions('mm', $project->key); // fix me
         // get project users
-        $users = Provider::getUserList($project->key);
+        //$users = Provider::getUserList($project->key);
         // get state list
-        $states = Provider::getStateList($project->key, ['name']);
+        //$states = Provider::getStateList($project->key, ['name']);
         // get resolution list
-        $resolutions = Provider::getResolutionList($project->key, ['name']);
+        //$resolutions = Provider::getResolutionList($project->key, ['name']);
         // get priority list
-        $priorities = Provider::getPriorityList($project->key, ['color', 'name']);
+        //$priorities = Provider::getPriorityList($project->key, ['color', 'name']);
         // get version list
-        $versions = Provider::getVersionList($project->key, ['name']);
+        //$versions = Provider::getVersionList($project->key, ['name']);
         // get module list
-        $modules = Provider::getModuleList($project->key, ['name']);
+        //$modules = Provider::getModuleList($project->key, ['name']);
         // get project types
-        $types = Provider::getTypeListExt($project->key, [ 'assignee' => $users, 'state' => $states, 'resolution' => $resolutions, 'priority' => $priorities, 'version' => $versions, 'module' => $modules ]);
+        //$types = Provider::getTypeListExt($project->key, [ 'assignee' => $users, 'state' => $states, 'resolution' => $resolutions, 'priority' => $priorities, 'version' => $versions, 'module' => $modules ]);
 
-        return Response()->json([ 'ecode' => 0, 'data' => $project, 'options' => parent::arrange([ 'permissions' => $permissions, 'users' => $users, 'config' => [ 'types' => $types, 'states' => $states, 'resolutions' => $resolutions, 'priorities' => $priorities ] ]) ]);
+        return Response()->json([ 'ecode' => 0, 'data' => $project, 'options' => parent::arrange([ 'permissions' => $permissions, ]) ]);
     }
 
     /**
