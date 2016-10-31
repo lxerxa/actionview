@@ -139,6 +139,24 @@ class IssueController extends Controller
         $valid_keys = array_column($schema, 'key');
         array_push($valid_keys, 'type');
 
+        // handle timetracking
+        $ttValues = [];
+        foreach ($schema as $field)
+        {
+            if ($field['type'] == 'TimeTracking')
+            {
+                $fieldValue = $request->input($field['key']);
+                if (isset($fieldValue) && $fieldValue)
+                {
+                    if (!$this->ttCheck($fieldValue))
+                    {
+                        throw new \UnexpectedValueException('the format of timetracking is incorrect.', -10002);
+                    }
+                    $ttValues[$field['key']] = $this->ttHandle($fieldValue);
+                }
+            }
+        }
+
         // handle assignee
         $assignee = [];
         $assignee_id = $request->input('assignee');
@@ -178,7 +196,7 @@ class IssueController extends Controller
 
         $table = 'issue_' . $project_key;
         $max_no = DB::collection($table)->count() + 1;
-        $id = DB::collection($table)->insertGetId([ 'no' => $max_no, 'assignee' => $assignee, 'reporter' => $reporter, 'created_at' => time() ] + array_only($request->all(), $valid_keys));
+        $id = DB::collection($table)->insertGetId([ 'no' => $max_no, 'assignee' => $assignee, 'reporter' => $reporter, 'created_at' => time() ] + $ttValues + array_only($request->all(), $valid_keys));
 
         $issue = DB::collection($table)->where('_id', $id)->first();
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($issue) ]);
