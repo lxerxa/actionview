@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Project\Provider;
+use App\Project\Eloquent\File;
 use Sentinel;
 use MongoDB\BSON\UTCDateTime;
 use DB;
@@ -199,6 +200,9 @@ class IssueController extends Controller
         $id = DB::collection($table)->insertGetId([ 'no' => $max_no, 'assignee' => $assignee, 'reporter' => $reporter, 'created_at' => time() ] + $ttValues + array_only($request->all(), $valid_keys));
 
         $issue = DB::collection($table)->where('_id', $id)->first();
+        // add to histroy table
+        DB::collection('issue_his_' . $project_key)->insert([ 'issue_id' => $issue['_id']->__toString(), 'stamptime' => time() ] + array_except($issue, [ '_id' ]));
+
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($issue) ]);
     }
 
@@ -211,6 +215,23 @@ class IssueController extends Controller
     public function show($project_key, $id)
     {
         $issue = DB::collection('issue_' . $project_key)->where('_id', $id)->first();
+        $schema = Provider::getSchemaByType($issue['type']);
+        if (!$schema)
+        {
+            throw new \UnexpectedValueException('the schema of the type is not existed.', -10002);
+        }
+
+        foreach ($schema as $field)
+        {
+            if ($field['type'] === 'File' && isset($issue[$field['key']]) && $issue[$field['key']]) 
+            {
+                foreach ($issue[$field['key']] as $key => $fid)
+                {
+                    $issue[$field['key']][$key] = File::find($fid);
+                }
+            }
+        }
+
         return Response()->json(['ecode' => 0, 'data' => parent::arrange($issue)]);
     }
 

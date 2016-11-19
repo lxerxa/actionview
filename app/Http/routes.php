@@ -25,6 +25,7 @@ Route::get('/api/phpinfo', function () {
 });
 
 Route::post('api/uploadfile', 'FileController@upload');
+Route::get('api/file/{fid}', 'FileController@download');
 
 // session router
 Route::post('api/session', 'SessionController@create');

@@ -33,6 +33,12 @@ class EventServiceProvider extends ServiceProvider
         ],
        'App\Events\DelUserEvent' => [
             'App\Listeners\UserDelListener',
+        ],
+       'App\Events\FileUploadEvent' => [
+            'App\Listeners\FileChangeListener',
+        ],
+       'App\Events\FileDelEvent' => [
+            'App\Listeners\FileChangeListener',
         ]
     ];
 
