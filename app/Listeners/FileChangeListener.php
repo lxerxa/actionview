@@ -65,17 +65,18 @@ class FileChangeListener
             } 
             else 
             {
-                $index = array_search($issue[$field_key], $file_id);
-                if ($index)
+                $index = array_search($file_id, $issue[$field_key]);
+                if ($index !== false)
                 {
-                    array_slice($issue[$field_key], $index, 1);
+                    array_splice($issue[$field_key], $index, 1);
                 }
             }
+
             $issue['updated_at'] = time();
             // update issue file field
-            DB::collection($table)->where('_id', $issue_id)->update($issue);
+            DB::collection($table)->where('_id', $issue_id)->update(array_except($issue, [ '_id' ]));
             // create tag
-            DB::collection('issue_tag_' . $project_key)->insert([ 'issue_id' => $issue['_id']->__toString(), 'stamptime' => time() ] + array_except($issue, [ '_id' ]));
+            DB::collection('issue_his_' . $project_key)->insert([ 'issue_id' => $issue['_id']->__toString(), 'stamptime' => time() ] + array_except($issue, [ '_id' ]));
         }
     }
 }

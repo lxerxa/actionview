@@ -24,9 +24,6 @@ Route::get('/api/phpinfo', function () {
    exit();
 });
 
-Route::post('api/uploadfile', 'FileController@upload');
-Route::get('api/file/{fid}', 'FileController@download');
-
 // session router
 Route::post('api/session', 'SessionController@create');
 Route::post('api/register', 'UserController@regist');
@@ -76,4 +73,8 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can' 
     Route::delete('issue/searcher/{id}', 'IssueController@delSearcher');
     Route::get('issue/options', 'IssueController@getOptions');
     Route::resource('issue', 'IssueController');
+
+    Route::post('file', 'FileController@upload');
+    Route::get('file/{id}', 'FileController@download');
+    Route::delete('file/{id}', 'FileController@delete');
 });

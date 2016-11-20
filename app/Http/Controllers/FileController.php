@@ -1,15 +1,25 @@
 <?php
 namespace App\Http\Controllers;
+
 use Illuminate\Http\Request;
-use App\Http\Requests;
+use Illuminate\Support\Facades\Event;
+
 use App\Http\Controllers\Controller;
 use App\Project\Eloquent\File;
-
 use App\Events\FileUploadEvent;
 use App\Events\FileDelEvent;
 
+use DB;
+
 class FileController extends Controller
 {
+    /**
+     * Upload file.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  String  $project_key
+     * @return \Illuminate\Http\Response
+     */
     public function upload(Request $request, $project_key)
     {
         $tmp_path = '/tmp/';
@@ -27,6 +37,7 @@ class FileController extends Controller
         $data = [];
         $data['name']    = $_FILES[$field]['name'];
         $data['size']    = $_FILES[$field]['size'];
+        $data['type']    = $_FILES[$field]['type'];
         $data['index']   = $basename; 
         if ($_FILES[$field]['type'] == 'image/jpeg' || $_FILES[$field]['type'] == 'image/jpg' || $_FILES[$field]['type'] == 'image/png' || $_FILES[$field]['type'] == 'image/gif')
         {
@@ -83,7 +94,13 @@ class FileController extends Controller
         return Response()->json([ 'ecode' => 0, 'data' => [ 'field' => $field, 'fid' => $file->id ] ]);
     }
 
-    public function download(Request $request, $id)
+    /**
+     * Download file.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  String $id
+     */
+    public function download(Request $request, $project_key, $id)
     {
         $file = File::find($id); 
         $filepath = '/tmp/' . substr($file->index, 0, 2);
@@ -102,6 +119,14 @@ class FileController extends Controller
         echo file_get_contents($filename);
     }
 
+    /**
+     * Delete file.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  String $project_key
+     * @param  String $id
+     * @return \Illuminate\Http\Response
+     */
     public function delete(Request $request, $project_key, $id)
     {
         $issue_id = $request->input('issue_id');
@@ -109,6 +134,12 @@ class FileController extends Controller
         if (isset($issue_id) && $issue_id && isset($field_key) && $field_key)
         {
             Event::fire(new FileDelEvent($project_key, $issue_id, $field_key, $id));
+        }
+
+        $issue = DB::collection('issue_' . $project_key)->where('_id', $issue_id)->first();
+        if (array_search($id, $issue[$field_key]) === false)
+        {
+            return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
         }
     }
 }
