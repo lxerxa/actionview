@@ -91,7 +91,7 @@ class FileController extends Controller
             Event::fire(new FileUploadEvent($project_key, $issue_id, $field, $file->id));
         }
 
-        return Response()->json([ 'ecode' => 0, 'data' => [ 'field' => $field, 'fid' => $file->id ] ]);
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'field' => $field, 'file' => File::find($file->id) ] ]);
     }
 
     /**
