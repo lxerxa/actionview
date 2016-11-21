@@ -53,30 +53,27 @@ class FileChangeListener
         $table = 'issue_' . $project_key;
         $issue = DB::collection($table)->where('_id', $issue_id)->first();
 
-        if (isset($issue[$field_key]) && $issue[$field_key])
+        if (!is_array($issue[$field_key]))
         {
-            if (!is_array($issue[$field_key]))
-            {
-                $issue[$field_key] = [];
-            }
-            if ($flag == 1)
-            {
-                array_push($issue[$field_key], $file_id);
-            } 
-            else 
-            {
-                $index = array_search($file_id, $issue[$field_key]);
-                if ($index !== false)
-                {
-                    array_splice($issue[$field_key], $index, 1);
-                }
-            }
-
-            $issue['updated_at'] = time();
-            // update issue file field
-            DB::collection($table)->where('_id', $issue_id)->update(array_except($issue, [ '_id' ]));
-            // create tag
-            DB::collection('issue_his_' . $project_key)->insert([ 'issue_id' => $issue['_id']->__toString(), 'stamptime' => time() ] + array_except($issue, [ '_id' ]));
+            $issue[$field_key] = [];
         }
+        if ($flag == 1)
+        {
+            array_push($issue[$field_key], $file_id);
+        } 
+        else 
+        {
+            $index = array_search($file_id, $issue[$field_key]);
+            if ($index !== false)
+            {
+                array_splice($issue[$field_key], $index, 1);
+            }
+        }
+
+        $issue['updated_at'] = time();
+        // update issue file field
+        DB::collection($table)->where('_id', $issue_id)->update(array_except($issue, [ '_id' ]));
+        // create tag
+        DB::collection('issue_his_' . $project_key)->insert([ 'issue_id' => $issue['_id']->__toString(), 'stamptime' => time() ] + array_except($issue, [ '_id' ]));
     }
 }
