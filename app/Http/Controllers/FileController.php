@@ -13,6 +13,8 @@ use DB;
 
 class FileController extends Controller
 {
+    const SAVE_PATH = '/var/local/docs/'; 
+
     /**
      * Upload file.
      *
@@ -22,17 +24,20 @@ class FileController extends Controller
      */
     public function upload(Request $request, $project_key)
     {
-        $tmp_path = '/tmp/';
-        $save_path = '/tmp/';
         $fields = array_keys($_FILES); 
         $field = array_pop($fields);
+        if ($_FILES[$field]['error'] > 0)
+        {
+            throw new \UnexpectedValueException('upload file errors.', -10002);
+        }
+
         $basename = md5(microtime() . $_FILES[$field]['name']);
-        $sub_save_path = $save_path . substr($basename, 0, 2) . '/';
+        $sub_save_path = self::SAVE_PATH . substr($basename, 0, 2) . '/';
         if (!is_dir($sub_save_path))
         {
             @mkdir($sub_save_path);
         }
-        $filename = $tmp_path . $basename;
+        $filename = '/tmp/' . $basename;
         move_uploaded_file($_FILES[$field]['tmp_name'], $filename);
         $data = [];
         $data['name']    = $_FILES[$field]['name'];
@@ -103,7 +108,7 @@ class FileController extends Controller
     public function download(Request $request, $project_key, $id)
     {
         $file = File::find($id); 
-        $filepath = '/tmp/' . substr($file->index, 0, 2);
+        $filepath = self::SAVE_PATH . substr($file->index, 0, 2);
         if ($request->input('flag') == 's')
         {
             $filename = $filepath . '/' . $file->thumbnails_index;
@@ -112,6 +117,12 @@ class FileController extends Controller
         {
             $filename = $filepath . '/' . $file->index;
         }
+
+        if (!file_exists($filename))
+        {
+            throw new \UnexpectedValueException('file does not exist.', -10002);
+        }
+
         header("Content-type: application/octet-stream"); 
         header("Accept-Ranges: bytes"); 
         header("Accept-Length:" . filesize($filename));
@@ -140,6 +151,9 @@ class FileController extends Controller
         if (array_search($id, $issue[$field_key]) === false)
         {
             return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
+        }
+        else
+        {
         }
     }
 }
