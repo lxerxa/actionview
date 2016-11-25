@@ -27,7 +27,8 @@ class FieldController extends Controller
         {
             $fields[$key]->screens = Screen::whereRaw([ 'field_ids' => $field->id ])->get(['name']);
         }
-        return Response()->json(['ecode' => 0, 'data' => $fields]);
+        $types = Provider::getTypeList($project_key, ['name']);
+        return Response()->json(['ecode' => 0, 'data' => $fields, 'options' => [ 'types' => $types ]]);
     }
 
     /**

@@ -439,12 +439,12 @@ class Provider {
         $types = self::getTypeList($project_key);
         foreach ($types as $key => $type)
         {
-            $schema = self::_repairSchema($type->screen && $type->screen->schema ? $type->screen->schema : [] , $options);
+            $schema = self::_repairSchema($type->id, $type->screen && $type->screen->schema ? $type->screen->schema : [] , $options);
 
             $tmp = [ 'id' => $type->id, 'name' => $type->name, 'abb' => $type->abb, 'schema' => $schema ];
             if ($type->default) 
             {
-              $tmp['default'] = true;
+                $tmp['default'] = true;
             }
             $typeOptions[] = $tmp;
         }
@@ -457,21 +457,31 @@ class Provider {
      * @param string $project_key
      * @return array
      */
-    private static function _repairSchema($schema, $options)
+    private static function _repairSchema($issue_type, $schema, $options)
     {
+        $new_schema = [];
         foreach ($schema as $key => $val)
         {
+            if (isset($val['applyToTypes']))
+            {
+                if (!in_array($issue_type, explode(',', $val['applyToTypes'] ?: '')))
+                {
+                    continue;
+                }
+                unset($val['applyToTypes']);
+            }
+
             if ($val['type'] == 'SingleVersion' || $val['type'] == 'MultiVersion')
             {
-                $schema[$key]['optionValues'] = self::pluckFields($options['version'], ['_id', 'name']);
+                $val['optionValues'] = self::pluckFields($options['version'], ['_id', 'name']);
             }
             else if ($val['key'] == 'assignee')
             {
-                $schema[$key]['optionValues'] = self::pluckFields($options['assignee'], ['id', 'name']);
+                $val['optionValues'] = self::pluckFields($options['assignee'], ['id', 'name']);
             }
             else if (array_key_exists($val['key'], $options))
             {
-                $schema[$key]['optionValues'] = self::pluckFields($options[$val['key']], ['_id', 'name']);
+                $val['optionValues'] = self::pluckFields($options[$val['key']], ['_id', 'name']);
                 if ($val['key'] == 'module')
                 {
                     continue;
@@ -480,13 +490,18 @@ class Provider {
                 {
                     if (isset($val2['default']) && $val2['default'])
                     {
-                        $schema[$key]['defaultValue'] = $val2['_id'];
+                        $val['defaultValue'] = $val2['_id'];
                         break;
                     }
                 }
             }
+            if (isset($val['_id']))
+            {
+                unset($val['_id']);
+            }
+            $new_schema[] = $val;
         }
-        return $schema;
+        return $new_schema;
     }
 
     /**

@@ -13,6 +13,7 @@ class Field extends Model
         'name',
         'key',
         'type',
+        'applyToTypes',
         'description',
         'defaultValue',
         'optionValues',

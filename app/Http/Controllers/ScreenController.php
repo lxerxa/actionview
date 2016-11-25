@@ -184,7 +184,7 @@ class ScreenController extends Controller
         $schema = [];
         foreach ($field_ids as $field_id)
         {
-            $new_field = Field::Find($field_id, ['name', 'key', 'type', 'defaultValue', 'optionValues'])->toArray();
+            $new_field = Field::Find($field_id, ['name', 'key', 'type', 'applyToTypes', 'defaultValue', 'optionValues'])->toArray();
             if (!$new_field)
             {
                 continue;
