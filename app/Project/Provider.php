@@ -464,7 +464,7 @@ class Provider {
         {
             if (isset($val['applyToTypes']))
             {
-                if (!in_array($issue_type, explode(',', $val['applyToTypes'] ?: '')))
+                if ($val['applyToTypes'] && !in_array($issue_type, explode(',', $val['applyToTypes'] ?: '')))
                 {
                     continue;
                 }
@@ -479,13 +479,13 @@ class Provider {
             {
                 $val['optionValues'] = self::pluckFields($options['assignee'], ['id', 'name']);
             }
+            else if ($val['key'] == 'module')
+            {
+                $val['optionValues'] = self::pluckFields($options['module'], ['_id', 'name']);
+            }
             else if (array_key_exists($val['key'], $options))
             {
                 $val['optionValues'] = self::pluckFields($options[$val['key']], ['_id', 'name']);
-                if ($val['key'] == 'module')
-                {
-                    continue;
-                }
                 foreach ($options[$val['key']] as $key2 => $val2) 
                 {
                     if (isset($val2['default']) && $val2['default'])
