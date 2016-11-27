@@ -271,6 +271,7 @@ class IssueController extends Controller
      */
     public function update(Request $request, $project_key, $id)
     {
+        sleep(5);
         $table = 'issue_' . $project_key;
         $issue = DB::collection($table)->find($id);
         if (!$issue)
@@ -278,14 +279,45 @@ class IssueController extends Controller
             throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -10002);
         }
 
-        $schema = Provider::getSchemaByType($issue['type']);
+        $schema = Provider::getSchemaByType($request->input('type') ?: $issue['type']);
         if (!$schema)
         {
             throw new \UnexpectedValueException('the schema of the type is not existed.', -10002);
         }
         $valid_keys = array_column($schema, 'key');
+        array_push($valid_keys, 'type');
 
-        DB::collection($table)->where('_id', $id)->update(array_only($request->all(), $valid_keys) + [ 'updated_at' => new UTCDateTime(time()*1000) ]);
+        // handle timetracking
+        $ttValues = [];
+        foreach ($schema as $field)
+        {
+            if ($field['type'] == 'TimeTracking')
+            {
+                $fieldValue = $request->input($field['key']);
+                if (isset($fieldValue) && $fieldValue)
+                {
+                    if (!$this->ttCheck($fieldValue))
+                    {
+                        throw new \UnexpectedValueException('the format of timetracking is incorrect.', -10002);
+                    }
+                    $ttValues[$field['key']] = $this->ttHandle($fieldValue);
+                }
+            }
+        }
+
+        $updValues = [];
+        $assignee_id = $request->input('assignee');
+        if ($assignee_id)
+        {
+            $user_info = Sentinel::findById($assignee_id);
+            if ($user_info)
+            {
+                $assignee = [ 'id' => $assignee_id, 'name' => $user_info->first_name ];
+                $updValues['assignee'] = $assignee;
+            }
+        }
+
+        DB::collection($table)->where('_id', $id)->update($updValues + [ 'updated_at' => time() ] + array_only($request->all(), $valid_keys));
 
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange(DB::collection($table)->find($id)) ]);
     }
