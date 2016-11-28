@@ -231,7 +231,6 @@ class IssueController extends Controller
                 }
             }
         }
-
         return Response()->json(['ecode' => 0, 'data' => parent::arrange($issue)]);
     }
 
@@ -271,7 +270,7 @@ class IssueController extends Controller
      */
     public function update(Request $request, $project_key, $id)
     {
-        sleep(5);
+        sleep(2);
         $table = 'issue_' . $project_key;
         $issue = DB::collection($table)->find($id);
         if (!$issue)
@@ -317,9 +316,9 @@ class IssueController extends Controller
             }
         }
 
-        DB::collection($table)->where('_id', $id)->update($updValues + [ 'updated_at' => time() ] + array_only($request->all(), $valid_keys));
+        DB::collection($table)->where('_id', $id)->update($updValues + $ttValues + [ 'updated_at' => time() ] + array_only($request->all(), $valid_keys));
 
-        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange(DB::collection($table)->find($id)) ]);
+        return $this->show($project_key, $id); 
     }
 
     /**
