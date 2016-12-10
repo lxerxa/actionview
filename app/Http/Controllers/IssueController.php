@@ -9,7 +9,6 @@ use App\Http\Controllers\Controller;
 use App\Project\Provider;
 use App\Project\Eloquent\File;
 use Sentinel;
-use MongoDB\BSON\UTCDateTime;
 use DB;
 
 class IssueController extends Controller
@@ -373,7 +372,7 @@ class IssueController extends Controller
             throw new \UnexpectedValueException('searcher name cannot be repeated', -10002);
         }
 
-        $id = DB::collection($table)->insertGetId([ 'user' => $this->user->id, 'created_at' => new UTCDateTime(time()*1000) ] + array_only($request->all(), [ 'name', 'query' ] ));
+        $id = DB::collection($table)->insertGetId([ 'user' => $this->user->id, 'created_at' => time() ] + array_only($request->all(), [ 'name', 'query' ] ));
 
         $searcher = DB::collection($table)->where('_id', $id)->first();
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($searcher) ]);

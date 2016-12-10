@@ -281,7 +281,7 @@ class Provider {
         foreach ($users as $user)
         {
             $user_info = Sentinel::findById($user['user_id']);
-            $user_info && $user_list[] = ['id' => $user['user_id'], 'name' => $user_info->first_name . '(' . $user_info->email . ')' ];
+            $user_info && $user_list[] = ['id' => $user['user_id'], 'name' => $user_info->first_name, 'nameAndEmail' => $user_info->first_name . '(' . $user_info->email . ')' ];
         }
 
         return $user_list;

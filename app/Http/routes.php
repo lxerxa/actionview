@@ -15,15 +15,6 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/api/phpinfo', function () {
-   $src_image = imagecreatefrompng('/tmp/bb');
-   $dst_image = imagecreatetruecolor(100,41);
-   imagecopyresized($dst_image,$src_image,0,0,0,0,100,41,200,43);
-   imagejpeg($dst_image,'/tmp/sbb');
-   //var_dump(getimagesize('/tmp/bb'));
-   exit();
-});
-
 // session router
 Route::post('api/session', 'SessionController@create');
 Route::post('api/register', 'UserController@regist');
@@ -73,6 +64,7 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can' 
     Route::delete('issue/searcher/{id}', 'IssueController@delSearcher');
     Route::get('issue/options', 'IssueController@getOptions');
     Route::resource('issue', 'IssueController');
+    Route::resource('issue/{issue_id}/comments', 'CommentsController');
 
     Route::post('file', 'FileController@upload');
     Route::get('file/{id}', 'FileController@download');

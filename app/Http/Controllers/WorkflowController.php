@@ -72,7 +72,7 @@ class WorkflowController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($project_key, $id)
+    public function show(Request $request, $project_key, $id)
     {
         $workflow = Definition::find($id);
         //if (!$workflow || $project_key != $workflow->project_key)
@@ -80,13 +80,20 @@ class WorkflowController extends Controller
         //    throw new \UnexpectedValueException('the workflow does not exist or is not in the project.', -10002);
         //}
 
-        $states = Provider::getStateList($project_key, ['name']);
-        $screens = Provider::getScreenList($project_key, ['name']);
-        $resolutions = Provider::getResolutionList($project_key, ['name']);
-        $roles = Provider::getRoleList($project_key, ['name']);
-        $users = Provider::getUserList($project_key);
+        if ($request->input('flag') == 's')
+        {
+            return Response()->json([ 'ecode' => 0, 'data' => $workflow ]);
+        } 
+        else 
+        {
+            $states = Provider::getStateList($project_key, ['name']);
+            $screens = Provider::getScreenList($project_key, ['name']);
+            $resolutions = Provider::getResolutionList($project_key, ['name']);
+            $roles = Provider::getRoleList($project_key, ['name']);
+            $users = Provider::getUserList($project_key);
 
-        return Response()->json([ 'ecode' => 0, 'data' => $workflow, 'options' => [ 'states' => $states, 'screens' => $screens, 'resolutions' => $resolutions, 'roles' => $roles, 'users' => $users ] ]);
+            return Response()->json([ 'ecode' => 0, 'data' => $workflow, 'options' => [ 'states' => $states, 'screens' => $screens, 'resolutions' => $resolutions, 'roles' => $roles, 'users' => $users ] ]);
+        }
     }
 
     /**
