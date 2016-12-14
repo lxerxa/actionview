@@ -477,7 +477,12 @@ class Provider {
             }
             else if ($val['key'] == 'assignee')
             {
-                $val['optionValues'] = self::pluckFields($options['assignee'], ['id', 'name']);
+                $val['optionValues'] = self::pluckFields($options['assignee'], ['id', 'name', 'nameAndEmail']);
+                foreach ($val['optionValues'] as $k => $v)
+                {
+                    $val['optionValues'][$k]['name'] = $v['nameAndEmail'];
+                    unset($val['optionValues'][$k]['nameAndEmail']);
+                }
             }
             else if ($val['key'] == 'module')
             {
@@ -519,7 +524,11 @@ class Provider {
             $tmp = [];
             foreach ($fields as $field)
             {
-                $tmp[$field] = isset($val[$field]) ? $val[$field] : '';
+                if ($field === '_id') {
+                    $tmp['id'] = isset($val[$field]) ? $val[$field] : '';
+                } else {
+                    $tmp[$field] = isset($val[$field]) ? $val[$field] : '';
+                }
             }
             $destData[] = $tmp;
         } 
@@ -552,6 +561,171 @@ class Provider {
     {
         $type = Type::find($type_id);
         $screen = $type->screen;
-        return $screen->schema ?: [];
+        $project_key = $type->project_key;
+
+        $new_schema = [];
+        $versions = null;
+        foreach ($screen->schema ?: [] as $key => $val)
+        {
+            if ($val['key'] == 'assignee')
+            {
+                $users = self::getUserList($project_key);
+                $val['optionValues'] = self::pluckFields($users, ['id', 'name']);
+            }
+            else if ($val['key'] == 'resolution')
+            {
+                $resolutions = self::getResolutionList($project_key);
+                $val['optionValues'] = self::pluckFields($resolutions, ['_id', 'name']);
+            }
+            else if ($val['key'] == 'priority')
+            {
+                $priorities = self::getPriorityList($project_key);
+                $val['optionValues'] = self::pluckFields($priorities, ['_id', 'name']);
+            }
+            else if ($val['key'] == 'module')
+            {
+                $modules = self::getModuleList($project_key);
+                $val['optionValues'] = self::pluckFields($modules, ['_id', 'name']);
+            }
+            else if ($val['type'] == 'SingleVersion' || $val['type'] == 'MultiVersion')
+            {
+                $versions === null && $versions = self::getVersionList($project_key);
+                $val['optionValues'] = self::pluckFields($versions, ['_id', 'name']);
+            }
+
+            if ($val['key'] == 'resolution' || $val['key'] == 'priority')
+            {
+                foreach ($val['optionValues'] as $key2 => $val2)
+                {
+                    if (isset($val2['default']) && $val2['default'])
+                    {
+                        $val['defaultValue'] = $val2['_id'];
+                        break;
+                    }
+                }
+            }
+
+            $new_schema[] = $val;
+        }
+
+        return $new_schema;
+    }
+
+    /**
+     * snap issue data to history
+     *
+     * @param  string  $project_key
+     * @param  string  $issue_id
+     * @param  array  $schema
+     * @param  array $change_fields
+     * @return \Illuminate\Http\Response
+     */
+    public static function snap2His($project_key, $issue_id, $schema = '', $change_fields=[])
+    {
+        //获取问题数据
+        $issue = DB::collection('issue_' . $project_key)->where('_id', $issue_id)->first();
+
+        // fetch the schema data
+        if (!$schema)
+        {
+            $schema = self::getSchemaByType($issue['type']);
+        }
+
+        // edit version
+        $latest_ver_issue = DB::collection('issue_his_' . $project_key)->where('issue_id', $issue_id)->orderBy('operated_at', 'desc')->first();
+        if ($latest_ver_issue)
+        {
+            $snap_data = $latest_ver_issue['data'];
+        }
+        else
+        {
+            $snap_data = [];
+        }
+        
+        foreach ($schema as $field)
+        {
+            if ($change_fields && !in_array($field['key'], $change_fields))
+            {
+                continue;
+            }
+
+            if (isset($issue[$field['key']]) && $issue[$field['key']])
+            {
+                $val = [];
+                $val['name'] = $field['name'];
+                
+                if ($field['key'] == 'assignee')
+                {
+                    $val['value'] = $issue['assignee']['name'];
+                }
+                else if (isset($field['optionValues']) && $field['optionValues'])
+                {
+                    $opv = [];
+                    if (!is_array($issue[$field['key']]))
+                    {
+                        $issue[$field['key']] = explode(',', $issue[$field['key']]);
+                    }
+                    foreach ($field['optionValues'] as $ov)
+                    {
+                        if (in_array($ov['id'], $issue[$field['key']]))
+                        {
+                            $opv[] = $ov['name'];
+                        }
+                    }
+                    $val['value'] = implode(',', $opv);
+                }
+                else if ($field['type'] == 'File')
+                {
+                    if (!isset($issue[$field['key']]) || $issue[$field['value']])
+                    {
+                        $issue[$field['value']] = [];
+                    }
+
+                    $val['value'] = [];
+                    foreach ($issue[$field['key']] as $fid)
+                    {
+                        $file = File::find($fid);
+                        $val['value'].push($file->name);
+                    }
+                }
+                else
+                {
+                    $val['value'] = $issue[$field['key']];
+                }
+                $val['type'] = $field['type']; 
+
+                $snap_data[$field['key']] = $val;
+            }
+        }
+
+        // special fields handle
+        if (in_array('type', $change_fields) || !isset($snap_data['type']))
+        {
+            $type = Type::find($issue['type']);
+            $snap_data['type'] = $type->name;
+        }
+
+        // special fields handle
+        //if (in_array('state', $change_fields) || !isset($snap_data['state']))
+        //{
+        //    $state = State::find($issue['state']);
+        //    $snap_data['state'] = $state->name;
+        //}
+
+        if (!isset($snap_data['created_at']))
+        {
+            $snap_data['created_at'] = $issue['created_at'];
+        }
+
+        if (!isset($snap_data['reporter']))
+        {
+            $snap_data['reporter'] = $issue['reporter'];
+        }
+
+        $operated_at = isset($issue['updated_at']) ? $issue['updated_at'] : $issue['created_at'];
+        $operator = isset($issue['modifier']) ? $issue['modifier'] : $issue['reporter'];
+
+        DB::collection('issue_his_' . $project_key)->insert([ 'issue_id' => $issue['_id']->__toString(), 'operated_at' => $operated_at, 'operator' => $operator, 'data' => $snap_data ]);
     }
 }
+

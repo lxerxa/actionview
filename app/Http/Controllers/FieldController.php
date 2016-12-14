@@ -50,7 +50,7 @@ class FieldController extends Controller
         {
             throw new \InvalidArgumentException('field key cannot be empty.', -10002);
         }
-        if (in_array($key, [ 'id', 'type', 'reporter', 'created_at', 'updated_at', 'no', 'page', 'orderBy' ]))
+        if (in_array($key, [ 'id', 'type', 'state', 'reporter', 'created_at', 'updated_at', 'no', 'schema', 'page', 'orderBy' ]))
         {
             throw new \InvalidArgumentException('field key has been used by system.', -10002);
         }

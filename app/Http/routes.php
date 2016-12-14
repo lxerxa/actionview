@@ -64,6 +64,7 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can' 
     Route::delete('issue/searcher/{id}', 'IssueController@delSearcher');
     Route::get('issue/options', 'IssueController@getOptions');
     Route::resource('issue', 'IssueController');
+    Route::get('issue/{issue_id}/history', 'IssueController@getHistory');
     Route::resource('issue/{issue_id}/comments', 'CommentsController');
 
     Route::post('file', 'FileController@upload');

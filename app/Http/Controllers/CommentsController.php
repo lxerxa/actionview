@@ -96,24 +96,40 @@ class CommentsController extends Controller
             else if ($operation == 'editReply')
             {
                 $reply_id = $request->input('reply_id');
+                if (!isset($reply_id) || !$reply_id)
+                {
+                    throw new \UnexpectedValueException('the reply id can not be empty.', -10002);
+                }
                 $index = $this->array_find([ 'id' => $reply_id ], $comments['reply']); 
                 if ($index !== false) {
-                    $comments['reply'][$index] = array_merge($comments['reply'][$index], [ 'updated_at' => time() ] + array_only($request->all(), [ 'contents', 'atWho' ]));
+                    $comments['reply'][$index] = array_merge($comments['reply'][$index], [ 'updated_at' => time(), 'edited_flag' => 1 ] + array_only($request->all(), [ 'contents', 'atWho' ]));
+                }
+                else
+                {
+                    throw new \UnexpectedValueException('the reply does not exist', -10002);
                 }
             }
             else if ($operation == 'delReply')
             {
                 $reply_id = $request->input('reply_id');
+                if (!isset($reply_id) || !$reply_id)
+                {
+                    throw new \UnexpectedValueException('the reply id can not be empty.', -10002);
+                }
                 $index = $this->array_find([ 'id' => $reply_id ], $comments['reply']); 
                 if ($index !== false) {
                     array_splice($comments['reply'], $index, 1);
+                }
+                else
+                {
+                    throw new \UnexpectedValueException('the reply does not exist', -10002);
                 }
             }
             DB::collection($table)->where('_id', $id)->update([ 'reply' => $comments['reply'] ]);
         }
         else
         {
-            DB::collection($table)->where('_id', $id)->update([ 'updated_at' => time() ] + array_only($request->all(), [ 'contents', 'atWho' ]) );
+            DB::collection($table)->where('_id', $id)->update([ 'updated_at' => time(), 'edited_flag' => 1 ] + array_only($request->all(), [ 'contents', 'atWho' ]) );
         }
 
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange(DB::collection($table)->find($id)) ]);

@@ -4,6 +4,7 @@ namespace App\Listeners;
 use App\Events\Event;
 use App\Events\FileUploadEvent;
 use App\Events\FileDelEvent;
+use App\Project\Provider;
 
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -53,7 +54,7 @@ class FileChangeListener
         $table = 'issue_' . $project_key;
         $issue = DB::collection($table)->where('_id', $issue_id)->first();
 
-        if (!is_array($issue[$field_key]))
+        if (!isset($issue[$field_key]) || !is_array($issue[$field_key]))
         {
             $issue[$field_key] = [];
         }
@@ -72,8 +73,9 @@ class FileChangeListener
 
         $issue['updated_at'] = time();
         // update issue file field
-        DB::collection($table)->where('_id', $issue_id)->update(array_except($issue, [ '_id' ]));
-        // create tag
-        DB::collection('issue_his_' . $project_key)->insert([ 'issue_id' => $issue['_id']->__toString(), 'stamptime' => time() ] + array_except($issue, [ '_id' ]));
+        DB::collection($table)->where('_id', $issue_id)->update([ $field_key => $issue[$field_key] ]);
+
+        // add to histroy table
+        //Provider::snap2His($project_key, $issue_id, '', [ $field_key ]);
     }
 }

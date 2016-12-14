@@ -192,7 +192,7 @@ class IssueController extends Controller
         }
 
         // get reporter(creator)
-        $reporter = [ 'id' => $this->user->id, 'name' => $this->user->first_name ];
+        $reporter = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'nameAndEmail' => $this->user->first_name . '(' . $this->user->email . ')' ];
 
         $table = 'issue_' . $project_key;
         $max_no = DB::collection($table)->count() + 1;
@@ -200,7 +200,7 @@ class IssueController extends Controller
 
         $issue = DB::collection($table)->where('_id', $id)->first();
         // add to histroy table
-        DB::collection('issue_his_' . $project_key)->insert([ 'issue_id' => $issue['_id']->__toString(), 'stamptime' => time() ] + array_except($issue, [ '_id' ]));
+        Provider::snap2His($project_key, $id, $schema);
 
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($issue) ]);
     }
@@ -246,9 +246,9 @@ class IssueController extends Controller
         // get state list
         $states = Provider::getStateList($project_key, ['name']);
         // get resolution list
-        $resolutions = Provider::getResolutionList($project_key, ['name']);
+        $resolutions = Provider::getResolutionList($project_key, ['name', 'default']);
         // get priority list
-        $priorities = Provider::getPriorityList($project_key, ['color', 'name']);
+        $priorities = Provider::getPriorityList($project_key, ['color', 'name', 'default']);
         // get version list
         $versions = Provider::getVersionList($project_key, ['name']);
         // get module list
@@ -269,7 +269,6 @@ class IssueController extends Controller
      */
     public function update(Request $request, $project_key, $id)
     {
-        sleep(2);
         $table = 'issue_' . $project_key;
         $issue = DB::collection($table)->find($id);
         if (!$issue)
@@ -315,7 +314,12 @@ class IssueController extends Controller
             }
         }
 
-        DB::collection($table)->where('_id', $id)->update($updValues + $ttValues + [ 'updated_at' => time() ] + array_only($request->all(), $valid_keys));
+        $modifier = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'nameAndEmail' => $this->user->first_name . '(' . $this->user->email . ')' ];
+
+        DB::collection($table)->where('_id', $id)->update($updValues + $ttValues + [ 'modifier' => $modifier, 'updated_at' => time() ] + array_only($request->all(), $valid_keys));
+
+        // add to histroy table
+        Provider::snap2His($project_key, $id, $schema, array_keys(array_only($request->all(), $valid_keys)));
 
         return $this->show($project_key, $id); 
     }
@@ -396,5 +400,149 @@ class IssueController extends Controller
         DB::collection($table)->where('_id', $id)->delete();
 
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
+    }
+
+    /**
+     * get the history records.
+     *
+     * @param  string  $id
+     * @param  string  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function getHistory($project_key, $id)
+    {
+        $changedRecords = [];
+        $records = DB::collection('issue_his_' . $project_key)->where('issue_id', $id)->orderBy('operated_at', 'asc')->get();
+        foreach ($records as $i => $item)
+        {
+            if ($i == 0)
+            {
+                $changedRecords[] = [ 'operation' => 'create', 'operator' => $item['operator'], 'operated_at' => $item['operated_at'] ];
+            }
+            else
+            {
+                $changed_items = [];
+                $changed_items['operation'] = 'modify';
+                $changed_items['operated_at'] = $item['operated_at'];
+                $changed_items['operator'] = $item['operator'];
+
+                $diff_items = []; $diff_keys = [];
+                $after_data = $item['data'];
+                $before_data = $records[$i - 1]['data'];
+
+                foreach ($after_data as $key => $val)
+                {
+                    if (!isset($before_data[$key]) || $val != $before_data[$key])
+                    {
+                        $tmp = [];
+                        $tmp['field'] = $val['name'];
+
+                        $tmp['after_type'] = isset($val['type']) ? $val['type'] : '';
+                        if ($tmp['after_type'] == 'File')
+                        {
+                            $tmp['after_value'] = isset($val['value']) ? $val['value'] : [];
+                        }
+                        else
+                        {
+                            $tmp['after_value'] = isset($val['value']) ? $val['value'] : '';
+                        }
+
+                        $tmp['before_type'] = isset($before_data[$key]) && isset($before_data[$key]['type']) ? $before_data[$key]['type'] : '';
+                        if ($tmp['before_type'] == 'File')
+                        {
+                            $tmp['before_value'] = isset($before_data[$key]) && isset($before_data[$key]['value']) ? $before_data[$key]['value'] : [];
+                        }
+                        else
+                        {
+                            $tmp['before_value'] = isset($before_data[$key]) && isset($before_data[$key]['value']) ? $before_data[$key]['value'] : '';
+                        }
+
+                        if ($tmp['after_type'] == 'File' && $tmp['before_type'] == 'File')
+                        {
+                            $tmp['after_value'] = array_diff($tmp['after_value'], $tmp['before_value']);
+                            $tmp['after_value'] = implode(',', $tmp['after_value']);
+                            $tmp['before_value'] = array_diff($tmp['before_value'], $tmp['after_value']);
+                            $tmp['before_value'] = implode(',', $tmp['before_value']);
+                        }
+                        else
+                        {
+                            if ($tmp['after_type'] == 'File')
+                            {
+                                $tmp['after_value'] = implode(',', $tmp['after_value']);
+                            }
+
+                            if ($tmp['before_type'] == 'File')
+                            {
+                                $tmp['before_value'] = implode(',', $tmp['before_value']);
+                            }
+                        }
+                        $diff_items[] = $tmp; 
+                        $diff_keys[] = $key; 
+                    }
+                }
+
+                foreach ($before_data as $key => $val)
+                {
+                    if (array_search($key, $diff_keys) !== false)
+                    {
+                        continue;
+                    }
+
+                    if (!isset($after_data[$key]) || $val != $after_data[$key])
+                    {
+                        $tmp = [];
+                        $tmp['field'] = $val['name'];
+
+                        $tmp['before_type'] = isset($val['type']) ? $val['type'] : '';
+                        if ($tmp['before_type'] == 'File')
+                        {
+                            $tmp['before_value'] = isset($val['value']) ? $val['value'] : [];
+                        }
+                        else
+                        {
+                            $tmp['before_value'] = isset($val['value']) ? $val['value'] : '';
+                        }
+
+                        $tmp['after_type'] = isset($after_data[$key]) && isset($after_data[$key]['type']) ? $after_data[$key]['type'] : '';
+                        if ($tmp['after_type'] == 'File')
+                        {
+                            $tmp['after_value'] = isset($after_data[$key]) && isset($after_data[$key]['value']) ? $after_data[$key]['value'] : [];
+                        }
+                        else
+                        {
+                            $tmp['after_value'] = isset($after_data[$key]) && isset($after_data[$key]['value']) ? $after_data[$key]['value'] : '';
+                        }
+
+                        if ($tmp['after_type'] == 'File' && $tmp['before_type'] == 'File')
+                        {
+                            $tmp['after_value'] = array_diff($tmp['after_value'], $tmp['before_value']);
+                            $tmp['after_value'] = implode(',', $tmp['after_value']);
+                            $tmp['before_value'] = array_diff($tmp['before_value'], $tmp['after_value']);
+                            $tmp['before_value'] = implode(',', $tmp['before_value']);
+                        }
+                        else
+                        {
+                            if ($tmp['after_type'] == 'File')
+                            {
+                                $tmp['after_value'] = implode(',', $tmp['after_value']);
+                            }
+
+                            if ($tmp['before_type'] == 'File')
+                            {
+                                $tmp['before_value'] = implode(',', $tmp['before_value']);
+                            }
+                        }
+
+                        $diff_items[] = $tmp; 
+                    }
+                }
+
+                $changed_items['data'] = $diff_items;
+
+                $changedRecords[] = $changed_items;
+            }
+        }
+
+        return Response()->json([ 'ecode' => 0, 'data' => array_reverse($changedRecords) ]);
     }
 }
