@@ -13,6 +13,7 @@ use App\Acl\Eloquent\Role;
 use App\Workflow\Eloquent\Definition;
 use App\Project\Eloquent\Project;
 use App\Project\Eloquent\UserProject;
+use App\Project\Eloquent\File;
 use Sentinel;
 use MongoDB\BSON\ObjectID;
 use DB;
@@ -633,6 +634,7 @@ class Provider {
 
         // edit version
         $latest_ver_issue = DB::collection('issue_his_' . $project_key)->where('issue_id', $issue_id)->orderBy('operated_at', 'desc')->first();
+file_put_contents('/tmp/aa', json_encode($latest_ver_issue));
         if ($latest_ver_issue)
         {
             $snap_data = $latest_ver_issue['data'];
@@ -676,23 +678,22 @@ class Provider {
                 }
                 else if ($field['type'] == 'File')
                 {
-                    if (!isset($issue[$field['key']]) || $issue[$field['value']])
-                    {
-                        $issue[$field['value']] = [];
-                    }
-
                     $val['value'] = [];
                     foreach ($issue[$field['key']] as $fid)
                     {
                         $file = File::find($fid);
-                        $val['value'].push($file->name);
+                        array_push($val['value'], $file->name);
                     }
+                }
+                else if ($field['type'] == 'DatePicker' || $field['type'] == 'DateTimePicker')
+                {
+                    $val['value'] = date($field['type'] == 'DatePicker' ? 'y/m/d' : 'y/m/d H:i:s', $issue[$field['key']]);
                 }
                 else
                 {
                     $val['value'] = $issue[$field['key']];
                 }
-                $val['type'] = $field['type']; 
+                //$val['type'] = $field['type']; 
 
                 $snap_data[$field['key']] = $val;
             }
@@ -702,14 +703,14 @@ class Provider {
         if (in_array('type', $change_fields) || !isset($snap_data['type']))
         {
             $type = Type::find($issue['type']);
-            $snap_data['type'] = $type->name;
+            $snap_data['type'] = [ 'value' => $type->name, 'name' => '类型' ];
         }
 
         // special fields handle
         //if (in_array('state', $change_fields) || !isset($snap_data['state']))
         //{
         //    $state = State::find($issue['state']);
-        //    $snap_data['state'] = $state->name;
+        //    $snap_data['state'] = [ 'value' => $state->name, 'name' => '状态' ];
         //}
 
         if (!isset($snap_data['created_at']))
@@ -724,6 +725,8 @@ class Provider {
 
         $operated_at = isset($issue['updated_at']) ? $issue['updated_at'] : $issue['created_at'];
         $operator = isset($issue['modifier']) ? $issue['modifier'] : $issue['reporter'];
+
+file_put_contents('/tmp/bb', json_encode($snap_data));
 
         DB::collection('issue_his_' . $project_key)->insert([ 'issue_id' => $issue['_id']->__toString(), 'operated_at' => $operated_at, 'operator' => $operator, 'data' => $snap_data ]);
     }

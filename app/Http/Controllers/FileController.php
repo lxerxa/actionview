@@ -87,13 +87,13 @@ class FileController extends Controller
         }
         // move original file
         @rename($filename, $sub_save_path . $basename);
-        $data['uploader'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name ];
+        $data['uploader'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'nameAndEmail' => $this->user->first_name . '(' . $this->user->email . ')' ];
         $file = File::create($data);
 
         $issue_id = $request->input('issue_id');
         if (isset($issue_id) && $issue_id)
         {
-            Event::fire(new FileUploadEvent($project_key, $issue_id, $field, $file->id));
+            Event::fire(new FileUploadEvent($project_key, $issue_id, $field, $file->id, $data['uploader']));
         }
 
         return Response()->json([ 'ecode' => 0, 'data' => [ 'field' => $field, 'file' => File::find($file->id) ] ]);
@@ -144,7 +144,8 @@ class FileController extends Controller
         $field_key = $request->input('field_key');
         if (isset($issue_id) && $issue_id && isset($field_key) && $field_key)
         {
-            Event::fire(new FileDelEvent($project_key, $issue_id, $field_key, $id));
+            $user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'nameAndEmail' => $this->user->first_name . '(' . $this->user->email . ')' ];
+            Event::fire(new FileDelEvent($project_key, $issue_id, $field_key, $id, $user));
         }
 
         $issue = DB::collection('issue_' . $project_key)->where('_id', $issue_id)->first();
@@ -154,6 +155,7 @@ class FileController extends Controller
         }
         else
         {
+            throw new \UnexpectedValueException('file deletion failed.', -10002);
         }
     }
 }

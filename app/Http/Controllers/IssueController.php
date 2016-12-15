@@ -435,43 +435,24 @@ class IssueController extends Controller
                     if (!isset($before_data[$key]) || $val != $before_data[$key])
                     {
                         $tmp = [];
-                        $tmp['field'] = $val['name'];
+                        $tmp['field'] = isset($val['name']) ? $val['name'] : '';
+                        $tmp['after_value'] = isset($val['value']) ? $val['value'] : '';
+                        $tmp['before_value'] = isset($before_data[$key]) && isset($before_data[$key]['value']) ? $before_data[$key]['value'] : '';
 
-                        $tmp['after_type'] = isset($val['type']) ? $val['type'] : '';
-                        if ($tmp['after_type'] == 'File')
+                        if (is_array($tmp['after_value']) && is_array($tmp['before_value']))
                         {
-                            $tmp['after_value'] = isset($val['value']) ? $val['value'] : [];
+                            $diff1 = array_diff($tmp['after_value'], $tmp['before_value']);
+                            $diff2 = array_diff($tmp['before_value'], $tmp['after_value']);
+                            $tmp['after_value'] = implode(',', $diff1);
+                            $tmp['before_value'] = implode(',', $diff2);
                         }
                         else
                         {
-                            $tmp['after_value'] = isset($val['value']) ? $val['value'] : '';
-                        }
-
-                        $tmp['before_type'] = isset($before_data[$key]) && isset($before_data[$key]['type']) ? $before_data[$key]['type'] : '';
-                        if ($tmp['before_type'] == 'File')
-                        {
-                            $tmp['before_value'] = isset($before_data[$key]) && isset($before_data[$key]['value']) ? $before_data[$key]['value'] : [];
-                        }
-                        else
-                        {
-                            $tmp['before_value'] = isset($before_data[$key]) && isset($before_data[$key]['value']) ? $before_data[$key]['value'] : '';
-                        }
-
-                        if ($tmp['after_type'] == 'File' && $tmp['before_type'] == 'File')
-                        {
-                            $tmp['after_value'] = array_diff($tmp['after_value'], $tmp['before_value']);
-                            $tmp['after_value'] = implode(',', $tmp['after_value']);
-                            $tmp['before_value'] = array_diff($tmp['before_value'], $tmp['after_value']);
-                            $tmp['before_value'] = implode(',', $tmp['before_value']);
-                        }
-                        else
-                        {
-                            if ($tmp['after_type'] == 'File')
+                            if (is_array($tmp['after_value']))
                             {
                                 $tmp['after_value'] = implode(',', $tmp['after_value']);
                             }
-
-                            if ($tmp['before_type'] == 'File')
+                            if (is_array($tmp['before_value']))
                             {
                                 $tmp['before_value'] = implode(',', $tmp['before_value']);
                             }
@@ -491,43 +472,23 @@ class IssueController extends Controller
                     if (!isset($after_data[$key]) || $val != $after_data[$key])
                     {
                         $tmp = [];
-                        $tmp['field'] = $val['name'];
-
-                        $tmp['before_type'] = isset($val['type']) ? $val['type'] : '';
-                        if ($tmp['before_type'] == 'File')
+                        $tmp['field'] = isset($val['name']) ? $val['name'] : '';
+                        $tmp['before_value'] = isset($val['value']) ? $val['value'] : '';
+                        $tmp['after_value'] = isset($after_data[$key]) && isset($after_data[$key]['value']) ? $after_data[$key]['value'] : '';
+                        if (is_array($tmp['after_value']) && is_array($tmp['before_value']))
                         {
-                            $tmp['before_value'] = isset($val['value']) ? $val['value'] : [];
+                            $diff1 = array_diff($tmp['after_value'], $tmp['before_value']);
+                            $diff2 = array_diff($tmp['before_value'], $tmp['after_value']);
+                            $tmp['after_value'] = implode(',', $diff1);
+                            $tmp['before_value'] = implode(',', $diff2);
                         }
                         else
                         {
-                            $tmp['before_value'] = isset($val['value']) ? $val['value'] : '';
-                        }
-
-                        $tmp['after_type'] = isset($after_data[$key]) && isset($after_data[$key]['type']) ? $after_data[$key]['type'] : '';
-                        if ($tmp['after_type'] == 'File')
-                        {
-                            $tmp['after_value'] = isset($after_data[$key]) && isset($after_data[$key]['value']) ? $after_data[$key]['value'] : [];
-                        }
-                        else
-                        {
-                            $tmp['after_value'] = isset($after_data[$key]) && isset($after_data[$key]['value']) ? $after_data[$key]['value'] : '';
-                        }
-
-                        if ($tmp['after_type'] == 'File' && $tmp['before_type'] == 'File')
-                        {
-                            $tmp['after_value'] = array_diff($tmp['after_value'], $tmp['before_value']);
-                            $tmp['after_value'] = implode(',', $tmp['after_value']);
-                            $tmp['before_value'] = array_diff($tmp['before_value'], $tmp['after_value']);
-                            $tmp['before_value'] = implode(',', $tmp['before_value']);
-                        }
-                        else
-                        {
-                            if ($tmp['after_type'] == 'File')
+                            if (is_array($tmp['after_value']))
                             {
                                 $tmp['after_value'] = implode(',', $tmp['after_value']);
                             }
-
-                            if ($tmp['before_type'] == 'File')
+                            if (is_array($tmp['before_value']))
                             {
                                 $tmp['before_value'] = implode(',', $tmp['before_value']);
                             }
@@ -537,9 +498,11 @@ class IssueController extends Controller
                     }
                 }
 
-                $changed_items['data'] = $diff_items;
-
-                $changedRecords[] = $changed_items;
+                if ($diff_items)
+                {
+                    $changed_items['data'] = $diff_items;
+                    $changedRecords[] = $changed_items;
+                }
             }
         }
 

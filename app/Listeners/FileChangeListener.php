@@ -32,11 +32,11 @@ class FileChangeListener
     {
         if ($event instanceof FileUploadEvent)
         {
-            $this->updIssueField($event->project_key, $event->issue_id, $event->field_key, $event->file_id, 1);
+            $this->updIssueField($event->project_key, $event->issue_id, $event->field_key, $event->file_id, $event->user, 1);
         }
         else if ($event instanceof FileDelEvent)
         {
-            $this->updIssueField($event->project_key, $event->issue_id, $event->field_key, $event->file_id, 2);
+            $this->updIssueField($event->project_key, $event->issue_id, $event->field_key, $event->file_id, $event->user, 2);
         }
     }
     /**
@@ -49,7 +49,7 @@ class FileChangeListener
      * @param  int flag
      * @return void
      */
-    public function updIssueField($project_key, $issue_id, $field_key, $file_id, $flag)
+    public function updIssueField($project_key, $issue_id, $field_key, $file_id, $user, $flag)
     {
         $table = 'issue_' . $project_key;
         $issue = DB::collection($table)->where('_id', $issue_id)->first();
@@ -73,9 +73,9 @@ class FileChangeListener
 
         $issue['updated_at'] = time();
         // update issue file field
-        DB::collection($table)->where('_id', $issue_id)->update([ $field_key => $issue[$field_key] ]);
+        DB::collection($table)->where('_id', $issue_id)->update([ $field_key => $issue[$field_key], 'updated_at' => time(), 'modifier' => $user ]);
 
         // add to histroy table
-        //Provider::snap2His($project_key, $issue_id, '', [ $field_key ]);
+        Provider::snap2His($project_key, $issue_id, '', [ $field_key ]);
     }
 }
