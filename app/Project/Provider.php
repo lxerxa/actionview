@@ -651,7 +651,7 @@ file_put_contents('/tmp/aa', json_encode($latest_ver_issue));
                 continue;
             }
 
-            if (isset($issue[$field['key']]) && $issue[$field['key']])
+            if (isset($issue[$field['key']]))
             {
                 $val = [];
                 $val['name'] = $field['name'];
