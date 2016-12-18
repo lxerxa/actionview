@@ -581,11 +581,27 @@ class Provider {
             {
                 $resolutions = self::getResolutionList($project_key);
                 $val['optionValues'] = self::pluckFields($resolutions, ['_id', 'name']);
+                foreach ($resolutions as $key2 => $val2)
+                {
+                    if (isset($val2['default']) && $val2['default'])
+                    {
+                        $val['defaultValue'] = $val2['_id'];
+                        break;
+                    }
+                }
             }
             else if ($val['key'] == 'priority')
             {
                 $priorities = self::getPriorityList($project_key);
                 $val['optionValues'] = self::pluckFields($priorities, ['_id', 'name']);
+                foreach ($priorities as $key2 => $val2)
+                {
+                    if (isset($val2['default']) && $val2['default'])
+                    {
+                        $val['defaultValue'] = $val2['_id'];
+                        break;
+                    }
+                }
             }
             else if ($val['key'] == 'module')
             {
@@ -598,17 +614,6 @@ class Provider {
                 $val['optionValues'] = self::pluckFields($versions, ['_id', 'name']);
             }
 
-            if ($val['key'] == 'resolution' || $val['key'] == 'priority')
-            {
-                foreach ($val['optionValues'] as $key2 => $val2)
-                {
-                    if (isset($val2['default']) && $val2['default'])
-                    {
-                        $val['defaultValue'] = $val2['_id'];
-                        break;
-                    }
-                }
-            }
             if (isset($val['_id']))
             {
                 unset($val['_id']);
