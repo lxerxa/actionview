@@ -30,8 +30,7 @@ class Controller extends BaseController
 
         if (array_key_exists('_id', $data))
         {
-            $data['id'] = $data['_id'] instanceof ObjectID ? $data['_id']->__toString() : $data['_id'];
-            unset($data['_id']);
+            $data['_id'] = $data['_id'] instanceof ObjectID ? $data['_id']->__toString() : $data['_id'];
         }
 
         foreach ($data as $k => $val)

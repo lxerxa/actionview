@@ -526,7 +526,11 @@ class Provider {
             foreach ($fields as $field)
             {
                 if ($field === '_id') {
-                    $tmp['id'] = isset($val[$field]) ? $val[$field] : '';
+                    if (isset($val[$field]) && $val[$field] instanceof ObjectID) {
+                        $tmp['id'] = $val[$field]->__toString();
+                    } else {
+                        $tmp['id'] = isset($val[$field]) ? $val[$field] : '';
+                    }
                 } else {
                     $tmp[$field] = isset($val[$field]) ? $val[$field] : '';
                 }
@@ -604,6 +608,10 @@ class Provider {
                         break;
                     }
                 }
+            }
+            if (isset($val['_id']))
+            {
+                unset($val['_id']);
             }
 
             $new_schema[] = $val;
