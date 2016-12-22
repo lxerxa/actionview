@@ -91,7 +91,7 @@ class CommentsController extends Controller
             if ($operation == 'addReply') 
             {
                 $reply_id = md5(microtime() . $this->user->id); 
-                array_unshift($comments['reply'], array_only($request->all(), [ 'contents', 'atWho', 'to' ]) + [ 'id' => $reply_id , 'creator' => $creator, 'created_at' => time() ]);
+                array_push($comments['reply'], array_only($request->all(), [ 'contents', 'atWho', 'to' ]) + [ 'id' => $reply_id , 'creator' => $creator, 'created_at' => time() ]);
             } 
             else if ($operation == 'editReply')
             {

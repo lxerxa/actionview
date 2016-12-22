@@ -440,7 +440,7 @@ class Provider {
         $types = self::getTypeList($project_key);
         foreach ($types as $key => $type)
         {
-            $schema = self::_repairSchema($type->id, $type->screen && $type->screen->schema ? $type->screen->schema : [] , $options);
+            $schema = self::_repairSchema($project_key, $type->id, $type->screen && $type->screen->schema ? $type->screen->schema : [] , $options);
 
             $tmp = [ 'id' => $type->id, 'name' => $type->name, 'abb' => $type->abb, 'schema' => $schema ];
             if ($type->default) 
@@ -458,7 +458,7 @@ class Provider {
      * @param string $project_key
      * @return array
      */
-    private static function _repairSchema($issue_type, $schema, $options)
+    private static function _repairSchema($project_key, $issue_type, $schema, $options)
     {
         $new_schema = [];
         foreach ($schema as $key => $val)
@@ -474,6 +474,10 @@ class Provider {
 
             if ($val['type'] == 'SingleVersion' || $val['type'] == 'MultiVersion')
             {
+                if (!isset($options['version']))
+                {
+                    $options['version'] = self::getVersionList($project_key);
+                }
                 $val['optionValues'] = self::pluckFields($options['version'], ['_id', 'name']);
             }
             else if ($val['key'] == 'assignee')
@@ -487,6 +491,10 @@ class Provider {
             }
             else if ($val['key'] == 'module')
             {
+                if (!isset($options['module']))
+                {
+                    $options['module'] = self::getModuleList($project_key);
+                }
                 $val['optionValues'] = self::pluckFields($options['module'], ['_id', 'name']);
             }
             else if (array_key_exists($val['key'], $options))
@@ -572,6 +580,15 @@ class Provider {
         $versions = null;
         foreach ($screen->schema ?: [] as $key => $val)
         {
+            if (isset($val['applyToTypes']))
+            {
+                if ($val['applyToTypes'] && !in_array($type_id, explode(',', $val['applyToTypes'] ?: '')))
+                {
+                    continue;
+                }
+                unset($val['applyToTypes']);
+            }
+
             if ($val['key'] == 'assignee')
             {
                 $users = self::getUserList($project_key);
@@ -742,6 +759,19 @@ file_put_contents('/tmp/aa', json_encode($latest_ver_issue));
 file_put_contents('/tmp/bb', json_encode($snap_data));
 
         DB::collection('issue_his_' . $project_key)->insert([ 'issue_id' => $issue['_id']->__toString(), 'operated_at' => $operated_at, 'operator' => $operator, 'data' => $snap_data ]);
+    }
+
+    /**
+     * check if issue exist.
+     *
+     * @param string $project_key
+     * @param string $issue_id
+     * @return bool
+     */
+    public static function isIssueExisted($project_key, $issue_id)
+    {
+        $isExisted = DB::collection('issue_' . $project_key)->where('_id', $issue_id)->exists();
+        return $isExisted;
     }
 }
 
