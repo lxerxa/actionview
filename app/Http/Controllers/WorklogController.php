@@ -18,7 +18,10 @@ class WorklogController extends Controller
      */
     public function index($project_key, $issue_id)
     {
-        $worklogs = Provider::getWorklogList($project_key);
+        $worklogs = Worklog::Where('project_key', $project_key)
+            ->where('issue_id', $issue_id)
+            ->orderBy('recorded_at', 'asc')
+            ->get();
         return Response()->json(['ecode' => 0, 'data' => $worklogs]);
     }
 
@@ -37,24 +40,23 @@ class WorklogController extends Controller
         {
             throw new \UnexpectedValueException('the spend-time can not be empty.', -10002);
         }
-
         if (!$this->ttCheck($spend))
         {
             throw new \UnexpectedValueException('the format of spend-time is incorrect.', -10002);
         }
         $values['spend'] = $this->ttHandle($spend);
 
-        $stated_at = $request->input('stated_at');
+        $started_at = $request->input('started_at');
         if (!$started_at)
         {
             throw new \UnexpectedValueException('the start time can not be empty.', -10002);
         }
-        $values['stated_at'] = $started_at;
+        $values['started_at'] = $started_at;
 
         $adjust_type = $request->input('adjust_type');
-        if (!$adjust_type)
+        if (!in_array($adjust_type, ['1', '2', '3', '4']))
         {
-            $adjust_type = '1';
+            throw new \UnexpectedValueException('the adjust-type value is incorrect.', -10002);
         }
         $values['adjust_type'] = $adjust_type;
 
@@ -73,14 +75,32 @@ class WorklogController extends Controller
             $values['leave_estimate'] = $this->ttHandle($leave_estimate);
         }
 
-        $isIssueExisted = Provider::isIssueExisted(project_key, $issue_id);
+        if ($adjust_type == '4')
+        {
+            $cut = $request->input('cut');
+            if (!$cut || trim($cut) == '')
+            {
+                throw new \UnexpectedValueException('the cut-time can not be empty.', -10002);
+            }
+
+            if (!$this->ttCheck($cut))
+            {
+                throw new \UnexpectedValueException('the format of cut-time is incorrect.', -10002);
+            }
+            $values['cut'] = $this->ttHandle($cut);
+        }
+
+        $comments = $request->input('comments');
+        $values['comments'] = $comments ?: '';
+
+        $isIssueExisted = Provider::isIssueExisted($project_key, $issue_id);
         if (!$isIssueExisted) {
             throw new \UnexpectedValueException('the issue is not existed.', -10002);
         }
 
-        $creator = [ 'id' => $this->user->id, 'name' => $this->user->first_name ];
+        $recorder = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'nameAndEmail' => $this->user->first_name . '(' . $this->user->email . ')' ];
 
-        $worklog = Worklog::create([ 'project_key' => $project_key, 'issue_id' => $issue_id ] + $values);
+        $worklog = Worklog::create([ 'project_key' => $project_key, 'issue_id' => $issue_id, 'recorder' => $recorder, 'recorded_at' => time() ] + $values);
         return Response()->json(['ecode' => 0, 'data' => $worklog]);
     }
 
@@ -118,47 +138,74 @@ class WorklogController extends Controller
         $values = [];
 
         $spend = $request->input('spend');
-        if (!$spend || trim($spend) == '')
+        if (isset($spend))
         {
-            throw new \UnexpectedValueException('the spend-time can not be empty.', -10002);
+            if (!$spend || trim($spend) == '')
+            {
+                throw new \UnexpectedValueException('the spend-time can not be empty.', -10002);
+            }
+            if (!$this->ttCheck($spend))
+            {
+                throw new \UnexpectedValueException('the format of spend-time is incorrect.', -10002);
+            }
+            $values['spend'] = $this->ttHandle($spend);
         }
 
-        if (!$this->ttCheck($spend))
+        $started_at = $request->input('started_at');
+        if (isset($started_at))
         {
-            throw new \UnexpectedValueException('the format of spend-time is incorrect.', -10002);
+            if (!$started_at)
+            {
+                throw new \UnexpectedValueException('the start time can not be empty.', -10002);
+            }
+            $values['started_at'] = $started_at;
         }
-        $values['spend'] = $this->ttHandle($spend);
-
-        $stated_at = $request->input('stated_at');
-        if (!$started_at)
-        {
-            throw new \UnexpectedValueException('the start time can not be empty.', -10002);
-        }
-        $values['stated_at'] = $started_at;
 
         $adjust_type = $request->input('adjust_type');
-        if (!$adjust_type)
+        if (isset($adjust_type))
         {
-            $adjust_type = '1';
-        }
-        $values['adjust_type'] = $adjust_type;
-
-        if ($adjust_type == '3')
-        {
-            $leave_estimate = $request->input('leave_estimate');
-            if (!$leave_estimate || trim($leave_estimate) == '')
+            if (!in_array($adjust_type, ['1', '2', '3', '4']))
             {
-                throw new \UnexpectedValueException('the leave-estimate-time can not be empty.', -10002);
+                throw new \UnexpectedValueException('the adjust-type value is incorrect.', -10002);
             }
 
-            if (!$this->ttCheck($leave_estimate))
+            $values['adjust_type'] = $adjust_type;
+            if ($adjust_type == '3')
             {
-                throw new \UnexpectedValueException('the format of leave-estimate-time is incorrect.', -10002);
+                $leave_estimate = $request->input('leave_estimate');
+                if (!$leave_estimate || trim($leave_estimate) == '')
+                {
+                    throw new \UnexpectedValueException('the leave-estimate-time can not be empty.', -10002);
+                }
+                if (!$this->ttCheck($leave_estimate))
+                {
+                    throw new \UnexpectedValueException('the format of leave-estimate-time is incorrect.', -10002);
+                }
+                $values['leave_estimate'] = $this->ttHandle($leave_estimate);
+            } 
+            else if ($adjust_type == '4')
+            {
+                $cut = $request->input('cut');
+                if (!$cut || trim($cut) == '')
+                {
+                    throw new \UnexpectedValueException('the cut-time can not be empty.', -10002);
+                }
+
+                if (!$this->ttCheck($cut))
+                {
+                    throw new \UnexpectedValueException('the format of cut-time is incorrect.', -10002);
+                }
+                $values['cut'] = $this->ttHandle($cut);
             }
-            $values['leave_estimate'] = $this->ttHandle($leave_estimate);
         }
 
-        $worklog->fill($values)->save();
+        $comments = $request->input('comments');
+        if (isset($comments)) 
+        {
+            $values['comments'] = $comments ?: '';
+        }
+
+        $worklog->fill(array_except($values, [ 'recorder', 'recorded_at' ]))->save();
         return Response()->json(['ecode' => 0, 'data' => Worklog::find($id)]);
     }
 

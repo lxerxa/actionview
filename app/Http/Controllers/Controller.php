@@ -48,10 +48,15 @@ class Controller extends BaseController
      */
     public function ttCheck($ttString)
     {
-        $ttString = trim($ttString);
+        $ttString = strtolower(trim($ttString));
         $ttValues = explode(' ', $ttString);
         foreach ($ttValues as $ttValue)
         {
+            if (!$ttValue)
+            {
+                continue;
+            }
+
             $lastChr = substr($ttValue, -1);
             if ($lastChr !== 'w' && $lastChr !== 'd' && $lastChr !== 'h' && $lastChr !== 'm')
             {
@@ -74,22 +79,28 @@ class Controller extends BaseController
      */
     public function ttHandle($ttString)
     {
+        if (!$ttString)
+        {
+            return '';
+        }
+
         $W2M = 5 * 8 * 60;
         $D2M = 8 * 60;
         $H2M = 60;
 
         $tt_in_min = 0;
 
-        $ttString = trim($ttString);
+        $ttString = strtolower(trim($ttString));
         $ttValues = explode(' ', $ttString);
         foreach ($ttValues as $ttValue)
         {
-            $lastChr = substr($ttValue, -1);
-            $ttNum   = substr($ttValue, 0, -1);
-            if (!$ttNum)
+            if (!$ttValue)
             {
                 continue;
             }
+
+            $lastChr = substr($ttValue, -1);
+            $ttNum   = substr($ttValue, 0, -1) === '' ? 1 : substr($ttValue, 0, -1);
 
             if ($lastChr == 'w')
             {
@@ -144,6 +155,11 @@ class Controller extends BaseController
         if ($new_remain_min > 0)
         {
             $newTT[] = $new_remain_min . 'm';
+        }
+
+        if (!$newTT)
+        {
+            $newTT[] = '0m';
         }
 
         return implode(' ', $newTT);

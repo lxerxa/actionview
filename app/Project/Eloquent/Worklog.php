@@ -12,11 +12,14 @@ class Worklog extends Model
     protected $fillable = array(
         'project_key',
         'issue_id',
-        'creator',
+        'recorder',
+        'recorded_at',
         'started_at',
         'spend',
         'adjust_type',
         'leave_estimate',
-        'comments'
+        'cut',
+        'comments',
+        'edit_flag'
     );
 }
