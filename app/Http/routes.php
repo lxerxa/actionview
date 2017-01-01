@@ -68,6 +68,9 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can' 
     Route::resource('issue/{issue_id}/comments', 'CommentsController');
     Route::resource('issue/{issue_id}/worklog', 'WorklogController');
 
+    Route::post('link', 'LinkController@store');
+    Route::delete('link/{id}', 'LinkController@delete');
+
     Route::post('file', 'FileController@upload');
     Route::get('file/{id}', 'FileController@download');
     Route::delete('file/{id}', 'FileController@delete');

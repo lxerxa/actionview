@@ -230,6 +230,34 @@ class IssueController extends Controller
                 }
             }
         }
+
+        $issue['links'] = [];
+        $links = DB::collection('link_' . $project_key)->where('src', $id)->orWhere('dest', $id)->orderBy('created_at', 'asc')->get();
+        $link_fields = ['_id', 'no', 'type', 'title'];
+        foreach ($links as $link)
+        {
+            if ($link['src'] == $id)
+            {
+                $link['src'] = array_only($issue, $link_fields);
+            }
+            else
+            {
+                $src_issue = DB::collection('issue_' . $project_key)->where('_id', $link['src'])->first();
+                $link['src'] = array_only($src_issue, $link_fields);
+            }
+
+            if ($link['dest'] == $id)
+            {
+                $link['dest'] = array_only($issue, $link_fields);
+            }
+            else
+            {
+                $dest_issue = DB::collection('issue_' . $project_key)->where('_id', $link['dest'])->first();
+                $link['dest'] = array_only($dest_issue, $link_fields);
+            }
+            array_push($issue['links'], $link);
+        }
+
         return Response()->json(['ecode' => 0, 'data' => parent::arrange($issue)]);
     }
 
