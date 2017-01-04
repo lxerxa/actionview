@@ -144,7 +144,7 @@ class IssueController extends Controller
             $limit = 10;
         }
 
-        $query->take($limit);
+        $query->take($limit)->orderBy('created_at', 'asc');
         $issues = $query->get();
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($issues) ]);
     }
@@ -157,7 +157,6 @@ class IssueController extends Controller
      */
     public function store(Request $request, $project_key)
     {
-        sleep(20);
         $issue_type = $request->input('type');
         if (!$issue_type)
         {
