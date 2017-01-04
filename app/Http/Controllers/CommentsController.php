@@ -38,7 +38,7 @@ class CommentsController extends Controller
             throw new \UnexpectedValueException('the contents can not be empty.', -10002);
         }
 
-        $creator = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'nameAndEmail' => $this->user->first_name . '(' . $this->user->email . ')' ];
+        $creator = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
 
         $table = 'comments_' . $project_key;
 
@@ -82,7 +82,7 @@ class CommentsController extends Controller
         $operation = $request->input('operation');
         if (isset($operation)) 
         {
-            $creator = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'nameAndEmail' => $this->user->first_name . '(' . $this->user->email . ')' ];
+            $creator = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
             $comments = DB::collection('comments_' . $project_key)->where('_id', $id)->first();
             if (!isset($comments['reply']) || !$comments['reply'])
             {

@@ -225,7 +225,7 @@ class IssueController extends Controller
         }
 
         // get reporter(creator)
-        $reporter = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'nameAndEmail' => $this->user->first_name . '(' . $this->user->email . ')' ];
+        $reporter = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
 
         $table = 'issue_' . $project_key;
         $max_no = DB::collection($table)->count() + 1;
@@ -375,7 +375,7 @@ class IssueController extends Controller
             }
         }
 
-        $modifier = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'nameAndEmail' => $this->user->first_name . '(' . $this->user->email . ')' ];
+        $modifier = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
 
         DB::collection($table)->where('_id', $id)->update($updValues + $ttValues + [ 'modifier' => $modifier, 'updated_at' => time() ] + array_only($request->all(), $valid_keys));
 

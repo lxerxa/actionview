@@ -282,7 +282,7 @@ class Provider {
         foreach ($users as $user)
         {
             $user_info = Sentinel::findById($user['user_id']);
-            $user_info && $user_list[] = ['id' => $user['user_id'], 'name' => $user_info->first_name, 'nameAndEmail' => $user_info->first_name . '(' . $user_info->email . ')' ];
+            $user_info && $user_list[] = ['id' => $user['user_id'], 'name' => $user_info->first_name, 'email' => $user_info->email ];
         }
 
         return $user_list;
@@ -482,11 +482,11 @@ class Provider {
             }
             else if ($val['key'] == 'assignee')
             {
-                $val['optionValues'] = self::pluckFields($options['assignee'], ['id', 'name', 'nameAndEmail']);
+                $val['optionValues'] = self::pluckFields($options['assignee'], ['id', 'name', 'email']);
                 foreach ($val['optionValues'] as $k => $v)
                 {
-                    $val['optionValues'][$k]['name'] = $v['nameAndEmail'];
-                    unset($val['optionValues'][$k]['nameAndEmail']);
+                    $val['optionValues'][$k]['name'] = $v['name'] . '(' . $v['email'] . ')';
+                    unset($val['optionValues'][$k]['email']);
                 }
             }
             else if ($val['key'] == 'module')

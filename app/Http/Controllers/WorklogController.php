@@ -98,7 +98,7 @@ class WorklogController extends Controller
             throw new \UnexpectedValueException('the issue is not existed.', -10002);
         }
 
-        $recorder = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'nameAndEmail' => $this->user->first_name . '(' . $this->user->email . ')' ];
+        $recorder = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
 
         $worklog = Worklog::create([ 'project_key' => $project_key, 'issue_id' => $issue_id, 'recorder' => $recorder, 'recorded_at' => time() ] + $values);
         return Response()->json(['ecode' => 0, 'data' => $worklog]);

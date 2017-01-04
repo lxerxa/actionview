@@ -39,7 +39,7 @@ class UserController extends Controller
 
                 $users[$i]['id'] = $user->id;
                 $users[$i]['name'] = $user->first_name ?: '';
-                $users[$i]['nameAndEmail'] = $user->first_name . '('. $user->email  .')';
+                $users[$i]['email'] = $user->email;
                 if (++$i >= 10)
                 {
                     break;

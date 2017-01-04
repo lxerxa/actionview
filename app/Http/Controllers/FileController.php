@@ -87,7 +87,7 @@ class FileController extends Controller
         }
         // move original file
         @rename($filename, $sub_save_path . $basename);
-        $data['uploader'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'nameAndEmail' => $this->user->first_name . '(' . $this->user->email . ')' ];
+        $data['uploader'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
         $file = File::create($data);
 
         $issue_id = $request->input('issue_id');
@@ -144,7 +144,7 @@ class FileController extends Controller
         $field_key = $request->input('field_key');
         if (isset($issue_id) && $issue_id && isset($field_key) && $field_key)
         {
-            $user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'nameAndEmail' => $this->user->first_name . '(' . $this->user->email . ')' ];
+            $user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
             Event::fire(new FileDelEvent($project_key, $issue_id, $field_key, $id, $user));
         }
 
