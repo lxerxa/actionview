@@ -29,7 +29,7 @@ class LinkController extends Controller
 
         $relations = ['blocks', 'is blocked by', 'clones', 'is cloned by', 'duplicates', 'is duplicated by', 'relates to'];
         $relation = $request->input('relation');
-        if (!$relation || in_array($relation, $relations)) {
+        if (!$relation || !in_array($relation, $relations)) {
             throw new \UnexpectedValueException('the relation value has error.', -10002);
         }
         $values['relation'] = $relation;
@@ -44,7 +44,7 @@ class LinkController extends Controller
         $values['created_at'] = time();
         $values['creator'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name ];
 
-        $table = 'link_' . $project_key;
+        $table = 'issue_link_' . $project_key;
 
         $isExists = DB::collection($table)->where('src', $src)->where('dest', $dest)->exists();
         if ($isExists || DB::collection($table)->where('dest', $src)->where('src', $dest)->exists())
@@ -55,7 +55,7 @@ class LinkController extends Controller
         $id = DB::collection($table)->insertGetId($values);
 
         $link = $values;
-        $link['id'] = $id;
+        $link['_id'] = $id;
 
         $src_issue = DB::collection('issue_' . $project_key)->where('_id', $src)->first();
         $link['src'] = array_only($src_issue, ['_id', 'no', 'type', 'title']);
@@ -74,8 +74,8 @@ class LinkController extends Controller
      */
     public function destroy($project_key, $id)
     {
-        $table = 'link_' . $project_key;
-        $link = DB::collection($table)->find($id);
+        $table = 'issue_link_' . $project_key;
+        $link = DB::collection($table)->where('_id', $id)->first();
         if (!$link)
         {
             throw new \UnexpectedValueException('the link does not exist or is not in the project.', -10002);

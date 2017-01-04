@@ -63,13 +63,17 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can' 
     Route::post('issue/searcher', 'IssueController@addSearcher');
     Route::delete('issue/searcher/{id}', 'IssueController@delSearcher');
     Route::get('issue/options', 'IssueController@getOptions');
+    Route::get('issue/search', 'IssueController@search');
+
     Route::resource('issue', 'IssueController');
+
     Route::get('issue/{issue_id}/history', 'IssueController@getHistory');
     Route::resource('issue/{issue_id}/comments', 'CommentsController');
     Route::resource('issue/{issue_id}/worklog', 'WorklogController');
 
+
     Route::post('link', 'LinkController@store');
-    Route::delete('link/{id}', 'LinkController@delete');
+    Route::delete('link/{id}', 'LinkController@destroy');
 
     Route::post('file', 'FileController@upload');
     Route::get('file/{id}', 'FileController@download');

@@ -118,6 +118,38 @@ class IssueController extends Controller
     }
 
     /**
+     * search issue.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function search(Request $request, $project_key)
+    {
+        $query = DB::collection('issue_' . $project_key);
+
+        if ($s = $request->input('s'))
+        {
+            $query->where('title', 'like', '%' . $s . '%');
+            if (is_int($s + 0))
+            {
+                $query->orWhere('no', $s + 0);
+            }
+        }
+
+        if ($limit = $request->input('limit'))
+        {
+            $limit = intval($limit) < 10 ? 10 : intval($limit);
+        }
+        else
+        {
+            $limit = 10;
+        }
+
+        $query->take($limit);
+        $issues = $query->get();
+        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($issues) ]);
+    }
+
+    /**
      * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
@@ -125,6 +157,7 @@ class IssueController extends Controller
      */
     public function store(Request $request, $project_key)
     {
+        sleep(20);
         $issue_type = $request->input('type');
         if (!$issue_type)
         {
@@ -232,7 +265,7 @@ class IssueController extends Controller
         }
 
         $issue['links'] = [];
-        $links = DB::collection('link_' . $project_key)->where('src', $id)->orWhere('dest', $id)->orderBy('created_at', 'asc')->get();
+        $links = DB::collection('issue_link_' . $project_key)->where('src', $id)->orWhere('dest', $id)->orderBy('created_at', 'asc')->get();
         $link_fields = ['_id', 'no', 'type', 'title'];
         foreach ($links as $link)
         {

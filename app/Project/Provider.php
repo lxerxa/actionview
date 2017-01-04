@@ -664,7 +664,6 @@ class Provider {
 
         // edit version
         $latest_ver_issue = DB::collection('issue_his_' . $project_key)->where('issue_id', $issue_id)->orderBy('operated_at', 'desc')->first();
-file_put_contents('/tmp/aa', json_encode($latest_ver_issue));
         if ($latest_ver_issue)
         {
             $snap_data = $latest_ver_issue['data'];
@@ -755,8 +754,6 @@ file_put_contents('/tmp/aa', json_encode($latest_ver_issue));
 
         $operated_at = isset($issue['updated_at']) ? $issue['updated_at'] : $issue['created_at'];
         $operator = isset($issue['modifier']) ? $issue['modifier'] : $issue['reporter'];
-
-file_put_contents('/tmp/bb', json_encode($snap_data));
 
         DB::collection('issue_his_' . $project_key)->insert([ 'issue_id' => $issue['_id']->__toString(), 'operated_at' => $operated_at, 'operator' => $operator, 'data' => $snap_data ]);
     }
