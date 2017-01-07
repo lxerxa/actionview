@@ -205,7 +205,7 @@ class WorklogController extends Controller
             $values['comments'] = $comments ?: '';
         }
 
-        $worklog->fill(array_except($values, [ 'recorder', 'recorded_at' ]))->save();
+        $worklog->fill([ 'edited_flag' => 1 ] + array_except($values, [ 'recorder', 'recorded_at' ]))->save();
         return Response()->json(['ecode' => 0, 'data' => Worklog::find($id)]);
     }
 
