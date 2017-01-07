@@ -20,6 +20,6 @@ class Worklog extends Model
         'leave_estimate',
         'cut',
         'comments',
-        'edit_flag'
+        'edited_flag'
     );
 }
