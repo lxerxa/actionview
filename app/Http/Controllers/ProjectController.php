@@ -13,12 +13,14 @@ use App\Project\Provider;
 use App\Events\AddUserToRoleEvent;
 use App\Events\DelUserFromRoleEvent;
 use Sentinel;
+use DB;
 
 class ProjectController extends Controller
 {
     public function __construct()
     {
         $this->middleware('privilege:global:manage_project', [ 'except' => [ 'index' ] ]);
+        parent::__construct();
     }
 
     /**
@@ -96,6 +98,8 @@ class ProjectController extends Controller
         }
         // get action allow of the project.
         $permissions = Acl::getPermissions('mm', $project->key); // fix me
+        // get searchers
+        $searchers = DB::collection('searcher_' . $key)->where('user', $this->user->id)->orderBy('created_at', 'asc')->get();
         // get project users
         //$users = Provider::getUserList($project->key);
         // get state list
@@ -111,7 +115,7 @@ class ProjectController extends Controller
         // get project types
         //$types = Provider::getTypeListExt($project->key, [ 'assignee' => $users, 'state' => $states, 'resolution' => $resolutions, 'priority' => $priorities, 'version' => $versions, 'module' => $modules ]);
 
-        return Response()->json([ 'ecode' => 0, 'data' => $project, 'options' => parent::arrange([ 'permissions' => $permissions, ]) ]);
+        return Response()->json([ 'ecode' => 0, 'data' => $project, 'options' => parent::arrange([ 'permissions' => $permissions, 'searchers' => $searchers ?: [] ]) ]);
     }
 
     /**

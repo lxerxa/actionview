@@ -717,6 +717,7 @@ class Provider {
                 else if ($field['type'] == 'DatePicker' || $field['type'] == 'DateTimePicker')
                 {
                     $val['value'] = date($field['type'] == 'DatePicker' ? 'y/m/d' : 'y/m/d H:i:s', $issue[$field['key']]);
+file_put_contents('/tmp/tt', $issue[$field['key']] . '|' . date('y/m/d H:i:s', $issue[$field['key']]));
                 }
                 else
                 {
