@@ -6,9 +6,7 @@ use Illuminate\Http\Request;
 
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
-
-use MongoDB\BSON\UTCDateTime;
-use DB;
+use App\Project\Eloquent\Version;
 
 class VersionController extends Controller
 {
@@ -19,8 +17,8 @@ class VersionController extends Controller
      */
     public function index($project_key)
     {
-        $versions = DB::collection('version_' . $project_key)->orderBy('created_at', 'desc')->get();
-        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($versions) ]);
+        $versions = Version::whereRaw([ 'project_key' => $project_key ])->orderBy('created_at', 'desc')->get();
+        return Response()->json([ 'ecode' => 0, 'data' => $versions ]);
     }
 
     /**
@@ -37,9 +35,7 @@ class VersionController extends Controller
             throw new \UnexpectedValueException('the name can not be empty.', -10002);
         }
 
-        $table = 'version_' . $project_key;
-
-        if (DB::collection($table)->where('name', $name)->exists())
+        if (Version::whereRaw([ 'name' => $name, 'project_key' => $project_key ])->exists())
         {
             throw new \UnexpectedValueException('version name cannot be repeated', -10002);
         }
@@ -49,10 +45,10 @@ class VersionController extends Controller
             throw new \UnexpectedValueException('start-time must less then end-time', -10002);
         }
 
-        $id = DB::collection($table)->insertGetId(array_only($request->all(), ['name', 'start_time', 'end_time', 'description']) + [ 'created_at' => new UTCDateTime(time()*1000) ]);
+        $creator = [ 'id' => $this->user->id, 'name' => $this->user->first_name ];
 
-        $version = DB::collection($table)->where('_id', $id)->first();
-        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($version) ]);
+        $version = Version::create([ 'project_key' => $project_key, 'creator' => $creator ] + $request->all());
+        return Response()->json([ 'ecode' => 0, 'data' => $version ]);
     }
 
     /**
@@ -63,8 +59,8 @@ class VersionController extends Controller
      */
     public function show($project_key, $id)
     {
-        $version = DB::collection('version_' . $project_key)->where('_id', $id)->first();
-        return Response()->json(['ecode' => 0, 'data' => parent::arrange($version)]);
+        $version = Version::find($id);
+        return Response()->json(['ecode' => 0, 'data' => $version]);
     }
 
     /**
@@ -85,14 +81,13 @@ class VersionController extends Controller
             }
         }
 
-        $table = 'version_' . $project_key;
-        $version = DB::collection($table)->find($id);
-        if (!$version)
+        $version = Version::find($id);
+        if (!$version || $version->project_key != $project_key)
         {
             throw new \UnexpectedValueException('the version does not exist or is not in the project.', -10002);
         }
 
-        if ($version['name'] !== $name && DB::collection($table)->where('name', $name)->exists())
+        if ($version->name !== $name && Version::whereRaw([ 'name' => $name, 'project_key' => $project_key ])->exists())
         {
             throw new \UnexpectedValueException('version name cannot be repeated', -10002);
         }
@@ -102,9 +97,9 @@ class VersionController extends Controller
             throw new \UnexpectedValueException('start-time must less then end-time', -10002);
         }
 
-        DB::collection($table)->where('_id', $id)->update(array_only($request->all(), ['name', 'start_time', 'end_time', 'description']) + [ 'updated_at' => new UTCDateTime(time()*1000) ]);
+        $version->fill(array_except($request->all(), [ 'creator', 'project_key' ]))->save();
 
-        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange(DB::collection($table)->find($id)) ]);
+        return Response()->json([ 'ecode' => 0, 'data' => Version::find($id) ]);
     }
 
     /**
@@ -115,15 +110,13 @@ class VersionController extends Controller
      */
     public function destroy($project_key, $id)
     {
-        $table = 'version_' . $project_key;
-        $version = DB::collection($table)->find($id);
-        if (!$version)
+        $version = Version::find($id);
+        if (!$version || $version->project_key != $project_key)
         {
             throw new \UnexpectedValueException('the version does not exist or is not in the project.', -10002);
         }
 
-        DB::collection($table)->where('_id', $id)->delete();
-
+        Version::destroy($id);
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }
 }

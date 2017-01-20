@@ -8,6 +8,7 @@ use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Project\Provider;
 use App\Project\Eloquent\File;
+use App\Project\Eloquent\Searcher;
 use Sentinel;
 use DB;
 
@@ -411,7 +412,7 @@ class IssueController extends Controller
      */
     public function getSearchers($project_key)
     {
-        $searchers = DB::collection('searcher_' . $project_key)->where('user', $this->user->id)->orderBy('created_at', 'asc')->get();
+        $searchers = Searcher::whereRaw([ 'user' => $this->user->id, 'project_key' => $project_key ])->orderBy('sn', 'asc')->get();
         return $searchers ?: [];
     }
 
@@ -429,17 +430,45 @@ class IssueController extends Controller
             throw new \UnexpectedValueException('the name can not be empty.', -10002);
         }
 
-        $table = 'searcher_' . $project_key;
-
-        if (DB::collection($table)->where('name', $name)->where('user', $this->user->id)->exists())
+        if (Searcher::whereRaw([ 'name' => $name, 'user' => $this->user->id, 'project_key' => $project_key ])->exists())
         {
             throw new \UnexpectedValueException('searcher name cannot be repeated', -10002);
         }
 
-        $id = DB::collection($table)->insertGetId([ 'user' => $this->user->id, 'created_at' => time() ] + array_only($request->all(), [ 'name', 'query' ] ));
-
-        $searcher = DB::collection($table)->where('_id', $id)->first();
+        $searcher = Searcher::create([ 'project_key' => $project_key, 'sn' => time() ] + $request->all());
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($searcher) ]);
+    }
+
+    /**
+     * update sort or delete searcher etc..
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return void
+     */
+    public function handle(Request $request, $project_key)
+    {
+        $table = 'searcher';
+        // set searcher sort.
+        $sequence = $request->input('sequence');
+        if (isset($sequence))
+        {
+            // update flag
+            DB::collection($table)->where('user', $this->user->id)->where('project_key', $project_key)->update([ 'flag' => 1 ]);
+
+            $i = 1;
+            foreach ($sequence as $searcher_id)
+            {
+                $searcher = [];
+                $searcher['sn'] = $i++;
+                $searcher['flag'] = 2;
+                DB::collection($table)->where('_id', $searcher_id)->update($searcher);
+            }
+
+            // delete seachers
+            DB::collection($table)->where('user', $this->user->id)->where('project_key', $project_key)->where('flag', 1)->delete();
+        }
+
+        return $this->getSearchers($project_key);
     }
 
     /**
@@ -450,14 +479,13 @@ class IssueController extends Controller
      */
     public function delSearcher($project_key, $id)
     {
-        $table = 'searcher_' . $project_key;
-        $searcher = DB::collection($table)->find($id);
-        if (!$searcher)
+        $searcher = Searcher::find($id);
+        if (!$searcher || $searcher->project_key != $project_key)
         {
             throw new \UnexpectedValueException('the searcher does not exist or is not in the project.', -10002);
         }
 
-        DB::collection($table)->where('_id', $id)->delete();
+        Searcher::destroy($id);
 
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }

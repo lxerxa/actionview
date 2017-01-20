@@ -14,6 +14,8 @@ use App\Workflow\Eloquent\Definition;
 use App\Project\Eloquent\Project;
 use App\Project\Eloquent\UserProject;
 use App\Project\Eloquent\File;
+use App\Project\Eloquent\Version;
+use App\Project\Eloquent\Module;
 use Sentinel;
 use MongoDB\BSON\ObjectID;
 use DB;
@@ -297,7 +299,7 @@ class Provider {
      */
     public static function getVersionList($project_key, $fields=[])
     {
-        $versions = DB::collection('version_' . $project_key)
+        $versions = Version::whereRaw([ 'project_key' => $project_key ])
             ->orderBy('created_at', 'desc')
             ->get($fields);
 
@@ -313,7 +315,7 @@ class Provider {
      */
     public static function getModuleList($project_key, $fields=[])
     {
-        $versions = DB::collection('module_' . $project_key)
+        $versions = Module::where([ 'project_key' => $project_key ])
             ->orderBy('created_at', 'asc')
             ->get($fields);
 

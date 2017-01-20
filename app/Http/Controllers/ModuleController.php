@@ -8,9 +8,8 @@ use App\Http\Requests;
 use App\Http\Controllers\Controller;
 
 use Sentinel;
-use MongoDB\BSON\UTCDateTime;
-use DB;
 use App\Project\Provider;
+use App\Project\Eloquent\Module;
 
 class ModuleController extends Controller
 {
@@ -21,9 +20,9 @@ class ModuleController extends Controller
      */
     public function index($project_key)
     {
-        $modules = DB::collection('module_' . $project_key)->orderBy('created_at', 'asc')->get();
+        $modules = Module::whereRaw([ 'project_key' => $project_key ])->orderBy('created_at', 'asc')->get();
         $users = Provider::getUserList($project_key);
-        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($modules), 'options' => [ 'users' => $users ] ]);
+        return Response()->json([ 'ecode' => 0, 'data' => $modules, 'options' => [ 'users' => $users ] ]);
     }
 
     /**
@@ -40,9 +39,7 @@ class ModuleController extends Controller
             throw new \UnexpectedValueException('the name can not be empty.', -10002);
         }
 
-        $table = 'module_' . $project_key;
-
-        if (DB::collection($table)->where('name', $name)->exists())
+        if (Module::whereRaw([ 'name' => $name ])->exists())
         {
             throw new \UnexpectedValueException('module name cannot be repeated', -10002);
         }
@@ -55,10 +52,10 @@ class ModuleController extends Controller
             $principal = [ 'id' => $principal_id, 'name' => $user_info->first_name ];
         }
 
-        $id = DB::collection($table)->insertGetId(array_only($request->all(), ['name', 'defaultAssignee', 'description']) + [ 'principal' => $principal, 'created_at' => new UTCDateTime(time()*1000) ]);
+        $creator = [ 'id' => $this->user->id, 'name' => $this->user->first_name ];
 
-        $module = DB::collection($table)->where('_id', $id)->first();
-        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($module) ]);
+        $module = Module::create([ 'project_key' => $project_key, 'principal' => $principal, 'creator' => $creator ] + $request->all());
+        return Response()->json([ 'ecode' => 0, 'data' => $module ]);
     }
 
     /**
@@ -69,8 +66,8 @@ class ModuleController extends Controller
      */
     public function show($project_key, $id)
     {
-        $module = DB::collection('module_' . $project_key)->where('_id', $id)->first();
-        return Response()->json(['ecode' => 0, 'data' => parent::arrange($module)]);
+        $module = Module::find($id);
+        return Response()->json(['ecode' => 0, 'data' => $module]);
     }
 
     /**
@@ -91,15 +88,13 @@ class ModuleController extends Controller
             }
         }
 
-        $table = 'module_' . $project_key;
-
-        $module = DB::collection($table)->find($id);
+        $module = Module::find($id);
         if (!$module)
         {
             throw new \UnexpectedValueException('the module does not exist or is not in the project.', -10002);
         }
 
-        if ($module['name'] !== $name && DB::collection($table)->where('name', $name)->exists())
+        if ($module->name !== $name && Module::whereRaw([ 'name' => $name ])->exists())
         {
             throw new \UnexpectedValueException('module name cannot be repeated', -10002);
         }
@@ -115,9 +110,8 @@ class ModuleController extends Controller
             $principal = isset($module['principal']) ? $module['principal'] : [];
         }
 
-        DB::collection($table)->where('_id', $id)->update(array_only($request->all(), ['name', 'defaultAssignee', 'description']) + [ 'principal' => $principal ?: [], 'updated_at' => new UTCDateTime(time()*1000) ]);
-
-        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange(DB::collection($table)->find($id)) ]);
+        $module->fill([ 'principal' => $principal ] + array_except($request->all(), [ 'creator', 'project_key' ]))->save();
+        return Response()->json([ 'ecode' => 0, 'data' => Module::find($id) ]);
     }
 
     /**
@@ -128,14 +122,13 @@ class ModuleController extends Controller
      */
     public function destroy($project_key, $id)
     {
-        $table = 'module_' . $project_key;
-        $module = DB::collection($table)->find($id);
-        if (!$module)
+        $module = Module::find($id);
+        if (!$module || $project_key != $module->project_key)
         {
             throw new \UnexpectedValueException('the module does not exist or is not in the project.', -10002);
         }
 
-        DB::collection($table)->where('_id', $id)->delete();
+        Module::destroy($id);
 
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }
