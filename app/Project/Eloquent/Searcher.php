@@ -12,6 +12,7 @@ class Searcher extends Model
     protected $fillable = array(
         'name',
         'query',
+        'user',
         'project_key',
         'sn',
         'description'

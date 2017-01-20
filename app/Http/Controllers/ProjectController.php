@@ -99,7 +99,7 @@ class ProjectController extends Controller
         // get action allow of the project.
         $permissions = Acl::getPermissions('mm', $project->key); // fix me
         // get searchers
-        $searchers = DB::collection('searcher_' . $key)->where('user', $this->user->id)->orderBy('created_at', 'asc')->get();
+        //$searchers = DB::collection('searcher_' . $key)->where('user', $this->user->id)->orderBy('created_at', 'asc')->get();
         // get project users
         //$users = Provider::getUserList($project->key);
         // get state list
@@ -115,7 +115,7 @@ class ProjectController extends Controller
         // get project types
         //$types = Provider::getTypeListExt($project->key, [ 'assignee' => $users, 'state' => $states, 'resolution' => $resolutions, 'priority' => $priorities, 'version' => $versions, 'module' => $modules ]);
 
-        return Response()->json([ 'ecode' => 0, 'data' => $project, 'options' => parent::arrange([ 'permissions' => $permissions, 'searchers' => $searchers ?: [] ]) ]);
+        return Response()->json([ 'ecode' => 0, 'data' => $project, 'options' => parent::arrange([ 'permissions' => $permissions ]) ]);
     }
 
     /**

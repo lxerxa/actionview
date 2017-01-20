@@ -316,7 +316,7 @@ class IssueController extends Controller
         $modules = Provider::getModuleList($project_key, ['name']);
         // get project types
         $types = Provider::getTypeListExt($project_key, [ 'assignee' => $users, 'state' => $states, 'resolution' => $resolutions, 'priority' => $priorities, 'version' => $versions, 'module' => $modules ]);
-        $searchers = $this->getSearchers($project_key);
+        $searchers = $this->getSearchers($project_key, ['name', 'query']);
 
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange([ 'users' => $users, 'types' => $types, 'states' => $states, 'resolutions' => $resolutions, 'priorities' => $priorities, 'searchers' => $searchers ]) ]);
     }
@@ -410,9 +410,9 @@ class IssueController extends Controller
      *
      * @return array 
      */
-    public function getSearchers($project_key)
+    public function getSearchers($project_key, $fields=[])
     {
-        $searchers = Searcher::whereRaw([ 'user' => $this->user->id, 'project_key' => $project_key ])->orderBy('sn', 'asc')->get();
+        $searchers = Searcher::whereRaw([ 'user' => $this->user->id, 'project_key' => $project_key ])->orderBy('sn', 'asc')->get($fields);
         return $searchers ?: [];
     }
 
@@ -435,8 +435,8 @@ class IssueController extends Controller
             throw new \UnexpectedValueException('searcher name cannot be repeated', -10002);
         }
 
-        $searcher = Searcher::create([ 'project_key' => $project_key, 'sn' => time() ] + $request->all());
-        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($searcher) ]);
+        $searcher = Searcher::create([ 'project_key' => $project_key, 'user' => $this->user->id, 'sn' => time() ] + $request->all());
+        return Response()->json([ 'ecode' => 0, 'data' => $searcher ]);
     }
 
     /**
