@@ -61,7 +61,7 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can' 
 {
     Route::get('issue/searcher', 'IssueController@getSearchers');
     Route::post('issue/searcher', 'IssueController@addSearcher');
-    Route::delete('issue/searcher/{id}', 'IssueController@delSearcher');
+    Route::post('issue/searcher/batch', 'IssueController@handleSearcher');
     Route::get('issue/options', 'IssueController@getOptions');
     Route::get('issue/search', 'IssueController@search');
 

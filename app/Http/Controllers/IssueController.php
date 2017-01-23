@@ -265,7 +265,7 @@ class IssueController extends Controller
         }
 
         $issue['links'] = [];
-        $links = DB::collection('issue_link_' . $project_key)->where('src', $id)->orWhere('dest', $id)->orderBy('created_at', 'asc')->get();
+        $links = DB::collection('linked')->where('src', $id)->orWhere('dest', $id)->orderBy('created_at', 'asc')->get();
         $link_fields = ['_id', 'no', 'type', 'title'];
         foreach ($links as $link)
         {
@@ -445,7 +445,7 @@ class IssueController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return void
      */
-    public function handle(Request $request, $project_key)
+    public function handleSearcher(Request $request, $project_key)
     {
         $table = 'searcher';
         // set searcher sort.
@@ -468,7 +468,7 @@ class IssueController extends Controller
             DB::collection($table)->where('user', $this->user->id)->where('project_key', $project_key)->where('flag', 1)->delete();
         }
 
-        return $this->getSearchers($project_key);
+        return Response()->json([ 'ecode' => 0, 'data' => $this->getSearchers($project_key) ]);
     }
 
     /**

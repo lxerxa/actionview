@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
+use App\Project\Eloquent\Linked;
 
 use DB;
 
@@ -41,21 +42,19 @@ class LinkController extends Controller
         }
         $values['dest'] = $dest;
 
-        $values['created_at'] = time();
         $values['creator'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name ];
 
-        $table = 'issue_link_' . $project_key;
-
-        $isExists = DB::collection($table)->where('src', $src)->where('dest', $dest)->exists();
-        if ($isExists || DB::collection($table)->where('dest', $src)->where('src', $dest)->exists())
+        $isExists = Linked::whereRaw([ 'src' => $src, 'dest' => $dest ])->exists();
+        if ($isExists || Linked::whereRaw([ 'dest' => $src, 'src' => $dest ])->exists())
         {
             throw new \UnexpectedValueException('the relation of two issues has been exists.', -10002);
         }
 
-        $id = DB::collection($table)->insertGetId($values);
+        $ret = Linked::create($values);
 
-        $link = $values;
-        $link['_id'] = $id;
+        $link = [];
+        $link['id'] = $ret->id;
+        $link['relation'] = $ret->relation;
 
         $src_issue = DB::collection('issue_' . $project_key)->where('_id', $src)->first();
         $link['src'] = array_only($src_issue, ['_id', 'no', 'type', 'title']);
@@ -74,15 +73,13 @@ class LinkController extends Controller
      */
     public function destroy($project_key, $id)
     {
-        $table = 'issue_link_' . $project_key;
-        $link = DB::collection($table)->where('_id', $id)->first();
+        $link = Linked::find($id);
         if (!$link)
         {
             throw new \UnexpectedValueException('the link does not exist or is not in the project.', -10002);
         }
 
-        DB::collection($table)->where('_id', $id)->delete();
-
+        Linked::destroy($id);
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }
 }
