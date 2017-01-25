@@ -23,13 +23,17 @@ class IssueController extends Controller
     {
         $page_size = 10;
 
-        $where = array_except($request->all(), [ 'orderBy', 'page', 'created_at', 'updated_at', 'title' ]) ?: [];
+        $where = array_only($request->all(), [ 'type', 'assignee', 'reporter', 'state', 'resolution', 'priority' ]) ?: [];
         foreach ($where as $key => $val)
         {
             if ($key === 'assignee' || $key === 'reporter')
             {
-                $where[ $key . '.' . 'id' ] = $val;
+                $where[ $key . '.' . 'id' ] = [ '$in' => explode(',', $val) ];
                 unset($where[$key]);
+            }
+            else
+            {
+                $where[ $key ] = [ '$in' => explode(',', $val) ];
             }
         }
 
