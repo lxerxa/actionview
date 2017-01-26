@@ -28,7 +28,13 @@ class IssueController extends Controller
         {
             if ($key === 'assignee' || $key === 'reporter')
             {
-                $where[ $key . '.' . 'id' ] = [ '$in' => explode(',', $val) ];
+                $users = explode(',', $val);
+                if (in_array('me', $users))
+                {
+                    array_push($users, $this->user->id); 
+                }
+
+                $where[ $key . '.' . 'id' ] = [ '$in' => $users ];
                 unset($where[$key]);
             }
             else
