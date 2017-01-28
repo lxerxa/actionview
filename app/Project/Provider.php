@@ -444,7 +444,7 @@ class Provider {
         {
             $schema = self::_repairSchema($project_key, $type->id, $type->screen && $type->screen->schema ? $type->screen->schema : [] , $options);
 
-            $tmp = [ 'id' => $type->id, 'name' => $type->name, 'abb' => $type->abb, 'schema' => $schema ];
+            $tmp = [ 'id' => $type->id, 'name' => $type->name, 'abb' => $type->abb, 'disabled' => $type->disabled && true, 'type' => $type->type == 'subtask' ? 'subtask' : 'standard', 'schema' => $schema ];
             if ($type->default) 
             {
                 $tmp['default'] = true;

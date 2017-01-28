@@ -103,6 +103,8 @@ class IssueController extends Controller
             }
         }
 
+        $query->where('del_flg', '<>', 1);
+
         // get total num
         $total = $query->count();
 
@@ -180,7 +182,7 @@ class IssueController extends Controller
             throw new \UnexpectedValueException('the schema of the type is not existed.', -10002);
         }
         $valid_keys = array_column($schema, 'key');
-        array_push($valid_keys, 'type');
+        array_push($valid_keys, 'type', 'parent_id');
 
         // handle timetracking
         $ttValues = [];
@@ -274,8 +276,10 @@ class IssueController extends Controller
             }
         }
 
+        $issue['subtasks'] = DB::collection('issue_' . $project_key)->where('parent_id', $id)->where('del_flg', '<>', 1)->orderBy('created_at', 'asc')->get(['no', 'type', 'title', 'state']);
+
         $issue['links'] = [];
-        $links = DB::collection('linked')->where('src', $id)->orWhere('dest', $id)->orderBy('created_at', 'asc')->get();
+        $links = DB::collection('linked')->where('src', $id)->orWhere('dest', $id)->where('del_flg', '<>', 1)->orderBy('created_at', 'asc')->get();
         $link_fields = ['_id', 'no', 'type', 'title'];
         foreach ($links as $link)
         {

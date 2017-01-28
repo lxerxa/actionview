@@ -159,7 +159,14 @@ class TypeController extends Controller
             throw new \UnexpectedValueException('type abb cannot be repeated', -10002);
         }
 
-        $type->fill($request->except(['project_key']))->save();
+        $defaults = [];
+        $disabled = $request->input('disabled');
+        if (isset($disabled) && $type->default === true)
+        {
+            $defaults['default'] = false; 
+        }
+
+        $type->fill($defaults + $request->except(['project_key', 'type']))->save();
         return Response()->json(['ecode' => 0, 'data' => Type::find($id)]);
     }
 

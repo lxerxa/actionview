@@ -15,6 +15,7 @@ class Type extends Model
         'screen_id',
         'workflow_id',
         'type',
+        'default',
         'disabled',
         'description',
         'project_key',
