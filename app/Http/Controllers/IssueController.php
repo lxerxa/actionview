@@ -276,6 +276,10 @@ class IssueController extends Controller
             }
         }
 
+        if (isset($issue['parent_id']) && $issue['parent_id']) {
+            $issue['parents'] = DB::collection('issue_' . $project_key)->where('_id', $issue['parent_id'])->first(['no', 'type', 'title', 'state']);
+        }
+
         $issue['subtasks'] = DB::collection('issue_' . $project_key)->where('parent_id', $id)->where('del_flg', '<>', 1)->orderBy('created_at', 'asc')->get(['no', 'type', 'title', 'state']);
 
         $issue['links'] = [];
