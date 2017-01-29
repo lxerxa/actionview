@@ -148,6 +148,26 @@ class IssueController extends Controller
             }
         }
 
+        $type = $request->input('type');
+        if (isset($type))
+        {
+            if ($type == 'standard')
+            {
+                $query->where(function ($query) 
+                    { 
+                        $query->where('parent_id', '')->orWhereNull('parent_id')->orWhere('parent_id', 'exists', false);
+                    });
+   
+            }
+            if ($type == 'subtask')
+            {
+                $query->where(function ($query) 
+                    { 
+                        $query->where('parent_id', 'exists', true)->where('parent_id', '<>', '')->whereNotNull('parent_id');
+                    });
+            }
+        }
+
         if ($limit = $request->input('limit'))
         {
             $limit = intval($limit) < 10 ? 10 : intval($limit);
@@ -361,7 +381,7 @@ class IssueController extends Controller
             throw new \UnexpectedValueException('the schema of the type is not existed.', -10002);
         }
         $valid_keys = array_column($schema, 'key');
-        array_push($valid_keys, 'type');
+        array_push($valid_keys, 'type', 'parent_id');
 
         // handle timetracking
         $ttValues = [];
