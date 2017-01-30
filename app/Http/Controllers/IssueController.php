@@ -201,8 +201,7 @@ class IssueController extends Controller
         {
             throw new \UnexpectedValueException('the schema of the type is not existed.', -10002);
         }
-        $valid_keys = array_column($schema, 'key');
-        array_push($valid_keys, 'type', 'parent_id');
+        $valid_keys = array_merge(array_column($schema, 'key'), [ 'type', 'assignee', 'priority', 'resolution', 'state', 'parent_id' ]);
 
         // handle timetracking
         $ttValues = [];
@@ -342,6 +341,8 @@ class IssueController extends Controller
     {
         // get project users
         $users = Provider::getUserList($project_key);
+        // get project users fix me
+        $assignees = Provider::getUserList($project_key);
         // get state list
         $states = Provider::getStateList($project_key, ['name']);
         // get resolution list
@@ -356,7 +357,7 @@ class IssueController extends Controller
         $types = Provider::getTypeListExt($project_key, [ 'assignee' => $users, 'state' => $states, 'resolution' => $resolutions, 'priority' => $priorities, 'version' => $versions, 'module' => $modules ]);
         $searchers = $this->getSearchers($project_key, ['name', 'query']);
 
-        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange([ 'users' => $users, 'types' => $types, 'states' => $states, 'resolutions' => $resolutions, 'priorities' => $priorities, 'searchers' => $searchers ]) ]);
+        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange([ 'users' => $users, 'assignees' => $assignees, 'types' => $types, 'states' => $states, 'resolutions' => $resolutions, 'priorities' => $priorities, 'searchers' => $searchers ]) ]);
     }
 
     /**
@@ -380,8 +381,8 @@ class IssueController extends Controller
         {
             throw new \UnexpectedValueException('the schema of the type is not existed.', -10002);
         }
-        $valid_keys = array_column($schema, 'key');
-        array_push($valid_keys, 'type', 'parent_id');
+        $valid_keys = array_merge(array_column($schema, 'key'), [ 'type', 'assignee', 'priority', 'resolution', 'state', 'parent_id' ]);
+
 
         // handle timetracking
         $ttValues = [];

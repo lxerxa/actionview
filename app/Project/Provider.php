@@ -682,16 +682,17 @@ class Provider {
                 continue;
             }
 
+            if (in_array($field['key'], ['priority', 'assignee', 'resolution', 'state']))
+            {
+                continue;
+            }
+
             if (isset($issue[$field['key']]))
             {
                 $val = [];
                 $val['name'] = $field['name'];
                 
-                if ($field['key'] == 'assignee')
-                {
-                    $val['value'] = $issue['assignee']['name'];
-                }
-                else if (isset($field['optionValues']) && $field['optionValues'])
+                if (isset($field['optionValues']) && $field['optionValues'])
                 {
                     $opv = [];
                     if (!is_array($issue[$field['key']]))
@@ -719,7 +720,6 @@ class Provider {
                 else if ($field['type'] == 'DatePicker' || $field['type'] == 'DateTimePicker')
                 {
                     $val['value'] = date($field['type'] == 'DatePicker' ? 'y/m/d' : 'y/m/d H:i:s', $issue[$field['key']]);
-file_put_contents('/tmp/tt', $issue[$field['key']] . '|' . date('y/m/d H:i:s', $issue[$field['key']]));
                 }
                 else
                 {
@@ -738,12 +738,85 @@ file_put_contents('/tmp/tt', $issue[$field['key']] . '|' . date('y/m/d H:i:s', $
             $snap_data['type'] = [ 'value' => $type->name, 'name' => '类型' ];
         }
 
+        if (isset($issue['priority']))
+        {
+            if ($issue['priority'])
+            {
+                if (in_array('priority', $change_fields) || !isset($snap_data['priority']))
+                {
+                    $priority = Priority::find($issue['priority']);
+                    $snap_data['priority'] = [ 'value' => $priority->name, 'name' => '优先级' ];
+                }
+            }
+            else
+            {
+                $snap_data['priority'] = [ 'value' => '', 'name' => '优先级' ];
+            }
+        }
+
+        if (isset($issue['state']))
+        {
+            if ($issue['state'])
+            {
+                if (in_array('state', $change_fields) || !isset($snap_data['state']))
+                {
+                    $state = State::find($issue['state']);
+                    $snap_data['state'] = [ 'value' => $state->name, 'name' => '状态' ];
+                }
+            }
+            else
+            {
+                $snap_data['state'] = [ 'value' => '', 'name' => '状态' ];
+            }
+        }
+
+        if (isset($issue['resolution']))
+        {
+            if ($issue['resolution'])
+            {
+                if (in_array('resolution', $change_fields) || !isset($snap_data['resolution']))
+                {
+                    $resolution = Resolution::find($issue['resolution']);
+                    $snap_data['resolution'] = [ 'value' => $resolution->name, 'name' => '解决结果' ];
+                }
+            }
+            else
+            {
+                $snap_data['resolution'] = [ 'value' => '', 'name' => '解决结果' ];
+            }
+        }
+
+        if (isset($issue['assignee']))
+        {
+            if ($issue['assignee'])
+            {
+                if (in_array('assignee', $change_fields) || !isset($snap_data['assignee']))
+                {
+                    $snap_data['assignee'] = [ 'value' => $issue['assignee']['name'], 'name' => '经办人' ];
+                }
+            }
+            else
+            {
+                $snap_data['assignee'] = [ 'value' => '', 'name' => '经办人' ];
+            }
+        }
+
         // special fields handle
-        //if (in_array('state', $change_fields) || !isset($snap_data['state']))
-        //{
-        //    $state = State::find($issue['state']);
-        //    $snap_data['state'] = [ 'value' => $state->name, 'name' => '状态' ];
-        //}
+        if (isset($issue['parent_id']))
+        {
+            if ($issue['parent_id'])
+            {
+                if (in_array('parent_id', $change_fields) || !isset($snap_data['parent_id']))
+                {
+                    $parent = DB::collection('issue_' . $project_key)->where('_id', $issue['parent_id'])->first(['no', 'title']);
+                    $snap_data['parent'] = [ 'value' => $parent['no'] . '/' . $parent['title'], 'name' => '父任务' ];
+                }
+            }
+            else
+            {
+                $snap_data['parent'] = [ 'value' => '', 'name' => '父任务' ];
+            }
+        }
 
         if (!isset($snap_data['created_at']))
         {
