@@ -682,11 +682,6 @@ class Provider {
                 continue;
             }
 
-            if (in_array($field['key'], ['priority', 'assignee', 'resolution', 'state']))
-            {
-                continue;
-            }
-
             if (isset($issue[$field['key']]))
             {
                 $val = [];
@@ -695,13 +690,18 @@ class Provider {
                 if (isset($field['optionValues']) && $field['optionValues'])
                 {
                     $opv = [];
+                    
                     if (!is_array($issue[$field['key']]))
                     {
-                        $issue[$field['key']] = explode(',', $issue[$field['key']]);
+                        $issueValue = explode(',', $issue[$field['key']]);
+                    }
+                    else
+                    {
+                        $issueValue = $issue[$field['key']];
                     }
                     foreach ($field['optionValues'] as $ov)
                     {
-                        if (in_array($ov['id'], $issue[$field['key']]))
+                        if (in_array($ov['id'], $issueValue))
                         {
                             $opv[] = $ov['name'];
                         }
