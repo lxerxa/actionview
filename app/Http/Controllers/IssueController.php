@@ -204,7 +204,7 @@ class IssueController extends Controller
         $valid_keys = array_merge(array_column($schema, 'key'), [ 'type', 'parent_id' ]);
 
         // handle timetracking
-        $ttValues = [];
+        $insValues = [];
         foreach ($schema as $field)
         {
             if ($field['type'] == 'TimeTracking')
@@ -216,7 +216,7 @@ class IssueController extends Controller
                     {
                         throw new \UnexpectedValueException('the format of timetracking is incorrect.', -10002);
                     }
-                    $ttValues[$field['key']] = $this->ttHandle($fieldValue);
+                    $insValues[$field['key']] = $this->ttHandle($fieldValue);
                 }
             }
         }
@@ -232,13 +232,13 @@ class IssueController extends Controller
                 $module = Provider::getModuleById($module_id);
                 if (isset($module['defaultAssignee']) && $module['defaultAssignee'] === 'modulePrincipal')
                 {
-                    $assignee = $module['principal'] ?: '';
-                    $assignee_id = isset($assignee['id']) ? $assignee['id'] : '';
+                    $assignee2 = $module['principal'] ?: '';
+                    $assignee_id = isset($assignee2['id']) ? $assignee2['id'] : '';
                 }
                 else if (isset($module['defaultAssignee']) && $module['defaultAssignee'] === 'projectPrincipal') 
                 {
-                    $assignee = Provider::getProjectPrincipal($project_key) ?: '';
-                    $assignee_id = isset($assignee['id']) ? $assignee['id'] : ''; 
+                    $assignee2 = Provider::getProjectPrincipal($project_key) ?: '';
+                    $assignee_id = isset($assignee2['id']) ? $assignee2['id'] : ''; 
                 }
             }
         }
@@ -254,13 +254,24 @@ class IssueController extends Controller
         {
             $assignee = [ 'id' => $this->user->id, 'name' => $this->user->first_name ];
         }
+        $insValues['assignee'] = $assignee;
+
+        $priority = $request->input('priority'); 
+        if (!isset($priority))
+        {
+            $insValues['priority'] = Provider::getDefaultPriority($project_key);
+        }
 
         // get reporter(creator)
-        $reporter = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        $insValues['reporter'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
 
         $table = 'issue_' . $project_key;
         $max_no = DB::collection($table)->count() + 1;
-        $id = DB::collection($table)->insertGetId([ 'no' => $max_no, 'assignee' => $assignee, 'reporter' => $reporter, 'created_at' => time() ] + $ttValues + array_only($request->all(), $valid_keys));
+        $insValues['no'] = $max_no;
+
+        $insValues['created_at'] = time();
+
+        $id = DB::collection($table)->insertGetId($insValues + array_only($request->all(), $valid_keys));
 
         $issue = DB::collection($table)->where('_id', $id)->first();
         // add to histroy table
@@ -383,9 +394,8 @@ class IssueController extends Controller
         }
         $valid_keys = array_merge(array_column($schema, 'key'), [ 'type', 'assignee', 'parent_id' ]);
 
-
         // handle timetracking
-        $ttValues = [];
+        $updValues = [];
         foreach ($schema as $field)
         {
             if ($field['type'] == 'TimeTracking')
@@ -397,12 +407,11 @@ class IssueController extends Controller
                     {
                         throw new \UnexpectedValueException('the format of timetracking is incorrect.', -10002);
                     }
-                    $ttValues[$field['key']] = $this->ttHandle($fieldValue);
+                    $updValues[$field['key']] = $this->ttHandle($fieldValue);
                 }
             }
         }
 
-        $updValues = [];
         $assignee_id = $request->input('assignee');
         if ($assignee_id)
         {
@@ -414,9 +423,10 @@ class IssueController extends Controller
             }
         }
 
-        $modifier = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        $updValues['modifier'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        $updValues['updated_at'] = time();
 
-        DB::collection($table)->where('_id', $id)->update($updValues + $ttValues + [ 'modifier' => $modifier, 'updated_at' => time() ] + array_only($request->all(), $valid_keys));
+        DB::collection($table)->where('_id', $id)->update($updValues + array_only($request->all(), $valid_keys));
 
         // add to histroy table
         Provider::snap2His($project_key, $id, $schema, array_keys(array_only($request->all(), $valid_keys)));

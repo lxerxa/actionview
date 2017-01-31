@@ -67,6 +67,32 @@ class Provider {
     }
 
     /**
+     * get default priority.
+     *
+     * @param string $project_key
+     * @return string 
+     */
+    public static function getDefaultPriority($project_key)
+    {
+        $priorityProperty = PriorityProperty::Where('project_key', $project_key)->first();
+        if ($priorityProperty)
+        {
+            if ($defaultValue = $priorityProperty->defaultValue)
+            {
+                return $defaultValue;
+            }
+        }
+
+        $category = self::getProjectCategory($project_key);
+        $priority = Priority::Where('category', $category)
+            ->Where('default', true)
+            ->first();
+
+        $default = $priority && $priority->id ? $priority->id : '';
+        return $default; 
+    }
+
+    /**
      * get priority list.
      *
      * @param string $project_key
@@ -116,6 +142,32 @@ class Provider {
         }
 
         return $priorities;
+    }
+
+    /**
+     * get default resolution.
+     *
+     * @param string $project_key
+     * @return string 
+     */
+    public static function getDefaultResolution($project_key)
+    {
+        $resolutionProperty = ResolutionProperty::Where('project_key', $project_key)->first();
+        if ($resolutionProperty)
+        {
+            if ($defaultValue = $resolutionProperty->defaultValue)
+            {
+                return $defaultValue;
+            }
+        }
+
+        $category = self::getProjectCategory($project_key);
+        $resolution = Resolution::Where('category', $category)
+            ->Where('default', true)
+            ->first();
+
+        $default = $resolution && $resolution->id ? $resolution->id : '';
+        return $default;
     }
 
     /**
@@ -690,15 +742,15 @@ class Provider {
                     
                     if (!is_array($issue[$field['key']]))
                     {
-                        $issueValue = explode(',', $issue[$field['key']]);
+                        $fieldValues = explode(',', $issue[$field['key']]);
                     }
                     else
                     {
-                        $issueValue = $issue[$field['key']];
+                        $fieldValues = $issue[$field['key']];
                     }
                     foreach ($field['optionValues'] as $ov)
                     {
-                        if (in_array($ov['id'], $issueValue))
+                        if (in_array($ov['id'], $fieldValues))
                         {
                             $opv[] = $ov['name'];
                         }
