@@ -229,7 +229,7 @@ class IssueController extends Controller
             $module_id = $request->input('module');
             if ($module_id)
             {
-                $module = Provider::getModuleById($project_key, $module_id);
+                $module = Provider::getModuleById($module_id);
                 if (isset($module['defaultAssignee']) && $module['defaultAssignee'] === 'modulePrincipal')
                 {
                     $assignee = $module['principal'] ?: '';

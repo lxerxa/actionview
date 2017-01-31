@@ -557,12 +557,9 @@ class Provider {
      * @param string $mid
      * @return array 
      */
-    public static function getModuleById($project_key, $mid)
+    public static function getModuleById($mid)
     {
-        $module = DB::collection('module_' . $project_key)
-            ->where('_id', new ObjectId($mid))
-            ->first();
-
+        $module = Module::find($mid)->toArray();
         return $module ?: [];
     }
 
