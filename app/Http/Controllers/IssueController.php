@@ -46,6 +46,7 @@ class IssueController extends Controller
         $created_at = $request->input('created_at');
         $updated_at = $request->input('updated_at');
         $title = $request->input('title');
+        $no = $request->input('no');
 
         $orderBy = $request->input('orderBy') ?: '';
         if ($orderBy)
@@ -60,9 +61,23 @@ class IssueController extends Controller
         {
             $query = $query->whereRaw($where);
         }
+        if (isset($no) && $no)
+        {
+            $query->where('no', intval($no));
+        }
         if (isset($title) && $title)
         {
-            $query->where('title', 'like', '%' . $title . '%');
+            if (is_int($title + 0))
+            {
+                $query->where(function ($query) use ($title)
+                    {
+                        $query->where('no', $title + 0)->orWhere('title', 'like', '%' . $title . '%');
+                    });
+            }
+            else
+            {
+                $query->where('title', 'like', '%' . $title . '%');
+            }
         }
         if (isset($created_at) && $created_at)
         {
