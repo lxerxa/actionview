@@ -616,6 +616,18 @@ class Provider {
     }
 
     /**
+     * get workflow by type_id
+     *
+     * @param string $type_id
+     * @return array
+     */
+    public static function getWorkflowByType($type_id)
+    {
+        $type = Type::find($type_id);
+        return $type->workflow;
+    }
+
+    /**
      * get schema by type_id
      *
      * @param string $type_id

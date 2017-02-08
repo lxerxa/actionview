@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Project\Provider;
 use App\Project\Eloquent\File;
 use App\Project\Eloquent\Searcher;
+use App\Workflow\Workflow;
 use Sentinel;
 use DB;
 
@@ -284,6 +285,11 @@ class IssueController extends Controller
         $max_no = DB::collection($table)->count() + 1;
         $insValues['no'] = $max_no;
 
+        // workflow initialize 
+        $workflow = $this->initilizeWorkflow($issue_type);
+        $insValues = array_merge($insValues, $workflow);
+
+        // created time
         $insValues['created_at'] = time();
 
         $id = DB::collection($table)->insertGetId($insValues + array_only($request->all(), $valid_keys));
@@ -293,6 +299,28 @@ class IssueController extends Controller
         Provider::snap2His($project_key, $id, $schema);
 
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($issue) ]);
+    }
+
+    /**
+     * initialize the workflow by type.
+     *
+     * @param  int  $type
+     * @return array 
+     */
+    public function initilizeWorkflow($type)
+    {
+        // get workflow definition
+        $wf_definition = Provider::getWorkflowByType($type);
+        // create and start workflow instacne
+        $wf_entry = Workflow::createInstance($wf_definition->id)->start();
+        // get the inital step
+        $initial_step = $wf_entry->getCurrentSteps()->first();
+        $initial_state = $wf_entry->getStepMeta($initial_step->step_id, 'state');
+
+        $ret['state'] = $initial_state;
+        $ret['entry_id'] = $wf_entry->getEntryId();
+
+        return $ret;
     }
 
     /**
@@ -319,6 +347,13 @@ class IssueController extends Controller
                     $issue[$field['key']][$key] = File::find($fid);
                 }
             }
+        }
+
+        // get avaliable actions for wf
+        if (isset($issue['entry_id']) && $issue['entry_id'])
+        {
+            $wf = new Workflow($issue['entry_id']);
+            $issue['wfactions'] = $wf->getAvailableActions();
         }
 
         if (isset($issue['parent_id']) && $issue['parent_id']) {
