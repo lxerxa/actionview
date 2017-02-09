@@ -273,6 +273,12 @@ class Workflow {
         $new_current_step->owners =  isset($result_descriptor['owners']) ? $result_descriptor['owners'] : '';
         $new_current_step->save();
 
+        // order to use for workflow post-function
+        if (isset($step_descriptor['state']) && $step_descriptor['state'])
+        {
+            $this->input['state'] = $step_descriptor['state'];
+        }
+
         // trigger before step
         $step_descriptor = $this->getStepDescriptor($result_descriptor['step']);
         if (isset($step_descriptor['pre_functions']) && $step_descriptor['pre_functions'])
@@ -668,7 +674,7 @@ class Workflow {
     private function executeFunction($function)
     {
         $method = explode('@', $function['name']);
-        $class = new $method[0];
+        $class = $method[0];
         $action = $method[1] ?: 'handle';
 
         // check handle function exists
@@ -680,7 +686,7 @@ class Workflow {
         // generate temporary vars
         $tmp_vars = $this->genTmpVars($args);
         // call handle function
-        return $class->$action($tmp_vars);
+        return $class::$action($tmp_vars);
     }
 
     /**

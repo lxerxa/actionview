@@ -60,7 +60,7 @@ class ProjectController extends Controller
         {
             throw new \InvalidArgumentException('project key cannot be empty.', -10002);
         }
-        if (Project::Where('key', $key)->first())
+        if (Project::Where('key', $key)->exists())
         {
             throw new \InvalidArgumentException('project key has already existed.', -10002);
         }
@@ -70,13 +70,15 @@ class ProjectController extends Controller
         {
             throw new \InvalidArgumentException('the principal must be appointed.', -10002);
         }
-        if (!Sentinel::findById($principal))
+
+        $principal_info = Sentinel::findById($principal);
+        if (!$principal_info)
         {
             throw new \InvalidArgumentException('the user is not exists.', -10002);
         }
         // fix me check if user is available
         // save the project
-        $project = Project::create($request->all()); //fix me
+        $project = Project::create([ 'principal' => [ 'id' => $principal_info->id, 'name' => $principal_info->first_name ] ] + $request->all()); //fix me
         // trigger add user to usrproject
         Event::fire(new AddUserToRoleEvent([ $principal ], $key));
 
@@ -127,6 +129,7 @@ class ProjectController extends Controller
      */
     public function update(Request $request, $id)
     {
+        $updValues = [];
         $name = $request->input('name');
         if (isset($name))
         {
@@ -134,6 +137,7 @@ class ProjectController extends Controller
             {
                 throw new \UnexpectedValueException('the name can not be empty.', -10002);
             }
+            $updValues['name'] = $name;
         }
         // check is user is available
         $principal = $request->input('principal');
@@ -143,10 +147,13 @@ class ProjectController extends Controller
             {
                 throw new \InvalidArgumentException('the principal must be appointed.', -10002);
             }
-            if (!Sentinel::findById($principal))
+
+            $principal_info = Sentinel::findById($principal);
+            if (!$principal_info)
             {
                 throw new \InvalidArgumentException('the user is not exists.', -10002);
             }
+            $updValues['principal'] = [ 'id' => $principal_info->id, 'name' => $principal_info->first_name ]; 
         }
 
         $project = Project::find($id);
@@ -154,14 +161,15 @@ class ProjectController extends Controller
         {
             throw new \UnexpectedValueException('the project does not exist.', -10002);
         }
-        $project->fill($request->except(['key']))->save();
+        $project->fill($updValues)->save();
 
         if (isset($principal))
         {
-            if ($project->principal != $principal)
+            $old_principal = $project->principal;
+            if ($old_principal['id'] != $principal)
             {
                 Event::fire(new AddUserToRoleEvent([ $principal ], $project->key));
-                Event::fire(new DelUserFromRoleEvent([ $project->principal ], $project->key));
+                Event::fire(new DelUserFromRoleEvent([ $old_principal['id'] ], $project->key));
             }
         }
 

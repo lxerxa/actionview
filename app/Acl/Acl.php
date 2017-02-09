@@ -18,6 +18,18 @@ class Acl {
     }
 
     /**
+     * get role list in the project by userid.
+     *
+     * @var string $project_key
+     * @var string $user_id
+     * @return collection
+     */
+    public static function getRolesByUid($project_key, $user_id)
+    {
+        return Role::whereRaw([ 'user_ids' => $user_id, 'project_key' => $project_key ])->get();
+    }
+
+    /**
      * get user list who has the permission allow in the project.
      *
      * @var string permission
@@ -45,7 +57,7 @@ class Acl {
      */
     public static function isAllowed($user_id, $permission, $project_key)
     {
-        return Role::whereRaw([ 'permissions' => $permission, 'user_ids' => $user_id, 'project_key' => $project_key ])->get() ? true : false;
+        return Role::whereRaw([ 'permissions' => $permission, 'user_ids' => $user_id, 'project_key' => $project_key ])->exists();
     }
 
     /**

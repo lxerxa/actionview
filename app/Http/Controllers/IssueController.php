@@ -286,7 +286,7 @@ class IssueController extends Controller
         $insValues['no'] = $max_no;
 
         // workflow initialize 
-        $workflow = $this->initilizeWorkflow($issue_type);
+        $workflow = $this->initializeWorkflow($issue_type);
         $insValues = array_merge($insValues, $workflow);
 
         // created time
@@ -307,7 +307,7 @@ class IssueController extends Controller
      * @param  int  $type
      * @return array 
      */
-    public function initilizeWorkflow($type)
+    public function initializeWorkflow($type)
     {
         // get workflow definition
         $wf_definition = Provider::getWorkflowByType($type);
