@@ -395,7 +395,7 @@ class IssueController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
+     * @param  string  $project_key
      * @return \Illuminate\Http\Response
      */
     public function getOptions($project_key)
@@ -425,7 +425,8 @@ class IssueController extends Controller
      * Update the specified resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
+     * @param  string  $project_key
+     * @param  string  $id
      * @return \Illuminate\Http\Response
      */
     public function update(Request $request, $project_key, $id)
@@ -487,7 +488,8 @@ class IssueController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  int  $id
+     * @param  string  $project_key
+     * @param  string  $id
      * @return \Illuminate\Http\Response
      */
     public function destroy($project_key, $id)
@@ -507,6 +509,7 @@ class IssueController extends Controller
     /**
      * Display a listing of the resource.
      *
+     * @param  string  $project_key
      * @return array 
      */
     public function getSearchers($project_key, $fields=[])
@@ -519,6 +522,7 @@ class IssueController extends Controller
      * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
+     * @param  string  $project_key
      * @return \Illuminate\Http\Response
      */
     public function addSearcher(Request $request, $project_key)
@@ -542,6 +546,7 @@ class IssueController extends Controller
      * update sort or delete searcher etc..
      *
      * @param  \Illuminate\Http\Request  $request
+     * @param  string  $project_key
      * @return void
      */
     public function handleSearcher(Request $request, $project_key)
@@ -592,7 +597,7 @@ class IssueController extends Controller
     /**
      * get the history records.
      *
-     * @param  string  $id
+     * @param  string  $project_key
      * @param  string  $id
      * @return \Illuminate\Http\Response
      */
@@ -694,5 +699,18 @@ class IssueController extends Controller
         }
 
         return Response()->json([ 'ecode' => 0, 'data' => array_reverse($changedRecords) ]);
+    }
+
+    /**
+     * workflow action.
+     *
+     * @param  string  $project_key
+     * @param  string  $id
+     * @param  string  $action_id
+     * @return \Illuminate\Http\Response
+     */
+    public function doAction($project_key, $id, $action_id)
+    {
+        return $this->show($project_key, $id); 
     }
 }

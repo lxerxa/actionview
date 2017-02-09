@@ -59,8 +59,27 @@ class Func
         return $param['caller'] === $param['userParam'];
     }
 
+    /**
+     * check if subtask's state .
+     *
+     * @param  array $param
+     * @return boolean
+     */
     public static function checkSubTasksState($param)
     {
+        $issue_id = $param['issue_id'];
+        $project_key = $param['project_key'];
+
+        $subtasks = DB::collection('issue_' . $project_key)->where('parent_id', $issue_id)->get([ 'state' ]);
+        foreach ($subtasks as $subtask)
+        {
+            if ($subtask['state'] != $param['stateParam'])
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
