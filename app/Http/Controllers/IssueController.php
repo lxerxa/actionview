@@ -353,7 +353,7 @@ class IssueController extends Controller
         if (isset($issue['entry_id']) && $issue['entry_id'])
         {
             $wf = new Workflow($issue['entry_id']);
-            $issue['wfactions'] = $wf->getAvailableActions();
+            $issue['wfactions'] = $wf->getAvailableActions([ 'project_key' => $project_key, 'issue_id' => $id, 'caller' => $this->user->id ]);
         }
 
         if (isset($issue['parent_id']) && $issue['parent_id']) {

@@ -108,7 +108,7 @@ class Func
         $project_key = $param['project_key'];
         $caller = $param['caller'];
 
-        $roles = Acl::getRolesByUid($caller, $project_key);
+        $roles = Acl::getRolesByUid($project_key, $caller);
         foreach ($roles as $role)
         {
             if ($role->id === $param['roleParam'])
@@ -174,7 +174,7 @@ class Func
         $issue_id = $param['issue_id'];
         $caller = $param['caller'];
 
-        if ($param['someParam'] == 'me')
+        if ($param['assigneeParam'] == 'me')
         {
             $user_info = Sentinel::findById($caller);
             if ($user_info)
@@ -182,7 +182,7 @@ class Func
                 self::$issue_properties['assignee'] = [ 'id' => $user_info->id, 'name' => $user_info->first_name ];
             }
         }
-        else if ($param['someParam'] == 'reporter')
+        else if ($param['assigneeParam'] == 'reporter')
         {
             $issue = DB::collection('issue_' . $project_key)->where('_id', $issue_id)->first();
             if ($issue && isset($issue['reporter']))
@@ -190,7 +190,7 @@ class Func
                 self::$issue_properties['assignee'] = $issue['reporter'];
             }
         }
-        else if ($param['someParam'] == 'principal')
+        else if ($param['assigneeParam'] == 'principal')
         {
             $principal = Provider::getProjectPrincipal($project_key) ?: [];
             if ($principal)

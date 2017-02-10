@@ -527,8 +527,11 @@ class Workflow {
      *
      * @return array
      */
-    public function getAvailableActions()
+    public function getAvailableActions($inputs=[])
     {
+        // set user inputs
+        $this->inputs = array_merge($this->inputs, $inputs);
+
         $available_actions = [];
         // get current steps
         $current_steps = $this->getCurrentSteps();
