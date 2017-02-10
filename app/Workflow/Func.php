@@ -129,7 +129,7 @@ class Func
     {
         if (isset($param['resolutionParam']) && $param['resolutionParam'])
         {
-            array_push(self::$issue_properties, [ 'resolution' => $param['resolutionParam'] ]);
+            self::$issue_properties[ 'resolution'] = $param['resolutionParam'];
         }
     }
 
@@ -143,7 +143,7 @@ class Func
     {
         if (isset($param['state']) && $param['state'])
         {
-            array_push(self::$issue_properties, [ 'state' => $param['state'] ]);
+            self::$issue_properties['state'] = $param['state'];
         }
     }
 
@@ -158,7 +158,7 @@ class Func
        $user_info = Sentinel::findById($param['assignedUserParam']);
        if ($user_info)
        {
-           array_push(self::$issue_properties, [ 'assignee' => [ 'id' => $user_info->id, 'name' => $user_info->first_name ] ]);
+           self::$issue_properties['assignee'] = [ 'id' => $user_info->id, 'name' => $user_info->first_name ];
        }
     }
 
@@ -179,7 +179,7 @@ class Func
             $user_info = Sentinel::findById($caller);
             if ($user_info)
             {
-                array_push(self::$issue_properties, [ 'assignee' => [ 'id' => $user_info->id, 'name' => $user_info->first_name ] ]);
+                self::$issue_properties['assignee'] = [ 'id' => $user_info->id, 'name' => $user_info->first_name ];
             }
         }
         else if ($param['someParam'] == 'reporter')
@@ -187,7 +187,7 @@ class Func
             $issue = DB::collection('issue_' . $project_key)->where('_id', $issue_id)->first();
             if ($issue && isset($issue['reporter']))
             {
-                array_push(self::$issue_properties, [ 'assignee' => $issue['reporter'] ]);
+                self::$issue_properties['assignee'] = $issue['reporter'];
             }
         }
         else if ($param['someParam'] == 'principal')
@@ -195,7 +195,7 @@ class Func
             $principal = Provider::getProjectPrincipal($project_key) ?: [];
             if ($principal)
             {
-                array_push(self::$issue_properties, [ 'assignee' => $principal ]);
+                self::$issue_properties['assignee'] = $principal;
             }
         }
     }
@@ -210,6 +210,7 @@ class Func
     {
         $issue_id = $param['issue_id'];
         $project_key = $param['project_key'];
+        $caller = $param['caller'];
 
         if (count(self::$issue_properties) > 0)
         {

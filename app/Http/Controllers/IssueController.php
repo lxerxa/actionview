@@ -466,11 +466,19 @@ class IssueController extends Controller
         $assignee_id = $request->input('assignee');
         if ($assignee_id)
         {
-            $user_info = Sentinel::findById($assignee_id);
-            if ($user_info)
+            if ($assignee_id === 'me')
             {
-                $assignee = [ 'id' => $assignee_id, 'name' => $user_info->first_name ];
-                $updValues['assignee'] = $assignee;
+                 $assignee = [ 'id' => $this->user->id, 'name' => $this->user->first_name ];
+                 $updValues['assignee'] = $assignee;
+            }
+            else
+            {
+                $user_info = Sentinel::findById($assignee_id);
+                if ($user_info)
+                {
+                    $assignee = [ 'id' => $assignee_id, 'name' => $user_info->first_name ];
+                    $updValues['assignee'] = $assignee;
+                }
             }
         }
 
@@ -709,8 +717,11 @@ class IssueController extends Controller
      * @param  string  $action_id
      * @return \Illuminate\Http\Response
      */
-    public function doAction($project_key, $id, $action_id)
+    public function doAction($project_key, $id, $workflow_id, $action_id)
     {
+        $entry = new Workflow($workflow_id);
+        $entry->doAction($action_id, [ 'project_key' => $project_key, 'issue_id' => $id, 'caller' => $this->user->id ]);
+
         return $this->show($project_key, $id); 
     }
 }

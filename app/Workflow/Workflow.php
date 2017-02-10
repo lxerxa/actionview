@@ -51,7 +51,7 @@ class Workflow {
      *
      * @var array
      */
-    protected $inputs;
+    protected $inputs = [];
 
     /**
      * workflow constructor
@@ -273,14 +273,13 @@ class Workflow {
         $new_current_step->owners =  isset($result_descriptor['owners']) ? $result_descriptor['owners'] : '';
         $new_current_step->save();
 
+        $step_descriptor = $this->getStepDescriptor($result_descriptor['step']);
         // order to use for workflow post-function
         if (isset($step_descriptor['state']) && $step_descriptor['state'])
         {
-            $this->input['state'] = $step_descriptor['state'];
+            $this->inputs['state'] = $step_descriptor['state'];
         }
-
         // trigger before step
-        $step_descriptor = $this->getStepDescriptor($result_descriptor['step']);
         if (isset($step_descriptor['pre_functions']) && $step_descriptor['pre_functions'])
         {
             $this->executeFunctions($step_descriptor['pre_functions']);
@@ -418,7 +417,7 @@ class Workflow {
         }
 
         // set user inputs
-        $this->inputs = $inputs;
+        $this->inputs = array_merge($this->inputs, $inputs);
         // complete workflow step transition
         $this->transitionWorkflow($current_steps, $action_id);
     }
@@ -682,7 +681,7 @@ class Workflow {
         {
             throw new FunctionNotFoundException();
         }
-        $args = $function['args'] ?: [];
+        $args = isset($function['args']) ? $function['args'] : [];
         // generate temporary vars
         $tmp_vars = $this->genTmpVars($args);
         // call handle function
@@ -711,7 +710,7 @@ class Workflow {
         {
             $tmp_vars[$key] = $val;
         }
-        $tmp_vars['inputs'] = $this->inputs;
+        $tmp_vars = array_merge($tmp_vars, $this->inputs);
 
         return array_merge($tmp_vars, $args);
     }
