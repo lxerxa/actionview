@@ -319,6 +319,7 @@ class IssueController extends Controller
 
         $ret['state'] = $initial_state;
         $ret['entry_id'] = $wf_entry->getEntryId();
+        $ret['definition_id'] = $wf_definition->id;
 
         return $ret;
     }
@@ -364,7 +365,7 @@ class IssueController extends Controller
 
         $issue['links'] = [];
         $links = DB::collection('linked')->where('src', $id)->orWhere('dest', $id)->where('del_flg', '<>', 1)->orderBy('created_at', 'asc')->get();
-        $link_fields = ['_id', 'no', 'type', 'title'];
+        $link_fields = ['_id', 'no', 'type', 'title', 'state'];
         foreach ($links as $link)
         {
             if ($link['src'] == $id)
