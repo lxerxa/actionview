@@ -639,6 +639,31 @@ class Provider {
         $screen = $type->screen;
         $project_key = $type->project_key;
 
+        return self::getScreenSchema($project_key, $type_id, $screen);
+    }
+
+    /**
+     * get schema by screen_id
+     *
+     * @param string $project_key
+     * @param string $type
+     * @param string $screen_id
+     * @return array
+     */
+    public static function getSchemaByScreenId($project_key, $type, $screen_id)
+    {
+        $screen = Screen::find($screen_id);
+        return self::getScreenSchema($project_key, $type, $screen);
+    }
+
+    /**
+     * get screen schema
+     *
+     * @param string $type_id
+     * @return array
+     */
+    public static function getScreenSchema($project_key, $type_id, $screen)
+    {
         $new_schema = [];
         $versions = null;
         foreach ($screen->schema ?: [] as $key => $val)

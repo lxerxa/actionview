@@ -355,6 +355,13 @@ class IssueController extends Controller
         {
             $wf = new Workflow($issue['entry_id']);
             $issue['wfactions'] = $wf->getAvailableActions([ 'project_key' => $project_key, 'issue_id' => $id, 'caller' => $this->user->id ]);
+            foreach ($issue['wfactions'] as $key => $action)
+            {
+                if (isset($action['screen']) && $action['screen'])
+                {
+                    $issue['wfactions'][$key]['schema'] = Provider::getSchemaByScreenId($project_key, $issue['type'], $action['screen']);
+                }
+            }
         }
 
         if (isset($issue['parent_id']) && $issue['parent_id']) {
@@ -718,7 +725,7 @@ class IssueController extends Controller
      * @param  string  $action_id
      * @return \Illuminate\Http\Response
      */
-    public function doAction($project_key, $id, $workflow_id, $action_id)
+    public function doAction(Request $request, $project_key, $id, $workflow_id, $action_id)
     {
         $entry = new Workflow($workflow_id);
         $entry->doAction($action_id, [ 'project_key' => $project_key, 'issue_id' => $id, 'caller' => $this->user->id ]);
