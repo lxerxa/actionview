@@ -206,6 +206,26 @@ class Func
      * @param  array $param
      * @return void
      */
+    public static function addComments($param)
+    {
+        $issue_id = $param['issue_id'];
+        $project_key = $param['project_key'];
+        $caller = $param['caller'];
+        $comments = isset($param['comments']) ? $param['comments'] : '';
+
+        $user_info = Sentinel::findById($caller);
+        $creator = [ 'id' => $user_info->id, 'name' => $user_info->first_name, 'email' => $user_info->email ];
+
+        $table = 'comments_' . $project_key;
+        DB::collection($table)->insert([ 'contents' => $comments, 'atWho' => [], 'issue_id' => $issue_id, 'creator' => $creator, 'created_at' => time() ]);
+    }
+
+    /**
+     * update issue.
+     *
+     * @param  array $param
+     * @return void
+     */
     public static function updIssue($param)
     {
         $issue_id = $param['issue_id'];

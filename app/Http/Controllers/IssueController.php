@@ -312,7 +312,7 @@ class IssueController extends Controller
         // get workflow definition
         $wf_definition = Provider::getWorkflowByType($type);
         // create and start workflow instacne
-        $wf_entry = Workflow::createInstance($wf_definition->id)->start();
+        $wf_entry = Workflow::createInstance($wf_definition->id)->start([ 'caller' => $this->user->id ]);
         // get the inital step
         $initial_step = $wf_entry->getCurrentSteps()->first();
         $initial_state = $wf_entry->getStepMeta($initial_step->step_id, 'state');
@@ -357,7 +357,7 @@ class IssueController extends Controller
             $issue['wfactions'] = $wf->getAvailableActions([ 'project_key' => $project_key, 'issue_id' => $id, 'caller' => $this->user->id ]);
             foreach ($issue['wfactions'] as $key => $action)
             {
-                if (isset($action['screen']) && $action['screen'])
+                if (isset($action['screen']) && $action['screen'] && $action['screen'] != 'comments')
                 {
                     $issue['wfactions'][$key]['schema'] = Provider::getSchemaByScreenId($project_key, $issue['type'], $action['screen']);
                 }
@@ -728,8 +728,7 @@ class IssueController extends Controller
     public function doAction(Request $request, $project_key, $id, $workflow_id, $action_id)
     {
         $entry = new Workflow($workflow_id);
-        $entry->doAction($action_id, [ 'project_key' => $project_key, 'issue_id' => $id, 'caller' => $this->user->id ]);
-
+        $entry->doAction($action_id, [ 'project_key' => $project_key, 'issue_id' => $id, 'caller' => $this->user->id ] + array_only($request->all(), [ 'comments' ]));
         return $this->show($project_key, $id); 
     }
 }

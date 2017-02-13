@@ -17,6 +17,7 @@ class HistoryStep extends Model
         'action_id',
         'owner',
         'status',
+        'comments',
         'caller'
     );
 }

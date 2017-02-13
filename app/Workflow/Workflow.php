@@ -47,11 +47,11 @@ class Workflow {
     protected $wf_config;
 
     /**
-     * user inputs 
+     * workflow options 
      *
      * @var array
      */
-    protected $inputs = [];
+    protected $options = [];
 
     /**
      * workflow constructor
@@ -123,10 +123,13 @@ class Workflow {
     /**
      * initialize workflow.
      *
+     * @param array options 
      * @return void
      */
-    public function start()
+    public function start($options=[])
     {
+        $this->options = array_merge($this->options, $options);
+
         if (!isset($this->wf_config['initial_action']) || !$this->wf_config['initial_action'])
         {
             throw new ActionNotFoundException();
@@ -244,7 +247,7 @@ class Workflow {
         $history_step = new HistoryStep;
         $history_step->fill($current_step->toArray());
         $history_step->status = $old_status ?: '';
-        $history_step->caller = 'liuxu'; // fix me
+        $history_step->caller = isset($this->options['caller']) ? $this->options['caller'] : '';
         $history_step->finish_time = new \MongoDate(time());
         $history_step->save();
         // delete from current step
@@ -271,13 +274,15 @@ class Workflow {
         $new_current_step->start_time = new \MongoDate(time());
         $new_current_step->previous_id = $previous_id ?: '';
         $new_current_step->owners =  isset($result_descriptor['owners']) ? $result_descriptor['owners'] : '';
+        $new_current_step->comments = isset($this->options['comments']) ? $this->options['comments'] : '';
+        $new_current_step->caller = isset($this->options['caller']) ? $this->options['caller'] : '';
         $new_current_step->save();
 
         $step_descriptor = $this->getStepDescriptor($result_descriptor['step']);
         // order to use for workflow post-function
         if (isset($step_descriptor['state']) && $step_descriptor['state'])
         {
-            $this->inputs['state'] = $step_descriptor['state'];
+            $this->options['state'] = $step_descriptor['state'];
         }
         // trigger before step
         if (isset($step_descriptor['pre_functions']) && $step_descriptor['pre_functions'])
@@ -399,10 +404,10 @@ class Workflow {
      *
      * @param array $wf_config
      * @param string $action_id
-     * @param array $inputs;
+     * @param array $options;
      * @return string
      */
-    public function doAction($action_id, $inputs=[])
+    public function doAction($action_id, $options=[])
     {
         $state = $this->getEntryState($this->entry->id);
         if ($state != self::OSWF_CREATED && $state != self::OSWF_ACTIVATED)
@@ -416,8 +421,8 @@ class Workflow {
             throw new CurrentStepNotFoundException();
         }
 
-        // set user inputs
-        $this->inputs = array_merge($this->inputs, $inputs);
+        // set options
+        $this->options = array_merge($this->options, $options);
         // complete workflow step transition
         $this->transitionWorkflow($current_steps, $action_id);
     }
@@ -527,10 +532,10 @@ class Workflow {
      *
      * @return array
      */
-    public function getAvailableActions($inputs=[])
+    public function getAvailableActions($options=[])
     {
-        // set user inputs
-        $this->inputs = array_merge($this->inputs, $inputs);
+        // set options
+        $this->options = array_merge($this->options, $options);
 
         $available_actions = [];
         // get current steps
@@ -713,7 +718,7 @@ class Workflow {
         {
             $tmp_vars[$key] = $val;
         }
-        $tmp_vars = array_merge($tmp_vars, $this->inputs);
+        $tmp_vars = array_merge($tmp_vars, $this->options);
 
         return array_merge($tmp_vars, $args);
     }
