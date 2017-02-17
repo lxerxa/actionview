@@ -8,6 +8,7 @@ use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Project\Provider;
 use App\Project\Eloquent\File;
+use App\Project\Eloquent\Watch;
 use App\Project\Eloquent\Searcher;
 use App\Workflow\Workflow;
 use Sentinel;
@@ -142,6 +143,16 @@ class IssueController extends Controller
 
         $query->orderBy('created_at', 'desc');
         $issues = $query->get();
+
+        // set issue watching flag
+        $watched_issues = array_column(Watch::where('project_key', $project_key)->where('user.id', $this->user->id)->get()->toArray(), 'issue_id');
+        foreach ($issues as $key => $issue)
+        {
+            if (in_array($issue['_id']->__toString(), $watched_issues))
+            {
+                $issues[$key]['watching'] = true;
+            }
+        }
 
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($issues), 'options' => [ 'total' => $total, 'sizePerPage' => $page_size ] ]);
     }
@@ -395,6 +406,13 @@ class IssueController extends Controller
                 $link['dest'] = array_only($dest_issue, $link_fields);
             }
             array_push($issue['links'], $link);
+        }
+
+        $issue['watchers'] = array_column(Watch::where('issue_id', $id)->get()->toArray(), 'user');
+        
+        if (Watch::where('issue_id', $id)->where('user.id', $this->user->id)->exists())
+        {
+            $issue['watching'] = true;
         }
 
         return Response()->json(['ecode' => 0, 'data' => parent::arrange($issue)]);
@@ -730,5 +748,31 @@ class IssueController extends Controller
         $entry = new Workflow($workflow_id);
         $entry->doAction($action_id, [ 'project_key' => $project_key, 'issue_id' => $id, 'caller' => $this->user->id ] + array_only($request->all(), [ 'comments' ]));
         return $this->show($project_key, $id); 
+    }
+
+    /**
+     * workflow action.
+     *
+     * @param  string  $project_key
+     * @param  string  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function watch(Request $request, $project_key, $id)
+    {
+        Watch::where('issue_id', $id)->where('user.id', $this->user->id)->delete();
+
+        $cur_user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+
+        $flag = $request->input('flag');
+        if (isset($flag) && $flag)
+        {
+            Watch::create([ 'project_key' => $project_key, 'issue_id' => $id, 'user' => $cur_user ]);
+        }
+        else
+        {
+            $flag = false;
+        }
+        
+        return Response()->json(['ecode' => 0, 'data' => ['id' => $id, 'user' => $cur_user, 'watching' => $flag]]);
     }
 }

@@ -69,6 +69,7 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can' 
 
     Route::post('issue/{issue_id}/workflow/{workflow_id}/action/{action_id}', 'IssueController@doAction');
     Route::get('issue/{issue_id}/history', 'IssueController@getHistory');
+    Route::post('issue/{issue_id}/watching', 'IssueController@watch');
     Route::resource('issue/{issue_id}/comments', 'CommentsController');
     Route::resource('issue/{issue_id}/worklog', 'WorklogController');
 
