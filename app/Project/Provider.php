@@ -917,7 +917,9 @@ class Provider {
         $operated_at = isset($issue['updated_at']) ? $issue['updated_at'] : $issue['created_at'];
         $operator = isset($issue['modifier']) ? $issue['modifier'] : $issue['reporter'];
 
-        DB::collection('issue_his_' . $project_key)->insert([ 'issue_id' => $issue['_id']->__toString(), 'operated_at' => $operated_at, 'operator' => $operator, 'data' => $snap_data ]);
+        $snap_id = DB::collection('issue_his_' . $project_key)->insertGetId([ 'issue_id' => $issue['_id']->__toString(), 'operated_at' => $operated_at, 'operator' => $operator, 'data' => $snap_data ]);
+
+        return $snap_id;
     }
 
     /**

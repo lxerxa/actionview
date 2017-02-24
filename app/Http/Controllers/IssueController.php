@@ -3,6 +3,11 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
+
+use App\Events\IssueCreateEvent;
+use App\Events\IssueEditEvent;
+use App\Events\IssueDelEvent;
 
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
@@ -514,7 +519,10 @@ class IssueController extends Controller
         DB::collection($table)->where('_id', $id)->update($updValues + array_only($request->all(), $valid_keys));
 
         // add to histroy table
-        Provider::snap2His($project_key, $id, $schema, array_keys(array_only($request->all(), $valid_keys)));
+        $snap_id = Provider::snap2His($project_key, $id, $schema, array_keys(array_only($request->all(), $valid_keys)));
+
+        // trigger event of issue edited
+        Event::fire(new IssueEditEvent($project_key, $id, $snap_id, $updValues['modifier']));
 
         return $this->show($project_key, $id); 
     }
@@ -535,7 +543,11 @@ class IssueController extends Controller
             throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -10002);
         }
 
-        DB::collection($table)->where('_id', $id)->delete();
+        DB::collection($table)->where('_id', $id)->update([ 'del_flg' => 1 ]);
+
+        // trigger event of issue deleted 
+        $user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        Event::fire(new IssueDelEvent($project_key, $id, $user));
 
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }

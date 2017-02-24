@@ -3,6 +3,11 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
+
+use App\Events\CommentsAddEvent;
+use App\Events\CommentsEditEvent;
+use App\Events\CommentsDelEvent;
 
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
@@ -44,6 +49,9 @@ class CommentsController extends Controller
 
         $id = DB::collection($table)->insertGetId(array_only($request->all(), [ 'contents', 'atWho' ]) + [ 'issue_id' => $issue_id, 'creator' => $creator, 'created_at' => time() ]);
 
+        // trigger event of issue added
+        Event::fire(new CommentsAddEvent($project_key, $issue_id, array_only($request->all(), [ 'contents', 'atWho' ]), $creator)); 
+
         $comments = DB::collection($table)->where('_id', $id)->first();
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($comments) ]);
     }
@@ -77,12 +85,14 @@ class CommentsController extends Controller
                 throw new \UnexpectedValueException('the contents can not be empty.', -10002);
             }
         }
+        // record the changed comments
+        $changedComments = [];
 
         $table = 'comments_' . $project_key;
+        $user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
         $operation = $request->input('operation');
         if (isset($operation)) 
         {
-            $creator = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
             $comments = DB::collection('comments_' . $project_key)->where('_id', $id)->first();
             if (!isset($comments['reply']) || !$comments['reply'])
             {
@@ -91,7 +101,8 @@ class CommentsController extends Controller
             if ($operation == 'addReply') 
             {
                 $reply_id = md5(microtime() . $this->user->id); 
-                array_push($comments['reply'], array_only($request->all(), [ 'contents', 'atWho', 'to' ]) + [ 'id' => $reply_id , 'creator' => $creator, 'created_at' => time() ]);
+                array_push($comments['reply'], array_only($request->all(), [ 'contents', 'atWho', 'to' ]) + [ 'id' => $reply_id , 'creator' => $user, 'created_at' => time() ]);
+                $changedComments = array_only($request->all(), [ 'contents', 'atWho', 'to' ]);
             } 
             else if ($operation == 'editReply')
             {
@@ -101,13 +112,15 @@ class CommentsController extends Controller
                     throw new \UnexpectedValueException('the reply id can not be empty.', -10002);
                 }
                 $index = $this->array_find([ 'id' => $reply_id ], $comments['reply']); 
-                if ($index !== false) {
+                if ($index !== false) 
+                {
                     $comments['reply'][$index] = array_merge($comments['reply'][$index], [ 'updated_at' => time(), 'edited_flag' => 1 ] + array_only($request->all(), [ 'contents', 'atWho' ]));
                 }
                 else
                 {
                     throw new \UnexpectedValueException('the reply does not exist', -10002);
                 }
+                $changedComments = $comments['reply'][$index];
             }
             else if ($operation == 'delReply')
             {
@@ -117,7 +130,9 @@ class CommentsController extends Controller
                     throw new \UnexpectedValueException('the reply id can not be empty.', -10002);
                 }
                 $index = $this->array_find([ 'id' => $reply_id ], $comments['reply']); 
-                if ($index !== false) {
+                if ($index !== false) 
+                {
+                    $changedComments = $comments['reply'][$index];
                     array_splice($comments['reply'], $index, 1);
                 }
                 else
@@ -130,6 +145,28 @@ class CommentsController extends Controller
         else
         {
             DB::collection($table)->where('_id', $id)->update([ 'updated_at' => time(), 'edited_flag' => 1 ] + array_only($request->all(), [ 'contents', 'atWho' ]) );
+            $changedComments = array_only($request->all(), [ 'contents', 'atWho' ]);
+        }
+
+        // trigger event of comments 
+        if (isset($operation))
+        {
+            if ($operation == 'addReply')
+            {
+                Event::fire(new CommentsAddEvent($project_key, $issue_id, $changedComments, $user));
+            }
+            else if ($operation == 'editReply')
+            {
+                Event::fire(new CommentsEditEvent($project_key, $issue_id, $changedComments, $user));
+            }
+            else if ($operation == 'delReply')
+            {
+                Event::fire(new CommentsDelEvent($project_key, $issue_id, $changedComments, $user));
+            }
+        }
+        else
+        {
+            Event::fire(new CommentsEditEvent($project_key, $issue_id, $changedComments, $user));
         }
 
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange(DB::collection($table)->find($id)) ]);
@@ -151,6 +188,9 @@ class CommentsController extends Controller
         }
 
         DB::collection($table)->where('_id', $id)->delete();
+
+        // trigger the event of del comments
+        Event::fire(new CommentsDelEvent($project_key, $issue_id, array_only($comments->toArray(), [ 'contents', 'atWho' ]), $user)); 
 
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }
