@@ -6,10 +6,10 @@ use Illuminate\Http\Request;
 
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
-use App\Customization\Eloquent\State;
+use App\Customization\Eloquent\Events;
 use App\Project\Provider;
 
-class StateController extends Controller
+class EventsController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -18,8 +18,8 @@ class StateController extends Controller
      */
     public function index($project_key)
     {
-        $states = Provider::getStateList($project_key);
-        return Response()->json(['ecode' => 0, 'data' => $states]);
+        $events = Provider::getEventList($project_key);
+        return Response()->json(['ecode' => 0, 'data' => $events]);
     }
 
     /**
@@ -36,13 +36,13 @@ class StateController extends Controller
             throw new \UnexpectedValueException('the name can not be empty.', -10002);
         }
 
-        if (Provider::isStateExisted($project_key, $name))
+        if (Provider::isEventExisted($project_key, $name))
         {
-            throw new \UnexpectedValueException('state name cannot be repeated', -10002);
+            throw new \UnexpectedValueException('event name cannot be repeated', -10002);
         }
 
-        $state = State::create([ 'project_key' => $project_key ] + $request->all());
-        return Response()->json(['ecode' => 0, 'data' => $state]);
+        $event = Events::create([ 'project_key' => $project_key ] + $request->all());
+        return Response()->json(['ecode' => 0, 'data' => $event]);
     }
 
     /**
@@ -53,12 +53,12 @@ class StateController extends Controller
      */
     public function show($project_key, $id)
     {
-        $state = State::find($id);
-        //if (!$state || $project_key != $state->project_key)
-        //{
-        //    throw new \UnexpectedValueException('the state does not exist or is not in the project.', -10002);
-        //}
-        return Response()->json(['ecode' => 0, 'data' => $state]);
+        $event = Events::find($id);
+
+        $roles = Provider::getRoleList($project_key, ['name']);
+        $users = Provider::getUserList($project_key);
+
+        return Response()->json(['ecode' => 0, 'data' => $event, 'options' => [ 'roles' => $roles, 'users' => $users ]]);
     }
 
     /**
@@ -70,10 +70,10 @@ class StateController extends Controller
      */
     public function update(Request $request, $project_key, $id)
     {
-        $state = State::find($id);
-        if (!$state || $project_key != $state->project_key)
+        $event = Events::find($id);
+        if (!$event || $project_key != $event->project_key)
         {
-            throw new \UnexpectedValueException('the state does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the event does not exist or is not in the project.', -10002);
         }
 
         $name = $request->input('name');
@@ -83,14 +83,14 @@ class StateController extends Controller
             {
                 throw new \UnexpectedValueException('the name can not be empty.', -10002);
             }
-            if ($state->name !== $name && Provider::isStateExisted($project_key, $name))
+            if ($event->name !== $name && Provider::isEventExisted($project_key, $name))
             {
-                throw new \UnexpectedValueException('state name cannot be repeated', -10002);
+                throw new \UnexpectedValueException('event name cannot be repeated', -10002);
             }
         }
 
-        $state->fill($request->except(['project_key']))->save();
-        return Response()->json(['ecode' => 0, 'data' => State::find($id)]);
+        $event->fill($request->except(['project_key']))->save();
+        return Response()->json(['ecode' => 0, 'data' => Events::find($id)]);
     }
 
     /**
@@ -101,13 +101,13 @@ class StateController extends Controller
      */
     public function destroy($project_key, $id)
     {
-        $state = State::find($id);
-        if (!$state || $project_key != $state->project_key)
+        $event = Events::find($id);
+        if (!$event || $project_key != $event->project_key)
         {
-            throw new \UnexpectedValueException('the state does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the event does not exist or is not in the project.', -10002);
         }
 
-        State::destroy($id);
+        Events::destroy($id);
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }
 }

@@ -75,6 +75,12 @@ class PriorityController extends Controller
      */
     public function update(Request $request, $project_key, $id)
     {
+        $priority = Priority::find($id);
+        if (!$priority || $project_key != $priority->project_key)
+        {
+            throw new \UnexpectedValueException('the priority does not exist, or is not in the project, or is a global definition.', -10002);
+        }
+
         $name = $request->input('name');
         if (isset($name))
         {
@@ -82,16 +88,10 @@ class PriorityController extends Controller
             {
                 throw new \UnexpectedValueException('the name can not be empty.', -10002);
             }
-        }
-        $priority = Priority::find($id);
-        if (!$priority || $project_key != $priority->project_key)
-        {
-            throw new \UnexpectedValueException('the priority does not exist, or is not in the project, or is a global definition.', -10002);
-        }
-
-        if ($priority->name !== $name && Provider::isPriorityExisted($project_key, $name))
-        {
-            throw new \UnexpectedValueException('priority name cannot be repeated', -10002);
+            if ($priority->name !== $name && Provider::isPriorityExisted($project_key, $name))
+            {
+                throw new \UnexpectedValueException('priority name cannot be repeated', -10002);
+            }
         }
 
         $priority->fill($request->except(['project_key']))->save();

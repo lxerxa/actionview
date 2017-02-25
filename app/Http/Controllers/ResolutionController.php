@@ -75,6 +75,12 @@ class ResolutionController extends Controller
      */
     public function update(Request $request, $project_key, $id)
     {
+        $resolution = Resolution::find($id);
+        if (!$resolution || $project_key != $resolution->project_key)
+        {
+            throw new \UnexpectedValueException('the resolution does not exist or is not in the project.', -10002);
+        }
+
         $name = $request->input('name');
         if (isset($name))
         {
@@ -82,17 +88,10 @@ class ResolutionController extends Controller
             {
                 throw new \UnexpectedValueException('the name can not be empty.', -10002);
             }
-        }
-
-        $resolution = Resolution::find($id);
-        if (!$resolution || $project_key != $resolution->project_key)
-        {
-            throw new \UnexpectedValueException('the resolution does not exist or is not in the project.', -10002);
-        }
-
-        if ($resolution->name !== $name && Provider::isResolutionExisted($project_key, $name))
-        {
-            throw new \UnexpectedValueException('resolution name cannot be repeated', -10002);
+            if ($resolution->name !== $name && Provider::isResolutionExisted($project_key, $name))
+            {
+                throw new \UnexpectedValueException('resolution name cannot be repeated', -10002);
+            }
         }
 
         $resolution->fill($request->except(['project_key']))->save();
