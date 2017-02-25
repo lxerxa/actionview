@@ -153,10 +153,19 @@ class RoleController extends Controller
         {
             throw new \UnexpectedValueException('the role does not exist or is not in the project.', -10002);
         }
-        $user_ids = $role->user_ids; 
+
+        $user_ids = [];
+        $actor = Roleactor::where([ 'project_key' => $project_key, 'role_id' => $id ])->first();
+        if ($actor)
+        {
+            $user_ids = $role->user_ids; 
+            $user_ids && Event::fire(new DelUserFromRoleEvent($user_ids, $project_key));
+
+            $actor->delete();
+        }
 
         Role::destroy($id);
-        $user_ids && Event::fire(new DelUserFromRoleEvent($user_ids, $project_key));
+
         return Response()->json([ 'ecode' => 0, 'data' => [ 'id' => $id ] ]);
     }
 
