@@ -19,7 +19,10 @@ class EventsController extends Controller
     public function index($project_key)
     {
         $events = Provider::getEventList($project_key);
-        return Response()->json(['ecode' => 0, 'data' => $events]);
+
+        $roles = Provider::getRoleList($project_key, ['name']);
+        $users = Provider::getUserList($project_key);
+        return Response()->json(['ecode' => 0, 'data' => $events, 'options' => [ 'roles' => $roles, 'users' => $users ]]);
     }
 
     /**

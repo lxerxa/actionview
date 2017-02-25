@@ -9,6 +9,7 @@ use App\Customization\Eloquent\PriorityProperty;
 use App\Customization\Eloquent\Type;
 use App\Customization\Eloquent\Field;
 use App\Customization\Eloquent\Screen;
+use App\Customization\Eloquent\Events;
 use App\Acl\Eloquent\Role;
 use App\Workflow\Eloquent\Definition;
 use App\Project\Eloquent\Project;
@@ -64,6 +65,26 @@ class Provider {
             ->get($fields);
 
         return $states;
+    }
+
+    /**
+     * get event list.
+     *
+     * @param string $project_key
+     * @param array $fields
+     * @return collection 
+     */
+    public static function getEventList($project_key, $fields=[])
+    {
+        $category = self::getProjectCategory($project_key);
+
+        $events = Events::Where('category', $category)
+            ->orWhere('project_key', $project_key)
+            ->orderBy('category', 'desc')
+            ->orderBy('created_at', 'asc')
+            ->get($fields);
+
+        return $events;
     }
 
     /**
@@ -477,6 +498,25 @@ class Provider {
         $isExisted = Resolution::Where('category', $category)
             ->orWhere('project_key', $project_key)
             ->Where('key', $key)
+            ->exists();
+
+        return $isExisted;
+    }
+
+    /**
+     * check if Event has existed.
+     *
+     * @param string $project_key
+     * @param string $name
+     * @return bool
+     */
+    public static function isEventExisted($project_key, $name)
+    {
+        $category = self::getProjectCategory($project_key);
+
+        $isExisted = Events::Where('category', $category)
+            ->orWhere('project_key', $project_key)
+            ->Where('name', $name)
             ->exists();
 
         return $isExisted;

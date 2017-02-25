@@ -43,6 +43,8 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::resource('workflow', 'WorkflowController');
     // project role config
     Route::resource('role', 'RoleController');
+    // project event config
+    Route::resource('events', 'EventsController');
     // project priority config
     Route::resource('priority', 'PriorityController');
     Route::post('priority/batch', 'PriorityController@handle');
