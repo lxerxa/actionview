@@ -45,6 +45,7 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::resource('role', 'RoleController');
     // project event config
     Route::resource('events', 'EventsController');
+    Route::get('events/{event_id}/reset', 'EventsController@reset');
     // project priority config
     Route::resource('priority', 'PriorityController');
     Route::post('priority/batch', 'PriorityController@handle');

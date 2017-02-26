@@ -150,4 +150,20 @@ class EventsController extends Controller
         $en = EventNotifications::where([ 'project_key' => $project_key, 'event_id' => $event_id ])->first();
         return $en && isset($en->notifications) ? $en->notifications : [];
     }
+
+    /**
+     * reset the notification.
+     *
+     * @param  string  $project_key
+     * @param  string  $event_id
+     * @return \Illuminate\Http\Response
+     */
+    public function reset($project_key, $event_id)
+    {
+        $en = EventNotifications::where([ 'project_key' => $project_key, 'event_id' => $event_id ])->first();
+        $en && $en->delete();
+
+        $event = Events::find($event_id);
+        return Response()->json(['ecode' => 0, 'data' => $event]);
+    }
 }
