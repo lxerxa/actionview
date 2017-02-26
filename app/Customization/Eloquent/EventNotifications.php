@@ -4,14 +4,14 @@ namespace App\Customization\Eloquent;
 
 use Jenssegers\Mongodb\Eloquent\Model;
 
-class Events extends Model
+class EventNotifications extends Model
 {
     //
-    protected $table = 'config_events';
+    protected $table = 'config_event_notifications';
 
     protected $fillable = array(
         'project_key',
-        'name',
-        'description'
+        'event_id',
+        'notifications'
     );
 }

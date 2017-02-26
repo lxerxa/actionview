@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Customization\Eloquent\Events;
+use App\Customization\Eloquent\EventNotifications;
 use App\Project\Provider;
 
 class EventsController extends Controller
@@ -18,9 +19,17 @@ class EventsController extends Controller
      */
     public function index($project_key)
     {
-        $events = Provider::getEventList($project_key);
+        $events = Provider::getEventList($project_key)->toArray();
+        foreach ($events as $key => $event)
+        {
+            $notifications = $this->getNotifications($project_key, $event['_id']);
+            if ($notifications)
+            {
+                $events[$key]['notifications'] = $notifications;
+            }
+        }
 
-        $roles = Provider::getRoleList($project_key, ['name']);
+	$roles = Provider::getRoleList($project_key, ['name']);
         $users = Provider::getUserList($project_key);
         return Response()->json(['ecode' => 0, 'data' => $events, 'options' => [ 'roles' => $roles, 'users' => $users ]]);
     }
@@ -57,11 +66,7 @@ class EventsController extends Controller
     public function show($project_key, $id)
     {
         $event = Events::find($id);
-
-        $roles = Provider::getRoleList($project_key, ['name']);
-        $users = Provider::getUserList($project_key);
-
-        return Response()->json(['ecode' => 0, 'data' => $event, 'options' => [ 'roles' => $roles, 'users' => $users ]]);
+        return Response()->json(['ecode' => 0, 'data' => $event]);
     }
 
     /**
@@ -91,9 +96,25 @@ class EventsController extends Controller
                 throw new \UnexpectedValueException('event name cannot be repeated', -10002);
             }
         }
-
         $event->fill($request->except(['project_key']))->save();
-        return Response()->json(['ecode' => 0, 'data' => Events::find($id)]);
+
+        $notifications = $request->input('notifications');
+        if (isset($notifications))
+        {
+            $en = EventNotifications::where([ 'project_key' => $project_key, 'event_id' => $id ])->first();
+            $en && $en->delete();
+
+            EventNotifications::create([ 'project_key' => $project_key, 'event_id' => $id, 'notifications' => $notifications ]);
+        }
+
+        $event = Events::find($id);
+        $en = EventNotifications::where([ 'project_key' => $project_key, 'event_id' => $id ])->first();
+        if ($en)
+        {
+            $event->notifications = $en->notifications;
+        }
+
+        return Response()->json(['ecode' => 0, 'data' => $event]);
     }
 
     /**
@@ -110,7 +131,23 @@ class EventsController extends Controller
             throw new \UnexpectedValueException('the event does not exist or is not in the project.', -10002);
         }
 
+        $en = EventNotifications::where([ 'project_key' => $project_key, 'event_id' => $id ])->first();
+        $en && $en->delete();
+
         Events::destroy($id);
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
+    }
+
+    /**
+     * get users by array id.
+     *
+     * @param  string $project_key
+     * @param  string $event_id
+     * @return array 
+     */
+    public function getNotifications($project_key, $event_id)
+    {
+        $en = EventNotifications::where([ 'project_key' => $project_key, 'event_id' => $event_id ])->first();
+        return $en && isset($en->notifications) ? $en->notifications : [];
     }
 }
