@@ -62,9 +62,32 @@ class Provider {
             ->orWhere('project_key', $project_key)
             ->orderBy('category', 'desc')
             ->orderBy('created_at', 'asc')
-            ->get($fields);
+            ->get($fields)
+            ->toArray();
 
         return $states;
+    }
+
+    /**
+     * get state options.
+     *
+     * @param string $project_key
+     * @param array $fields
+     * @return collection
+     */
+    public static function getStateOptions($project_key)
+    {
+        $states = self::getStateList($project_key);
+
+        $options = [];
+        foreach ($states as $state)
+        {
+            $tmp = [];
+            $tmp['_id'] = isset($state['value']) ? $state['value'] : $state['_id'];
+            $tmp['name'] = isset($state['name']) ? $state['name'] : '';
+            $options[] = $tmp;
+        }
+        return $options;
     }
 
     /**
@@ -83,6 +106,27 @@ class Provider {
             ->orderBy('category', 'desc')
             ->orderBy('created_at', 'asc')
             ->get($fields);
+
+        return $events;
+    }
+
+    /**
+     * get event options.
+     *
+     * @param string $project_key
+     * @return collection
+     */
+    public static function getEventOptions($project_key)
+    {
+        $events = self::getEventList($project_key); 
+
+        $options = [];
+        foreach ($events as $event)
+        {
+            $tmp = [];
+            $tmp['_id'] = isset($event['value']) ? $event['value'] : $event['_id'];
+            $tmp['name'] = isset($event['name']) ? $event['name'] : '';
+        }
 
         return $events;
     }
@@ -166,6 +210,35 @@ class Provider {
     }
 
     /**
+     * get priority options.
+     *
+     * @param string $project_key
+     * @return array
+     */
+    public static function getPriorityOptions($project_key)
+    {
+        $priorities = self::getPriorityList($project_key);
+
+        $options = [];
+        foreach ($priorities as $priority)
+        {
+            $tmp = [];
+            $tmp['_id'] = isset($priority['value']) ? $priority['value'] : $priority['_id'];
+            $tmp['name'] = isset($priority['name']) ? $priority['name'] : '';
+            if (isset($priority['default']))
+            {
+                $tmp['default'] = $priority['default'];
+            }
+            if (isset($priority['color']))
+            {
+                $tmp['color'] = $priority['color'];
+            }
+            $options[] = $tmp;
+        }
+        return $options;
+    }
+
+    /**
      * get default resolution.
      *
      * @param string $project_key
@@ -241,6 +314,31 @@ class Provider {
         }
 
         return $resolutions;
+    }
+
+    /**
+     * get resolution options.
+     *
+     * @param string $project_key
+     * @return array 
+     */
+    public static function getResolutionOptions($project_key)
+    {
+        $resolutions = self::getResolutionList($project_key);
+
+        $options = [];
+        foreach ($resolutions as $resolution)
+        {
+            $tmp = [];
+            $tmp['_id'] = isset($resolution['value']) ? $resolution['value'] : $resolution['_id'];
+            $tmp['name'] = isset($resolution['name']) ? $resolution['name'] : '';
+            if (isset($resolution['default']))
+            {
+                $tmp['default'] = $resolution['default'];
+            }
+            $options[] = $tmp;
+        }
+        return $options;
     }
 
     /**

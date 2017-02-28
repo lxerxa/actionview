@@ -4,10 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
-
-use App\Events\CommentsAddEvent;
-use App\Events\CommentsEditEvent;
-use App\Events\CommentsDelEvent;
+use App\Events\IssueEvent;
 
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
@@ -50,7 +47,7 @@ class CommentsController extends Controller
         $id = DB::collection($table)->insertGetId(array_only($request->all(), [ 'contents', 'atWho' ]) + [ 'issue_id' => $issue_id, 'creator' => $creator, 'created_at' => time() ]);
 
         // trigger event of issue added
-        Event::fire(new CommentsAddEvent($project_key, $issue_id, array_only($request->all(), [ 'contents', 'atWho' ]), $creator)); 
+        Event::fire(new IssueEvent($project_key, $issue_id, 'add_comments', $creator, array_only($request->all(), [ 'contents', 'atWho' ]))); 
 
         $comments = DB::collection($table)->where('_id', $id)->first();
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($comments) ]);
@@ -153,20 +150,20 @@ class CommentsController extends Controller
         {
             if ($operation == 'addReply')
             {
-                Event::fire(new CommentsAddEvent($project_key, $issue_id, $changedComments, $user));
+                Event::fire(new IssueEvent($project_key, $issue_id, 'add_comments', $user, $changedComments));
             }
             else if ($operation == 'editReply')
             {
-                Event::fire(new CommentsEditEvent($project_key, $issue_id, $changedComments, $user));
+                Event::fire(new IssueEvent($project_key, $issue_id, 'edit_comments', $user, $changedComments));
             }
             else if ($operation == 'delReply')
             {
-                Event::fire(new CommentsDelEvent($project_key, $issue_id, $changedComments, $user));
+                Event::fire(new IssueEvent($project_key, $issue_id, 'del_comments', $user, $changedComments));
             }
         }
         else
         {
-            Event::fire(new CommentsEditEvent($project_key, $issue_id, $changedComments, $user));
+            Event::fire(new IssueEvent($project_key, $issue_id, 'edit_comments', $user, $changedComments));
         }
 
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange(DB::collection($table)->find($id)) ]);
@@ -190,7 +187,7 @@ class CommentsController extends Controller
         DB::collection($table)->where('_id', $id)->delete();
 
         // trigger the event of del comments
-        Event::fire(new CommentsDelEvent($project_key, $issue_id, array_only($comments->toArray(), [ 'contents', 'atWho' ]), $user)); 
+        Event::fire(new IssueEvent($project_key, $issue_id, 'del_comments', $user, array_only($comments->toArray(), [ 'contents', 'atWho' ]))); 
 
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }

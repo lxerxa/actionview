@@ -42,31 +42,7 @@ class EventServiceProvider extends ServiceProvider
             'App\Listeners\FileChangeListener',
             'App\Listeners\ActivityAddListener',
         ],
-       'App\Events\IssueCreateEvent' => [
-            'App\Listeners\ActivityAddListener',
-        ],
-       'App\Events\IssueEditEvent' => [
-            'App\Listeners\ActivityAddListener',
-        ],
-       'App\Events\IssueDelEvent' => [
-            'App\Listeners\ActivityAddListener',
-        ],
-       'App\Events\CommentsAddEvent' => [
-            'App\Listeners\ActivityAddListener',
-        ],
-       'App\Events\CommentsEditEvent' => [
-            'App\Listeners\ActivityAddListener',
-        ],
-       'App\Events\CommentsDelEvent' => [
-            'App\Listeners\ActivityAddListener',
-        ],
-       'App\Events\WorklogAddEvent' => [
-            'App\Listeners\ActivityAddListener',
-        ],
-       'App\Events\WorklogEditEvent' => [
-            'App\Listeners\ActivityAddListener',
-        ],
-       'App\Events\WorklogDelEvent' => [
+       'App\Events\IssueEvent' => [
             'App\Listeners\ActivityAddListener',
         ],
     ];

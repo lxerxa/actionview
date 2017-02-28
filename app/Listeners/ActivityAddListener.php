@@ -45,47 +45,15 @@ class ActivityAddListener
 
         if ($event instanceof FileUploadEvent)
         {
-            $activity_id = $this->addFileActivity($event->project_key, $event->issue_id, $event->file_id, $event->user, 'add_file');
+            $activity_id = $this->addFileActivity($event->project_key, $event->issue_id, 'add_file', $event->user, $event->file_id);
         }
         else if ($event instanceof FileDelEvent)
         {
-            $activity_id = $this->addFileActivity($event->project_key, $event->issue_id, $event->file_id, $event->user, 'delete_file');
+            $activity_id = $this->addFileActivity($event->project_key, $event->issue_id, 'del_file', $event->user, $event->file_id);
         }
-        else if ($event instanceof IssueCreateEvent)
+        else if ($event instanceof IssueEvent)
         {
-            $activity_id = $this->addIssueActivity($event->project_key, $event->issue_id, $event->user, '', 'create_issue');
-        }
-        else if ($event instanceof IssueEditEvent)
-        {
-            $activity_id = $this->addIssueActivity($event->project_key, $event->issue_id, $event->snap_id, $event->user, 'edit_issue');
-        }
-        else if ($event instanceof IssueDelEvent)
-        {
-            $activity_id = $this->addIssueActivity($event->project_key, $event->issue_id, $event->user, '', 'delete_issue');
-        }
-        else if ($event instanceof CommentsAddEvent)
-        {
-            $activity_id = $this->addCommentsActivity($event->project_key, $event->issue_id, $event->comments, $event->user, 'add_comments');
-        }
-        else if ($event instanceof CommentsEditEvent)
-        {
-            $activity_id = $this->addCommentsActivity($event->project_key, $event->issue_id, $event->comments, $event->user, 'edit_comments');
-        }
-        else if ($event instanceof CommentsDelEvent)
-        {
-            $activity_id = $this->addCommentsActivity($event->project_key, $event->issue_id, $event->comments, $event->user, 'delete_comments');
-        }
-        else if ($event instanceof WorklogAddEvent)
-        {
-            $activity_id = $this->addWorklogActivity($event->project_key, $event->issue_id, $event->worklog, $event->user, 'add_worklog');
-        }
-        else if ($event instanceof WorklogEditEvent)
-        {
-            $activity_id = $this->addWorklogActivity($event->project_key, $event->issue_id, $event->worklog, $event->user, 'edit_worklog');
-        }
-        else if ($event instanceof WorklogDelEvent)
-        {
-            $activity_id = $this->addWorklogActivity($event->project_key, $event->issue_id, $event->worklog, $event->user, 'delete_worklog');
+            $activity_id = $this->addIssueActivity($event->project_key, $event->issue_id, $event->event_key, $event->user, $event->param);
         }
 
         if ($activity_id)
@@ -104,7 +72,7 @@ class ActivityAddListener
      * @param  string $key
      * @return void
      */
-    public function addFileActivity($project_key, $issue_id, $file_id, $user, $operation)
+    public function addFileActivity($project_key, $issue_id, $event_key, $user, $file_id)
     {
         $file_info = File::find($file_id);
         if (!$file_info)
@@ -114,7 +82,7 @@ class ActivityAddListener
 
         // insert activity into db.
         $info = [ 'issue_id' => $issue_id, 'operation' => $operation, 'user' => $user, 'summary' => $file_info->name, 'created_at' => time() ];
-        DB::collection('activity_' . $project_key)->insert($info);
+        return DB::collection('activity_' . $project_key)->insertGetId($info);
     }
 
     /**
@@ -122,21 +90,23 @@ class ActivityAddListener
      *
      * @param  string $project_key
      * @param  string $issue_id
-     * @param  string $snap_id
+     * @param  string $event_key
      * @param  object $user
-     * @param  string $key
+     * @param  string $param
      * @return void
      */
-    public function addIssueActivity($project_key, $issue_id, $snap_id, $user, $operation)
+    public function addIssueActivity($project_key, $issue_id, $event_key, $user, $param='')
     {
-        if ($snap_id)
+        $info = [];
+
+        if ($event_key === 'edit_issue')
         {
             $diff_items = []; $diff_keys = [];
 
             $snaps = DB::collection('issue_his_' . $project_key)->where('issue_id', $issue_id)->orderBy('operated_at', 'desc')->get();
             foreach ($snaps as $i => $snap)
             {
-                if ($snap['_id']->__toString() != $snap_id)
+                if ($snap['_id']->__toString() != $param)
                 {
                     continue;
                 }
@@ -199,43 +169,14 @@ class ActivityAddListener
                 break;
             }
             // insert activity into db.
-            $info = [ 'issue_id' => $issue_id, 'operation' => $operation, 'user' => $user, 'summary' => $diff_items, 'created_at' => time() ];
-            DB::collection('activity_' . $project_key)->insert($info);
+            $info = [ 'issue_id' => $issue_id, 'event_key' => $event_key, 'user' => $user, 'summary' => $diff_items, 'created_at' => time() ];
         }
-    }
+        else
+        {
+            $info = [ 'issue_id' => $issue_id, 'event_key' => $event_key, 'user' => $user, 'summary' => $param, 'created_at' => time() ];
+        }
 
-    /**
-     * add comments activities.
-     *
-     * @param  string $project_key
-     * @param  string $issue_id
-     * @param  string $comments
-     * @param  object $user
-     * @param  string $key
-     * @return void
-     */
-    public function addCommentsActivity($project_key, $issue_id, $comments, $user, $operation)
-    {
-        // insert activity into db.
-        $info = [ 'issue_id' => $issue_id, 'operation' => $operation, 'user' => $user, 'summary' => $comments, 'created_at' => time() ];
-        DB::collection('activity_' . $project_key)->insert($info);
-    }
-
-    /**
-     * add worklog activities.
-     *
-     * @param  string $project_key
-     * @param  string $issue_id
-     * @param  object $worklog
-     * @param  object $user
-     * @param  string $key
-     * @return void
-     */
-    public function addWorklogActivity($project_key, $issue_id, $worklog, $user, $operation)
-    {
-        // insert activity into db.
-        $info = [ 'issue_id' => $issue_id, 'operation' => $operation, 'user' => $user, 'summary' => $worklog, 'created_at' => time() ];
-        DB::collection('activity_' . $project_key)->insert($info);
+        return DB::collection('activity_' . $project_key)->insertGetId($info);
     }
 
     /**

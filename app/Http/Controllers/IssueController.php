@@ -4,10 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
-
-use App\Events\IssueCreateEvent;
-use App\Events\IssueEditEvent;
-use App\Events\IssueDelEvent;
+use App\Events\IssueEvent;
 
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
@@ -436,11 +433,11 @@ class IssueController extends Controller
         // get project users fix me
         $assignees = Provider::getUserList($project_key);
         // get state list
-        $states = Provider::getStateList($project_key, ['name']);
+        $states = Provider::getStateOptions($project_key);
         // get resolution list
-        $resolutions = Provider::getResolutionList($project_key, ['name', 'default']);
+        $resolutions = Provider::getResolutionOptions($project_key);
         // get priority list
-        $priorities = Provider::getPriorityList($project_key, ['color', 'name', 'default']);
+        $priorities = Provider::getPriorityOptions($project_key);
         // get version list
         $versions = Provider::getVersionList($project_key, ['name']);
         // get module list
@@ -522,7 +519,7 @@ class IssueController extends Controller
         $snap_id = Provider::snap2His($project_key, $id, $schema, array_keys(array_only($request->all(), $valid_keys)));
 
         // trigger event of issue edited
-        Event::fire(new IssueEditEvent($project_key, $id, $snap_id, $updValues['modifier']));
+        Event::fire(new IssueEvent($project_key, $id, 'edit_issue', $updValues['modifier'], $snap_id));
 
         return $this->show($project_key, $id); 
     }
@@ -547,7 +544,7 @@ class IssueController extends Controller
 
         // trigger event of issue deleted 
         $user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
-        Event::fire(new IssueDelEvent($project_key, $id, $user));
+        Event::fire(new IssueEvent($project_key, $id, 'del_issue', $user));
 
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }
