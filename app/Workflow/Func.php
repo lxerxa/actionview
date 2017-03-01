@@ -2,8 +2,7 @@
 namespace App\Workflow;
 
 use Illuminate\Support\Facades\Event;
-use App\Events\CommentsAddEvent;
-use App\Events\IssueEditEvent;
+use App\Events\IssueEvent;
 
 use App\Project\Provider;
 use App\Acl\Acl;
@@ -224,7 +223,7 @@ class Func
         DB::collection($table)->insert([ 'contents' => $comments, 'atWho' => [], 'issue_id' => $issue_id, 'creator' => $creator, 'created_at' => time() ]);
 
         // trigger event of comments added
-        Event::fire(new CommentsAddEvent($project_key, $issue_id, [ 'contents' => $comments, 'atWho' => [] ], $caller));
+        Event::fire(new IssueEvent($project_key, $issue_id, $caller, [ 'event_key' => 'add_comments', 'data' => [ 'contents' => $comments, 'atWho' => [] ] ]));
     }
 
     /**
@@ -251,7 +250,7 @@ class Func
             // snap to history
             $snap_id = Provider::snap2His($project_key, $issue_id, null, array_keys(self::$issue_properties));
             // trigger event of issue edited
-            Event::fire(new IssueEditEvent($project_key, $issue_id, $snap_id, $caller));
+            //Event::fire(new IssueEditEvent($project_key, $issue_id, $snap_id, $caller));
         }
     }
 }

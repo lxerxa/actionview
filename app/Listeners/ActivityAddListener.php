@@ -74,7 +74,7 @@ class ActivityAddListener
         }
 
         // insert activity into db.
-        $info = [ 'issue_id' => $issue_id, 'operation' => $operation, 'user' => $user, 'summary' => $file_info->name, 'created_at' => time() ];
+        $info = [ 'issue_id' => $issue_id, 'event_key' => $event_key, 'user' => $user, 'data' => $file_info->name, 'created_at' => time() ];
         return DB::collection('activity_' . $project_key)->insertGetId($info);
     }
 
