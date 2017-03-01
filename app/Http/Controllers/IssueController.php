@@ -519,7 +519,7 @@ class IssueController extends Controller
         $snap_id = Provider::snap2His($project_key, $id, $schema, array_keys(array_only($request->all(), $valid_keys)));
 
         // trigger event of issue edited
-        Event::fire(new IssueEvent($project_key, $id, 'edit_issue', $updValues['modifier'], $snap_id));
+        Event::fire(new IssueEvent($project_key, $id, $updValues['modifier'], [ 'event_key' => 'edit_issue', 'snap_id' => $snap_id ]));
 
         return $this->show($project_key, $id); 
     }
@@ -544,7 +544,7 @@ class IssueController extends Controller
 
         // trigger event of issue deleted 
         $user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
-        Event::fire(new IssueEvent($project_key, $id, 'del_issue', $user));
+        Event::fire(new IssueEvent($project_key, $id, $user, [ 'event_key' => 'del_issue' ]));
 
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }

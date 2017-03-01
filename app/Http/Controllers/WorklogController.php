@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
+use App\Events\IssueEvent;
 
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
@@ -99,8 +101,11 @@ class WorklogController extends Controller
         }
 
         $recorder = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
-
         $worklog = Worklog::create([ 'project_key' => $project_key, 'issue_id' => $issue_id, 'recorder' => $recorder, 'recorded_at' => time() ] + $values);
+
+        // trigger event of issue added
+        Event::fire(new IssueEvent($project_key, $issue_id, $recorder, [ 'event_key' => 'add_worklog', 'data' => $values ]));
+
         return Response()->json(['ecode' => 0, 'data' => $worklog]);
     }
 
@@ -204,8 +209,12 @@ class WorklogController extends Controller
         {
             $values['comments'] = $comments ?: '';
         }
-
         $worklog->fill([ 'edited_flag' => 1 ] + array_except($values, [ 'recorder', 'recorded_at' ]))->save();
+
+        // trigger event of worklog edited 
+        $cur_user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        Event::fire(new IssueEvent($project_key, $issue_id, $cur_user, [ 'event_key' => 'edit_worklog', 'data' => values ]));
+
         return Response()->json(['ecode' => 0, 'data' => Worklog::find($id)]);
     }
 
@@ -222,8 +231,12 @@ class WorklogController extends Controller
         {
             throw new \UnexpectedValueException('the worklog does not exist or is not in the issue or is not in the project.', -10002);
         }
-
         Worklog::destroy($id);
+
+        // trigger event of worklog deleted 
+        $cur_user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        Event::fire(new IssueEvent($project_key, $issue_id, $cur_user, [ 'event_key' => 'del_worklog', 'data' => $worklog->toArray() ]));
+
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }
 }

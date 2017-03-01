@@ -46,8 +46,8 @@ class CommentsController extends Controller
 
         $id = DB::collection($table)->insertGetId(array_only($request->all(), [ 'contents', 'atWho' ]) + [ 'issue_id' => $issue_id, 'creator' => $creator, 'created_at' => time() ]);
 
-        // trigger event of issue added
-        Event::fire(new IssueEvent($project_key, $issue_id, 'add_comments', $creator, array_only($request->all(), [ 'contents', 'atWho' ]))); 
+        // trigger event of comments added
+        Event::fire(new IssueEvent($project_key, $issue_id, $creator, [ 'event_key' => 'add_comments', 'data' => array_only($request->all(), [ 'contents', 'atWho' ]) ])); 
 
         $comments = DB::collection($table)->where('_id', $id)->first();
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($comments) ]);
@@ -112,12 +112,12 @@ class CommentsController extends Controller
                 if ($index !== false) 
                 {
                     $comments['reply'][$index] = array_merge($comments['reply'][$index], [ 'updated_at' => time(), 'edited_flag' => 1 ] + array_only($request->all(), [ 'contents', 'atWho' ]));
+                    $changedComments = $comments['reply'][$index];
                 }
                 else
                 {
                     throw new \UnexpectedValueException('the reply does not exist', -10002);
                 }
-                $changedComments = $comments['reply'][$index];
             }
             else if ($operation == 'delReply')
             {
@@ -150,20 +150,20 @@ class CommentsController extends Controller
         {
             if ($operation == 'addReply')
             {
-                Event::fire(new IssueEvent($project_key, $issue_id, 'add_comments', $user, $changedComments));
+                Event::fire(new IssueEvent($project_key, $issue_id, $user, [ 'event_key' => 'add_comments', 'data' => $changedComments ]));
             }
             else if ($operation == 'editReply')
             {
-                Event::fire(new IssueEvent($project_key, $issue_id, 'edit_comments', $user, $changedComments));
+                Event::fire(new IssueEvent($project_key, $issue_id, $user, [ 'event_key' => 'edit_comments', 'data' => $changedComments ]));
             }
             else if ($operation == 'delReply')
             {
-                Event::fire(new IssueEvent($project_key, $issue_id, 'del_comments', $user, $changedComments));
+                Event::fire(new IssueEvent($project_key, $issue_id, $user, [ 'event_key' => 'del_comments', 'data' => $changedComments ]));
             }
         }
         else
         {
-            Event::fire(new IssueEvent($project_key, $issue_id, 'edit_comments', $user, $changedComments));
+            Event::fire(new IssueEvent($project_key, $issue_id, $user, [ 'event_key' => 'edit_comments', 'data' => $changedComments ]));
         }
 
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange(DB::collection($table)->find($id)) ]);
@@ -187,7 +187,7 @@ class CommentsController extends Controller
         DB::collection($table)->where('_id', $id)->delete();
 
         // trigger the event of del comments
-        Event::fire(new IssueEvent($project_key, $issue_id, 'del_comments', $user, array_only($comments->toArray(), [ 'contents', 'atWho' ]))); 
+        Event::fire(new IssueEvent($project_key, $issue_id, $user, [ 'event_key' => 'del_comments', 'data' => array_only($comments->toArray(), [ 'contents', 'atWho' ]) ])); 
 
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }

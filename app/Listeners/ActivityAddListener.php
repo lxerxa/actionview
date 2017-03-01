@@ -41,19 +41,20 @@ class ActivityAddListener
      */
     public function handle(Event $event)
     {
+        // this activity_id is used for notice
         $activity_id = '';
 
         if ($event instanceof FileUploadEvent)
         {
-            $activity_id = $this->addFileActivity($event->project_key, $event->issue_id, 'add_file', $event->user, $event->file_id);
+            $activity_id = $this->addFileActivity($event->project_key, $event->issue_id, $event->user, $event->file_id, 'add_file');
         }
         else if ($event instanceof FileDelEvent)
         {
-            $activity_id = $this->addFileActivity($event->project_key, $event->issue_id, 'del_file', $event->user, $event->file_id);
+            $activity_id = $this->addFileActivity($event->project_key, $event->issue_id, $event->user, $event->file_id, 'del_file');
         }
         else if ($event instanceof IssueEvent)
         {
-            $activity_id = $this->addIssueActivity($event->project_key, $event->issue_id, $event->event_key, $event->user, $event->param);
+            $activity_id = $this->addIssueActivity($event->project_key, $event->issue_id, $event->user, $event->param);
         }
 
         if ($activity_id)
@@ -67,12 +68,12 @@ class ActivityAddListener
      *
      * @param  string $project_key
      * @param  string $issue_id
+     * @param  array  $user
      * @param  string $file_id
-     * @param  object $user
-     * @param  string $key
+     * @param  string $event_key
      * @return void
      */
-    public function addFileActivity($project_key, $issue_id, $event_key, $user, $file_id)
+    public function addFileActivity($project_key, $issue_id, $user, $file_id, $event_key)
     {
         $file_info = File::find($file_id);
         if (!$file_info)
@@ -95,18 +96,18 @@ class ActivityAddListener
      * @param  string $param
      * @return void
      */
-    public function addIssueActivity($project_key, $issue_id, $event_key, $user, $param='')
+    public function addIssueActivity($project_key, $issue_id, $user, $param)
     {
         $info = [];
 
-        if ($event_key === 'edit_issue')
+        if (isset($param['snap_id']))
         {
             $diff_items = []; $diff_keys = [];
 
             $snaps = DB::collection('issue_his_' . $project_key)->where('issue_id', $issue_id)->orderBy('operated_at', 'desc')->get();
             foreach ($snaps as $i => $snap)
             {
-                if ($snap['_id']->__toString() != $param)
+                if ($snap['_id']->__toString() != $param['snap_id'])
                 {
                     continue;
                 }
@@ -169,11 +170,11 @@ class ActivityAddListener
                 break;
             }
             // insert activity into db.
-            $info = [ 'issue_id' => $issue_id, 'event_key' => $event_key, 'user' => $user, 'summary' => $diff_items, 'created_at' => time() ];
+            $info = [ 'issue_id' => $issue_id, 'event_key' => $param['event_key'], 'user' => $user, 'data' => $diff_items, 'created_at' => time() ];
         }
         else
         {
-            $info = [ 'issue_id' => $issue_id, 'event_key' => $event_key, 'user' => $user, 'summary' => $param, 'created_at' => time() ];
+            $info = [ 'issue_id' => $issue_id, 'event_key' => $param['event_key'], 'user' => $user, 'data' => isset($param['data']) ? $param['data'] : '', 'created_at' => time() ];
         }
 
         return DB::collection('activity_' . $project_key)->insertGetId($info);
