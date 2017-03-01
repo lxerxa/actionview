@@ -112,7 +112,7 @@ class CommentsController extends Controller
                 if ($index !== false) 
                 {
                     $comments['reply'][$index] = array_merge($comments['reply'][$index], [ 'updated_at' => time(), 'edited_flag' => 1 ] + array_only($request->all(), [ 'contents', 'atWho' ]));
-                    $changedComments = $comments['reply'][$index];
+                    $changedComments = array_only($comments['reply'][$index], [ 'contents', 'atWho', 'to' ]);
                 }
                 else
                 {
@@ -129,7 +129,7 @@ class CommentsController extends Controller
                 $index = $this->array_find([ 'id' => $reply_id ], $comments['reply']); 
                 if ($index !== false) 
                 {
-                    $changedComments = $comments['reply'][$index];
+                    $changedComments = array_only($comments['reply'][$index], [ 'contents', 'atWho', 'to' ]);
                     array_splice($comments['reply'], $index, 1);
                 }
                 else

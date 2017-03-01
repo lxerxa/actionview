@@ -4,15 +4,7 @@ namespace App\Listeners;
 use App\Events\Event;
 use App\Events\FileUploadEvent;
 use App\Events\FileDelEvent;
-use App\Events\IssueCreateEvent;
-use App\Events\IssueEditEvent;
-use App\Events\IssueDelEvent;
-use App\Events\CommentsAddEvent;
-use App\Events\CommentsEditEvent;
-use App\Events\CommentsDelEvent;
-use App\Events\WorklogAddEvent;
-use App\Events\WorklogEditEvent;
-use App\Events\WorklogDelEvent;
+use App\Events\IssueEvent;
 use App\Project\Provider;
 
 use App\Project\Eloquent\File;

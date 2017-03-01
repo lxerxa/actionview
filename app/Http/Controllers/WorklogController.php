@@ -213,7 +213,7 @@ class WorklogController extends Controller
 
         // trigger event of worklog edited 
         $cur_user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
-        Event::fire(new IssueEvent($project_key, $issue_id, $cur_user, [ 'event_key' => 'edit_worklog', 'data' => values ]));
+        Event::fire(new IssueEvent($project_key, $issue_id, $cur_user, [ 'event_key' => 'edit_worklog', 'data' => $values ]));
 
         return Response()->json(['ecode' => 0, 'data' => Worklog::find($id)]);
     }

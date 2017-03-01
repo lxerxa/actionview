@@ -966,10 +966,10 @@ class Provider {
         if (isset($issue['priority']))
         {
             if ($issue['priority'])
-            {
+            { 
                 if (in_array('priority', $change_fields) || !isset($snap_data['priority']))
                 {
-                    $priority = Priority::find($issue['priority']);
+                    $priority = Priority::Where('key', $issue['priority'])->orWhere('id', $issue['priority'])->first();
                     $snap_data['priority'] = [ 'value' => $priority->name, 'name' => '优先级' ];
                 }
             }
@@ -985,7 +985,7 @@ class Provider {
             {
                 if (in_array('state', $change_fields) || !isset($snap_data['state']))
                 {
-                    $state = State::find($issue['state']);
+                    $state = State::Where('key', $issue['state'])->orWhere('id', $issue['state'])->first();
                     $snap_data['state'] = [ 'value' => $state->name, 'name' => '状态' ];
                 }
             }
@@ -1001,7 +1001,7 @@ class Provider {
             {
                 if (in_array('resolution', $change_fields) || !isset($snap_data['resolution']))
                 {
-                    $resolution = Resolution::find($issue['resolution']);
+                    $resolution = Resolution::Where('key', $issue['resolution'])->orWhere('id', $issue['resolution'])->first();
                     $snap_data['resolution'] = [ 'value' => $resolution->name, 'name' => '解决结果' ];
                 }
             }
