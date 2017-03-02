@@ -117,7 +117,7 @@ class ActivityAddListener
     {
         $info = [];
 
-        if (isset($param['snap_id']))
+        if (isset($param['snap_id']) && $param['snap_id'])
         {
             $diff_items = []; $diff_keys = [];
 

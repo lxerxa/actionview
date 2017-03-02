@@ -14,6 +14,8 @@ class Func
 
     public static $issue_properties = [];
 
+    public static $snap_id = '';
+
     /**
      * check if user is the type.
      *
@@ -251,6 +253,22 @@ class Func
             $snap_id = Provider::snap2His($project_key, $issue_id, null, array_keys(self::$issue_properties));
             // trigger event of issue edited
             //Event::fire(new IssueEditEvent($project_key, $issue_id, $snap_id, $caller));
+            self::snap_id = $snap_id;
         }
+    }
+
+    /**
+     * trigger issue.event
+     *
+     * @param  array $param
+     * @return void
+     */
+    public static function triggerEvent($param)
+    {
+        $issue_id = $param['issue_id'];
+        $project_key = $param['project_key'];
+        $caller = $param['caller'];
+
+        Event::fire(new IssueEvent($project_key, $issue_id, $caller, [ 'event_key' => $param['eventParam'], 'snap_id' => self::snap_id ]));
     }
 }
