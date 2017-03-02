@@ -5,6 +5,8 @@ use App\Events\Event;
 use App\Events\FileUploadEvent;
 use App\Events\FileDelEvent;
 use App\Events\IssueEvent;
+use App\Events\VersionEvent;
+use App\Events\ModuleEvent;
 use App\Project\Provider;
 
 use App\Project\Eloquent\File;
@@ -48,7 +50,16 @@ class ActivityAddListener
         {
             $activity_id = $this->addIssueActivity($event->project_key, $event->issue_id, $event->user, $event->param);
         }
+        else if ($event instanceof VersionEvent)
+        {
+            $this->addProjectActivity($event->project_key, $event->user, $event->param);
+        }
+        else if ($event instanceof ModuleEvent)
+        {
+            $this->addProjectActivity($event->project_key, $event->user, $event->param);
+        }
 
+        // only issue event is put into MQ.
         if ($activity_id)
         {
             $this->putMQ($event->project_key, $event->issue_id, $activity_id);
@@ -76,6 +87,20 @@ class ActivityAddListener
         // insert activity into db.
         $info = [ 'issue_id' => $issue_id, 'event_key' => $event_key, 'user' => $user, 'data' => $file_info->name, 'created_at' => time() ];
         return DB::collection('activity_' . $project_key)->insertGetId($info);
+    }
+
+    /**
+     * add issue activities.
+     *
+     * @param  string $project_key
+     * @param  object $user
+     * @param  string $param
+     * @return void
+     */
+    public function addProjectActivity($project_key, $user, $param)
+    {
+        $info = [ 'event_key' => $param['event_key'], 'user' => $user, 'data' => isset($param['data']) ? $param['data'] : '', 'created_at' => time() ];
+        DB::collection('activity_' . $project_key)->insert($info);
     }
 
     /**

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
+use App\Events\ModuleEvent;
 
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
@@ -52,9 +54,12 @@ class ModuleController extends Controller
             $principal = [ 'id' => $principal_id, 'name' => $user_info->first_name ];
         }
 
-        $creator = [ 'id' => $this->user->id, 'name' => $this->user->first_name ];
-
+        $creator = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
         $module = Module::create([ 'project_key' => $project_key, 'principal' => $principal, 'creator' => $creator ] + $request->all());
+
+        // trigger event of version added
+        Event::fire(new ModuleEvent($project_key, $creator, [ 'event_key' => 'create_module', 'data' => $module->name ]));
+
         return Response()->json([ 'ecode' => 0, 'data' => $module ]);
     }
 
@@ -79,6 +84,12 @@ class ModuleController extends Controller
      */
     public function update(Request $request, $project_key, $id)
     {
+        $module = Module::find($id);
+        if (!$module || $module->project_key != $project_key)
+        {
+            throw new \UnexpectedValueException('the module does not exist or is not in the project.', -10002);
+        }
+
         $name = $request->input('name');
         if (isset($name))
         {
@@ -86,17 +97,10 @@ class ModuleController extends Controller
             {
                 throw new \UnexpectedValueException('the name can not be empty.', -10002);
             }
-        }
-
-        $module = Module::find($id);
-        if (!$module)
-        {
-            throw new \UnexpectedValueException('the module does not exist or is not in the project.', -10002);
-        }
-
-        if ($module->name !== $name && Module::whereRaw([ 'name' => $name ])->exists())
-        {
-            throw new \UnexpectedValueException('module name cannot be repeated', -10002);
+            if ($module->name !== $name && Module::whereRaw([ 'name' => $name ])->exists())
+            {
+                throw new \UnexpectedValueException('module name cannot be repeated', -10002);
+            }
         }
 
         $principal_id = $request->input('principal');
@@ -111,6 +115,11 @@ class ModuleController extends Controller
         }
 
         $module->fill([ 'principal' => $principal ] + array_except($request->all(), [ 'creator', 'project_key' ]))->save();
+
+        // trigger event of module edited
+        $cur_user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        Event::fire(new ModuleEvent($project_key, $cur_user, [ 'event_key' => 'edit_module', 'data' => $request->all() ]));
+
         return Response()->json([ 'ecode' => 0, 'data' => Module::find($id) ]);
     }
 
@@ -129,6 +138,10 @@ class ModuleController extends Controller
         }
 
         Module::destroy($id);
+
+        // trigger event of module deleted 
+        $cur_user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        Event::fire(new ModuleEvent($project_key, $cur_user, [ 'event_key' => 'del_module', 'data' => $module->name ]));
 
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }

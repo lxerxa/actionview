@@ -90,11 +90,17 @@ class CommentsController extends Controller
         $operation = $request->input('operation');
         if (isset($operation)) 
         {
+            if (!in_array($operation, [ 'addReply', 'editReply', 'delReply' ]))
+            {
+                throw new \UnexpectedValueException('the operation is incorrect value.', -10002);
+            }
+
             $comments = DB::collection('comments_' . $project_key)->where('_id', $id)->first();
             if (!isset($comments['reply']) || !$comments['reply'])
             {
                 $comments['reply'] = [];
             }
+
             if ($operation == 'addReply') 
             {
                 $reply_id = md5(microtime() . $this->user->id); 
@@ -146,25 +152,18 @@ class CommentsController extends Controller
         }
 
         // trigger event of comments 
+        $event_key = '';
         if (isset($operation))
         {
-            if ($operation == 'addReply')
-            {
-                Event::fire(new IssueEvent($project_key, $issue_id, $user, [ 'event_key' => 'add_comments', 'data' => $changedComments ]));
-            }
-            else if ($operation == 'editReply')
-            {
-                Event::fire(new IssueEvent($project_key, $issue_id, $user, [ 'event_key' => 'edit_comments', 'data' => $changedComments ]));
-            }
-            else if ($operation == 'delReply')
-            {
-                Event::fire(new IssueEvent($project_key, $issue_id, $user, [ 'event_key' => 'del_comments', 'data' => $changedComments ]));
-            }
+            $operation === 'addReply'   && $event_key = 'add_comments';
+            $operation === 'editReply'  && $event_key = 'edit_comments';
+            $operation === 'delReply'   && $event_key = 'del_comments';
         }
         else
         {
-            Event::fire(new IssueEvent($project_key, $issue_id, $user, [ 'event_key' => 'edit_comments', 'data' => $changedComments ]));
+            $event_key = 'edit_comments';
         }
+        Event::fire(new IssueEvent($project_key, $issue_id, $user, [ 'event_key' => $event_key, 'data' => $changedComments ]));
 
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange(DB::collection($table)->find($id)) ]);
     }
@@ -192,6 +191,13 @@ class CommentsController extends Controller
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }
 
+    /**
+     * define the array function of searching for array object.
+     *
+     * @param  array  $needle
+     * @param  array  $haystack
+     * @return \Illuminate\Http\Response
+     */
     public function array_find($needle, $haystack)
     {
         foreach($haystack as $key => $val)

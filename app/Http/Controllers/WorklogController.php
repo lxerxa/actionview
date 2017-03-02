@@ -103,7 +103,7 @@ class WorklogController extends Controller
         $recorder = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
         $worklog = Worklog::create([ 'project_key' => $project_key, 'issue_id' => $issue_id, 'recorder' => $recorder, 'recorded_at' => time() ] + $values);
 
-        // trigger event of issue added
+        // trigger event of issue worklog added
         Event::fire(new IssueEvent($project_key, $issue_id, $recorder, [ 'event_key' => 'add_worklog', 'data' => $values ]));
 
         return Response()->json(['ecode' => 0, 'data' => $worklog]);

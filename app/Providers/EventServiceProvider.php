@@ -45,6 +45,12 @@ class EventServiceProvider extends ServiceProvider
        'App\Events\IssueEvent' => [
             'App\Listeners\ActivityAddListener',
         ],
+       'App\Events\VersionEvent' => [
+            'App\Listeners\ActivityAddListener',
+        ],
+       'App\Events\ModuleEvent' => [
+            'App\Listeners\ActivityAddListener',
+        ],
     ];
 
     /**
