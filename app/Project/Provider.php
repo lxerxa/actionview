@@ -792,6 +792,10 @@ class Provider {
     public static function getSchemaByScreenId($project_key, $type, $screen_id)
     {
         $screen = Screen::find($screen_id);
+        if (!$screen)
+        {
+            return [];
+        }
         return self::getScreenSchema($project_key, $type, $screen);
     }
 
@@ -823,7 +827,7 @@ class Provider {
             }
             else if ($val['key'] == 'resolution')
             {
-                $resolutions = self::getResolutionList($project_key);
+                $resolutions = self::getResolutionOptions($project_key);
                 $val['optionValues'] = self::pluckFields($resolutions, ['_id', 'name']);
                 foreach ($resolutions as $key2 => $val2)
                 {
@@ -836,7 +840,7 @@ class Provider {
             }
             else if ($val['key'] == 'priority')
             {
-                $priorities = self::getPriorityList($project_key);
+                $priorities = self::getPriorityOptions($project_key);
                 $val['optionValues'] = self::pluckFields($priorities, ['_id', 'name']);
                 foreach ($priorities as $key2 => $val2)
                 {

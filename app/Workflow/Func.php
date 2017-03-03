@@ -253,7 +253,7 @@ class Func
             $snap_id = Provider::snap2His($project_key, $issue_id, null, array_keys(self::$issue_properties));
             // trigger event of issue edited
             //Event::fire(new IssueEditEvent($project_key, $issue_id, $snap_id, $caller));
-            self::snap_id = $snap_id;
+            self::$snap_id = $snap_id;
         }
     }
 

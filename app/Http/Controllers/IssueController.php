@@ -291,6 +291,12 @@ class IssueController extends Controller
             $insValues['priority'] = Provider::getDefaultPriority($project_key);
         }
 
+        $resolution = $request->input('resolution'); 
+        if (!isset($resolution))
+        {
+            $insValues['resolution'] = 'Unresolved'; 
+        }
+
         // get reporter(creator)
         $insValues['reporter'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
 
@@ -310,6 +316,8 @@ class IssueController extends Controller
         $issue = DB::collection($table)->where('_id', $id)->first();
         // add to histroy table
         Provider::snap2His($project_key, $id, $schema);
+        // trigger event of issue edited
+        Event::fire(new IssueEvent($project_key, $id, $insValues['reporter'], [ 'event_key' => 'create_issue' ]));
 
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($issue) ]);
     }
