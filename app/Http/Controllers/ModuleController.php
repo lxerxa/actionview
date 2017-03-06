@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
-use App\Events\ModuleEvent;
+//use App\Events\ModuleEvent;
 
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
@@ -58,7 +58,7 @@ class ModuleController extends Controller
         $module = Module::create([ 'project_key' => $project_key, 'principal' => $principal, 'creator' => $creator ] + $request->all());
 
         // trigger event of version added
-        Event::fire(new ModuleEvent($project_key, $creator, [ 'event_key' => 'create_module', 'data' => $module->name ]));
+        //Event::fire(new ModuleEvent($project_key, $creator, [ 'event_key' => 'create_module', 'data' => $module->name ]));
 
         return Response()->json([ 'ecode' => 0, 'data' => $module ]);
     }
@@ -117,8 +117,8 @@ class ModuleController extends Controller
         $module->fill([ 'principal' => $principal ] + array_except($request->all(), [ 'creator', 'project_key' ]))->save();
 
         // trigger event of module edited
-        $cur_user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
-        Event::fire(new ModuleEvent($project_key, $cur_user, [ 'event_key' => 'edit_module', 'data' => $request->all() ]));
+        //$cur_user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        //Event::fire(new ModuleEvent($project_key, $cur_user, [ 'event_key' => 'edit_module', 'data' => $request->all() ]));
 
         return Response()->json([ 'ecode' => 0, 'data' => Module::find($id) ]);
     }
@@ -140,8 +140,8 @@ class ModuleController extends Controller
         Module::destroy($id);
 
         // trigger event of module deleted 
-        $cur_user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
-        Event::fire(new ModuleEvent($project_key, $cur_user, [ 'event_key' => 'del_module', 'data' => $module->name ]));
+        //$cur_user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        //Event::fire(new ModuleEvent($project_key, $cur_user, [ 'event_key' => 'del_module', 'data' => $module->name ]));
 
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }

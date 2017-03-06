@@ -62,6 +62,8 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
 
 Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can' ] ], function ()
 {
+    Route::get('activity', 'ActivityController@index');
+
     Route::get('issue/searcher', 'IssueController@getSearchers');
     Route::post('issue/searcher', 'IssueController@addSearcher');
     Route::post('issue/searcher/batch', 'IssueController@handleSearcher');

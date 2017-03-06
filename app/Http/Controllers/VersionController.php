@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
-use App\Events\VersionEvent;
+//use App\Events\VersionEvent;
 
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
@@ -51,7 +51,7 @@ class VersionController extends Controller
         $version = Version::create([ 'project_key' => $project_key, 'creator' => $creator ] + $request->all());
 
         // trigger event of version added
-        Event::fire(new VersionEvent($project_key, $creator, [ 'event_key' => 'create_version', 'data' => $version->name ]));
+        //Event::fire(new VersionEvent($project_key, $creator, [ 'event_key' => 'create_version', 'data' => $version->name ]));
 
         return Response()->json([ 'ecode' => 0, 'data' => $version ]);
     }
@@ -105,8 +105,8 @@ class VersionController extends Controller
         $version->fill(array_except($request->all(), [ 'creator', 'project_key' ]))->save();
 
         // trigger event of version edited
-        $cur_user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
-        Event::fire(new VersionEvent($project_key, $cur_user, [ 'event_key' => 'edit_version', 'data' => $request->all() ]));
+        //$cur_user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        //Event::fire(new VersionEvent($project_key, $cur_user, [ 'event_key' => 'edit_version', 'data' => $request->all() ]));
 
         return Response()->json([ 'ecode' => 0, 'data' => Version::find($id) ]);
     }
@@ -128,8 +128,8 @@ class VersionController extends Controller
         Version::destroy($id);
 
         // trigger event of version edited
-        $cur_user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
-        Event::fire(new VersionEvent($project_key, $cur_user, [ 'event_key' => 'del_version', 'data' => $version->name ]));
+        //$cur_user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        //Event::fire(new VersionEvent($project_key, $cur_user, [ 'event_key' => 'del_version', 'data' => $version->name ]));
 
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }

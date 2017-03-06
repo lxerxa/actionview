@@ -317,7 +317,7 @@ class IssueController extends Controller
         // add to histroy table
         Provider::snap2His($project_key, $id, $schema);
         // trigger event of issue edited
-        Event::fire(new IssueEvent($project_key, $id, $insValues['reporter'], [ 'event_key' => 'create_issue' ]));
+        Event::fire(new IssueEvent($project_key, $id->__toString(), $insValues['reporter'], [ 'event_key' => 'create_issue' ]));
 
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($issue) ]);
     }

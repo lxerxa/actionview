@@ -160,11 +160,11 @@ class Func
      */
     public static function assignIssueToUser($param)
     {
-       $user_info = Sentinel::findById($param['assignedUserParam']);
-       if ($user_info)
-       {
-           self::$issue_properties['assignee'] = [ 'id' => $user_info->id, 'name' => $user_info->first_name ];
-       }
+        $user_info = Sentinel::findById($param['assignedUserParam']);
+        if ($user_info)
+        {
+            self::$issue_properties['assignee'] = [ 'id' => $user_info->id, 'name' => $user_info->first_name ];
+        }
     }
 
     /**
@@ -225,7 +225,7 @@ class Func
         DB::collection($table)->insert([ 'contents' => $comments, 'atWho' => [], 'issue_id' => $issue_id, 'creator' => $creator, 'created_at' => time() ]);
 
         // trigger event of comments added
-        Event::fire(new IssueEvent($project_key, $issue_id, $caller, [ 'event_key' => 'add_comments', 'data' => [ 'contents' => $comments, 'atWho' => [] ] ]));
+        Event::fire(new IssueEvent($project_key, $issue_id, $creator, [ 'event_key' => 'add_comments', 'data' => [ 'contents' => $comments, 'atWho' => [] ] ]));
     }
 
     /**
@@ -267,8 +267,10 @@ class Func
     {
         $issue_id = $param['issue_id'];
         $project_key = $param['project_key'];
-        $caller = $param['caller'];
 
-        Event::fire(new IssueEvent($project_key, $issue_id, $caller, [ 'event_key' => $param['eventParam'], 'snap_id' => self::snap_id ]));
+        $user_info = Sentinel::findById($param['caller']);
+        $caller = [ 'id' => $user_info->id, 'name' => $user_info->first_name, 'email' => $user_info->email ];
+
+        Event::fire(new IssueEvent($project_key, $issue_id, $caller, [ 'event_key' => $param['eventParam'], 'snap_id' => self::$snap_id ]));
     }
 }

@@ -1062,7 +1062,7 @@ class Provider {
 
         $snap_id = DB::collection('issue_his_' . $project_key)->insertGetId([ 'issue_id' => $issue['_id']->__toString(), 'operated_at' => $operated_at, 'operator' => $operator, 'data' => $snap_data ]);
 
-        return $snap_id;
+        return $snap_id->__toString();
     }
 
     /**
