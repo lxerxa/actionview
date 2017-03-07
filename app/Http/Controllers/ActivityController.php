@@ -16,7 +16,7 @@ class ActivityController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index($project_key)
+    public function index(Request $request, $project_key)
     {
         $time_points = [ 'just' => time(), 
                          '15m' => strtotime('-15 minute'), 
@@ -46,15 +46,46 @@ class ActivityController extends Controller
                          '2y' => strtotime('-2 year'), 
                        ];
 
+        $cache_issues = [];
+
         $query = DB::collection('activity_' . $project_key);
+
+        $category = $request->input('category');
+        if (isset($category) && $category != 'all')
+        {
+            $query->where('event_key', 'like', '%' . $category);
+        }
+
+        $offset_id = $request->input('offset_id');
+        if (isset($offset_id))
+        {
+            $query = $query->where('_id', '<', $offset_id);
+        }
+
         $query->orderBy('created_at', 'desc');
+
+        $limit = $request->input('limit');
+        if (!isset($limit))
+        {
+            $limit = 50;
+        }
+        $query->take(intval($limit));
+
         $activities = $query->get();
         foreach ($activities as $key => $activity)
         {
             if (isset($activity['issue_id']))
             {
-                $issue = DB::collection('issue_' . $project_key)->where('_id', $activity['issue_id'])->first();
-                $activities[$key]['issue'] = [ 'id' => $issue['_id'], 'name' => isset($issue['title']) ? $issue['title'] : '' ];
+                if (isset($cache_issues[$activity['issue_id']]))
+                {
+                    $issue = $cache_issues[$activity['issue_id']]; 
+                }
+                else
+                {
+                    $issue = DB::collection('issue_' . $project_key)->where('_id', $activity['issue_id'])->first();
+                }
+                $activities[$key]['issue'] = [ 'id' => $issue['_id'], 'title' => isset($issue['title']) ? $issue['title'] : '' ];
+                $cache_issues[$activity['issue_id']] = $issue;
             }
 
             $pre_timepoint_key = 'just';
@@ -70,6 +101,6 @@ class ActivityController extends Controller
             $activities[$key]['ago_key'] = $pre_timepoint_key;
 
         }
-        return Response()->json(['ecode' => 0, 'data' => $activities]);
+        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($activities) ]);
     }
 }
