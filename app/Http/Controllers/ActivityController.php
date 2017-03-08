@@ -9,6 +9,8 @@ use App\Http\Controllers\Controller;
 use App\Project\Provider;
 use DB;
 
+use MongoDB\BSON\ObjectID;
+
 class ActivityController extends Controller
 {
     /**
@@ -62,12 +64,12 @@ class ActivityController extends Controller
             $query = $query->where('_id', '<', $offset_id);
         }
 
-        $query->orderBy('created_at', 'desc');
+        $query->orderBy('_id', 'desc');
 
         $limit = $request->input('limit');
         if (!isset($limit))
         {
-            $limit = 50;
+            $limit = 30;
         }
         $query->take(intval($limit));
 
@@ -84,7 +86,7 @@ class ActivityController extends Controller
                 {
                     $issue = DB::collection('issue_' . $project_key)->where('_id', $activity['issue_id'])->first();
                 }
-                $activities[$key]['issue'] = [ 'id' => $issue['_id'], 'title' => isset($issue['title']) ? $issue['title'] : '' ];
+                $activities[$key]['issue'] = [ 'id' => $activity['issue_id'], 'title' => isset($issue['title']) ? $issue['title'] : '' ];
                 $cache_issues[$activity['issue_id']] = $issue;
             }
 

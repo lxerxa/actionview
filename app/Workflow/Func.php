@@ -218,6 +218,8 @@ class Func
         $caller = $param['caller'];
         $comments = isset($param['comments']) ? $param['comments'] : '';
 
+        if (!$comments) { return; }
+
         $user_info = Sentinel::findById($caller);
         $creator = [ 'id' => $user_info->id, 'name' => $user_info->first_name, 'email' => $user_info->email ];
 

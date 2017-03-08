@@ -123,6 +123,11 @@ class Provider {
         $options = [];
         foreach ($events as $event)
         {
+            if (isset($event->category) && (!isset($event->apply) || $event->apply !== 'workflow'))
+            {
+                continue;
+            }
+
             $tmp = [];
             $tmp['_id'] = isset($event['key']) ? $event['key'] : $event['_id'];
             $tmp['name'] = isset($event['name']) ? $event['name'] : '';
