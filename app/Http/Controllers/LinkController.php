@@ -57,10 +57,10 @@ class LinkController extends Controller
         $link['relation'] = $ret->relation;
 
         $src_issue = DB::collection('issue_' . $project_key)->where('_id', $src)->first();
-        $link['src'] = array_only($src_issue, ['_id', 'no', 'type', 'title']);
+        $link['src'] = array_only($src_issue, ['_id', 'no', 'type', 'title', 'state']);
 
         $dest_issue = DB::collection('issue_' . $project_key)->where('_id', $dest)->first();
-        $link['dest'] = array_only($dest_issue, ['_id', 'no', 'type', 'title']); 
+        $link['dest'] = array_only($dest_issue, ['_id', 'no', 'type', 'title', 'state']); 
 
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($link) ]);
     }
