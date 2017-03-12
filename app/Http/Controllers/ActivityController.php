@@ -86,7 +86,7 @@ class ActivityController extends Controller
                 {
                     $issue = DB::collection('issue_' . $project_key)->where('_id', $activity['issue_id'])->first();
                 }
-                $activities[$key]['issue'] = [ 'id' => $activity['issue_id'], 'title' => isset($issue['title']) ? $issue['title'] : '' ];
+                $activities[$key]['issue'] = [ 'id' => $activity['issue_id'], 'no' => $issue['no'], 'title' => isset($issue['title']) ? $issue['title'] : '', 'del_flg' => isset($issue['del_flg']) ? $issue['del_flg'] : 0 ];
                 $cache_issues[$activity['issue_id']] = $issue;
             }
 

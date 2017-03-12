@@ -548,13 +548,26 @@ class IssueController extends Controller
             throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -10002);
         }
 
-        DB::collection($table)->where('_id', $id)->update([ 'del_flg' => 1 ]);
-
-        // trigger event of issue deleted 
         $user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        
+        $ids = [ $id ];
+        // delete all subtasks of this issue
+        $subtasks = DB::collection('issue_' . $project_key)->where('parent_id', $id)->get();
+        foreach ($subtasks as $subtask)
+        {
+            $sub_id = $subtask['_id']->__toString();
+            DB::collection($table)->where('_id', $sub_id)->update([ 'del_flg' => 1 ]);
+            Event::fire(new IssueEvent($project_key, $sub_id, $user, [ 'event_key' => 'del_issue' ]));
+            $ids[] = $sub_id;
+        }
+        // delete linked relation
+        DB::collection('linked')->where('src', $id)->orWhere('dest', $id)->delete();
+        // delete this issue
+        DB::collection($table)->where('_id', $id)->update([ 'del_flg' => 1 ]);
+        // trigger event of issue deleted 
         Event::fire(new IssueEvent($project_key, $id, $user, [ 'event_key' => 'del_issue' ]));
 
-        return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
+        return Response()->json(['ecode' => 0, 'data' => [ 'ids' => $ids ]]);
     }
 
     /**
