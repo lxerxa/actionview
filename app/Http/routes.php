@@ -69,12 +69,14 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can' 
     Route::post('issue/searcher/batch', 'IssueController@handleSearcher');
     Route::get('issue/options', 'IssueController@getOptions');
     Route::get('issue/search', 'IssueController@search');
+    Route::post('issue/copy', 'IssueController@copy');
 
     Route::resource('issue', 'IssueController');
 
     Route::post('issue/{issue_id}/workflow/{workflow_id}/action/{action_id}', 'IssueController@doAction');
     Route::get('issue/{issue_id}/history', 'IssueController@getHistory');
     Route::post('issue/{issue_id}/watching', 'IssueController@watch');
+    Route::get('issue/{issue_id}/reset', 'IssueController@resetState');
     Route::resource('issue/{issue_id}/comments', 'CommentsController');
     Route::resource('issue/{issue_id}/worklog', 'WorklogController');
 

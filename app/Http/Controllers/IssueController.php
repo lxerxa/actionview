@@ -12,6 +12,7 @@ use App\Project\Provider;
 use App\Project\Eloquent\File;
 use App\Project\Eloquent\Watch;
 use App\Project\Eloquent\Searcher;
+use App\Project\Eloquent\Linked;
 use App\Workflow\Workflow;
 use Sentinel;
 use DB;
@@ -291,11 +292,12 @@ class IssueController extends Controller
             $insValues['priority'] = Provider::getDefaultPriority($project_key);
         }
 
-        $resolution = $request->input('resolution'); 
-        if (!isset($resolution))
-        {
-            $insValues['resolution'] = 'Unresolved'; 
-        }
+        //$resolution = $request->input('resolution'); 
+        //if (!isset($resolution))
+        //{
+        //    $insValues['resolution'] = 'Unresolved'; 
+        //}
+        $insValues['resolution'] = 'Unresolved'; 
 
         // get reporter(creator)
         $insValues['reporter'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
@@ -316,7 +318,7 @@ class IssueController extends Controller
         $issue = DB::collection($table)->where('_id', $id)->first();
         // add to histroy table
         Provider::snap2His($project_key, $id, $schema);
-        // trigger event of issue edited
+        // trigger event of issue created
         Event::fire(new IssueEvent($project_key, $id->__toString(), $insValues['reporter'], [ 'event_key' => 'create_issue' ]));
 
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($issue) ]);
@@ -804,5 +806,100 @@ class IssueController extends Controller
         }
         
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id, 'user' => $cur_user, 'watching' => $flag]]);
+    }
+
+    /**
+     * reset issue state.
+     *
+     * @param  string  $project_key
+     * @param  string  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function resetState(Request $request, $project_key, $id)
+    {
+        $issue = DB::collection('issue_' . $project_key)->where('_id', $id)->first();
+
+        $updValues = [];
+        // workflow initialize
+        $workflow = $this->initializeWorkflow($issue['type']);
+        $updValues = $workflow;
+
+        $updValues['modifier'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        $updValues['updated_at'] = time();
+
+        DB::collection($table)->where('_id', $id)->update($updValues);
+
+        // add to histroy table
+        $snap_id = Provider::snap2His($project_key, $id, null, $updValues);
+
+        // trigger event of issue edited
+        Event::fire(new IssueEvent($project_key, $id, $updValues['modifier'], [ 'event_key' => 'edit_issue', 'snap_id' => $snap_id ]));
+
+        return $this->show($project_key, $id);
+    }
+
+    /**
+     * copy issue.
+     *
+     * @param  string  $project_key
+     * @param  string  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function copy(Request $request, $project_key)
+    {
+        $title = $request->input('title');
+        if (!$title || trim($title) == '')
+        {
+            throw new \UnexpectedValueException('the issue title cannot be empty.', -10002);
+        }
+
+        $src_id = $request->input('source_id');
+        if (!isset($src_id) || !$src_id)
+        {
+            throw new \UnexpectedValueException('the copied issue id cannot be empty.', -10002);
+        }
+
+        $src_issue = DB::collection('issue_' . $project_key)->where('_id', $src_id)->first();
+        if (!$src_issue )
+        {
+            throw new \UnexpectedValueException('the copied issue does not exist or is not in the project.', -10002);
+        }
+
+        $schema = Provider::getSchemaByType($src_issue['type']);
+        if (!$schema)
+        {
+            throw new \UnexpectedValueException('the schema of the type is not existed.', -10002);
+        }
+
+        $valid_keys = array_merge(array_column($schema, 'key'), [ 'type', 'parent_id', 'priority', 'assignee' ]);
+        $insValues = array_only($src_issue, $valid_keys);
+
+        $insValues['title'] = $title;
+        // get reporter(creator)
+        $insValues['reporter'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+
+        $table = 'issue_' . $project_key;
+        $max_no = DB::collection($table)->count() + 1;
+        $insValues['no'] = $max_no;
+
+        // workflow initialize
+        $workflow = $this->initializeWorkflow($src_issue['type']);
+        $insValues = array_merge($insValues, $workflow);
+        // initilize resolution
+        $insValues['resolution'] = 'Unresolved'; 
+        // created time
+        $insValues['created_at'] = time();
+
+        $id = DB::collection($table)->insertGetId($insValues);
+
+        $issue = DB::collection($table)->where('_id', $id)->first();
+        // add to histroy table
+        Provider::snap2His($project_key, $id, $schema);
+        // create link of clone
+        Linked::create([ 'src' => $id->__toString(), 'relation' => 'clones', 'dest' => $src_id, 'creator' => $insValues['reporter'] ]);
+        // trigger event of issue created
+        Event::fire(new IssueEvent($project_key, $id->__toString(), $insValues['reporter'], [ 'event_key' => 'create_issue' ]));
+
+        return $this->show($project_key, $id);
     }
 }
