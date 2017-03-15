@@ -297,7 +297,6 @@ class IssueController extends Controller
         //{
         //    $insValues['resolution'] = 'Unresolved'; 
         //}
-        $insValues['resolution'] = 'Unresolved'; 
 
         // get reporter(creator)
         $insValues['reporter'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
@@ -341,6 +340,7 @@ class IssueController extends Controller
         $initial_state = $wf_entry->getStepMeta($initial_step->step_id, 'state');
 
         $ret['state'] = $initial_state;
+        $ret['resolution'] = 'Unresolved';
         $ret['entry_id'] = $wf_entry->getEntryId();
         $ret['definition_id'] = $wf_definition->id;
 
@@ -885,8 +885,6 @@ class IssueController extends Controller
         // workflow initialize
         $workflow = $this->initializeWorkflow($src_issue['type']);
         $insValues = array_merge($insValues, $workflow);
-        // initilize resolution
-        $insValues['resolution'] = 'Unresolved'; 
         // created time
         $insValues['created_at'] = time();
 
