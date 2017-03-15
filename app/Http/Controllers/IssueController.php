@@ -894,10 +894,10 @@ class IssueController extends Controller
         // add to histroy table
         Provider::snap2His($project_key, $id, $schema);
         // create link of clone
-        Linked::create([ 'src' => $id->__toString(), 'relation' => 'clones', 'dest' => $src_id, 'creator' => $insValues['reporter'] ]);
+        Linked::create([ 'src' => $src_id, 'relation' => 'is cloned by', 'dest' => $id->__toString(), 'creator' => $insValues['reporter'] ]);
         // trigger event of issue created
         Event::fire(new IssueEvent($project_key, $id->__toString(), $insValues['reporter'], [ 'event_key' => 'create_issue' ]));
 
-        return $this->show($project_key, $id);
+        return $this->show($project_key, $id->__toString());
     }
 }
