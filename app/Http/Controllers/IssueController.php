@@ -827,6 +827,7 @@ class IssueController extends Controller
         $updValues['modifier'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
         $updValues['updated_at'] = time();
 
+        $table = 'issue_' . $project_key;
         DB::collection($table)->where('_id', $id)->update($updValues);
 
         // add to histroy table
