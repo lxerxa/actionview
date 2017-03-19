@@ -49,10 +49,10 @@ class FileController extends Controller
             $size = getimagesize($filename);
             $width = $size[0]; $height = $size[1];
             $scale = $width < $height ? $height : $width;
-            $thumbnails_width = floor(160 * $width / $scale);
-            $thumbnails_height = floor(160 * $height / $scale);
+            $thumbnails_width = floor(190 * $width / $scale);
+            $thumbnails_height = floor(190 * $height / $scale);
             $thumbnails_filename = $filename . '_thumbnails';
-            if ($scale <= 160)
+            if ($scale <= 190)
             {
                 @copy($filename, $thumbnails_filename);
             }
