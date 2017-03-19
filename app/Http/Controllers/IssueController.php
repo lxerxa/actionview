@@ -831,10 +831,9 @@ class IssueController extends Controller
         DB::collection($table)->where('_id', $id)->update($updValues);
 
         // add to histroy table
-        $snap_id = Provider::snap2His($project_key, $id, null, $updValues);
-
+        $snap_id = Provider::snap2His($project_key, $id, null, array_keys($updValues));
         // trigger event of issue edited
-        Event::fire(new IssueEvent($project_key, $id, $updValues['modifier'], [ 'event_key' => 'edit_issue', 'snap_id' => $snap_id ]));
+        Event::fire(new IssueEvent($project_key, $id, $updValues['modifier'], [ 'event_key' => 'reset_issue', 'snap_id' => $snap_id ]));
 
         return $this->show($project_key, $id);
     }
@@ -896,8 +895,10 @@ class IssueController extends Controller
         Provider::snap2His($project_key, $id, $schema);
         // create link of clone
         Linked::create([ 'src' => $src_id, 'relation' => 'is cloned by', 'dest' => $id->__toString(), 'creator' => $insValues['reporter'] ]);
-        // trigger event of issue created
+        // trigger event of issue created 
         Event::fire(new IssueEvent($project_key, $id->__toString(), $insValues['reporter'], [ 'event_key' => 'create_issue' ]));
+        // trigger event of link created 
+        Event::fire(new IssueEvent($project_key, $src_id, $insValues['reporter'], [ 'event_key' => 'create_link', 'data' => [ 'relation' => 'is cloned by', 'dest' => $id->__toString() ] ]));
 
         return $this->show($project_key, $id->__toString());
     }
