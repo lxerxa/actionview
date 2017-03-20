@@ -1046,7 +1046,7 @@ class Provider {
                 if (in_array('parent_id', $change_fields) || !isset($snap_data['parent_id']))
                 {
                     $parent = DB::collection('issue_' . $project_key)->where('_id', $issue['parent_id'])->first(['no', 'title']);
-                    $snap_data['parent'] = [ 'value' => $parent['no'] . '/' . $parent['title'], 'name' => '父任务' ];
+                    $snap_data['parent'] = [ 'value' => $parent['no'] . ' - ' . $parent['title'], 'name' => '父任务' ];
                 }
             }
             else

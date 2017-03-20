@@ -74,12 +74,14 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can' 
     Route::resource('issue', 'IssueController');
 
     Route::post('issue/{issue_id}/workflow/{workflow_id}/action/{action_id}', 'IssueController@doAction');
+    Route::post('issue/{issue_id}/assign', 'IssueController@setAssignee');
+    Route::post('issue/{issue_id}/move', 'IssueController@move');
+    Route::post('issue/{issue_id}/convert', 'IssueController@convert');
     Route::get('issue/{issue_id}/history', 'IssueController@getHistory');
     Route::post('issue/{issue_id}/watching', 'IssueController@watch');
     Route::get('issue/{issue_id}/reset', 'IssueController@resetState');
     Route::resource('issue/{issue_id}/comments', 'CommentsController');
     Route::resource('issue/{issue_id}/worklog', 'WorklogController');
-
 
     Route::post('link', 'LinkController@store');
     Route::delete('link/{id}', 'LinkController@destroy');

@@ -955,4 +955,106 @@ class IssueController extends Controller
 
         return $this->show($project_key, $id->__toString());
     }
+
+    /**
+     * covert issue from subtask to standard or from standard to subtask.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  string  $project_key
+     * @param  string  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function convert(Request $request, $project_key, $id)
+    {
+        $table = 'issue_' . $project_key;
+        $issue = DB::collection($table)->find($id);
+        if (!$issue)
+        {
+            throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -10002);
+        }
+
+        $type = $request->input('type');
+        if (!isset($type) || !$type)
+        {
+            throw new \UnexpectedValueException('the issue type cannot be empty.', -10002);
+        }
+
+        $parent_id = $request->input('parent_id');
+        if (!isset($parent_id))
+        {
+            $parent_id = '';
+        }
+ 
+        $updValues = [];
+        if ($parent_id)
+        {
+            // subtask convert to standard
+            $parent_issue = DB::collection($table)->find($parent_id);
+            if (!$parent_issue)
+            {
+                throw new \UnexpectedValueException('the dest parent issue does not exist or is not in the project.', -10002);
+            }
+        }
+        $updValues['parent_id'] = $parent_id;
+        $updValues['type'] = $type;
+
+        $updValues['modifier'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        $updValues['updated_at'] = time();
+        DB::collection($table)->where('_id', $id)->update($updValues);
+
+        // add to histroy table
+        $snap_id = Provider::snap2His($project_key, $id, null, [ 'parent_id', 'type' ]);
+        // trigger event of issue moved
+        Event::fire(new IssueEvent($project_key, $id, $updValues['modifier'], [ 'event_key' => 'edit_issue', 'snap_id' => $snap_id ] ));
+
+        return $this->show($project_key, $id);
+
+    }
+
+    /**
+     * move issue.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  string  $project_key
+     * @param  string  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function move(Request $request, $project_key, $id)
+    {
+        $table = 'issue_' . $project_key;
+        $issue = DB::collection($table)->find($id);
+        if (!$issue)
+        {
+            throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -10002);
+        }
+
+        $parent_id = $request->input('parent_id'); 
+        if (!isset($parent_id) || !$parent_id)
+        {
+            throw new \UnexpectedValueException('the dest parent cannot be empty.', -10002);
+        }
+        $parent_issue = DB::collection($table)->find($parent_id);
+        if (!$parent_issue)
+        {
+            throw new \UnexpectedValueException('the dest parent issue does not exist or is not in the project.', -10002);
+        }
+
+        if ($parent_id === $issue['parent_id'])
+        {
+            return $this->show($project_key, $id);
+        }
+
+        $updValues = [];
+        $updValues['parent_id'] = $parent_id;
+        $updValues['modifier'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        $updValues['updated_at'] = time();
+        DB::collection($table)->where('_id', $id)->update($updValues);
+
+        // add to histroy table
+        $snap_id = Provider::snap2His($project_key, $id, null, [ 'parent_id' ]);
+        // trigger event of issue moved
+        Event::fire(new IssueEvent($project_key, $id, $updValues['modifier'], [ 'event_key' => 'move_issue', 'data' => [ 'old_parent' => $issue['parent_id'], 'new_parent' => $parent_id ] ]));
+
+        return $this->show($project_key, $id);
+    }
 }
