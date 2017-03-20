@@ -57,12 +57,6 @@ class ActivityAddListener
         {
             $this->addProjectActivity($event->project_key, $event->user, $event->param);
         }
-
-        // only issue event is put into MQ.
-        //if ($activity_id)
-        //{
-        //    $this->putMQ($event->project_key, $event->issue_id, $activity_id);
-        //}
     }
 
     /**
@@ -197,18 +191,5 @@ class ActivityAddListener
             $info = [ 'issue_id' => $issue_id, 'event_key' => $param['event_key'], 'user' => $user, 'data' => isset($param['data']) ? $param['data'] : '', 'created_at' => time() ];
             DB::collection('activity_' . $project_key)->insert($info);
         }
-    }
-
-    /**
-     * add notice queue.
-     *
-     * @param  string $project_key
-     * @param  string $issue_id
-     * @param  string $activity_id
-     * @return void
-     */
-    public function putMQ($project_key, $issue_id, $activity_id)
-    {
-        DB::collection('mq')->insert([ 'project_key' => $project_key, 'issue_id' => $issue_id, 'activity_id' => $activity_id, 'created_at' => time() ]); 
     }
 }

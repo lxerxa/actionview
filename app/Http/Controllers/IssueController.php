@@ -460,6 +460,66 @@ class IssueController extends Controller
     }
 
     /**
+     * update issue assignee.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  string  $project_key
+     * @param  string  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function setAssignee(Request $request, $project_key, $id)
+    {
+        $table = 'issue_' . $project_key;
+        $issue = DB::collection($table)->find($id);
+        if (!$issue)
+        {
+            throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -10002);
+        }
+
+        $updValues = []; $assignee = [];
+        $assignee_id = $request->input('assignee');
+        if (isset($assignee_id) && $assignee_id)
+        {
+            if ($assignee_id === 'me')
+            {
+                 $assignee = [ 'id' => $this->user->id, 'name' => $this->user->first_name ];
+                 $updValues['assignee'] = $assignee;
+            }
+            else
+            {
+                $user_info = Sentinel::findById($assignee_id);
+                if ($user_info)
+                {
+                    $assignee = [ 'id' => $assignee_id, 'name' => $user_info->first_name ];
+                    $updValues['assignee'] = $assignee;
+                }
+            }
+        }
+        else
+        {
+            throw new \UnexpectedValueException('the issue assignee cannot be empty.', -10002);
+        }
+
+        // issue assignee has no change.
+        if ($assignee['id'] === $issue['assignee']['id'])
+        {
+            return $this->show($project_key, $id);
+        }
+
+        $updValues['modifier'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        $updValues['updated_at'] = time();
+        DB::collection($table)->where('_id', $id)->update($updValues);
+
+        // add to histroy table
+        $snap_id = Provider::snap2His($project_key, $id, null, [ 'assignee' ]);
+        // trigger event of issue edited
+        Event::fire(new IssueEvent($project_key, $id, $updValues['modifier'], [ 'event_key' => 'assign_issue', 'data' => [ 'old_user' => $issue['assignee'], 'new_user' => $assignee ] ]));
+
+        return $this->show($project_key, $id);
+     }
+
+
+    /**
      * Update the specified resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
@@ -504,19 +564,11 @@ class IssueController extends Controller
         $assignee_id = $request->input('assignee');
         if ($assignee_id)
         {
-            if ($assignee_id === 'me')
+            $user_info = Sentinel::findById($assignee_id);
+            if ($user_info)
             {
-                 $assignee = [ 'id' => $this->user->id, 'name' => $this->user->first_name ];
-                 $updValues['assignee'] = $assignee;
-            }
-            else
-            {
-                $user_info = Sentinel::findById($assignee_id);
-                if ($user_info)
-                {
-                    $assignee = [ 'id' => $assignee_id, 'name' => $user_info->first_name ];
-                    $updValues['assignee'] = $assignee;
-                }
+                $assignee = [ 'id' => $assignee_id, 'name' => $user_info->first_name ];
+                $updValues['assignee'] = $assignee;
             }
         }
 
@@ -559,6 +611,7 @@ class IssueController extends Controller
         {
             $sub_id = $subtask['_id']->__toString();
             DB::collection($table)->where('_id', $sub_id)->update([ 'del_flg' => 1 ]);
+
             Event::fire(new IssueEvent($project_key, $sub_id, $user, [ 'event_key' => 'del_issue' ]));
             $ids[] = $sub_id;
         }

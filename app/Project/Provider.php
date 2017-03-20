@@ -892,13 +892,6 @@ class Provider {
         //获取问题数据
         $issue = DB::collection('issue_' . $project_key)->where('_id', $issue_id)->first();
 
-        // fetch the schema data
-        if (!$schema)
-        {
-            $schema = self::getSchemaByType($issue['type']);
-        }
-
-        // edit version
         $latest_ver_issue = DB::collection('issue_his_' . $project_key)->where('issue_id', $issue_id)->orderBy('operated_at', 'desc')->first();
         if ($latest_ver_issue)
         {
@@ -908,7 +901,17 @@ class Provider {
         {
             $snap_data = [];
         }
-        
+
+        // fetch the schema data
+        if (!$schema && !$change_fields)
+        {
+            $schema = self::getSchemaByType($issue['type']);
+        }
+        else
+        {
+            $schema = [];
+        }
+
         foreach ($schema as $field)
         {
             if ($change_fields && !in_array($field['key'], $change_fields))
