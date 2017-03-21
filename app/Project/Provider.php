@@ -887,7 +887,7 @@ class Provider {
      * @param  array $change_fields
      * @return \Illuminate\Http\Response
      */
-    public static function snap2His($project_key, $issue_id, $schema = '', $change_fields=[])
+    public static function snap2His($project_key, $issue_id, $schema = [], $change_fields=[])
     {
         //获取问题数据
         $issue = DB::collection('issue_' . $project_key)->where('_id', $issue_id)->first();
@@ -903,13 +903,21 @@ class Provider {
         }
 
         // fetch the schema data
-        if (!$schema && !$change_fields)
-        {
-            $schema = self::getSchemaByType($issue['type']);
-        }
-        else
+        if (!$schema)
         {
             $schema = [];
+            if ($change_fields)
+            {
+                $out_schema_fields = [ 'type', 'state', 'resolution', 'priority', 'assignee', 'parent_id' ];
+                if (array_diff($change_fields, $out_schema_fields))
+                {
+                    $schema = self::getSchemaByType($issue['type']);
+                }
+            }
+            else
+            {
+                $schema = self::getSchemaByType($issue['type']);
+            }
         }
 
         foreach ($schema as $field)

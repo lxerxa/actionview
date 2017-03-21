@@ -147,13 +147,29 @@ class IssueController extends Controller
         $query->orderBy('created_at', 'desc');
         $issues = $query->get();
 
-        // set issue watching flag
         $watched_issues = array_column(Watch::where('project_key', $project_key)->where('user.id', $this->user->id)->get()->toArray(), 'issue_id');
+        $cache_parents = [];
         foreach ($issues as $key => $issue)
         {
+            // set issue watching flag
             if (in_array($issue['_id']->__toString(), $watched_issues))
             {
                 $issues[$key]['watching'] = true;
+            }
+            // get the parent issue
+            if (isset($issue['parent_id']) && $issue['parent_id'])
+            {
+                if (isset($cache_parents[$issue['parent_id']]) && $cache_parents[$issue['parent_id']])
+                {
+                    $issues[$key]['parent'] = $cache_parents[$issue['parent_id']];
+                }
+                else
+                {
+                    $parent = DB::collection('issue_' . $project_key)->where('_id', $issue['parent_id'])->first();
+                    $issues[$key]['parent'] = $parent ? array_only($parent, [ '_id', 'title' ]) : [];
+                    $cache_parents[$issue['parent_id']] = $issues[$key]['parent'];
+                }
+                unset($issues[$key]['parent_id']);
             }
         }
 
@@ -277,12 +293,12 @@ class IssueController extends Controller
             $user_info = Sentinel::findById($assignee_id);
             if ($user_info)
             {
-                $assignee = [ 'id' => $assignee_id, 'name' => $user_info->first_name ];
+                $assignee = [ 'id' => $assignee_id, 'name' => $user_info->first_name, 'email' => $user_info->email ];
             }
         }
         if (!$assignee) 
         {
-            $assignee = [ 'id' => $this->user->id, 'name' => $this->user->first_name ];
+            $assignee = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
         }
         $insValues['assignee'] = $assignee;
 
@@ -388,7 +404,7 @@ class IssueController extends Controller
         }
 
         if (isset($issue['parent_id']) && $issue['parent_id']) {
-            $issue['parents'] = DB::collection('issue_' . $project_key)->where('_id', $issue['parent_id'])->first(['no', 'type', 'title', 'state']);
+            $issue['parent'] = DB::collection('issue_' . $project_key)->where('_id', $issue['parent_id'])->first(['no', 'type', 'title', 'state']);
         }
 
         $issue['subtasks'] = DB::collection('issue_' . $project_key)->where('parent_id', $id)->where('del_flg', '<>', 1)->orderBy('created_at', 'asc')->get(['no', 'type', 'title', 'state']);
@@ -482,7 +498,7 @@ class IssueController extends Controller
         {
             if ($assignee_id === 'me')
             {
-                 $assignee = [ 'id' => $this->user->id, 'name' => $this->user->first_name ];
+                 $assignee = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
                  $updValues['assignee'] = $assignee;
             }
             else
@@ -490,7 +506,7 @@ class IssueController extends Controller
                 $user_info = Sentinel::findById($assignee_id);
                 if ($user_info)
                 {
-                    $assignee = [ 'id' => $assignee_id, 'name' => $user_info->first_name ];
+                    $assignee = [ 'id' => $assignee_id, 'name' => $user_info->first_name, 'email' => $user_info->email ];
                     $updValues['assignee'] = $assignee;
                 }
             }
@@ -567,7 +583,7 @@ class IssueController extends Controller
             $user_info = Sentinel::findById($assignee_id);
             if ($user_info)
             {
-                $assignee = [ 'id' => $assignee_id, 'name' => $user_info->first_name ];
+                $assignee = [ 'id' => $assignee_id, 'name' => $user_info->first_name, 'email' => $user_info->email ];
                 $updValues['assignee'] = $assignee;
             }
         }
