@@ -21,6 +21,8 @@ Route::post('api/register', 'UserController@regist');
 
 Route::group([ 'middleware' => 'can' ], function ()
 {
+    Route::get('api/project/checkkey/{key}', 'ProjectController@checkKey');
+    Route::get('api/myproject', 'ProjectController@myproject');
     Route::resource('api/project', 'ProjectController');
     Route::resource('api/user', 'UserController');
     // create or update colletion indexes

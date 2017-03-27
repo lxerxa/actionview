@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
+use App\Events\IssueEvent;
 
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Project\Eloquent\Project;
+use App\Project\Eloquent\UserProject;
 use App\Acl\Acl;
 use App\Project\Provider;
 
@@ -28,11 +31,70 @@ class ProjectController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
+    public function myproject(Request $request)
+    {
+        // fix me
+        $user_projects = UserProject::whereRaw([ 'user_id' => $this->user->id ])->orderBy('latest_access_time', 'desc')->get(['project_key'])->toArray();
+
+        $pkeys = array_column($user_projects, 'project_key');
+
+        $offset_key = $request->input('offset_key');
+        if (isset($offset_key))
+        {
+            $ind = array_search($offset_key, $pkeys);
+            if ($ind === false)
+            {
+                $pkeys = [];
+            }
+            else
+            {
+                $pkeys = array_slice($pkeys, $ind + 1); 
+            }
+        }
+
+        $limit = $request->input('limit');
+        if (!isset($limit))
+        {
+            $limit = 30;
+        }
+
+        $status = $request->input('status');
+        if (!isset($status))
+        {
+            $status = 'all';
+        }
+
+        $projects = [];
+        foreach ($pkeys as $pkey)
+        {
+            $project = Project::where([ 'key' => $pkey ])->first();
+            if (!$project) 
+            {
+                continue;
+            }
+            if ($status == 'all' || $project->status == $status)
+            {
+                $projects[] = $project;
+            }
+            if (count($projects) >= $limit)
+            {
+                break;
+            }
+        }
+
+        return Response()->json([ 'ecode' => 0, 'data' => $projects ]);
+    }
+
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function index(Request $request)
     {
         // fix me
         $wheres = [];
-        $projects = Project::whereRaw($wheres)->get();
+        $projects = Project::whereRaw($wheres)->get()->toArray();
         foreach ($projects as $key => $project)
         {
             $projects[$key]->principal = Sentinel::findById($project->principal);
@@ -49,11 +111,14 @@ class ProjectController extends Controller
      */
     public function store(Request $request)
     {
+        $insValues = [];
+
         $name = $request->input('name');
         if (!$name || trim($name) == '')
         {
             throw new \UnexpectedValueException('the name can not be empty.', -10002);
         }
+        $insValues['name'] = trim($name);
 
         $key = $request->input('key');
         if (!$key || trim($key) == '')
@@ -62,25 +127,37 @@ class ProjectController extends Controller
         }
         if (Project::Where('key', $key)->exists())
         {
-            throw new \InvalidArgumentException('project key has already existed.', -10002);
+            throw new \InvalidArgumentException('project key has been taken.', -10002);
         }
+        $insValues['key'] = trim($key);
 
         $principal = $request->input('principal');
-        if (!$principal)
+        if (!isset($principal) || !$principal)
         {
-            throw new \InvalidArgumentException('the principal must be appointed.', -10002);
+            $insValues['principal'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        }
+        else
+        {
+            $principal_info = Sentinel::findById($principal);
+            if (!$principal_info)
+            {
+                throw new \InvalidArgumentException('the user is not exists.', -10002);
+            }
+            $insValues['principal'] = [ 'id' => $principal_info->id, 'name' => $principal_info->first_name, 'email' => $principal_info->email ];
         }
 
-        $principal_info = Sentinel::findById($principal);
-        if (!$principal_info)
+        $description = $request->input('description');
+        if (isset($description) && trim($description))
         {
-            throw new \InvalidArgumentException('the user is not exists.', -10002);
+            $insValues['description'] = trim($description);
         }
-        // fix me check if user is available
+
+        $insValues['status'] = 'active';
+
         // save the project
-        $project = Project::create([ 'principal' => [ 'id' => $principal_info->id, 'name' => $principal_info->first_name ] ] + $request->all()); //fix me
+        $project = Project::create($insValues); //fix me
         // trigger add user to usrproject
-        Event::fire(new AddUserToRoleEvent([ $principal ], $key));
+        Event::fire(new AddUserToRoleEvent([ $insValues['principal']['id'] ], $key));
 
         return Response()->json([ 'ecode' => 0, 'data' => $project ]);
     }
@@ -137,7 +214,7 @@ class ProjectController extends Controller
             {
                 throw new \UnexpectedValueException('the name can not be empty.', -10002);
             }
-            $updValues['name'] = $name;
+            $updValues['name'] = trim($name);
         }
         // check is user is available
         $principal = $request->input('principal');
@@ -153,7 +230,19 @@ class ProjectController extends Controller
             {
                 throw new \InvalidArgumentException('the user is not exists.', -10002);
             }
-            $updValues['principal'] = [ 'id' => $principal_info->id, 'name' => $principal_info->first_name ]; 
+            $updValues['principal'] = [ 'id' => $principal_info->id, 'name' => $principal_info->first_name, 'email' =>  $principal_info->email ]; 
+        }
+
+        $description = $request->input('description');
+        if (isset($description) && trim($description))
+        {
+            $updValues['description'] = trim($description);
+        }
+
+        $status = $request->input('status');
+        if (isset($status) && in_array($status, [ 'active', 'closed' ]))
+        {
+            $updValues['status'] = $status;
         }
 
         $project = Project::find($id);
@@ -186,5 +275,17 @@ class ProjectController extends Controller
     {
         Project::destroy($id);
         return Response()->json([ 'ecode' => 0, 'data' => [ 'id' => $id ] ]);
+    }
+
+    /**
+     * check if project key has been taken 
+     *
+     * @param  string  $key
+     * @return \Illuminate\Http\Response
+     */
+    public function checkKey($key)
+    {
+        $isExisted = Project::Where('key', $key)->exists(); 
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'flag' => $isExisted ? '2' : '1' ] ]);
     }
 }
