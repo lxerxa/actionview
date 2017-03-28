@@ -64,22 +64,41 @@ class ProjectController extends Controller
             $status = 'all';
         }
 
+        $name = $request->input('name');
+        if (isset($name) && $name)
+        {
+            $name = trim($name);
+        }
+
         $projects = [];
         foreach ($pkeys as $pkey)
         {
-            $project = Project::where([ 'key' => $pkey ])->first();
+            $query = Project::where('key', $pkey);
+            if ($name)
+            {
+                $query = $query->where('name', 'like', '%' . $name . '%');
+            }
+            if ($status != 'all')
+            {
+                $query = $query->where('status', $status);
+            }
+
+            $project = $query->first();
             if (!$project) 
             {
                 continue;
             }
-            if ($status == 'all' || $project->status == $status)
-            {
-                $projects[] = $project;
-            }
+
+            $projects[] = $project->toArray();
             if (count($projects) >= $limit)
             {
                 break;
             }
+        }
+        
+        foreach ($projects as $key => $project)
+        {
+            $projects[$key]['principal']['nameAndEmail'] = $project['principal']['name'] . '(' . $project['principal']['email'] . ')';
         }
 
         return Response()->json([ 'ecode' => 0, 'data' => $projects ]);
@@ -158,6 +177,11 @@ class ProjectController extends Controller
         $project = Project::create($insValues); //fix me
         // trigger add user to usrproject
         Event::fire(new AddUserToRoleEvent([ $insValues['principal']['id'] ], $key));
+
+        if (isset($project->principal))
+        {
+            $project->principal = array_merge($insValues['principal'], [ 'nameAndEmail' => $insValues['principal']['name'] . '(' . $insValues['principal']['email'] . ')' ]);
+        }
 
         return Response()->json([ 'ecode' => 0, 'data' => $project ]);
     }
