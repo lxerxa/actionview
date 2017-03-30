@@ -114,7 +114,7 @@ class ActivityAddListener
         {
             $diff_items = []; $diff_keys = [];
 
-            $snaps = DB::collection('issue_his_' . $project_key)->where('issue_id', $issue_id)->orderBy('operated_at', 'desc')->get();
+            $snaps = DB::collection('issue_his_' . $project_key)->where('issue_id', $issue_id)->orderBy('_id', 'desc')->get();
             foreach ($snaps as $i => $snap)
             {
                 if ($snap['_id']->__toString() != $param['snap_id'])

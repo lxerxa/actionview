@@ -172,11 +172,12 @@ class ProjectController extends Controller
         }
 
         $insValues['status'] = 'active';
+        $insValues['creator'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
 
         // save the project
         $project = Project::create($insValues); //fix me
         // trigger add user to usrproject
-        Event::fire(new AddUserToRoleEvent([ $insValues['principal']['id'] ], $key));
+        Event::fire(new AddUserToRoleEvent([ $insValues['principal']['id'], $this->user->id ], $key));
 
         if (isset($project->principal))
         {
