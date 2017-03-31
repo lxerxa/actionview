@@ -26,7 +26,7 @@ class IssueController extends Controller
      */
     public function index(Request $request, $project_key)
     {
-        $page_size = 10;
+        $page_size = 30;
 
         $where = array_only($request->all(), [ 'type', 'assignee', 'reporter', 'state', 'resolution', 'priority' ]) ?: [];
         foreach ($where as $key => $val)
@@ -739,7 +739,7 @@ class IssueController extends Controller
     public function getHistory($project_key, $id)
     {
         $changedRecords = [];
-        $records = DB::collection('issue_his_' . $project_key)->where('issue_id', $id)->orderBy('operated_at', 'asc')->get();
+        $records = DB::collection('issue_his_' . $project_key)->where('issue_id', $id)->orderBy('_id', 'asc')->get();
         foreach ($records as $i => $item)
         {
             if ($i == 0)

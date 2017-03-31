@@ -13,7 +13,7 @@ class Project extends Model
         'name',
         'key',
         'principal',
-        'type',
+        'category',
         'description',
         'status'
     );

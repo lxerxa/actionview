@@ -780,6 +780,11 @@ class Provider {
     public static function getSchemaByType($type_id)
     {
         $type = Type::find($type_id);
+        if (!$type)
+        {
+            return [];
+        }
+
         $screen = $type->screen;
         $project_key = $type->project_key;
 

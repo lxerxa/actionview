@@ -10,6 +10,7 @@ use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Project\Eloquent\Project;
 use App\Project\Eloquent\UserProject;
+use App\Customization\Eloquent\Type;
 use App\Acl\Acl;
 use App\Project\Provider;
 
@@ -171,11 +172,14 @@ class ProjectController extends Controller
             $insValues['description'] = trim($description);
         }
 
+        $insValues['category'] = 1;
         $insValues['status'] = 'active';
         $insValues['creator'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
 
         // save the project
         $project = Project::create($insValues); //fix me
+        // add issue-type template to project
+        $this->initialize($project->key, $project->category);
         // trigger add user to usrproject
         Event::fire(new AddUserToRoleEvent([ $insValues['principal']['id'], $this->user->id ], $key));
 
@@ -185,6 +189,22 @@ class ProjectController extends Controller
         }
 
         return Response()->json([ 'ecode' => 0, 'data' => $project ]);
+    }
+
+    /**
+     * initialize project data.
+     *
+     * @param  string  $key
+     * @param  int     $id
+     * @return 
+     */
+    public function initialize($key, $category)
+    {
+        $types = Type::where('category', $category)->get()->toArray();
+        foreach ($types as $type)
+        {
+            Type::create(array_only($type, [ 'name', 'abb', 'screen_id', 'workflow_id', 'sn', 'disabled', 'default' ]) + [ 'project_key' => $key ]);
+        }
     }
 
     /**
