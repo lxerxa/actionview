@@ -58,7 +58,7 @@ class UserRoleSetListener
             }
             else
             {
-                UserProject::create([ 'user_id' => $user_id, 'project_key' => $project_key, 'latest_access_time' => new \MongoDate(time()), 'link_count' => 1 ]);
+                UserProject::create([ 'user_id' => $user_id, 'project_key' => $project_key, 'link_count' => 1 ]);
             }
         }
     }

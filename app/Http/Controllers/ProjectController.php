@@ -35,7 +35,7 @@ class ProjectController extends Controller
     public function myproject(Request $request)
     {
         // fix me
-        $user_projects = UserProject::whereRaw([ 'user_id' => $this->user->id ])->orderBy('latest_access_time', 'desc')->get(['project_key'])->toArray();
+        $user_projects = UserProject::where('user_id', $this->user->id)->where('link_count', '>', 0)->orderBy('latest_access_time', 'desc')->get(['project_key'])->toArray();
 
         $pkeys = array_column($user_projects, 'project_key');
 
@@ -239,6 +239,9 @@ class ProjectController extends Controller
         // get project types
         //$types = Provider::getTypeListExt($project->key, [ 'assignee' => $users, 'state' => $states, 'resolution' => $resolutions, 'priority' => $priorities, 'version' => $versions, 'module' => $modules ]);
 
+        // record the project access date
+        $user_project = UserProject::whereRaw([ 'project_key' => $key, 'user_id' => $this->user->id ])->update([ 'latest_access_time' => time() ]);
+
         return Response()->json([ 'ecode' => 0, 'data' => $project, 'options' => parent::arrange([ 'permissions' => $permissions ]) ]);
     }
 
@@ -295,11 +298,11 @@ class ProjectController extends Controller
         {
             throw new \UnexpectedValueException('the project does not exist.', -10002);
         }
+        $old_principal = $project->principal;
         $project->fill($updValues)->save();
 
         if (isset($principal))
         {
-            $old_principal = $project->principal;
             if ($old_principal['id'] != $principal)
             {
                 Event::fire(new AddUserToRoleEvent([ $principal ], $project->key));

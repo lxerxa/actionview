@@ -15,6 +15,7 @@ class Project extends Model
         'principal',
         'category',
         'description',
+        'creator',
         'status'
     );
 }

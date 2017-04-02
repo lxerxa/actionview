@@ -158,7 +158,7 @@ class RoleController extends Controller
         $actor = Roleactor::where([ 'project_key' => $project_key, 'role_id' => $id ])->first();
         if ($actor)
         {
-            $user_ids = $role->user_ids; 
+            $user_ids = $actor->user_ids; 
             $user_ids && Event::fire(new DelUserFromRoleEvent($user_ids, $project_key));
 
             $actor->delete();
