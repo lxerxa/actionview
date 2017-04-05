@@ -23,8 +23,16 @@ class SessionController extends Controller
         $email = $request->input('email');
         $password = $request->input('password');
 
-        $user = Sentinel::authenticate([ 'email' => $email, 'password' => $password ], true);
-        return Response()->json([ 'ecode' => 0, 'data' => $user ?: '' ]);
+        $user = Sentinel::authenticate([ 'email' => $email, 'password' => $password ]);
+        if ($user)
+        {
+            $request->session()->put('user', $user->toArray());
+            return Response()->json([ 'ecode' => 0, 'data' => $user ]);
+        }
+        else 
+        {
+            return Response()->json([ 'ecode' => -10001, 'data' => '' ]);
+        }
     }
 
     /**

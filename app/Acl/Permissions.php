@@ -4,21 +4,34 @@ namespace App\Acl;
 
 class Permissions {
 
-    const ADMIN_PROJECT = 'admin_project';
+    const ADMIN_PROJECT       = 'admin_project';
 
-    const ASSIGNED_ISSUE = 'assigned_issue';
-    const ASSIGN_ISSUE = 'assign_issue';
+    const ASSIGNED_ISSUE      = 'assigned_issue';
+    const ASSIGN_ISSUE        = 'assign_issue';
 
-    const CREATE_ISSUE = 'create_issue';
-    const EDIT_ISSUE = 'edit_issue';
-    const DELETE_ISSUE = 'delete_issue';
+    const CREATE_ISSUE        = 'create_issue';
+    const EDIT_ISSUE          = 'edit_issue';
+    const EDIT_SELF_ISSUE     = 'edit_self_issue';
+    const DELETE_ISSUE        = 'delete_issue';
+    const LINK_ISSUE          = 'link_issue';
+    const MOVE_ISSUE          = 'move_issue';
+    const RESOLVE_ISSUE       = 'resolve_issue';
+    const CLOSE_ISSUE         = 'close_issue';
 
-    const ADD_COMMNETS = 'add_comments';
-    const EDIT_COMMNETS = 'edit_comments';
-    const DELETE_COMMNETS = 'delete_comments';
+    const VIEW_WORKFLOW       = 'view_workflow';
+    const EXEC_WORKFLOW       = 'exec_workflow';
 
-    const ADD_ATTACHMENT = 'add_attachment';
-    const DELETE_ATTACHMENT = 'delete_attachment';
+    const ADD_COMMNETS        = 'add_comments';
+    const EDIT_COMMNETS       = 'edit_comments';
+    const EDIT_SELF_COMMNETS  = 'edit_self_comments';
+    const DELETE_COMMNETS     = 'delete_comments';
+    const DELETE_SELF_COMMNETS= 'delete_comments';
+
+    const ADD_WORKLOG         = 'add_worklog';
+    const EDIT_WORKLOG        = 'edit_worklog';
+    const EDIT_SELF_WORKLOG   = 'edit_self_worklog';
+    const DELETE_WORKLOG      = 'delete_worklog';
+    const DELETE_SELF_WORKLOG = 'delete_worklog';
 
     /**
      * Return an object representing all actions.
@@ -29,16 +42,33 @@ class Permissions {
     {
         return [
             static::ADMIN_PROJECT,
+
             static::ASSIGNED_ISSUE,
             static::ASSIGN_ISSUE,
+
             static::CREATE_ISSUE,
             static::EDIT_ISSUE,
+            static::EDIT_SELF_ISSUE,
             static::DELETE_ISSUE,
+            static::LINK_ISSUE,
+            static::MOVE_ISSUE,
+            static::RESOLVE_ISSUE,
+            static::CLOSE_ISSUE,
+
+            static::VIEW_WORKFLOW,
+            static::EXEC_WORKFLOW,
+
             static::ADD_COMMNETS,
             static::EDIT_COMMNETS,
+            static::EDIT_SELF_COMMNETS,
             static::DELETE_COMMNETS,
-            static::ADD_ATTACHMENT,
-            static::DELETE_ATTACHMENT,
+            static::DELETE_SELF_COMMNETS,
+
+            static::ADD_WORKFLOG,
+            static::EDIT_WORKLOG,
+            static::EDIT_SELF_WORKLOG,
+            static::DELETE_WORKLOG,
+            static::DELETE_SELF_WORKLOG,
         ];
     }
 

@@ -16,9 +16,10 @@ class Authorize
      */
     public function handle($request, Closure $next)
     {
-        if (! Sentinel::check())
+        $user = $request->session()->get('user');
+        if (!isset($user) || !$user)
         {
-            return Response()->json([ 'ecode' => -10001, 'data' => 'aaa' ]);
+            return Response()->json([ 'ecode' => -10001, 'data' => '' ]);
         }
         return $next($request);
     }
