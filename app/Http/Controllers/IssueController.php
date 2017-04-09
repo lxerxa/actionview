@@ -26,7 +26,7 @@ class IssueController extends Controller
      */
     public function index(Request $request, $project_key)
     {
-        $page_size = 30;
+        $page_size = 50;
 
         $where = array_only($request->all(), [ 'type', 'assignee', 'reporter', 'state', 'resolution', 'priority' ]) ?: [];
         foreach ($where as $key => $val)

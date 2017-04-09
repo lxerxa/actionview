@@ -77,7 +77,10 @@ class ProjectController extends Controller
             $query = Project::where('key', $pkey);
             if ($name)
             {
-                $query = $query->where('name', 'like', '%' . $name . '%');
+                $query->where(function ($query) use ($name)
+                {
+                    $query->where('key', 'like', '%' . $name . '%')->orWhere('name', 'like', '%' . $name . '%');
+                });
             }
             if ($status != 'all')
             {

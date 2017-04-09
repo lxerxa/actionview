@@ -16,7 +16,10 @@ Route::get('/', function () {
 });
 
 // session router
+Route::get('api/session', 'SessionController@getSess');
 Route::post('api/session', 'SessionController@create');
+Route::delete('api/session', 'SessionController@destroy');
+
 Route::post('api/register', 'UserController@regist');
 
 Route::group([ 'middleware' => 'can' ], function ()

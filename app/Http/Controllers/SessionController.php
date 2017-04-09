@@ -27,11 +27,12 @@ class SessionController extends Controller
         if ($user)
         {
             $request->session()->put('user', $user->toArray());
-            return Response()->json([ 'ecode' => 0, 'data' => $user ]);
+            $request->session()->put('sys_permissions', []);
+            return Response()->json([ 'ecode' => 0, 'data' => [ 'user' => $user, 'sys_permissions' => [] ]]);
         }
         else 
         {
-            return Response()->json([ 'ecode' => -10001, 'data' => '' ]);
+            return Response()->json([ 'ecode' => -10002, 'data' => [] ]);
         }
     }
 
@@ -41,9 +42,22 @@ class SessionController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function getSess(Request $request)
     {
-        Sentinel::logout();
-        return Response()->json([ 'ecode' => 0 ]);
+        $user = $request->session()->get('user');
+        $sys_permissions = $request->session()->get('sys_permissions');
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'user' => $user, 'sys_permissions' => $sys_permissions ] ]);
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function destroy(Request $request)
+    {
+        $request->session()->forget('user');
+        return Response()->json([ 'ecode' => 0, 'data' => [] ]);
     }
 }
