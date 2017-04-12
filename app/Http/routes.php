@@ -26,6 +26,11 @@ Route::group([ 'middleware' => 'can' ], function ()
 {
     Route::get('api/project/checkkey/{key}', 'ProjectController@checkKey');
     Route::get('api/myproject', 'ProjectController@myproject');
+    Route::get('api/project/options', 'ProjectController@getOptions');
+    Route::get('api/project/{id}/createindex', 'ProjectController@createIndex');
+    Route::post('api/project/batch/status', 'ProjectController@updMultiStatus');
+    Route::post('api/project/batch/createindex', 'ProjectController@createMultiIndex');
+    Route::get('api/project/options', 'ProjectController@getOptions');
     Route::resource('api/project', 'ProjectController');
     Route::resource('api/user', 'UserController');
     // create or update colletion indexes

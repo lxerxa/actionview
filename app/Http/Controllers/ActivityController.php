@@ -9,8 +9,6 @@ use App\Http\Controllers\Controller;
 use App\Project\Provider;
 use DB;
 
-use MongoDB\BSON\ObjectID;
-
 class ActivityController extends Controller
 {
     /**

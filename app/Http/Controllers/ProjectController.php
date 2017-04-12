@@ -19,6 +19,8 @@ use App\Events\DelUserFromRoleEvent;
 use Sentinel;
 use DB;
 
+use MongoDB\BSON\ObjectID;
+
 class ProjectController extends Controller
 {
     public function __construct()
@@ -35,7 +37,11 @@ class ProjectController extends Controller
     public function myproject(Request $request)
     {
         // fix me
-        $user_projects = UserProject::where('user_id', $this->user->id)->where('link_count', '>', 0)->orderBy('latest_access_time', 'desc')->get(['project_key'])->toArray();
+        $user_projects = UserProject::where('user_id', $this->user->id)
+            ->where('link_count', '>', 0)
+            ->orderBy('latest_access_time', 'desc')
+            ->get(['project_key'])
+            ->toArray();
 
         $pkeys = array_column($user_projects, 'project_key');
 
@@ -109,21 +115,123 @@ class ProjectController extends Controller
     }
 
     /**
+     * get the options of project.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function getOptions(Request $request)
+    {
+        $principals = Project::distinct('principal')->get([ 'principal' ])->toArray();
+
+        $newPrincipals = [];
+        foreach ($principals as $principal)
+        {
+            $tmp = [];
+            $tmp['id'] = $principal['id'];
+            $tmp['name'] = $principal['name'];
+            $tmp['email'] = $principal['email'];
+            $newPrincipals[] = $tmp;
+        }
+
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'principals' => $newPrincipals ] ]);
+    }
+
+    /**
+     * create index of the project.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function createIndex(Request $request, $id)
+    {
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'id' => $id ] ]);
+    }
+
+    /**
+     * create index of all selected projects.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function createMultiIndex(Request $request)
+    {
+        $ids = $request->input('ids');
+        if (!isset($ids) || !$ids)
+        {
+            throw new \InvalidArgumentException('the selected projects cannot been empty.', -10002);
+        }
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'ids' => $ids ] ]);
+    }
+
+    /**
+     * update status of all selected projects.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function updMultiStatus(Request $request)
+    {
+        $ids = $request->input('ids');
+        if (!isset($ids) || !$ids)
+        {
+            throw new \InvalidArgumentException('the selected projects cannot been empty.', -10002);
+        }
+
+        $status = $request->input('status');
+        if (!isset($status) || !$status)
+        {
+            throw new \InvalidArgumentException('the status cannot be empty.', -10002);
+        }
+
+        $newIds = [];
+        foreach ($ids as $id)
+        {
+            $newIds[] = new ObjectID($id);
+        }
+
+        Project::whereRaw([ '_id' => [ '$in' => $newIds ] ])->update([ 'status' => $status ]);
+
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'ids' => $ids ] ]);
+    }
+
+    /**
      * Display a listing of the resource.
      *
      * @return \Illuminate\Http\Response
      */
     public function index(Request $request)
     {
-        // fix me
-        $wheres = [];
-        $projects = Project::whereRaw($wheres)->get()->toArray();
-        foreach ($projects as $key => $project)
+        $query = DB::collection('project');
+
+        $principal = $request->input('principal');
+        if (isset($principal) && $principal)
         {
-            $projects[$key]->principal = Sentinel::findById($project->principal);
-            //var_dump($field->toArray());
+            $query = $query->where('principal.id', $principal);
         }
-        return Response()->json([ 'ecode' => 0, 'data' => $projects ]);
+
+        $status = $request->input('status');
+        if (isset($status) && $status !== 'all')
+        {
+            $query = $query->where('status', $status);
+        }
+
+        $name = $request->input('name');
+        if (isset($name) && trim($name))
+        {
+            $name = trim($name);
+            $query->where(function ($query) use ($name) {
+                $query->where('key', 'like', '%' . $name . '%')->orWhere('name', 'like', '%' . $name . '%');
+            });
+        }
+
+        // get total
+        $total = $query->count();
+
+        $query->orderBy('created_at', 'desc');
+
+        $page_size = 3;
+        $page = $request->input('page') ?: 1;
+        $query = $query->skip($page_size * ($page - 1))->take($page_size);
+        $projects = $query->get([ 'name', 'status', 'principal' ]);
+
+        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($projects), 'options' => [ 'total' => $total, 'sizePerPage' => $page_size ] ]);
     }
 
     /**

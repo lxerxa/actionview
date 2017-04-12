@@ -59,8 +59,6 @@ class IssueController extends Controller
             $orderBy = explode(',', $orderBy);
         }
 
-        $page = $request->input('page');
-
         $query = DB::collection('issue_' . $project_key);
         if ($where)
         {
@@ -138,13 +136,10 @@ class IssueController extends Controller
                 $query = $query->orderBy($field, $sort);
             }
         }
-
-        if ($page)
-        {
-            $query = $query->skip($page_size * ($page - 1))->take($page_size);
-        }
-
         $query->orderBy('created_at', 'desc');
+
+        $page = $request->input('page') ?: 1;
+        $query = $query->skip($page_size * ($page - 1))->take($page_size);
         $issues = $query->get();
 
         $watched_issues = array_column(Watch::where('project_key', $project_key)->where('user.id', $this->user->id)->get()->toArray(), 'issue_id');

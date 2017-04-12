@@ -46,7 +46,7 @@ class SessionController extends Controller
     {
         $user = $request->session()->get('user');
         $sys_permissions = $request->session()->get('sys_permissions');
-        return Response()->json([ 'ecode' => 0, 'data' => [ 'user' => $user, 'sys_permissions' => $sys_permissions ] ]);
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'user' => $user ?: [], 'sys_permissions' => $sys_permissions ?: [] ] ]);
     }
 
     /**
