@@ -64,6 +64,7 @@ class ProjectController extends Controller
         {
             $limit = 30;
         }
+        $limit = intval($limit);
 
         $status = $request->input('status');
         if (!isset($status))
@@ -111,7 +112,7 @@ class ProjectController extends Controller
             $projects[$key]['principal']['nameAndEmail'] = $project['principal']['name'] . '(' . $project['principal']['email'] . ')';
         }
 
-        return Response()->json([ 'ecode' => 0, 'data' => $projects ]);
+        return Response()->json([ 'ecode' => 0, 'data' => $projects, 'options' => [ 'limit' => $limit ] ]);
     }
 
     /**
@@ -200,10 +201,10 @@ class ProjectController extends Controller
     {
         $query = DB::collection('project');
 
-        $principal = $request->input('principal');
-        if (isset($principal) && $principal)
+        $principal_id = $request->input('principal_id');
+        if (isset($principal_id) && $principal_id)
         {
-            $query = $query->where('principal.id', $principal);
+            $query = $query->where('principal.id', $principal_id);
         }
 
         $status = $request->input('status');
@@ -226,10 +227,14 @@ class ProjectController extends Controller
 
         $query->orderBy('created_at', 'desc');
 
-        $page_size = 3;
+        $page_size = 30;
         $page = $request->input('page') ?: 1;
         $query = $query->skip($page_size * ($page - 1))->take($page_size);
-        $projects = $query->get([ 'name', 'status', 'principal' ]);
+        $projects = $query->get([ 'name', 'key', 'status', 'principal' ]);
+        foreach ($projects as $key => $project)
+        {
+            $projects[$key]['principal']['nameAndEmail'] = $project['principal']['name'] . '(' . $project['principal']['email'] . ')';
+        }
 
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($projects), 'options' => [ 'total' => $total, 'sizePerPage' => $page_size ] ]);
     }
@@ -376,15 +381,15 @@ class ProjectController extends Controller
             $updValues['name'] = trim($name);
         }
         // check is user is available
-        $principal = $request->input('principal');
-        if (isset($principal))
+        $principal_id = $request->input('principal_id');
+        if (isset($principal_id))
         {
-            if (!$principal)
+            if (!$principal_id)
             {
                 throw new \InvalidArgumentException('the principal must be appointed.', -10002);
             }
 
-            $principal_info = Sentinel::findById($principal);
+            $principal_info = Sentinel::findById($principal_id);
             if (!$principal_info)
             {
                 throw new \InvalidArgumentException('the user is not exists.', -10002);
