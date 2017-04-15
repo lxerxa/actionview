@@ -32,6 +32,11 @@ Route::group([ 'middleware' => 'can' ], function ()
     Route::post('api/project/batch/createindex', 'ProjectController@createMultiIndex');
     Route::get('api/project/options', 'ProjectController@getOptions');
     Route::resource('api/project', 'ProjectController');
+
+    Route::post('api/user/register', 'UserController@register');
+    Route::post('api/user/batch/delete', 'UserController@delMultiUser');
+    Route::get('api/user/{id}/resetpwd', 'UserController@showResetpwd');
+    Route::post('api/user/{id}/resetpwd', 'UserController@doResetpwd');
     Route::resource('api/user', 'UserController');
     // create or update colletion indexes
     // Route::post('sysindexes', 'SysIndexController');

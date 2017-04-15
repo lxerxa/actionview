@@ -48,9 +48,68 @@ class UserController extends Controller
         }
         else
         {
-            $users = EloquentUser::all(); 
+            $query = EloquentUser::Where('email', '<>', '');
+
+            if ($name = $request->input('name'))
+            {
+                $query->where(function ($query) use ($name)
+                {
+                    $query->where('email', 'like', '%' . $name . '%')->orWhere('name', 'like', '%' . $name . '%');
+                });
+            }
+            // get total
+            $total = $query->count();
+
+            $page_size = 3;
+            $page = $request->input('page') ?: 1;
+            $query = $query->skip($page_size * ($page - 1))->take($page_size);
+            $all_users = $query->get([ 'first_name', 'last_name', 'email', 'phone' ]);
+
+            $users = [];
+            foreach ($all_users as $user)
+            {
+                $tmp = [];
+                $tmp['id'] = $user->id;
+                $tmp['first_name'] = $user->first_name;
+                $tmp['email'] = $user->email;
+                $tmp['phone'] = isset($user->phone) ? $user->phone : '';
+                $tmp['status'] = Activation::completed($user) ? 'active' : 'unactivated';
+                $users[] = $tmp;
+            }
         }
-        return Response()->json([ 'ecode' => 0, 'data' => $users ]); 
+        return Response()->json([ 'ecode' => 0, 'data' => $users, 'options' => [ 'total' => $total, 'sizePerPage' => $page_size ] ]); 
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function register(Request $request)
+    {
+        if (!($first_name = $request->input('first_name')) || !($first_name = trim($first_name)))
+        {
+            throw new \UnexpectedValueException('the name can not be empty.', -10002);
+        }
+
+        if (!($email = $request->input('email')) || !($email = trim($email)))
+        {
+            throw new \UnexpectedValueException('the email can not be empty.', -10002);
+        }
+
+        if (Sentinel::findByCredentials([ 'email' => $email ]))
+        {
+            throw new \InvalidArgumentException('email has already existed.', -10002);
+        }
+
+        if (!$password = $request->input('password'))
+        {
+            throw new \UnexpectedValueException('the password can not be empty.', -10002);
+        }
+
+        $user = Sentinel::register([ 'first_name' => $first_name, 'email' => $email, 'password' => $password ], true);
+        return Response()->json([ 'ecode' => 0, 'data' => $user ]);
     }
 
     /**
@@ -61,13 +120,14 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        if (! $email = $request->input('email'))
+        if (!($first_name = $request->input('first_name')) || !($first_name = trim($first_name)))
+        {
+            throw new \UnexpectedValueException('the name can not be empty.', -10002);
+        }
+
+        if (!($email = $request->input('email')) || !($email = trim($email)))
         {
             throw new \UnexpectedValueException('the email can not be empty.', -10002);
-        }
-        if (! $password = $request->input('password'))
-        {
-            throw new \UnexpectedValueException('the password can not be empty.', -10002);
         }
 
         if (Sentinel::findByCredentials([ 'email' => $email ]))
@@ -75,7 +135,9 @@ class UserController extends Controller
             throw new \InvalidArgumentException('email has already existed.', -10002);
         }
 
-        $user = Sentinel::register([ 'email' => $email, 'password' => $password ], true);
+        $phone = $request->input('phone') ? trim($request->input('phone')) : '';
+
+        $user = Sentinel::register([ 'first_name' => $first_name, 'email' => $email, 'password' => 'actionview', 'phone' => $phone ], true);
         return Response()->json([ 'ecode' => 0, 'data' => $user ]);
     }
 
@@ -99,10 +161,28 @@ class UserController extends Controller
      */
     public function update(Request $request, $id)
     {
+        $first_name = $request->input('first_name');
+        if (isset($first_name))
+        {
+            if (!$first_name = trim($first_name))
+            {
+                throw new \UnexpectedValueException('the name can not be empty.', -10002);
+            }
+        }
+
+        $email = $request->input('email');
+        if (isset($email))
+        {
+            if (! $email = trim($email))
+            {
+                throw new \UnexpectedValueException('the email can not be empty.', -10002);
+            }
+        }
+
         $password = $request->input('password');
         if (isset($password))
         {
-            if (!$password || trim($password) == '')
+            if (!$password)
             {
                 throw new \UnexpectedValueException('the password can not be empty.', -10002);
             }
@@ -114,7 +194,9 @@ class UserController extends Controller
             throw new \UnexpectedValueException('the user does not exist.', -10002);
         }
 
-        $user = Sentinel::update($user, $request->except('email'));
+        $user = Sentinel::update($user, array_only($request->all(), ['first_name', 'email', 'password', 'phone']));
+        $user->status = Activation::completed($user) ? 'active' : 'unactivated';
+
         return Response()->json([ 'ecode' => 0, 'data' => $user ]);
     }
 

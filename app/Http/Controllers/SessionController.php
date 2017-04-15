@@ -26,9 +26,8 @@ class SessionController extends Controller
         $user = Sentinel::authenticate([ 'email' => $email, 'password' => $password ]);
         if ($user)
         {
-            $request->session()->put('user', $user->toArray());
-            $request->session()->put('sys_permissions', []);
-            return Response()->json([ 'ecode' => 0, 'data' => [ 'user' => $user, 'sys_permissions' => [] ]]);
+            Sentinel::login($user);
+            return Response()->json([ 'ecode' => 0, 'data' => [ 'user' => $user->toArray() ]]);
         }
         else 
         {
@@ -44,9 +43,8 @@ class SessionController extends Controller
      */
     public function getSess(Request $request)
     {
-        $user = $request->session()->get('user');
-        $sys_permissions = $request->session()->get('sys_permissions');
-        return Response()->json([ 'ecode' => 0, 'data' => [ 'user' => $user ?: [], 'sys_permissions' => $sys_permissions ?: [] ] ]);
+        $user = Sentinel::getUser();
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'user' => $user ?: [] ] ]);
     }
 
     /**
@@ -57,7 +55,7 @@ class SessionController extends Controller
      */
     public function destroy(Request $request)
     {
-        $request->session()->forget('user');
+        Sentinel::logout();
         return Response()->json([ 'ecode' => 0, 'data' => [] ]);
     }
 }
