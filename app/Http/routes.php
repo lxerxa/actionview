@@ -16,11 +16,14 @@ Route::get('/', function () {
 });
 
 // session router
-Route::get('api/session', 'SessionController@getSess');
 Route::post('api/session', 'SessionController@create');
+Route::get('api/session', 'SessionController@getSess');
 Route::delete('api/session', 'SessionController@destroy');
 
-Route::post('api/register', 'UserController@regist');
+Route::post('api/register', 'UserController@register');
+
+Route::get('user/{id}/resetpwd', 'UserController@showResetpwd'); //fix me
+Route::post('user/{id}/resetpwd', 'UserController@doResetpwd'); // fix me
 
 Route::group([ 'middleware' => 'can' ], function ()
 {
@@ -35,8 +38,6 @@ Route::group([ 'middleware' => 'can' ], function ()
 
     Route::post('api/user/register', 'UserController@register');
     Route::post('api/user/batch/delete', 'UserController@delMultiUser');
-    Route::get('api/user/{id}/resetpwd', 'UserController@showResetpwd');
-    Route::post('api/user/{id}/resetpwd', 'UserController@doResetpwd');
     Route::resource('api/user', 'UserController');
     // create or update colletion indexes
     // Route::post('sysindexes', 'SysIndexController');

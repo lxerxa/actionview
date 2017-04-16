@@ -45,6 +45,7 @@ class UserController extends Controller
                     break;
                 }
             }
+            return Response()->json([ 'ecode' => 0, 'data' => $users ]);
         }
         else
         {
@@ -60,7 +61,7 @@ class UserController extends Controller
             // get total
             $total = $query->count();
 
-            $page_size = 3;
+            $page_size = 30;
             $page = $request->input('page') ?: 1;
             $query = $query->skip($page_size * ($page - 1))->take($page_size);
             $all_users = $query->get([ 'first_name', 'last_name', 'email', 'phone' ]);
@@ -76,8 +77,8 @@ class UserController extends Controller
                 $tmp['status'] = Activation::completed($user) ? 'active' : 'unactivated';
                 $users[] = $tmp;
             }
+            return Response()->json([ 'ecode' => 0, 'data' => $users, 'options' => [ 'total' => $total, 'sizePerPage' => $page_size ] ]); 
         }
-        return Response()->json([ 'ecode' => 0, 'data' => $users, 'options' => [ 'total' => $total, 'sizePerPage' => $page_size ] ]); 
     }
 
     /**
@@ -177,6 +178,12 @@ class UserController extends Controller
             {
                 throw new \UnexpectedValueException('the email can not be empty.', -10002);
             }
+            if ($user = Sentinel::findByCredentials([ 'email' => $email ]))
+            {
+                if ($user->id !== $id) {
+                    throw new \InvalidArgumentException('email has already existed.', -10002);
+                }
+            }
         }
 
         $password = $request->input('password');
@@ -217,5 +224,32 @@ class UserController extends Controller
         $user->delete();
         Event::fire(new DelUserEvent($id));
         return Response()->json([ 'ecode' => 0, 'data' => [ 'id' => $id ] ]);
+    }
+
+    /**
+     * delete all selected users.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function delMultiUsers(Request $request)
+    {
+        $ids = $request->input('ids');
+        if (!isset($ids) || !$ids)
+        {
+            throw new \InvalidArgumentException('the selected users cannot been empty.', -10002);
+        }
+
+        $deleted_ids = [];
+        foreach ($ids as $id)
+        {
+            $user = Sentinel::findById($id);
+            if ($user)
+            {
+                $user->delete();
+                Event::fire(new DelUserEvent($id));
+                $deleted_ids[] = $id;
+            }
+        }
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'ids' => $deleted_ids ] ]);
     }
 }
