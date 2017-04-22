@@ -64,7 +64,7 @@ class Permissions {
             static::DELETE_COMMNETS,
             static::DELETE_SELF_COMMNETS,
 
-            static::ADD_WORKFLOG,
+            static::ADD_WORKLOG,
             static::EDIT_WORKLOG,
             static::EDIT_SELF_WORKLOG,
             static::DELETE_WORKLOG,

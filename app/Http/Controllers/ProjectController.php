@@ -295,7 +295,7 @@ class ProjectController extends Controller
         // save the project
         $project = Project::create($insValues); //fix me
         // add issue-type template to project
-        $this->initialize($project->key, $project->category);
+        $this->initialize($project->key);
         // trigger add user to usrproject
         Event::fire(new AddUserToRoleEvent([ $insValues['principal']['id'], $this->user->id ], $key));
 
@@ -314,9 +314,9 @@ class ProjectController extends Controller
      * @param  int     $id
      * @return 
      */
-    public function initialize($key, $category)
+    public function initialize($key)
     {
-        $types = Type::where('category', $category)->get()->toArray();
+        $types = Type::where('project_key', '$_sys_$')->get()->toArray();
         foreach ($types as $type)
         {
             Type::create(array_only($type, [ 'name', 'abb', 'screen_id', 'workflow_id', 'sn', 'disabled', 'default' ]) + [ 'project_key' => $key ]);

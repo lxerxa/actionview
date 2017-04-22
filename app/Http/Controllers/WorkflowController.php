@@ -19,7 +19,7 @@ class WorkflowController extends Controller
      */
     public function index($project_key)
     {
-        $workflows = Provider::getWorkflowList($project_key, [ 'name', 'category', 'description', 'latest_modified_time', 'latest_modifier', 'steps' ]);
+        $workflows = Provider::getWorkflowList($project_key, [ 'name', 'project_key', 'description', 'latest_modified_time', 'latest_modifier', 'steps' ]);
 
         return Response()->json([ 'ecode' => 0, 'data' => $workflows ]);
     }

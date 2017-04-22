@@ -24,18 +24,6 @@ use DB;
 class Provider {
 
     /**
-     * get project category.
-     *
-     * @param string $project_key
-     * @return string 
-     */
-    public static function getProjectCategory($project_key)
-    {
-        $project = Project::where('key', $project_key)->first();
-        return $project && $project->category ? $project->category : '';
-    }
-
-    /**
      * get project principal.
      *
      * @param string $project_key
@@ -56,11 +44,9 @@ class Provider {
      */
     public static function getStateList($project_key, $fields=[])
     {
-        $category = self::getProjectCategory($project_key);
-
-        $states = State::Where('category', $category)
+        $states = State::Where('project_key', '$_sys_$')
             ->orWhere('project_key', $project_key)
-            ->orderBy('category', 'desc')
+            ->orderBy('project_key', 'desc')
             ->orderBy('created_at', 'asc')
             ->get($fields)
             ->toArray();
@@ -99,11 +85,9 @@ class Provider {
      */
     public static function getEventList($project_key, $fields=[])
     {
-        $category = self::getProjectCategory($project_key);
-
-        $events = Events::Where('category', $category)
+        $events = Events::Where('project_key', '$_sys_$')
             ->orWhere('project_key', $project_key)
-            ->orderBy('category', 'desc')
+            ->orderBy('project_key', 'desc')
             ->orderBy('created_at', 'asc')
             ->get($fields);
 
@@ -123,7 +107,7 @@ class Provider {
         $options = [];
         foreach ($events as $event)
         {
-            if (isset($event->category) && (!isset($event->apply) || $event->apply !== 'workflow'))
+            if (!isset($event->apply) || $event->apply !== 'workflow')
             {
                 continue;
             }
@@ -154,8 +138,7 @@ class Provider {
             }
         }
 
-        $category = self::getProjectCategory($project_key);
-        $priority = Priority::Where('category', $category)
+        $priority = Priority::Where('project_key', '$_sys_$')
             ->Where('default', true)
             ->first();
 
@@ -172,11 +155,9 @@ class Provider {
      */
     public static function getPriorityList($project_key, $fields=[])
     {
-        $category = self::getProjectCategory($project_key);
-
-        $priorities = Priority::Where('category', $category)
+        $priorities = Priority::Where('project_key', '$_sys_$')
             ->orWhere('project_key', $project_key)
-            ->orderBy('category', 'desc')
+            ->orderBy('project_key', 'desc')
             ->orderBy('sn', 'asc')
             ->get($fields)
             ->toArray();
@@ -261,8 +242,7 @@ class Provider {
             }
         }
 
-        $category = self::getProjectCategory($project_key);
-        $resolution = Resolution::Where('category', $category)
+        $resolution = Resolution::Where('project_key', '$_sys_$')
             ->Where('default', true)
             ->first();
 
@@ -279,11 +259,9 @@ class Provider {
      */
     public static function getResolutionList($project_key, $fields=[])
     {
-        $category = self::getProjectCategory($project_key);
-
-        $resolutions = Resolution::Where('category', $category)
+        $resolutions = Resolution::Where('project_key', '$_sys_$')
             ->orWhere('project_key', $project_key)
-            ->orderBy('category', 'desc')
+            ->orderBy('project_key', 'desc')
             ->orderBy('sn', 'asc')
             ->get($fields)
             ->toArray();
@@ -356,11 +334,9 @@ class Provider {
      */
     public static function getScreenList($project_key, $fields=[])
     {
-        $category = self::getProjectCategory($project_key);
-
-        $screens = Screen::Where('category', $category)
+        $screens = Screen::Where('project_key', '$_sys_$')
             ->orWhere('project_key', $project_key)
-            ->orderBy('category', 'desc')
+            ->orderBy('project_key', 'desc')
             ->orderBy('created_at', 'asc')
             ->get($fields);
 
@@ -376,11 +352,9 @@ class Provider {
      */
     public static function getFieldList($project_key, $fields=[])
     {
-        $category = self::getProjectCategory($project_key);
-
-        $fields = Field::Where('category', $category)
+        $fields = Field::Where('project_key', '$_sys_$')
             ->orWhere('project_key', $project_key)
-            ->orderBy('category', 'desc')
+            ->orderBy('project_key', 'desc')
             ->orderBy('created_at', 'asc')
             ->get($fields);
 
@@ -396,11 +370,9 @@ class Provider {
      */
     public static function getWorkflowList($project_key, $fields=[])
     {
-        $category = self::getProjectCategory($project_key);
-
-        $workflows = Definition::Where('category', $category)
+        $workflows = Definition::Where('project_key', '$_sys_$')
             ->orWhere('project_key', $project_key)
-            ->orderBy('category', 'desc')
+            ->orderBy('project_key', 'desc')
             ->orderBy('created_at', 'asc')
             ->get($fields);
 
@@ -433,11 +405,9 @@ class Provider {
      */
     public static function getRoleList($project_key, $fields=[])
     {
-        $category = self::getProjectCategory($project_key);
-
-        $roles = Role::Where('category', $category)
+        $roles = Role::Where('project_key', '$_sys_$')
             ->orWhere('project_key', $project_key)
-            ->orderBy('category', 'desc')
+            ->orderBy('project_key', 'desc')
             ->orderBy('created_at', 'asc')
             ->get($fields);
 
@@ -540,9 +510,7 @@ class Provider {
      */
     public static function isStateExisted($project_key, $name)
     {
-        $category = self::getProjectCategory($project_key);
-        
-        $isExisted = State::Where('category', $category)
+        $isExisted = State::Where('project_key', '$_sys_$')
             ->orWhere('project_key', $project_key)
             ->Where('name', $name)
             ->exists();
@@ -559,9 +527,7 @@ class Provider {
      */
     public static function isPriorityExisted($project_key, $name)
     {
-        $category = self::getProjectCategory($project_key);
-
-        $isExisted = Priority::Where('category', $category)
+        $isExisted = Priority::Where('project_key', '$_sys_$')
             ->orWhere('project_key', $project_key)
             ->Where('name', $name)
             ->exists();
@@ -578,9 +544,7 @@ class Provider {
      */
     public static function isResolutionExisted($project_key, $name)
     {
-        $category = self::getProjectCategory($project_key);
-
-        $isExisted = Resolution::Where('category', $category)
+        $isExisted = Resolution::Where('project_key', '$_sys_$')
             ->orWhere('project_key', $project_key)
             ->Where('name', $name)
             ->exists();
@@ -597,9 +561,7 @@ class Provider {
      */
     public static function isFieldKeyExisted($project_key, $key)
     {
-        $category = self::getProjectCategory($project_key);
-
-        $isExisted = Resolution::Where('category', $category)
+        $isExisted = Resolution::Where('project_key', '$_sys_$')
             ->orWhere('project_key', $project_key)
             ->Where('key', $key)
             ->exists();
@@ -616,9 +578,7 @@ class Provider {
      */
     public static function isEventExisted($project_key, $name)
     {
-        $category = self::getProjectCategory($project_key);
-
-        $isExisted = Events::Where('category', $category)
+        $isExisted = Events::Where('project_key', '$_sys_$')
             ->orWhere('project_key', $project_key)
             ->Where('name', $name)
             ->exists();

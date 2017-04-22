@@ -20,7 +20,7 @@ class ScreenController extends Controller
      */
     public function index($project_key)
     {
-        $screens = Provider::getScreenList($project_key, [ 'name', 'category', 'schema', 'description' ]);
+        $screens = Provider::getScreenList($project_key, [ 'name', 'project_key', 'schema', 'description' ]);
         foreach ($screens as $screen)
         {
             $workflows = Definition::whereRaw([ 'screen_ids' => $screen->id ])->get([ 'name' ]);
