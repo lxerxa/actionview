@@ -152,6 +152,24 @@ class ResolutionController extends Controller
      */
     public function handle(Request $request, $project_key)
     {
+        if ($project_key === '$_sys_$')
+        {
+            return $this->handleSys($request, $project_key);
+        }
+        else
+        {
+            return $this->handleProject($request, $project_key);
+        }
+    }
+
+    /**
+     * update sort or defaultValue etc..
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return void
+     */
+    public function handleProject(Request $request, $project_key)
+    {
         $properties = [];
         // set resolution sort.
         $sequence = $request->input('sequence');
@@ -179,6 +197,60 @@ class ResolutionController extends Controller
         }
 
         $resolutions = Provider::getResolutionList($project_key);
+        return Response()->json(['ecode' => 0, 'data' => $resolutions]);
+    }
+
+    /**
+     * update sort or defaultValue etc..
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return void
+     */
+    public function handleSys(Request $request, $project_key)
+    {
+        // set type sort.
+        $sequence = $request->input('sequence');
+        if (isset($sequence))
+        {
+            $i = 1;
+            foreach ($sequence as $resolution_id)
+            {
+                $resolution = Resolution::find($resolution_id);
+                if (!$resolution || $resolution->project_key != $project_key)
+                {
+                    continue;
+                }
+                $resolution->sn = $i++;
+                $resolution->save();
+            }
+        }
+
+        // set default value
+        $default_resolution_id = $request->input('defaultValue');
+        if (isset($default_resolution_id))
+        {
+            $resolution = Resolution::find($default_resolution_id);
+            if (!$resolution || $resolution->project_key != $project_key)
+            {
+                throw new \UnexpectedValueException('the resolution does not exist or is not in the project.', -10002);
+            }
+
+            $resolutions = Resolution::where('project_key', $project_key)->get();
+            foreach ($resolutions as $resolution)
+            {
+                if ($resolution->id == $default_resolution_id)
+                {
+                    $resolution->default = true;
+                    $resolution->save();
+                }
+                else if (isset($resolution->default))
+                {
+                    $resolution->unset('default');
+                }
+            }
+        }
+
+        $resolutions = Resolution::where([ 'project_key' => $project_key ])->orderBy('sn', 'asc')->get();
         return Response()->json(['ecode' => 0, 'data' => $resolutions]);
     }
 }

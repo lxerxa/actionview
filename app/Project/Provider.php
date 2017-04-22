@@ -46,7 +46,7 @@ class Provider {
     {
         $states = State::Where('project_key', '$_sys_$')
             ->orWhere('project_key', $project_key)
-            ->orderBy('project_key', 'desc')
+            ->orderBy('project_key', 'asc')
             ->orderBy('created_at', 'asc')
             ->get($fields)
             ->toArray();
@@ -87,7 +87,7 @@ class Provider {
     {
         $events = Events::Where('project_key', '$_sys_$')
             ->orWhere('project_key', $project_key)
-            ->orderBy('project_key', 'desc')
+            ->orderBy('project_key', 'asc')
             ->orderBy('created_at', 'asc')
             ->get($fields);
 
@@ -157,7 +157,7 @@ class Provider {
     {
         $priorities = Priority::Where('project_key', '$_sys_$')
             ->orWhere('project_key', $project_key)
-            ->orderBy('project_key', 'desc')
+            ->orderBy('project_key', 'asc')
             ->orderBy('sn', 'asc')
             ->get($fields)
             ->toArray();
@@ -261,7 +261,7 @@ class Provider {
     {
         $resolutions = Resolution::Where('project_key', '$_sys_$')
             ->orWhere('project_key', $project_key)
-            ->orderBy('project_key', 'desc')
+            ->orderBy('project_key', 'asc')
             ->orderBy('sn', 'asc')
             ->get($fields)
             ->toArray();
@@ -336,7 +336,7 @@ class Provider {
     {
         $screens = Screen::Where('project_key', '$_sys_$')
             ->orWhere('project_key', $project_key)
-            ->orderBy('project_key', 'desc')
+            ->orderBy('project_key', 'asc')
             ->orderBy('created_at', 'asc')
             ->get($fields);
 
@@ -354,7 +354,7 @@ class Provider {
     {
         $fields = Field::Where('project_key', '$_sys_$')
             ->orWhere('project_key', $project_key)
-            ->orderBy('project_key', 'desc')
+            ->orderBy('project_key', 'asc')
             ->orderBy('created_at', 'asc')
             ->get($fields);
 
@@ -372,7 +372,7 @@ class Provider {
     {
         $workflows = Definition::Where('project_key', '$_sys_$')
             ->orWhere('project_key', $project_key)
-            ->orderBy('project_key', 'desc')
+            ->orderBy('project_key', 'asc')
             ->orderBy('created_at', 'asc')
             ->get($fields);
 
@@ -407,7 +407,7 @@ class Provider {
     {
         $roles = Role::Where('project_key', '$_sys_$')
             ->orWhere('project_key', $project_key)
-            ->orderBy('project_key', 'desc')
+            ->orderBy('project_key', 'asc')
             ->orderBy('created_at', 'asc')
             ->get($fields);
 

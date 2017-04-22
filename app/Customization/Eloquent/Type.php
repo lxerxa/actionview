@@ -14,6 +14,7 @@ class Type extends Model
         'abb',
         'screen_id',
         'workflow_id',
+        'type',
         'default',
         'disabled',
         'description',

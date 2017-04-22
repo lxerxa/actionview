@@ -152,6 +152,24 @@ class PriorityController extends Controller
      */
     public function handle(Request $request, $project_key)
     {
+        if ($project_key === '$_sys_$')
+        {
+            return $this->handleSys($request, $project_key);
+        }
+        else
+        {
+            return $this->handleProject($request, $project_key);
+        }
+    }
+
+    /**
+     * update sort or defaultValue etc..
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return void
+     */
+    public function handleProject(Request $request, $project_key)
+    {
         $properties = [];
         // set priority sort.
         $sequence = $request->input('sequence');
@@ -179,6 +197,60 @@ class PriorityController extends Controller
         }
 
         $priorities = Provider::getPriorityList($project_key);
+        return Response()->json(['ecode' => 0, 'data' => $priorities]);
+    }
+
+    /**
+     * update sort or defaultValue etc..
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return void
+     */
+    public function handleSys(Request $request, $project_key)
+    {
+        // set type sort.
+        $sequence = $request->input('sequence');
+        if (isset($sequence))
+        {
+            $i = 1;
+            foreach ($sequence as $priority_id)
+            {
+                $priority = Priority::find($priority_id);
+                if (!$priority || $priority->project_key != $project_key)
+                {
+                    continue;
+                }
+                $priority->sn = $i++;
+                $priority->save();
+            }
+        }
+
+        // set default value
+        $default_priority_id = $request->input('defaultValue');
+        if (isset($default_priority_id))
+        {
+            $priority = Priority::find($default_priority_id);
+            if (!$priority || $priority->project_key != $project_key)
+            {
+                throw new \UnexpectedValueException('the priority does not exist or is not in the project.', -10002);
+            }
+
+            $priorities = Priority::where('project_key', $project_key)->get();
+            foreach ($priorities as $priority)
+            {
+                if ($priority->id == $default_priority_id)
+                {
+                    $priority->default = true;
+                    $priority->save();
+                }
+                else if (isset($priority->default))
+                {
+                    $priority->unset('default');
+                }
+            }
+        }
+
+        $priorities = Priority::where([ 'project_key' => $project_key ])->orderBy('sn', 'asc')->get();
         return Response()->json(['ecode' => 0, 'data' => $priorities]);
     }
 }
