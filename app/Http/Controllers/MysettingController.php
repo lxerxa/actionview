@@ -52,9 +52,9 @@ class MysettingController extends Controller
     public function resetPwd(Request $request)
     {
         $password = $request->input('password');
-        if (!$password || trim($password))
+        if (!$password || trim($password) == '')
         {
-            throw new \UnexpectedValueException('the password can not be empty.', -10002);
+            throw new \UnexpectedValueException('the old password can not be empty.', -10002);
         }
 
         $user = Sentinel::findById($this->user->id);
@@ -63,7 +63,20 @@ class MysettingController extends Controller
             throw new \UnexpectedValueException('the user is not existed.', -10002);
         }
 
-        $user->password = $password;
+        $credentials = [ 'email' => $this->user->email, 'password' => $password ];
+        $valid = Sentinel::validateCredentials($user, $credentials);
+        if (!$valid)
+        {
+            throw new \UnexpectedValueException('the old password is not correct.', -10002);
+        }
+
+        $new_password = $request->input('new_password');
+        if (!$new_password || trim($new_password) == '')
+        {
+            throw new \UnexpectedValueException('the password can not be empty.', -10002);
+        }
+
+        $user->password = password_hash($new_password, PASSWORD_DEFAULT);
         $user = Sentinel::update($user, [ 'id' => $this->user->id ]);
         return Response()->json([ 'ecode' => 0, 'data' => [ 'accounts' => $user ] ]);
     }

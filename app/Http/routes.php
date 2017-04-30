@@ -46,6 +46,7 @@ Route::group([ 'middleware' => 'can' ], function ()
 
     Route::get('api/mysetting', 'MysettingController@show');
     Route::post('api/mysetting/account', 'MysettingController@updAccounts');
+    Route::post('api/mysetting/resetpwd', 'MysettingController@resetPwd');
     Route::post('api/mysetting/notify', 'MysettingController@setNotifications');
     Route::post('api/mysetting/favorite', 'MysettingController@setFavorites');
 });
