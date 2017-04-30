@@ -43,6 +43,11 @@ Route::group([ 'middleware' => 'can' ], function ()
     // Route::post('sysindexes', 'SysIndexController');
     // user logout
     Route::delete('api/session', 'SessionController@destroy');
+
+    Route::get('api/mysetting', 'MysettingController@show');
+    Route::post('api/mysetting/account', 'MysettingController@updAccounts');
+    Route::post('api/mysetting/notify', 'MysettingController@setNotifications');
+    Route::post('api/mysetting/favorite', 'MysettingController@setFavorites');
 });
 
 // project config
