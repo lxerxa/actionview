@@ -101,7 +101,7 @@ class UserController extends Controller
 
         if (Sentinel::findByCredentials([ 'email' => $email ]))
         {
-            throw new \InvalidArgumentException('email has already existed.', -10002);
+            throw new \InvalidArgumentException('the email has already been registered.', -10002);
         }
 
         if (!$password = $request->input('password'))
@@ -186,22 +186,19 @@ class UserController extends Controller
             }
         }
 
-        $password = $request->input('password');
-        if (isset($password))
-        {
-            if (!$password)
-            {
-                throw new \UnexpectedValueException('the password can not be empty.', -10002);
-            }
-        }
-
         $user = Sentinel::findById($id);
         if (!$user)
         {
             throw new \UnexpectedValueException('the user does not exist.', -10002);
         }
 
-        $user = Sentinel::update($user, array_only($request->all(), ['first_name', 'email', 'password', 'phone']));
+        $valid = Sentinel::validForUpdate($user, array_only($request->all(), ['first_name', 'email', 'phone']));
+        if (!$valid)
+        {
+            throw new \UnexpectedValueException('updating the user does fails.', -10002);
+        }
+
+        $user = Sentinel::update($user, array_only($request->all(), ['first_name', 'email', 'phone']));
         $user->status = Activation::completed($user) ? 'active' : 'unactivated';
 
         return Response()->json([ 'ecode' => 0, 'data' => $user ]);
@@ -251,5 +248,30 @@ class UserController extends Controller
             }
         }
         return Response()->json([ 'ecode' => 0, 'data' => [ 'ids' => $deleted_ids ] ]);
+    }
+
+    /**
+     * reset the user password.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function renewPwd(Request $request, $id)
+    {
+        $user = Sentinel::findById($id);
+        if (!$user)
+        {
+            throw new \UnexpectedValueException('the user does not exist.', -10002);
+        }
+
+        $valid = Sentinel::validForUpdate($user, [ 'password' => 'actionview' ]);
+        if (!$valid)
+        {
+            throw new \UnexpectedValueException('updating the user does fails.', -10002);
+        }
+
+        $user = Sentinel::update($user, [ 'password' => 'actionview' ]);
+        return Response()->json([ 'ecode' => 0, 'data' => $user ]);
     }
 }
