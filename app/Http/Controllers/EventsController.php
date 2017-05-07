@@ -148,6 +148,10 @@ class EventsController extends Controller
     public function getNotifications($project_key, $event_id)
     {
         $en = EventNotifications::where([ 'project_key' => $project_key, 'event_id' => $event_id ])->first();
+        if (!$en && $project_key !== '$_sys_$')
+        {
+            $en = EventNotifications::where([ 'project_key' => '$_sys_$', 'event_id' => $event_id ])->first();
+        }
         return $en && isset($en->notifications) ? $en->notifications : [];
     }
 
@@ -163,7 +167,9 @@ class EventsController extends Controller
         $en = EventNotifications::where([ 'project_key' => $project_key, 'event_id' => $event_id ])->first();
         $en && $en->delete();
 
-        $event = Events::find($event_id);
+        $event = Events::find($event_id)->toArray();
+        $event['notifications'] = EventNotifications::where([ 'project_key' => '$_sys_$', 'event_id' => $event_id ])->first() ?: [];
+
         return Response()->json(['ecode' => 0, 'data' => $event]);
     }
 }

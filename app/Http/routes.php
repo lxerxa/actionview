@@ -64,6 +64,7 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     // project workflow config
     Route::resource('workflow', 'WorkflowController');
     // project role config
+    Route::post('role/{id}/actor', 'RoleController@setActor');
     Route::resource('role', 'RoleController');
     // project event config
     Route::resource('events', 'EventsController');

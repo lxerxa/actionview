@@ -85,6 +85,36 @@ class RoleController extends Controller
     }
 
     /**
+     * set the role actor.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function setActor(Request $request, $project_key, $id)
+    {
+        $new_user_ids = $request->input('users');
+        if (isset($new_user_ids))
+        {
+            $actor = Roleactor::where([ 'project_key' => $project_key, 'role_id' => $id ])->first();
+            $old_user_ids = $actor && $actor->user_ids ? $actor->user_ids : [];
+
+            $this->setUsers($project_key, $id, $new_user_ids ?: []);
+
+            $add_user_ids = array_diff($new_user_ids, $old_user_ids);
+            $del_user_ids = array_diff($old_user_ids, $new_user_ids);
+
+            Event::fire(new AddUserToRoleEvent($add_user_ids, $project_key));
+            Event::fire(new DelUserFromRoleEvent($del_user_ids, $project_key));
+        }
+
+        $data = Role::find($id);
+        $data->users = $this->getUsers($project_key, $id);
+
+        return Response()->json([ 'ecode' => 0, 'data' => $data ]);
+    }
+
+    /**
      * Update the specified resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
@@ -119,24 +149,7 @@ class RoleController extends Controller
         }
         $role->fill($request->except(['project_key']))->save();
 
-        $new_user_ids = $request->input('users');
-        if (isset($new_user_ids))
-        {
-            $actor = Roleactor::where([ 'project_key' => $project_key, 'role_id' => $id ])->first();
-            $old_user_ids = $actor && $actor->user_ids ? $actor->user_ids : [];
-
-            $this->setUsers($project_key, $id, $new_user_ids ?: []);
-
-            $add_user_ids = array_diff($new_user_ids, $old_user_ids);
-            $del_user_ids = array_diff($old_user_ids, $new_user_ids);
-
-            Event::fire(new AddUserToRoleEvent($add_user_ids, $project_key)); 
-            Event::fire(new DelUserFromRoleEvent($del_user_ids, $project_key)); 
-        }
-
         $data = Role::find($id);
-        $data->users = $this->getUsers($project_key, $id);
-
         return Response()->json([ 'ecode' => 0, 'data' => $data ]);
     }
 

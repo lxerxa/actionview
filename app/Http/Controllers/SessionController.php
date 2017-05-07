@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Customization\Eloquent\State;
+//use App\System\Eloquent\SysSetting;
 
 use Sentinel;
 
@@ -22,6 +23,16 @@ class SessionController extends Controller
     {
         $email = $request->input('email');
         $password = $request->input('password');
+        if (!$email || !$password)
+        {
+            throw new \UnexpectedValueException('email or password cannot be empty.', -10002);
+        }
+
+        if (strpos($email, '@') === false) 
+        {
+            //$setting = SysSetting::all();
+            $email = $email . '@' . 'chinamobile.com'; // fix me 
+        }
 
         $user = Sentinel::authenticate([ 'email' => $email, 'password' => $password ]);
         if ($user)
