@@ -49,6 +49,11 @@ Route::group([ 'middleware' => 'can' ], function ()
     Route::post('api/mysetting/resetpwd', 'MysettingController@resetPwd');
     Route::post('api/mysetting/notify', 'MysettingController@setNotifications');
     Route::post('api/mysetting/favorite', 'MysettingController@setFavorites');
+
+    Route::get('api/syssetting', 'SyssettingController@show');
+    Route::post('api/syssetting', 'SyssettingController@update');
+    Route::post('api/syssetting/restpwd', 'SyssettingController@resetPwd');
+    Route::post('api/syssetting/sendtestmail', 'SyssettingController@sendTestMail');
 });
 
 // project config
