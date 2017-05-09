@@ -8,6 +8,7 @@ use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Auth\Access\AuthorizesResources;
 
+use App\System\Eloquent\SysSetting;
 use Sentinel;
 
 use MongoDB\BSON\ObjectID; 
@@ -83,9 +84,24 @@ class Controller extends BaseController
         {
             return '';
         }
+        
+        $W2D = 5;
+        $D2H = 8;
+        $setting = SysSetting::first();
+        if ($setting && isset($setting->properties))
+        {
+            if (isset($setting->properties['week2day']))
+            {
+                $W2D = $setting->properties['week2day'];
+            }
+            if (isset($setting->properties['day2hour']))
+            {
+                $D2H = $setting->properties['day2hour'];
+            }
+        }
 
-        $W2M = 5 * 8 * 60;
-        $D2M = 8 * 60;
+        $W2M = $W2D * $D2H * 60;
+        $D2M = $D2H * 60;
         $H2M = 60;
 
         $tt_in_min = 0;

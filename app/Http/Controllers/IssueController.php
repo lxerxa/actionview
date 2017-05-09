@@ -14,6 +14,7 @@ use App\Project\Eloquent\Watch;
 use App\Project\Eloquent\Searcher;
 use App\Project\Eloquent\Linked;
 use App\Workflow\Workflow;
+use App\System\Eloquent\SysSetting;
 use Sentinel;
 use DB;
 
@@ -465,9 +466,12 @@ class IssueController extends Controller
         $modules = Provider::getModuleList($project_key, ['name']);
         // get project types
         $types = Provider::getTypeListExt($project_key, [ 'assignee' => $users, 'state' => $states, 'resolution' => $resolutions, 'priority' => $priorities, 'version' => $versions, 'module' => $modules ]);
+        // get defined searchers
         $searchers = $this->getSearchers($project_key, ['name', 'query']);
+        // get timetrack options
+        $timetrack = $this->getTimeTrackSetting();
 
-        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange([ 'users' => $users, 'assignees' => $assignees, 'types' => $types, 'states' => $states, 'resolutions' => $resolutions, 'priorities' => $priorities, 'searchers' => $searchers ]) ]);
+        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange([ 'users' => $users, 'assignees' => $assignees, 'types' => $types, 'states' => $states, 'resolutions' => $resolutions, 'priorities' => $priorities, 'searchers' => $searchers, 'timetrack' => $timetrack ]) ]);
     }
 
     /**
@@ -1067,5 +1071,29 @@ class IssueController extends Controller
         Event::fire(new IssueEvent($project_key, $id, $updValues['modifier'], [ 'event_key' => 'move_issue', 'data' => [ 'old_parent' => $issue['parent_id'], 'new_parent' => $parent_id ] ]));
 
         return $this->show($project_key, $id);
+    }
+
+    /**
+     * get timetrack setting.
+     *
+     * @return array 
+     */
+    function getTimeTrackSetting() 
+    {
+        $options = [ 'w2d' => 5, 'd2h' => 8 ];
+
+        $setting = SysSetting::first();
+        if ($setting && isset($setting->properties))
+        {
+            if (isset($setting->properties['week2day']))
+            {
+                $options['w2d'] = $setting->properties['week2day'];
+            }
+            if (isset($setting->properties['day2hour']))
+            {
+                $options['d2h'] = $setting->properties['day2hour'];
+            }
+        }
+        return $options;
     }
 }

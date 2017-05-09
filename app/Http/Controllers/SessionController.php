@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Customization\Eloquent\State;
-//use App\System\Eloquent\SysSetting;
+use App\System\Eloquent\SysSetting;
 
 use Sentinel;
 
@@ -30,8 +30,11 @@ class SessionController extends Controller
 
         if (strpos($email, '@') === false) 
         {
-            //$setting = SysSetting::all();
-            $email = $email . '@' . 'chinamobile.com'; // fix me 
+            $setting = SysSetting::first();
+            if ($setting && isset($setting->properties) && isset($setting->properties['login_mail_domain']))
+            {
+                $email = $email . '@' . $setting->properties['login_mail_domain']; 
+            }
         }
 
         $user = Sentinel::authenticate([ 'email' => $email, 'password' => $password ]);
