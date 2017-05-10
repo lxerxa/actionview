@@ -453,7 +453,7 @@ class IssueController extends Controller
         // get project users
         $users = Provider::getUserList($project_key);
         // get project users fix me
-        $assignees = Provider::getUserList($project_key);
+        $assignees = Provider::getAssignedUsers($project_key);
         // get state list
         $states = Provider::getStateOptions($project_key);
         // get resolution list
