@@ -15,7 +15,7 @@ class Acl {
      */
     public static function getRoles($project_key)
     {
-        return Role::where('project_key', $project_key)->get();
+        return Roleactor::where('project_key', $project_key)->orwhere('project_key', '$_sys_$')->get();
     }
 
     /**
@@ -27,7 +27,7 @@ class Acl {
      */
     public static function getRolesByUid($project_key, $user_id)
     {
-        return Role::whereRaw([ 'user_ids' => $user_id, 'project_key' => $project_key ])->get();
+        return Roleactor::whereRaw([ 'user_ids' => $user_id, 'project_key' => $project_key ])->get(['role_id']);
     }
 
     /**
@@ -39,11 +39,11 @@ class Acl {
      */
     public static function getUserIdsByPermission($permission, $project_key)
     {
-        $roles = Role::whereRaw([ 'permissions' => $permission, 'project_key' => $project_key ])->get();
+        $actors = Roleactor::whereRaw([ 'permissions' => $permission, 'project_key' => $project_key ])->get();
         $user_ids = [];
-        foreach ($roles as $role)
+        foreach ($actors as $actor)
         {
-            $user_ids += $role->user_ids;
+            $user_ids += $actor->user_ids;
         }
         return array_unique($user_ids);
     }
@@ -58,7 +58,8 @@ class Acl {
      */
     public static function isAllowed($user_id, $permission, $project_key)
     {
-        return Role::whereRaw([ 'permissions' => $permission, 'user_ids' => $user_id, 'project_key' => $project_key ])->exists();
+        $permissions = self::getPermissions($user_id, $project_key);
+        return in_array($permssion, $permissions);
     }
 
     /**
