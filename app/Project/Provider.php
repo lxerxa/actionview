@@ -11,6 +11,7 @@ use App\Customization\Eloquent\Field;
 use App\Customization\Eloquent\Screen;
 use App\Customization\Eloquent\Events;
 use App\Acl\Eloquent\Role;
+use App\Acl\Acl;
 use App\Workflow\Eloquent\Definition;
 use App\Project\Eloquent\Project;
 use App\Project\Eloquent\UserProject;
@@ -418,8 +419,7 @@ class Provider {
      * get user list.
      *
      * @param string $project_key
-     * @param array $fields
-     * @return collection
+     * @return array
      */
     public static function getUserList($project_key)
     {
@@ -434,6 +434,25 @@ class Provider {
             $user_info && $user_list[] = ['id' => $user['user_id'], 'name' => $user_info->first_name, 'email' => $user_info->email ];
         }
 
+        return $user_list;
+    }
+
+    /**
+     * get assigned user list.
+     *
+     * @param string $project_key
+     * @return array
+     */
+    public static function getAssignedUsers($project_key)
+    {
+        $user_ids = Acl::getUserIdsByPermission('assigned_issue', $project_key);
+
+        $user_list = [];
+        foreach ($user_ids as $user_id)
+        {
+            $user_info = Sentinel::findById($user_id);
+            $user_info && $user_list[] = ['id' => $user_id, 'name' => $user_info->first_name, 'email' => $user_info->email ];
+        }
         return $user_list;
     }
 
