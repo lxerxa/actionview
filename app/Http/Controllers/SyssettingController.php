@@ -31,29 +31,69 @@ class SyssettingController extends Controller
      */
     public function update(Request $request)
     {
+        $syssetting = SysSetting::first();
+
         $updValues = [];
         $properties = $request->input('properties');
         if (isset($properties))
         {
-             $updValues['properties'] = $properties;
+            $updValues['properties'] = $properties;
         }
 
         $smtp = $request->input('smtp');
         if (isset($smtp))
         {
-             $updValues['smtp'] = $smtp;
+            $updValues['smtp'] = $smtp;
         }
 
         $sysroles = $request->input('sysroles');
         if (isset($sysroles))
         {
-             $updValues['sysroles'] = $sysroles;
+            $updValues['sysroles'] = $sysroles;
+            if (isset($syssetting->sysroles) && isset($syssetting->sysroles['sys_admin']))
+            {
+                $old_sys_admins = $syssetting->sysroles['sys_admin'];
+            }
+            else
+            {
+                $old_sys_admins = []; 
+            }
+            $old_sys_admin_ids = array_column($old_sys_admins, 'id');
+
+            $new_sys_admins = isset($sysroles['sys_admin']) ? $sysroles['sys_admin'] : [];
+            $new_sys_admin_ids = array_column($new_sys_admins, 'id'); 
+
+            $added_user_ids = array_diff($new_sys_admin_ids, $old_sys_admin_ids) ?: [];
+            $deleted_user_ids = array_diff($old_sys_admin_ids, $new_sys_admin_ids) ?: [];
+
+            $this->handelUserPermission('sys_admin', $added_user_ids, $deleted_user_ids);
         }
 
-        $syssetting = SysSetting::first();
         $syssetting->fill($updValues)->save();
 
         return Response()->json([ 'ecode' => 0, 'data' => SysSetting::first() ]);
+    }
+
+    /**
+     * reset the smtp auth pwd.
+     *
+     * @param  string  $type
+     * @param  array   $added_user_ids
+     * @param  array   $deleted_user_ids
+     * @return \Illuminate\Http\Response
+     */
+    public function handelUserPermission($permission, $added_user_ids, $deleted_user_ids)
+    {
+        foreach($added_user_ids as $uid)
+        {
+            $user = Sentinel::findById($uid); 
+            $user->addPermission($permission)->save();
+        }
+        foreach($deleted_user_ids as $uid)
+        {
+            $user = Sentinel::findById($uid); 
+            $user->removePermission($permission)->save();
+        }
     }
 
     /**

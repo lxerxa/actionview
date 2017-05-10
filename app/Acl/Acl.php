@@ -2,6 +2,7 @@
 namespace App\Acl;
 
 use App\Acl\Eloquent\Role;
+use App\Acl\Eloquent\Roleactor;
 use App\Acl\Permissions;
 
 class Acl {
@@ -69,12 +70,18 @@ class Acl {
      */
     public static function getPermissions($user_id, $project_key)
     {
-        $permissions_list = Role::whereRaw([ 'user_ids' => $user_id, 'project_key' => $project_key ])->get(['permissions']);
+        $role_ids = [];
+        $role_actors = Roleactor::whereRaw([ 'user_ids' => $user_id, 'project_key' => $project_key ])->get(['role_id'])->toArray();
+        foreach($role_actors as $actor)
+        {
+            $role_ids[] =  $actor['role_id'];
+        }
 
         $all_permissions = [];
-        foreach ($permissions_list as $val)
+        $roles = Role::find($role_ids)->toArray();
+        foreach ($roles as $role)
         {
-            $all_permissions += $val['permissions'] ?: [];
+            $all_permissions += $role['permissions'] ?: [];
         }
         return array_unique($all_permissions);
     }
