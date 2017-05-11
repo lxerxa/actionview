@@ -39,9 +39,16 @@ class Acl {
      */
     public static function getUserIdsByPermission($permission, $project_key)
     {
-        $actors = Roleactor::whereRaw([ 'permissions' => $permission, 'project_key' => $project_key ])->get();
+        $role_ids = [];
+        $roles = Role::whereRaw([ 'permissions' => $permission, 'project_key' => [ '$in' => [ $project_key, '$_sys_$' ] ] ])->get();
+        foreach ($roles as $role)
+        {
+            $role_ids[] = $role->id;
+        }
+
         $user_ids = [];
-        foreach ($actors as $actor)
+        $role_actors = Roleactor::whereRaw([ 'project_key' => $project_key, 'role_id' => [ '$in' => $role_ids ] ])->get();
+        foreach ($role_actors as $actor)
         {
             $user_ids += $actor->user_ids;
         }
