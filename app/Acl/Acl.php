@@ -50,9 +50,9 @@ class Acl {
         $role_actors = Roleactor::whereRaw([ 'project_key' => $project_key, 'role_id' => [ '$in' => $role_ids ] ])->get();
         foreach ($role_actors as $actor)
         {
-            $user_ids += $actor->user_ids;
+            $user_ids = array_merge($user_ids, $actor->user_ids);
         }
-        return array_unique($user_ids);
+        return array_values(array_unique($user_ids));
     }
 
     /**
@@ -66,7 +66,7 @@ class Acl {
     public static function isAllowed($user_id, $permission, $project_key)
     {
         $permissions = self::getPermissions($user_id, $project_key);
-        return in_array($permssion, $permissions);
+        return in_array($permission, $permissions);
     }
 
     /**
@@ -89,9 +89,9 @@ class Acl {
         $roles = Role::find($role_ids)->toArray();
         foreach ($roles as $role)
         {
-            $all_permissions += $role['permissions'] ?: [];
+            $all_permissions = array_merge($all_permissions, $role['permissions'] ?: []);
         }
-        return array_unique($all_permissions);
+        return array_values(array_unique($all_permissions));
     }
 
     /**
