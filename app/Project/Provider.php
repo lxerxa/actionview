@@ -811,7 +811,7 @@ class Provider {
 
             if ($val['key'] == 'assignee')
             {
-                $users = self::getUserList($project_key);
+                $users = self::getAssignedUsers($project_key);
                 $val['optionValues'] = self::pluckFields($users, ['id', 'name']);
             }
             else if ($val['key'] == 'resolution')

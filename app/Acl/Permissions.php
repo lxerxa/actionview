@@ -4,7 +4,7 @@ namespace App\Acl;
 
 class Permissions {
 
-    const ADMIN_PROJECT       = 'admin_project';
+    const MANAGE_PROJECT       = 'manage_project';
 
     const ASSIGNED_ISSUE      = 'assigned_issue';
     const ASSIGN_ISSUE        = 'assign_issue';
@@ -41,7 +41,7 @@ class Permissions {
     public static function all()
     {
         return [
-            static::ADMIN_PROJECT,
+            static::MANAGE_PROJECT,
 
             static::ASSIGNED_ISSUE,
             static::ASSIGN_ISSUE,
