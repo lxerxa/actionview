@@ -22,14 +22,12 @@ class Permissions {
     const VIEW_WORKFLOW       = 'view_workflow';
     const EXEC_WORKFLOW       = 'exec_workflow';
 
-    const MANAGE_COMMENTS     = 'manage_comments';
     //const ADD_COMMNETS        = 'add_comments';
     ///const EDIT_COMMNETS       = 'edit_comments';
     //const EDIT_SELF_COMMNETS  = 'edit_self_comments';
     //const DELETE_COMMNETS     = 'delete_comments';
     //const DELETE_SELF_COMMNETS= 'delete_comments';
 
-    const MANAGE_WORKLOG      = 'manage_worklog';
     //const ADD_WORKLOG         = 'add_worklog';
     //const EDIT_WORKLOG        = 'edit_worklog';
     //const EDIT_SELF_WORKLOG   = 'edit_self_worklog';
@@ -62,14 +60,12 @@ class Permissions {
             static::VIEW_WORKFLOW,
             static::EXEC_WORKFLOW,
 
-            static::MANAGE_COMMNETS,
             //static::ADD_COMMNETS,
             //static::EDIT_COMMNETS,
             //static::EDIT_SELF_COMMNETS,
             //static::DELETE_COMMNETS,
             //static::DELETE_SELF_COMMNETS,
 
-            static::MANAGE_WORKLOG,
             //static::ADD_WORKLOG,
             //static::EDIT_WORKLOG,
             //static::EDIT_SELF_WORKLOG,
