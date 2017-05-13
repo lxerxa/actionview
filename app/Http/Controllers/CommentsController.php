@@ -49,7 +49,7 @@ class CommentsController extends Controller
         // trigger event of comments added
         Event::fire(new IssueEvent($project_key, $issue_id, $creator, [ 'event_key' => 'add_comments', 'data' => array_only($request->all(), [ 'contents', 'atWho' ]) ])); 
 
-        $comments = DB::collection($table)->where('_id', $id)->first();
+        $comments = DB::collection($table)->find($id);
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($comments) ]);
     }
 
@@ -61,7 +61,7 @@ class CommentsController extends Controller
      */
     public function show($project_key, $id)
     {
-        $comments = DB::collection('comments_' . $project_key)->where('_id', $id)->first();
+        $comments = DB::collection('comments_' . $project_key)->find($id);
         return Response()->json(['ecode' => 0, 'data' => parent::arrange($comments)]);
     }
 
@@ -95,7 +95,7 @@ class CommentsController extends Controller
                 throw new \UnexpectedValueException('the operation is incorrect value.', -10002);
             }
 
-            $comments = DB::collection('comments_' . $project_key)->where('_id', $id)->first();
+            $comments = DB::collection('comments_' . $project_key)->find($id);
             if (!isset($comments['reply']) || !$comments['reply'])
             {
                 $comments['reply'] = [];
@@ -185,8 +185,9 @@ class CommentsController extends Controller
 
         DB::collection($table)->where('_id', $id)->delete();
 
+        $user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
         // trigger the event of del comments
-        Event::fire(new IssueEvent($project_key, $issue_id, $user, [ 'event_key' => 'del_comments', 'data' => array_only($comments->toArray(), [ 'contents', 'atWho' ]) ])); 
+        Event::fire(new IssueEvent($project_key, $issue_id, $user, [ 'event_key' => 'del_comments', 'data' => array_only($comments, [ 'contents', 'atWho' ]) ])); 
 
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }
