@@ -337,7 +337,11 @@ class ProjectController extends Controller
             throw new \UnexpectedValueException('the project does not exist.', -10002);
         }
         // get action allow of the project.
-        $permissions = Acl::getPermissions($this->user->id, $project->key); // fix me
+        $permissions = Acl::getPermissions($this->user->id, $project->key);
+        if ($this->user->id === $project['principal']['id'] && !in_array('manage_project', $permssions))
+        {
+            $permissions[] = 'manage_project';
+        }
         // get searchers
         //$searchers = DB::collection('searcher_' . $key)->where('user', $this->user->id)->orderBy('created_at', 'asc')->get();
         // get project users
