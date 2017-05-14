@@ -338,7 +338,7 @@ class ProjectController extends Controller
         }
         // get action allow of the project.
         $permissions = Acl::getPermissions($this->user->id, $project->key);
-        if ($this->user->id === $project['principal']['id'] && !in_array('manage_project', $permssions))
+        if ($this->user->id === $project->principal['id'] && !in_array('manage_project', $permissions))
         {
             $permissions[] = 'manage_project';
         }
