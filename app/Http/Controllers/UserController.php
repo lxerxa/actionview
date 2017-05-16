@@ -15,21 +15,28 @@ use Activation;
 
 class UserController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('privilege:sys_admin', [ 'expect' => 'search' ]);
+        parent::__construct();
+    }
+
     /**
      * Display a listing of the resource.
      *
      * @return \Illuminate\Http\Response
      */
-    public function index(Request $request)
+    public function search(Request $request)
     {
-        if ($s = $request->input('s'))
+        $s = $request->input('s');
+        $users = [];
+        if ($s)
         {
             $search_users = EloquentUser::Where('first_name', 'like', '%' . $s .  '%')
                                 ->orWhere('email', 'like', '%' . $s .  '%')
                                 ->get([ 'first_name', 'last_name', 'email' ]);
 
             $i = 0;
-            $users = [];
             foreach ($search_users as $key => $user)
             {
                 if (Activation::completed($user) === false)
@@ -45,40 +52,45 @@ class UserController extends Controller
                     break;
                 }
             }
-            return Response()->json([ 'ecode' => 0, 'data' => $users ]);
         }
-        else
+        return Response()->json([ 'ecode' => 0, 'data' => $users ]);
+    }
+
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function index(Request $request)
+
+        $query = EloquentUser::Where('email', '<>', '');
+
+        if ($name = $request->input('name'))
         {
-            $query = EloquentUser::Where('email', '<>', '');
-
-            if ($name = $request->input('name'))
-            {
-                $query->where(function ($query) use ($name)
-                {
-                    $query->where('email', 'like', '%' . $name . '%')->orWhere('name', 'like', '%' . $name . '%');
-                });
-            }
-            // get total
-            $total = $query->count();
-
-            $page_size = 30;
-            $page = $request->input('page') ?: 1;
-            $query = $query->skip($page_size * ($page - 1))->take($page_size);
-            $all_users = $query->get([ 'first_name', 'last_name', 'email', 'phone' ]);
-
-            $users = [];
-            foreach ($all_users as $user)
-            {
-                $tmp = [];
-                $tmp['id'] = $user->id;
-                $tmp['first_name'] = $user->first_name;
-                $tmp['email'] = $user->email;
-                $tmp['phone'] = isset($user->phone) ? $user->phone : '';
-                $tmp['status'] = Activation::completed($user) ? 'active' : 'unactivated';
-                $users[] = $tmp;
-            }
-            return Response()->json([ 'ecode' => 0, 'data' => $users, 'options' => [ 'total' => $total, 'sizePerPage' => $page_size ] ]); 
+            $query->where(function ($query) use ($name) {
+                $query->where('email', 'like', '%' . $name . '%')->orWhere('name', 'like', '%' . $name . '%');
+            });
         }
+        // get total
+        $total = $query->count();
+
+        $page_size = 30;
+        $page = $request->input('page') ?: 1;
+        $query = $query->skip($page_size * ($page - 1))->take($page_size);
+        $all_users = $query->get([ 'first_name', 'last_name', 'email', 'phone' ]);
+
+        $users = [];
+        foreach ($all_users as $user)
+        {
+            $tmp = [];
+            $tmp['id'] = $user->id;
+            $tmp['first_name'] = $user->first_name;
+            $tmp['email'] = $user->email;
+            $tmp['phone'] = isset($user->phone) ? $user->phone : '';
+            $tmp['status'] = Activation::completed($user) ? 'active' : 'unactivated';
+            $users[] = $tmp;
+        }
+        return Response()->json([ 'ecode' => 0, 'data' => $users, 'options' => [ 'total' => $total, 'sizePerPage' => $page_size ] ]); 
     }
 
     /**

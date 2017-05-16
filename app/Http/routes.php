@@ -25,24 +25,24 @@ Route::post('api/user/register', 'UserController@register');
 Route::get('user/{id}/resetpwd', 'UserController@showResetpwd'); //fix me
 Route::post('user/{id}/resetpwd', 'UserController@doResetpwd'); // fix me
 
-Route::group([ 'middleware' => 'can' ], function ()
-{
-    Route::get('api/project/checkkey/{key}', 'ProjectController@checkKey');
+Route::group([ 'middleware' => 'can' ], function () {
+
     Route::get('api/myproject', 'ProjectController@myproject');
+    Route::get('api/project', 'ProjectController@index');
+    Route::get('api/project/checkkey/{key}', 'ProjectController@checkKey');
     Route::get('api/project/options', 'ProjectController@getOptions');
+    Route::get('api/project/{key}', 'ProjectController@show');
+    Route::post('api/project', 'ProjectController@store');
+    Route::put('api/project/{id}', 'ProjectController@update');
     Route::get('api/project/{id}/createindex', 'ProjectController@createIndex');
     Route::post('api/project/batch/status', 'ProjectController@updMultiStatus');
     Route::post('api/project/batch/createindex', 'ProjectController@createMultiIndex');
-    Route::get('api/project/options', 'ProjectController@getOptions');
-    Route::resource('api/project', 'ProjectController');
+    Route::delete('api/project/{id}', 'ProjectController@destroy');
 
+    Route::get('api/user/search', 'UserController@search');
     Route::get('api/user/{id}/renewpwd', 'UserController@renewPwd');
     Route::post('api/user/batch/delete', 'UserController@delMultiUser');
     Route::resource('api/user', 'UserController');
-    // create or update colletion indexes
-    // Route::post('sysindexes', 'SysIndexController');
-    // user logout
-    Route::delete('api/session', 'SessionController@destroy');
 
     Route::get('api/mysetting', 'MysettingController@show');
     Route::post('api/mysetting/account', 'MysettingController@updAccounts');
@@ -50,6 +50,7 @@ Route::group([ 'middleware' => 'can' ], function ()
     Route::post('api/mysetting/notify', 'MysettingController@setNotifications');
     Route::post('api/mysetting/favorite', 'MysettingController@setFavorites');
 
+    // middleware is put into controller
     Route::get('api/syssetting', 'SyssettingController@show');
     Route::post('api/syssetting', 'SyssettingController@update');
     Route::post('api/syssetting/restpwd', 'SyssettingController@resetPwd');
@@ -57,8 +58,7 @@ Route::group([ 'middleware' => 'can' ], function ()
 });
 
 // project config
-Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can', 'privilege:project:admin_project' ] ], function ()
-{
+Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can', 'privilege:manage_project' ] ], function () {
     // project type config
     Route::resource('type', 'TypeController');
     Route::post('type/batch', 'TypeController@handle');
@@ -82,39 +82,49 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     // project resolution config
     Route::resource('resolution', 'ResolutionController');
     Route::post('resolution/batch', 'ResolutionController@handle');
+    // Route::resource('module', 'ModuleController', [ 'only' => [ 'store', 'update', 'destory' ] ]);
+    // Route::resource('version', 'VersionController', [ 'only' => [ 'store', 'update', 'destory' ] ]);
+});
+
+Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can' ] ], function () {
+    // project activity
+    Route::get('activity', [ 'middleware' => 'privilege:join_project', 'uses' => 'ActivityController@index' ]);
     // project module config
     Route::resource('module', 'ModuleController');
     // project version config
     Route::resource('version', 'VersionController');
-});
-
-Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can' ] ], function ()
-{
-    Route::get('activity', 'ActivityController@index');
+    // project team
+    Route::get('team', [ 'middleware' => 'privilege:join_project', 'uses' => 'RoleController@index' ]);
 
     Route::get('issue/searcher', 'IssueController@getSearchers');
     Route::post('issue/searcher', 'IssueController@addSearcher');
     Route::post('issue/searcher/batch', 'IssueController@handleSearcher');
     Route::get('issue/options', 'IssueController@getOptions');
     Route::get('issue/search', 'IssueController@search');
-    Route::post('issue/copy', 'IssueController@copy');
 
-    Route::resource('issue', 'IssueController');
+    Route::get('issue/{id}', 'IssueController@show');
+    Route::get('issue', [ 'middleware' => 'privilege:join_project', 'uses' => 'IssueController@index' ]);
+    Route::post('issue', [ 'middleware' => 'privilege:create_issue', 'uses' => 'IssueController@store' ]);
+    Route::put('issue/{id}', [ 'middleware' => 'privilege:edit_issue', 'uses' => 'IssueController@update' ]);
+    Route::delete('issue/{id}', [ 'middleware' => 'privilege:delete_issue', 'uses' => 'IssueController@destroy' ]);
 
-    Route::post('issue/{issue_id}/workflow/{workflow_id}/action/{action_id}', 'IssueController@doAction');
-    Route::post('issue/{issue_id}/assign', 'IssueController@setAssignee');
-    Route::post('issue/{issue_id}/move', 'IssueController@move');
-    Route::post('issue/{issue_id}/convert', 'IssueController@convert');
-    Route::get('issue/{issue_id}/history', 'IssueController@getHistory');
-    Route::post('issue/{issue_id}/watching', 'IssueController@watch');
-    Route::get('issue/{issue_id}/reset', 'IssueController@resetState');
-    Route::resource('issue/{issue_id}/comments', 'CommentsController');
-    Route::resource('issue/{issue_id}/worklog', 'WorklogController');
+    Route::get('issue/{id}/history', 'IssueController@getHistory');
+    Route::post('issue/{id}/watching', 'IssueController@watch');
+
+    Route::post('issue/{id}/workflow/{workflow_id}/action/{action_id}', [ 'middleware' => 'privilege:exec_workflow', 'uses' => 'IssueController@doAction' ]);
+    Route::post('issue/{id}/assign', [ 'middleware' => 'privilege:assign_issue', 'uses' => 'IssueController@setAssignee' ]);
+    Route::post('issue/{id}/move', [ 'middleware' => 'privilege:move_issue', 'uses' => 'IssueController@move' ]);
+    Route::post('issue/copy', [ 'middleware' => 'privilege:create_issue', 'uses' => 'IssueController@copy' ]);
+    Route::post('issue/{id}/convert', [ 'middleware' => 'privilege:edit_issue', 'uses' => 'IssueController@convert' ]);
+    Route::get('issue/{id}/reset', [ 'middleware' => 'privilege:reset_issue', 'uses' => 'IssueController@resetState' ]);
+
+    Route::resource('issue/{id}/comments', 'CommentsController');
+    Route::resource('issue/{id}/worklog', 'WorklogController');
 
     Route::post('link', 'LinkController@store');
     Route::delete('link/{id}', 'LinkController@destroy');
 
-    Route::post('file', 'FileController@upload');
-    Route::get('file/{id}', 'FileController@download');
-    Route::delete('file/{id}', 'FileController@delete');
+    Route::post('file', [ 'middleware' => 'privilege:edit_issue', 'uses' => 'FileController@upload' ]);
+    Route::get('file/{id}', [ 'middleware' => 'privilege:join_project', 'uses' => 'FileController@download' ]);
+    Route::delete('file/{id}', [ 'middleware' => 'privilege:edit_issue', 'uses' => 'FileController@delete' ]);
 });

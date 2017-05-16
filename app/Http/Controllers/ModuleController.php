@@ -15,6 +15,13 @@ use App\Project\Eloquent\Module;
 
 class ModuleController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('privilege:join_project', [ 'only' => [ 'index' ] ]);
+        $this->middleware('privilege:manage_project', [ 'except' => [ 'index' ] ]);
+        parent::__construct();
+    }
+
     /**
      * Display a listing of the resource.
      *

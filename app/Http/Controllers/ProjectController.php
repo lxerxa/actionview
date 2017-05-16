@@ -25,7 +25,8 @@ class ProjectController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('privilege:global:manage_project', [ 'except' => [ 'index' ] ]);
+        $this->middleware('privilege:sys_admin', [ 'only' => [ 'index', 'getOptions', 'updMultiStatus', 'createMultiIndex', 'destroy' ] ]);
+        $this->middleware('privilege:project_principal', [ 'only' => [ 'update', 'createIndex' ] ]);
         parent::__construct();
     }
 

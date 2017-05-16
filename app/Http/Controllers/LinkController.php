@@ -14,6 +14,12 @@ use DB;
 
 class LinkController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('privilege:link_issue');
+        parent::__construct();
+    }
+
     /**
      * Store a newly created resource in storage.
      *

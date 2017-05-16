@@ -12,6 +12,13 @@ use App\Project\Eloquent\Version;
 
 class VersionController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('privilege:join_project', [ 'only' => [ 'index' ] ]);
+        $this->middleware('privilege:manage_project', [ 'except' => [ 'index' ] ]);
+        parent::__construct();
+    }
+
     /**
      * Display a listing of the resource.
      *

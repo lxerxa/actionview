@@ -3,7 +3,6 @@
 namespace App\Http\Middleware;
 
 use App\Project\Eloquent\Project;
-use App\Project\Eloquent\UserProject;
 use App\Acl\Acl;
 
 use Closure;
@@ -20,28 +19,28 @@ class Privilege
      */
     public function handle($request, Closure $next, $permission)
     {
-        return $next($request);  // fix me
-
-        list($type, $permission) = explode(':', $permission);
         // global permission check
-        if ($type == 'global')
+        if ($permission === 'sys_admin')
         {
-            if (! $this->globalCheck($request, $permission))
+            if (! $this->globalCheck('sys_admin'))
             {
-                return Response()->json(['ecode' => -10001, 'data' => 'aaa']);
+                return Response()->json(['ecode' => -10002]);
+            }
+        }
+        else if ($permission === 'project_principal')
+        {
+            if (! $this->principalCheck($request) && ! $this->globalCheck('sys_admin'))
+            {
+                return Response()->json(['ecode' => -10002]);
             }
         }
         // project permission check
-        else if ($type == 'project')
+        else
         {
             if (! $this->projectCheck($request, $permission))
             {
-                return Response()->json(['ecode' => -10001, 'data' => 'aaa']);
+                return Response()->json(['ecode' => -10002]);
             }
-        }
-        else
-        {
-            return Response()->json(['ecode' => -10001, 'data' => 'aaa']);
         }
 
         return $next($request);
@@ -54,31 +53,50 @@ class Privilege
      * @param  \Closure  $next
      * @return mixed
      */
-    public function globalCheck($request, $permission)
+    public function principalCheck($request)
+    {
+        if (! $pid = $request->id)
+        {
+            return false;
+        }
+
+        $project = Project::find($pid);
+        if (!$project || !isset($project->principal) || !isset($project->principal['id']))
+        {
+            return false;
+        }
+
+        $user = Sentinel::getUser();
+        return $user->id === $project->principal['id'];
+    }
+
+    /**
+     * Handle an incoming request for global.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Closure  $next
+     * @return mixed
+     */
+    public function globalCheck($permission)
     {
         $user = Sentinel::getUser();
-        if ($isAllowed = $user->hasAccess([ $permission ]))
-        {
-            return true;
-        }
+        return $user->hasAccess($permission);
 
-        if ($permission == 'manage_user' && $request->isMethod('put'))
-        {
-            if ($user->id == $request->id)
-            {
-                return true;
-            }
-        }
-        else if ($permission == 'manage_project' && $request->isMethod('put'))
-        {
-            $principal = Project::find($request->id)->first()->principal;
-            if ($principal == $user->id)
-            {
-                return true;
-            }
-        }
-
-        return false;
+        //if ($permission == 'manage_user' && $request->isMethod('put'))
+        //{
+        //    if ($user->id == $request->id)
+        //    {
+        //        return true;
+        //    }
+        //}
+        //else if ($permission == 'manage_project' && $request->isMethod('put'))
+        //{
+        //    $principal = Project::find($request->id)->first()->principal;
+        //    if ($principal == $user->id)
+        //    {
+        //        return true;
+        //    }
+        //}
     }
 
     /**
@@ -93,37 +111,13 @@ class Privilege
         $user = Sentinel::getUser();
         $project_key = $request->project_key;
 
-        if ($request->isMethod('get'))
+        if ($project_key === '$_sys_$')
         {
-            return UserProject::whereRaw([ 'user_id' => $user->id, 'project_key' => $project_key ])->exists();
+            return $user->hasAccess([ 'sys_admin' ]);
         }
-
-        $isAllowed = Acl::isAllowed($user->id, $permission, $project_key);
-        if ($isAllowed)
+        else 
         {
-            return true;
+            return Acl::isAllowed($user->id, $permission, $project_key);
         }
-
-        // the pricinpal of project has the admin_project permission
-        if ($permission == 'admin_project')
-        {
-            $principal = Project::where('key', $project_key)->first()->principal;
-            if ($principal == $user->id)
-            {
-                return true;
-            }
-        }
-
-        // check if the issue's reporter
-        if ($permission == 'edit_issue')
-        {
-        }
-
-        // check if the comment's reporter
-        if ($permission == 'edit_comments' || $permission == 'delete_comments')
-        {
-        }
-
-        return false;
     }
 }

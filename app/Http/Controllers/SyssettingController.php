@@ -12,6 +12,12 @@ use Sentinel;
 
 class SyssettingController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('privilege:sys_admin');
+        parent::__construct();
+    }
+
     /**
      * Display the specified resource.
      *
