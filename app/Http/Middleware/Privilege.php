@@ -24,14 +24,24 @@ class Privilege
         {
             if (! $this->globalCheck('sys_admin'))
             {
-                return Response()->json(['ecode' => -10002]);
+                return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
             }
         }
         else if ($permission === 'project_principal')
         {
             if (! $this->principalCheck($request) && ! $this->globalCheck('sys_admin'))
             {
-                return Response()->json(['ecode' => -10002]);
+                return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
+            }
+        }
+        else if ($permission === 'join_project')
+        {
+            if ($request->isMethod('get')) 
+            {
+                if (! $this->projectCheck($request, 'join_project'))
+                {
+                    return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
+                }
             }
         }
         // project permission check
@@ -39,7 +49,7 @@ class Privilege
         {
             if (! $this->projectCheck($request, $permission))
             {
-                return Response()->json(['ecode' => -10002]);
+                return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
             }
         }
 

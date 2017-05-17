@@ -67,6 +67,18 @@ class WorkflowController extends Controller
     }
 
     /**
+     * preview the workflow chart.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function preview(Request $request, $project_key, $id)
+    {
+        $workflow = Definition::find($id);
+        return Response()->json([ 'ecode' => 0, 'data' => $workflow ]);
+    }
+
+    /**
      * Display the specified resource.
      *
      * @param  int  $id
@@ -75,26 +87,15 @@ class WorkflowController extends Controller
     public function show(Request $request, $project_key, $id)
     {
         $workflow = Definition::find($id);
-        //if (!$workflow || $project_key != $workflow->project_key)
-        //{
-        //    throw new \UnexpectedValueException('the workflow does not exist or is not in the project.', -10002);
-        //}
 
-        if ($request->input('flag') == 's')
-        {
-            return Response()->json([ 'ecode' => 0, 'data' => $workflow ]);
-        } 
-        else 
-        {
-            $states = Provider::getStateOptions($project_key);
-            $screens = Provider::getScreenList($project_key, ['name']);
-            $resolutions = Provider::getResolutionOptions($project_key);
-            $roles = Provider::getRoleList($project_key, ['name']);
-            $events = Provider::getEventOptions($project_key);
-            $users = Provider::getUserList($project_key);
+        $states = Provider::getStateOptions($project_key);
+        $screens = Provider::getScreenList($project_key, ['name']);
+        $resolutions = Provider::getResolutionOptions($project_key);
+        $roles = Provider::getRoleList($project_key, ['name']);
+        $events = Provider::getEventOptions($project_key);
+        $users = Provider::getUserList($project_key);
 
-            return Response()->json([ 'ecode' => 0, 'data' => $workflow, 'options' => [ 'states' => $states, 'screens' => $screens, 'resolutions' => $resolutions, 'events' => $events, 'roles' => $roles, 'users' => $users ] ]);
-        }
+        return Response()->json([ 'ecode' => 0, 'data' => $workflow, 'options' => [ 'states' => $states, 'screens' => $screens, 'resolutions' => $resolutions, 'events' => $events, 'roles' => $roles, 'users' => $users ] ]);
     }
 
     /**

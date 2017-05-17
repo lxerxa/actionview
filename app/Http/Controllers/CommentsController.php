@@ -74,6 +74,12 @@ class CommentsController extends Controller
      */
     public function update(Request $request, $project_key, $issue_id, $id)
     {
+        $comments = DB::collection('comments_' . $project_key)->find($id);
+        if (!$comments)
+        {
+            throw new \UnexpectedValueException('the comments does not exist or is not in the project.', -10002);
+        }
+
         $contents = $request->input('contents');
         if (isset($contents))
         {
@@ -94,8 +100,6 @@ class CommentsController extends Controller
             {
                 throw new \UnexpectedValueException('the operation is incorrect value.', -10002);
             }
-
-            $comments = DB::collection('comments_' . $project_key)->find($id);
             if (!isset($comments['reply']) || !$comments['reply'])
             {
                 $comments['reply'] = [];
@@ -117,6 +121,11 @@ class CommentsController extends Controller
                 $index = $this->array_find([ 'id' => $reply_id ], $comments['reply']); 
                 if ($index !== false) 
                 {
+                    if (!Acl::isAllowed($this->user->id, 'manage_project', $project_key) && $comments['reply'][$index]['creator']['id'] !== $this->user->id) 
+                    {
+                        return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
+                    }
+               
                     $comments['reply'][$index] = array_merge($comments['reply'][$index], [ 'updated_at' => time(), 'edited_flag' => 1 ] + array_only($request->all(), [ 'contents', 'atWho' ]));
                     $changedComments = array_only($comments['reply'][$index], [ 'contents', 'atWho', 'to' ]);
                 }
@@ -135,6 +144,11 @@ class CommentsController extends Controller
                 $index = $this->array_find([ 'id' => $reply_id ], $comments['reply']); 
                 if ($index !== false) 
                 {
+                    if (!Acl::isAllowed($this->user->id, 'manage_project', $project_key) && $comments['reply'][$index]['creator']['id'] !== $this->user->id) 
+                    {
+                        return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
+                    }
+
                     $changedComments = array_only($comments['reply'][$index], [ 'contents', 'atWho', 'to' ]);
                     array_splice($comments['reply'], $index, 1);
                 }
@@ -147,6 +161,11 @@ class CommentsController extends Controller
         }
         else
         {
+            if (!Acl::isAllowed($this->user->id, 'manage_project', $project_key) && $comments['creator']['id'] !== $this->user->id) 
+            {
+                return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
+            }
+
             DB::collection($table)->where('_id', $id)->update([ 'updated_at' => time(), 'edited_flag' => 1 ] + array_only($request->all(), [ 'contents', 'atWho' ]) );
             $changedComments = array_only($request->all(), [ 'contents', 'atWho' ]);
         }
@@ -181,6 +200,11 @@ class CommentsController extends Controller
         if (!$comments)
         {
             throw new \UnexpectedValueException('the comments does not exist or is not in the project.', -10002);
+        }
+
+        if (!Acl::isAllowed($this->user->id, 'manage_project', $project_key) && $comments['creator']['id'] !== $this->user->id) 
+        {
+            return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
         }
 
         DB::collection($table)->where('_id', $id)->delete();

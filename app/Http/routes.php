@@ -86,15 +86,17 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     // Route::resource('version', 'VersionController', [ 'only' => [ 'store', 'update', 'destory' ] ]);
 });
 
-Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can' ] ], function () {
+Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can', 'privilege:join_project' ] ], function () {
     // project activity
-    Route::get('activity', [ 'middleware' => 'privilege:join_project', 'uses' => 'ActivityController@index' ]);
+    Route::get('activity', 'ActivityController@index');
     // project module config
     Route::resource('module', 'ModuleController');
     // project version config
     Route::resource('version', 'VersionController');
     // project team
-    Route::get('team', [ 'middleware' => 'privilege:join_project', 'uses' => 'RoleController@index' ]);
+    Route::get('team', 'RoleController@index');
+    // preview the workflow chart 
+    Route::get('workflow/{id}/preview', 'WorkflowController@preview');
 
     Route::get('issue/searcher', 'IssueController@getSearchers');
     Route::post('issue/searcher', 'IssueController@addSearcher');
@@ -103,16 +105,17 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can' 
     Route::get('issue/search', 'IssueController@search');
 
     Route::get('issue/{id}', 'IssueController@show');
-    Route::get('issue', [ 'middleware' => 'privilege:join_project', 'uses' => 'IssueController@index' ]);
+    Route::get('issue', 'IssueController@index');
     Route::post('issue', [ 'middleware' => 'privilege:create_issue', 'uses' => 'IssueController@store' ]);
-    Route::put('issue/{id}', [ 'middleware' => 'privilege:edit_issue', 'uses' => 'IssueController@update' ]);
+    // this middleware is put into action
+    Route::put('issue/{id}', 'IssueController@update');
     Route::delete('issue/{id}', [ 'middleware' => 'privilege:delete_issue', 'uses' => 'IssueController@destroy' ]);
 
     Route::get('issue/{id}/history', 'IssueController@getHistory');
     Route::post('issue/{id}/watching', 'IssueController@watch');
 
     Route::post('issue/{id}/workflow/{workflow_id}/action/{action_id}', [ 'middleware' => 'privilege:exec_workflow', 'uses' => 'IssueController@doAction' ]);
-    Route::post('issue/{id}/assign', [ 'middleware' => 'privilege:assign_issue', 'uses' => 'IssueController@setAssignee' ]);
+    Route::post('issue/{id}/assign', [ 'uses' => 'IssueController@setAssignee' ]); // this middleware is put into the action
     Route::post('issue/{id}/move', [ 'middleware' => 'privilege:move_issue', 'uses' => 'IssueController@move' ]);
     Route::post('issue/copy', [ 'middleware' => 'privilege:create_issue', 'uses' => 'IssueController@copy' ]);
     Route::post('issue/{id}/convert', [ 'middleware' => 'privilege:edit_issue', 'uses' => 'IssueController@convert' ]);

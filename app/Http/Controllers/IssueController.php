@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
@@ -15,6 +14,7 @@ use App\Project\Eloquent\Searcher;
 use App\Project\Eloquent\Linked;
 use App\Workflow\Workflow;
 use App\System\Eloquent\SysSetting;
+use App\Acl\Acl;
 use Sentinel;
 use DB;
 
@@ -497,11 +497,21 @@ class IssueController extends Controller
         {
             if ($assignee_id === 'me')
             {
+                 if (!Acl::isAllowed($this->user->id, 'assigned_issue', $project_key))
+                 {
+                     return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
+                 }
+
                  $assignee = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
                  $updValues['assignee'] = $assignee;
             }
             else
             {
+                if (Acl::isAllowed($this->user->id, 'assign_issue', $project_key))
+                {
+                     return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
+                }
+
                 $user_info = Sentinel::findById($assignee_id);
                 if ($user_info)
                 {
@@ -544,6 +554,11 @@ class IssueController extends Controller
      */
     public function update(Request $request, $project_key, $id)
     {
+        if (!Acl::isAllowed($this->user->id, 'edit_issue', $project_key) && !Acl::isAllowed($this->user->id, 'exec_workflow', $project_key))
+        {
+            return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
+        }
+
         $table = 'issue_' . $project_key;
         $issue = DB::collection($table)->find($id);
         if (!$issue)
