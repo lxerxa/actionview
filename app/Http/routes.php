@@ -26,7 +26,7 @@ Route::get('user/{id}/resetpwd', 'UserController@showResetpwd'); //fix me
 Route::post('user/{id}/resetpwd', 'UserController@doResetpwd'); // fix me
 
 Route::group([ 'middleware' => 'can' ], function () {
-
+    // project route
     Route::get('api/myproject', 'ProjectController@myproject');
     Route::get('api/project', 'ProjectController@index');
     Route::get('api/project/checkkey/{key}', 'ProjectController@checkKey');

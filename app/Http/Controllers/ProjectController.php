@@ -26,7 +26,6 @@ class ProjectController extends Controller
     public function __construct()
     {
         $this->middleware('privilege:sys_admin', [ 'only' => [ 'index', 'getOptions', 'updMultiStatus', 'createMultiIndex', 'destroy' ] ]);
-        $this->middleware('privilege:project_principal', [ 'only' => [ 'update', 'createIndex' ] ]);
         parent::__construct();
     }
 
@@ -145,6 +144,16 @@ class ProjectController extends Controller
      */
     public function createIndex(Request $request, $id)
     {
+        $project = Project::find($id);
+        if (!$project)
+        {
+            throw new \UnexpectedValueException('the project does not exist.', -10002);
+        }
+        if ($project->principal['id'] !== $this->user->id && !$this->user->hasAccess('sys_admin'))
+        {
+            return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
+        }
+
         return Response()->json([ 'ecode' => 0, 'data' => [ 'id' => $id ] ]);
     }
 
@@ -419,6 +428,11 @@ class ProjectController extends Controller
         {
             throw new \UnexpectedValueException('the project does not exist.', -10002);
         }
+        if ($project->principal['id'] !== $this->user->id && !$this->user->hasAccess('sys_admin'))
+        {
+            return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
+        }
+
         $old_principal = $project->principal;
         $project->fill($updValues)->save();
 

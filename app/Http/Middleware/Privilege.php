@@ -27,13 +27,6 @@ class Privilege
                 return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
             }
         }
-        else if ($permission === 'project_principal')
-        {
-            if (! $this->principalCheck($request) && ! $this->globalCheck('sys_admin'))
-            {
-                return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
-            }
-        }
         else if ($permission === 'join_project')
         {
             if ($request->isMethod('get')) 
@@ -54,30 +47,6 @@ class Privilege
         }
 
         return $next($request);
-    }
-
-    /**
-     * Handle an incoming request for global.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @return mixed
-     */
-    public function principalCheck($request)
-    {
-        if (! $pid = $request->id)
-        {
-            return false;
-        }
-
-        $project = Project::find($pid);
-        if (!$project || !isset($project->principal) || !isset($project->principal['id']))
-        {
-            return false;
-        }
-
-        $user = Sentinel::getUser();
-        return $user->id === $project->principal['id'];
     }
 
     /**

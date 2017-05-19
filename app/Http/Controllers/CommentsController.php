@@ -9,6 +9,7 @@ use App\Events\IssueEvent;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 
+use App\Acl\Acl;
 use Sentinel;
 use DB;
 use App\Project\Provider;

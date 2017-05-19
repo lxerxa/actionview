@@ -62,7 +62,7 @@ class UserController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function index(Request $request)
-
+    {
         $query = EloquentUser::Where('email', '<>', '');
 
         if ($name = $request->input('name'))
