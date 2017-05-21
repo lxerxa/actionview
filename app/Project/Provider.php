@@ -876,7 +876,7 @@ class Provider {
         //获取问题数据
         $issue = DB::collection('issue_' . $project_key)->where('_id', $issue_id)->first();
 
-        $latest_ver_issue = DB::collection('issue_his_' . $project_key)->where('issue_id', $issue_id)->orderBy('operated_at', 'desc')->first();
+        $latest_ver_issue = DB::collection('issue_his_' . $project_key)->where('issue_id', $issue_id)->orderBy('_id', 'desc')->first();
         if ($latest_ver_issue)
         {
             $snap_data = $latest_ver_issue['data'];

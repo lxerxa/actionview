@@ -507,9 +507,9 @@ class IssueController extends Controller
             }
             else
             {
-                if (Acl::isAllowed($this->user->id, 'assign_issue', $project_key))
+                if (!Acl::isAllowed($this->user->id, 'assign_issue', $project_key))
                 {
-                     return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
+                    return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
                 }
 
                 $user_info = Sentinel::findById($assignee_id);

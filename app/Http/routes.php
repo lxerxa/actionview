@@ -87,6 +87,8 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
 });
 
 Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can', 'privilege:join_project' ] ], function () {
+    // project summary 
+    Route::get('summary', 'SummaryController@index');
     // project activity
     Route::get('activity', 'ActivityController@index');
     // project module config
