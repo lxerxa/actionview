@@ -87,38 +87,38 @@ class IssueController extends Controller
         {
             if ($created_at == '1w')
             {
-                $query->where('created_at', '>=', strtotime('-1 week'));
+                $query->where('created_at', '>=', strtotime(date('Ymd', strtotime('-1 week'))));
             }
             else if ($created_at == '2w')
             {
-                $query->where('created_at', '>=', strtotime('-2 weeks'));
+                $query->where('created_at', '>=', strtotime(date('Ymd', strtotime('-2 weeks'))));
             }
             else if ($created_at == '1m')
             {
-                $query->where('created_at', '>=', strtotime('-1 month'));
+                $query->where('created_at', '>=', strtotime(date('Ymd', strtotime('-1 month'))));
             }
             else if ($created_at == '-1m')
             {
-                $query->where('created_at', '<', strtotime('-1 month'));
+                $query->where('created_at', '<', strtotime(date('Ymd', strtotime('-1 month'))));
             }
         }
         if (isset($updated_at) && $updated_at)
         {
             if ($updated_at == '1w')
             {
-                $query->where('updated_at', '>=', strtotime('-1 week'));
+                $query->where('updated_at', '>=', strtotime(date('Ymd', strtotime('-1 week'))));
             }
             else if ($updated_at == '2w')
             {
-                $query->where('updated_at', '>=', strtotime('-2 weeks'));
+                $query->where('updated_at', '>=', strtotime(date('Ymd', strtotime('-2 weeks'))));
             }
             else if ($updated_at == '1m')
             {
-                $query->where('updated_at', '>=', strtotime('-1 month'));
+                $query->where('updated_at', '>=', strtotime(date('Ymd', strtotime('-1 month'))));
             }
             else if ($updated_at == '-1m')
             {
-                $query->where('updated_at', '<', strtotime('-1 month'));
+                $query->where('updated_at', '<', strtotime(date('Ymd', strtotime('-1 month'))));
             }
         }
 
