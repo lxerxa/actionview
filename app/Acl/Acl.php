@@ -66,14 +66,7 @@ class Acl {
     public static function isAllowed($user_id, $permission, $project_key)
     {
         $permissions = self::getPermissions($user_id, $project_key);
-        if ($permission === 'join_project')
-        {
-            return count($permissions) > 0;
-        }
-        else
-        {
-            return in_array($permission, $permissions);
-        }
+        return in_array($permission, $permissions);
     }
 
     /**

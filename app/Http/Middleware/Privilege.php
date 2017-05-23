@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Project\Eloquent\Project;
+use App\Project\Eloquent\UserProject;
 use App\Acl\Acl;
 
 use Closure;
@@ -94,9 +95,23 @@ class Privilege
         {
             return $user->hasAccess([ 'sys_admin' ]);
         }
-        else 
+
+        if ($permission === 'join_project')
         {
-            return Acl::isAllowed($user->id, $permission, $project_key);
+            return UserProject::whereRaw([ 'project_key' => $project_key, 'user_id' => $user->id ])->exists();
         }
+        else
+        {
+            $isAllowed = Acl::isAllowed($user->id, $permission, $project_key);
+            if (! $isAllowed && $permission === 'manage_project')
+            {
+                $project = Project::where('key', $project_key)->first();
+                if ($project && isset($project->principal) && isset($project->principal['id']) && $project->principal['id'] === $user->id)
+                {
+                    return true;
+                }
+            }
+        }
+        return $isAllowed;
     }
 }
