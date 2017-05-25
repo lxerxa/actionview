@@ -16,6 +16,7 @@ use App\Project\Provider;
 
 use App\Events\AddUserToRoleEvent;
 use App\Events\DelUserFromRoleEvent;
+use App\System\Eloquent\SysSetting;
 use Sentinel;
 use DB;
 
@@ -112,7 +113,10 @@ class ProjectController extends Controller
             $projects[$key]['principal']['nameAndEmail'] = $project['principal']['name'] . '(' . $project['principal']['email'] . ')';
         }
 
-        return Response()->json([ 'ecode' => 0, 'data' => $projects, 'options' => [ 'limit' => $limit ] ]);
+        $syssetting = SysSetting::first();
+        $allow_create_project = isset($syssetting->properties['allow_create_project']) ? $syssetting->properties['allow_create_project'] : 0;
+
+        return Response()->json([ 'ecode' => 0, 'data' => $projects, 'options' => [ 'limit' => $limit, 'allow_create_project' => $allow_create_project ] ]);
     }
 
     /**
@@ -257,6 +261,13 @@ class ProjectController extends Controller
      */
     public function store(Request $request)
     {
+        $syssetting = SysSetting::first();
+        $allow_create_project = isset($syssetting->properties['allow_create_project']) ? $syssetting->properties['allow_create_project'] : 0;        
+        if ($allow_create_project !== 1 && !$this->user->hasAccess('sys_admin'))
+        {
+            return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
+        }
+
         $insValues = [];
 
         $name = $request->input('name');
