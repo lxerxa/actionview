@@ -11,6 +11,7 @@ use App\Http\Controllers\Controller;
 use App\Customization\Eloquent\Priority;
 use App\Customization\Eloquent\PriorityProperty;
 use App\Project\Provider;
+use DB;
 
 class PriorityController extends Controller
 {
@@ -22,6 +23,10 @@ class PriorityController extends Controller
     public function index($project_key)
     {
         $priorities = Provider::getPriorityList($project_key);
+        foreach ($priorities as $key => $priority)
+        {
+            $priorities[$key]['is_used'] = $this->isFieldUsedByIssue($project_key, 'priority', $priority); 
+        }
         return Response()->json(['ecode' => 0, 'data' => $priorities]);
     }
 
@@ -112,6 +117,12 @@ class PriorityController extends Controller
         if (!$priority || $project_key != $priority->project_key)
         {
             throw new \UnexpectedValueException('the priority does not exist or is not in the project.', -10002);
+        }
+
+        $isUsed = $this->isFieldUsedByIssue($project_key, 'priority', $priority->toArray()); 
+        if ($isUsed)
+        {
+            throw new \UnexpectedValueException('the priority has been used by issue.', -10002);
         }
 
         Priority::destroy($id);

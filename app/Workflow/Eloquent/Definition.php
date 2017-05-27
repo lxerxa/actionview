@@ -11,6 +11,7 @@ class Definition extends Model
     protected $fillable = array(
         'name',
         'screen_ids',
+        'state_ids',
         'project_key',
         'description',
         'latest_modifier',

@@ -8,8 +8,10 @@ use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Auth\Access\AuthorizesResources;
 
+use App\Project\Eloquent\Project;
 use App\System\Eloquent\SysSetting;
 use Sentinel;
+use DB;
 
 use MongoDB\BSON\ObjectID; 
 
@@ -179,5 +181,71 @@ class Controller extends BaseController
         }
 
         return implode(' ', $newTT);
+    }
+
+    /**
+     * check if the field is used by issue.
+     *
+     * @return true 
+     */
+    public function isFieldUsedByIssue($project_key, $field_key, $field)
+    {
+        if ($project_key === '$_sys_$')
+        {
+            switch($field_key)
+            {
+                case 'type':
+                case 'workflow':
+                case 'state':
+                case 'priority':
+                case 'resolution':
+                    if ($field['project_key'] !== $project_key)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        $projects = Project::all();
+                        foreach($projects as $project)
+                        {
+                            $isUsed = DB::collection('issue_' . $project->key)
+                                          ->where($field_key, isset($field['key']) ? $field['key'] : $field['_id'])
+                                          ->where('del_flg', '<>', 1)
+                                          ->exists();
+                            if ($isUsed)
+                            {
+                                return true;
+                            }
+                        }
+                        return false;
+                    }
+                default:
+                    return true;
+            }
+        }
+        else
+        {
+            switch($field_key)
+            {
+                case 'type':
+                case 'workflow':
+                case 'state':
+                case 'priority':
+                case 'resolution':
+                    if ($field['project_key'] !== $project_key)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return DB::collection('issue_' . $project_key)
+                                   ->where($field_key, $field['_id'])
+                                   ->where('del_flg', '<>', 1)
+                                   ->exists();
+                    }
+                default:
+                    return true;
+            }
+        }
     }
 }

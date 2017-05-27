@@ -755,6 +755,22 @@ class Workflow {
     }
 
     /**
+     * get used states in the workflow
+     *
+     * @return array
+     */
+    public static function getStates($contents)
+    {
+        $state_ids = [];
+        $steps = isset($contents['steps']) && $contents['steps'] ? $contents['steps'] : [];
+        foreach ($steps as $step)
+        {
+            $state_ids[] = isset($step['state']) ? $step['state'] : '';
+        }
+        return $state_ids;
+    }
+
+    /**
      * get used screens in the workflow 
      *
      * @return array 
@@ -775,11 +791,9 @@ class Workflow {
                 {
                     continue;
                 }
-
                 $action['screen'] !=  '-1' && !in_array($action['screen'], $screen_ids) && $screen_ids[] = $action['screen'];
             }
         }
-
         return $screen_ids;
     }
 

@@ -43,12 +43,13 @@ class WorkflowController extends Controller
         {
             $latest_modifier = [ 'id' => $this->user->id, 'name' => $this->user->first_name ];
             $latest_modified_time = date('Y-m-d H:i:s');
+            $state_ids = Workflow::getStates($contents);
             $screen_ids = Workflow::getScreens($contents);
             $steps = Workflow::getStepNum($contents);
         }
         else
         {
-            $latest_modifier = []; $latest_modified_time = ''; $screen_ids = []; $steps = 0;
+            $latest_modifier = []; $latest_modified_time = ''; $state_ids = []; $screen_ids = []; $steps = 0;
         }
 
         $source_id = $request->input('source_id');
@@ -57,12 +58,13 @@ class WorkflowController extends Controller
             $source_definition = Definition::find($source_id);
             $latest_modifier = $source_definition->latest_modifier;
             $latest_modified_time = $source_definition->latest_modified_time;
+            $state_ids = $source_definition->state_ids;
             $screen_ids = $source_definition->screen_ids;
             $steps = $source_definition->steps;
             $contents = $source_definition->contents;
         }
 
-        $workflow = Definition::create([ 'project_key' => $project_key, 'latest_modifier' => $latest_modifier, 'latest_modified_time' => $latest_modified_time, 'screen_ids' => $screen_ids, 'steps' => $steps, 'contents' => $contents ] + $request->all());
+        $workflow = Definition::create([ 'project_key' => $project_key, 'latest_modifier' => $latest_modifier, 'latest_modified_time' => $latest_modified_time, 'state_ids' => $state_ids, 'screen_ids' => $screen_ids, 'steps' => $steps, 'contents' => $contents ] + $request->all());
         return Response()->json([ 'ecode' => 0, 'data' => $workflow ]);
     }
 
@@ -129,6 +131,7 @@ class WorkflowController extends Controller
 
             $workflow->latest_modifier = $latest_modifier;
             $workflow->latest_modified_time = $latest_modified_time;
+            $workflow->state_ids = Workflow::getStates($contents);
             $workflow->screen_ids = Workflow::getScreens($contents);
             $workflow->steps = Workflow::getStepNum($contents);
         }

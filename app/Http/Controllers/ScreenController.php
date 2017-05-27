@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
+use App\Customization\Eloquent\Type;
 use App\Customization\Eloquent\Screen;
 use App\Customization\Eloquent\Field;
 use App\Workflow\Eloquent\Definition;
@@ -23,11 +24,28 @@ class ScreenController extends Controller
         $screens = Provider::getScreenList($project_key, [ 'name', 'project_key', 'schema', 'description' ]);
         foreach ($screens as $screen)
         {
-            $workflows = Definition::whereRaw([ 'screen_ids' => $screen->id ])->get([ 'name' ]);
+            $workflows = Definition::whereRaw([ 'screen_ids' => $screen->id ])
+                             ->orderBy('project_key', 'asc')
+                             ->get([ 'project_key', 'name' ])
+                             ->toArray();
+
             $screen->workflows = $workflows;
+
+            if ($workflows)
+            {
+                $screen->is_used = true;
+            }
+            else
+            {
+                $screen->is_used = Type::where('screen_id', $screen->id)->exists(); 
+            }
+
+            $screen->workflows = array_filter($workflows, function($item) use($project_key) { 
+                                     return $item['project_key'] === $project_key || $item['project_key'] === '$_sys_$';
+                                 });
         }
 
-        $fields = Field::Where([ 'project_key' => $project_key ])->orderBy('created_at', 'asc')->get(['name']);
+        $fields = Field::Where([ 'project_key' => [ '$in' => [ $project_key, '$_sys_$' ] ] ])->orderBy('created_at', 'asc')->get(['name', 'key']);
         return Response()->json([ 'ecode' => 0, 'data' => $screens, 'options' => [ 'fields' => $fields ] ]);
     }
 
@@ -168,6 +186,19 @@ class ScreenController extends Controller
         {
             throw new \UnexpectedValueException('the screen does not exist or is not in the project.', -10002);
         }
+
+        $isUsed = Type::where('screen_id', $id)->exists();
+        if ($isUsed)
+        {
+            throw new \UnexpectedValueException('the screen has been bound to type.', -10002);
+        }
+
+        $isUsed = Definition::whereRaw([ 'screen_ids' => $id ])->exists();
+        if ($isUsed)
+        {
+            throw new \UnexpectedValueException('the screen has been used by workflow.', -10002);
+        }
+
         Screen::destroy($id);
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }

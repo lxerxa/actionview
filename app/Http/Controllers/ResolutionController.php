@@ -11,6 +11,7 @@ use App\Http\Controllers\Controller;
 use App\Customization\Eloquent\Resolution;
 use App\Customization\Eloquent\ResolutionProperty;
 use App\Project\Provider;
+use DB;
 
 class ResolutionController extends Controller
 {
@@ -22,6 +23,10 @@ class ResolutionController extends Controller
     public function index($project_key)
     {
         $resolutions = Provider::getResolutionList($project_key);
+        foreach ($resolutions as $key => $resolution)
+        {
+            $resolutions[$key]['is_used'] = $this->isFieldUsedByIssue($project_key, 'resolution', $resolution);
+        }
         return Response()->json(['ecode' => 0, 'data' => $resolutions]);
     }
 
@@ -112,6 +117,12 @@ class ResolutionController extends Controller
         if (!$resolution || $project_key != $resolution->project_key)
         {
             throw new \UnexpectedValueException('the resolution does not exist or is not in the project.', -10002);
+        }
+
+        $isUsed = $this->isFieldUsedByIssue($project_key, 'resolution', $resolution->toArray());
+        if ($isUsed)
+        {
+            throw new \UnexpectedValueException('the resolution has been used by issue.', -10002);
         }
 
         Resolution::destroy($id);

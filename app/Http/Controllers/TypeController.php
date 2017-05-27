@@ -10,6 +10,7 @@ use App\Customization\Eloquent\Type;
 use App\Workflow\Eloquent\Definition;
 use App\Customization\Eloquent\Screen;
 use App\Project\Provider;
+use DB;
 
 class TypeController extends Controller
 {
@@ -21,6 +22,10 @@ class TypeController extends Controller
     public function index($project_key)
     {
         $types = Type::where([ 'project_key' => $project_key ])->orderBy('sn', 'asc')->get();
+        foreach ($types as $type)
+        {
+            $type->is_used = $this->isFieldUsedByIssue($project_key, 'type', $type->toArray());
+        }
 
         $screens = Provider::getScreenList($project_key, ['name']);
         $workflows = Provider::getWorkflowList($project_key, ['name']);
@@ -182,6 +187,12 @@ class TypeController extends Controller
         if (!$type || $project_key != $type->project_key)
         {
             throw new \UnexpectedValueException('the type does not exist or is not in the project.', -10002);
+        }
+
+        $isUsed = $this->isFieldUsedByIssue($project_key, 'type', $type->toArray()); 
+        if ($isUsed)
+        {
+            throw new \UnexpectedValueException('the type has been used by issue.', -10002);
         }
 
         Type::destroy($id);

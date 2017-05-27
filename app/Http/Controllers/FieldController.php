@@ -23,9 +23,18 @@ class FieldController extends Controller
     public function index($project_key)
     {
         $fields = Provider::getFieldList($project_key);
-        foreach ($fields as $key => $field)
+        foreach ($fields as $field)
         {
-            $fields[$key]->screens = Screen::whereRaw([ 'field_ids' => $field->id ])->get(['name']);
+            $field->screens = Screen::whereRaw([ 'field_ids' => $field->id ])
+                                  ->orderBy('project_key', 'asc')
+                                  ->get(['project_key', 'name'])
+                                  ->toArray();
+
+            $field->is_used = !!($field->screens);
+
+            $field->screens = array_filter($field->screens, function($item) use($project_key) { 
+                                  return $item['project_key'] === $project_key || $item['project_key'] === '$_sys_$';
+                              });
         }
         $types = Provider::getTypeList($project_key, ['name']);
         return Response()->json(['ecode' => 0, 'data' => $fields, 'options' => [ 'types' => $types ]]);
@@ -170,6 +179,13 @@ class FieldController extends Controller
         {
             throw new \UnexpectedValueException('the field does not exist or is not in the project.', -10002);
         }
+
+        $isUsed = Screen::whereRaw([ 'field_ids' => $id ])->exists();
+        if ($isUsed)
+        {
+            throw new \UnexpectedValueException('the field has been used by screen.', -10002);
+        }
+
         Field::destroy($id);
         Event::fire(new FieldDeleteEvent($id));
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
