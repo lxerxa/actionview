@@ -122,7 +122,7 @@ class PriorityController extends Controller
         $isUsed = $this->isFieldUsedByIssue($project_key, 'priority', $priority->toArray()); 
         if ($isUsed)
         {
-            throw new \UnexpectedValueException('the priority has been used by issue.', -10002);
+            throw new \UnexpectedValueException('the priority has been used in issue.', -10002);
         }
 
         Priority::destroy($id);

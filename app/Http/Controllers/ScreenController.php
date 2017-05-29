@@ -196,7 +196,7 @@ class ScreenController extends Controller
         $isUsed = Definition::whereRaw([ 'screen_ids' => $id ])->exists();
         if ($isUsed)
         {
-            throw new \UnexpectedValueException('the screen has been used by workflow.', -10002);
+            throw new \UnexpectedValueException('the screen has been used in workflow.', -10002);
         }
 
         Screen::destroy($id);

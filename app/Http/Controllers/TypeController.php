@@ -192,7 +192,7 @@ class TypeController extends Controller
         $isUsed = $this->isFieldUsedByIssue($project_key, 'type', $type->toArray()); 
         if ($isUsed)
         {
-            throw new \UnexpectedValueException('the type has been used by issue.', -10002);
+            throw new \UnexpectedValueException('the type has been used in issue.', -10002);
         }
 
         Type::destroy($id);

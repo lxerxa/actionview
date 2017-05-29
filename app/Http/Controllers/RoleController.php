@@ -29,10 +29,17 @@ class RoleController extends Controller
         $roles = Provider::getRoleList($project_key)->toArray();
         foreach ($roles as $key => $role)
         {
-            $roles[$key]['users'] = $this->getUsers($project_key, $role['_id']);
-            if (isset($role['user_ids']))
+            if ($project_key === '$_sys_$')
             {
-                unset($roles[$key]['user_ids']);
+                $roles[$key]['is_used'] = Roleactor::where('role_id', $role['_id'])->exists();
+            }
+            else 
+            {
+                $roles[$key]['users'] = $this->getUsers($project_key, $role['_id']);
+                if (isset($role['user_ids']))
+                {
+                    unset($roles[$key]['user_ids']);
+                }
             }
         }
         return Response()->json([ 'ecode' => 0, 'data' => $roles ]);
@@ -167,16 +174,24 @@ class RoleController extends Controller
             throw new \UnexpectedValueException('the role does not exist or is not in the project.', -10002);
         }
 
-        $user_ids = [];
-        $actor = Roleactor::where([ 'project_key' => $project_key, 'role_id' => $id ])->first();
-        if ($actor)
+        if ($project_key === '$_sys_$')
         {
-            $user_ids = $actor->user_ids; 
-            $user_ids && Event::fire(new DelUserFromRoleEvent($user_ids, $project_key));
-
-            $actor->delete();
+            if (Roleactor::where('role_id', $role->id)->exists())
+            {
+                throw new \UnexpectedValueException('the role has been used in some projects.', -10002);
+            }
         }
-
+        else
+        {
+            $user_ids = [];
+            $actor = Roleactor::where([ 'project_key' => $project_key, 'role_id' => $id ])->first();
+            if ($actor)
+            {
+                $user_ids = $actor->user_ids; 
+                $user_ids && Event::fire(new DelUserFromRoleEvent($user_ids, $project_key));
+                $actor->delete();
+            }
+        }
         Role::destroy($id);
 
         return Response()->json([ 'ecode' => 0, 'data' => [ 'id' => $id ] ]);

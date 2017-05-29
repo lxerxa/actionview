@@ -122,7 +122,7 @@ class ResolutionController extends Controller
         $isUsed = $this->isFieldUsedByIssue($project_key, 'resolution', $resolution->toArray());
         if ($isUsed)
         {
-            throw new \UnexpectedValueException('the resolution has been used by issue.', -10002);
+            throw new \UnexpectedValueException('the resolution has been used in issue.', -10002);
         }
 
         Resolution::destroy($id);

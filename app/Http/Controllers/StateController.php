@@ -132,13 +132,13 @@ class StateController extends Controller
         $isUsed = $this->isFieldUsedByIssue($project_key, 'state', $state->toArray()); 
         if ($isUsed)
         {
-            throw new \UnexpectedValueException('the state has been used by issue.', -10002);
+            throw new \UnexpectedValueException('the state has been used in issue.', -10002);
         }
 
         $isUsed = Definition::whereRaw([ 'state_ids' => isset($state->key) ? $state->key : $id ])->exists();
         if ($isUsed)
         {
-            throw new \UnexpectedValueException('the state has been used by workflow.', -10002);
+            throw new \UnexpectedValueException('the state has been used in workflow.', -10002);
         }
 
         State::destroy($id);

@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
+use App\Customization\Eloquent\Type;
 use App\Workflow\Eloquent\Definition;
 use App\Workflow\Workflow;
 use App\Project\Provider;
@@ -20,6 +21,10 @@ class WorkflowController extends Controller
     public function index($project_key)
     {
         $workflows = Provider::getWorkflowList($project_key, [ 'name', 'project_key', 'description', 'latest_modified_time', 'latest_modifier', 'steps' ]);
+        foreach ($workflows as $workflow)
+        {
+            $workflow->is_used = Type::where('workflow_id', $workflow->id)->exists(); 
+        }
 
         return Response()->json([ 'ecode' => 0, 'data' => $workflows ]);
     }
@@ -152,6 +157,12 @@ class WorkflowController extends Controller
         if (!$workflow || $project_key != $workflow->project_key)
         {
             throw new \UnexpectedValueException('the workflow does not exist or is not in the project.', -10002);
+        }
+
+        $isUsed = Type::where('workflow_id', $id)->exists();
+        if ($isUsed)
+        {
+            throw new \UnexpectedValueException('the workflow has been bound to type.', -10002);
         }
 
         Definition::destroy($id);

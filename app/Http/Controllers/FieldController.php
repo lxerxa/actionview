@@ -183,7 +183,7 @@ class FieldController extends Controller
         $isUsed = Screen::whereRaw([ 'field_ids' => $id ])->exists();
         if ($isUsed)
         {
-            throw new \UnexpectedValueException('the field has been used by screen.', -10002);
+            throw new \UnexpectedValueException('the field has been used in screen.', -10002);
         }
 
         Field::destroy($id);
