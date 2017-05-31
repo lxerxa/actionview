@@ -139,11 +139,11 @@ class Provider {
             }
         }
 
-        $priority = Priority::Where('project_key', '$_sys_$')
+        $priority = Priority::whereRaw([ 'project_key' => [ '$in' =>  [ '$_sys_$', $project_key ] ] ])
             ->Where('default', true)
             ->first();
 
-        $default = $priority && $priority->id ? $priority->id : '';
+        $default = $priority && isset($priority->key) ? $priority->key : $priority->id;
         return $default; 
     }
 
@@ -182,7 +182,7 @@ class Provider {
             {
                 foreach($priorities as $key => $val)
                 {
-                    if ($val['_id'] == $defaultValue)
+                    if ($val['_id'] == $defaultValue || $val['key'] == $defaultValue)
                     {
                         $priorities[$key]['default'] = true;
                     }
@@ -243,11 +243,11 @@ class Provider {
             }
         }
 
-        $resolution = Resolution::Where('project_key', '$_sys_$')
+        $resolution = Resolution::whereRaw([ 'project_key' => [ '$in' =>  [ '$_sys_$', $project_key ] ] ])
             ->Where('default', true)
             ->first();
 
-        $default = $resolution && $resolution->id ? $resolution->id : '';
+        $default = $resolution && isset($resolution->key) ? $resolution->key : $resolution->id;
         return $default;
     }
 
@@ -286,7 +286,7 @@ class Provider {
             {
                 foreach($resolutions as $key => $val)
                 {
-                    if ($val['_id'] == $defaultValue)
+                    if ($val['_id'] == $defaultValue || $val['key'] == $defaultValue)
                     {
                         $resolutions[$key]['default'] = true;
                     }
@@ -973,7 +973,7 @@ class Provider {
             { 
                 if (in_array('priority', $change_fields) || !isset($snap_data['priority']))
                 {
-                    $priority = Priority::Where('key', $issue['priority'])->orWhere('id', $issue['priority'])->first();
+                    $priority = Priority::Where('key', $issue['priority'])->orWhere('_id', $issue['priority'])->first();
                     $snap_data['priority'] = [ 'value' => $priority->name, 'name' => '优先级' ];
                 }
             }
@@ -989,7 +989,7 @@ class Provider {
             {
                 if (in_array('state', $change_fields) || !isset($snap_data['state']))
                 {
-                    $state = State::Where('key', $issue['state'])->orWhere('id', $issue['state'])->first();
+                    $state = State::Where('key', $issue['state'])->orWhere('_id', $issue['state'])->first();
                     $snap_data['state'] = [ 'value' => $state->name, 'name' => '状态' ];
                 }
             }
@@ -1005,7 +1005,7 @@ class Provider {
             {
                 if (in_array('resolution', $change_fields) || !isset($snap_data['resolution']))
                 {
-                    $resolution = Resolution::Where('key', $issue['resolution'])->orWhere('id', $issue['resolution'])->first();
+                    $resolution = Resolution::Where('key', $issue['resolution'])->orWhere('_id', $issue['resolution'])->first();
                     $snap_data['resolution'] = [ 'value' => $resolution->name, 'name' => '解决结果' ];
                 }
             }

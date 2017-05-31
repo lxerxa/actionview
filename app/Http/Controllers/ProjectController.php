@@ -340,7 +340,7 @@ class ProjectController extends Controller
         $types = Type::where('project_key', '$_sys_$')->get()->toArray();
         foreach ($types as $type)
         {
-            Type::create(array_only($type, [ 'name', 'abb', 'screen_id', 'workflow_id', 'sn', 'disabled', 'default' ]) + [ 'project_key' => $key ]);
+            Type::create(array_only($type, [ 'name', 'abb', 'screen_id', 'workflow_id', 'sn', 'type', 'disabled', 'default' ]) + [ 'project_key' => $key ]);
         }
     }
 

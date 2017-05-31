@@ -39,7 +39,7 @@ class SummaryController extends Controller
         //$users = Provider::getUserList($project_key); 
 
         $issues = DB::collection('issue_' . $project_key)
-            ->where('created_at', '>=', strtotime(date('Ymd', strtotime('-100 week'))))
+            ->where('created_at', '>=', strtotime(date('Ymd', strtotime('-1 week'))))
             ->where('del_flg', '<>', 1)
             ->get([ 'type' ]);
 
@@ -56,7 +56,7 @@ class SummaryController extends Controller
 
         $issues = DB::collection('issue_' . $project_key)
             ->where('state', 'Closed')
-            ->where('updated_at', '>=', strtotime(date('Ymd', strtotime('-100 week'))))
+            ->where('updated_at', '>=', strtotime(date('Ymd', strtotime('-1 week'))))
             ->where('del_flg', '<>', 1)
             ->get([ 'type' ]);
 
@@ -122,6 +122,6 @@ class SummaryController extends Controller
             }
         }
 
-        return Response()->json([ 'ecode' => 0, 'data' => [ 'new_issues' => $new_issues, 'closed_issues' => $closed_issues, 'assignee_unresolved_issues' => $assignee_unresolved_issues, 'priority_unresolved_issues' => $sorted_priority_unresolved_issues ], 'options' => [ 'types' => $types, 'users' => $users, 'priorities' => $optPriorities, 'weekAgo' => date('Y/m/d', strtotime('-100 week')) ] ]);
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'new_issues' => $new_issues, 'closed_issues' => $closed_issues, 'assignee_unresolved_issues' => $assignee_unresolved_issues, 'priority_unresolved_issues' => $sorted_priority_unresolved_issues ], 'options' => [ 'types' => $types, 'users' => $users, 'priorities' => $optPriorities, 'weekAgo' => date('Y/m/d', strtotime('-1 week')) ] ]);
     }
 }
