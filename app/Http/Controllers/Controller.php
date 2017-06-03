@@ -188,7 +188,7 @@ class Controller extends BaseController
      *
      * @return true 
      */
-    public function isFieldUsedByIssue($project_key, $field_key, $field)
+    public function isFieldUsedByIssue($project_key, $field_key, $field, $ext_info='')
     {
         if ($project_key === '$_sys_$')
         {
@@ -232,6 +232,7 @@ class Controller extends BaseController
                 case 'state':
                 case 'priority':
                 case 'resolution':
+                case 'module':
                     if ($field['project_key'] !== $project_key)
                     {
                         return true;
@@ -240,6 +241,32 @@ class Controller extends BaseController
                     {
                         return DB::collection('issue_' . $project_key)
                                    ->where($field_key, $field['_id'])
+                                   ->where('del_flg', '<>', 1)
+                                   ->exists();
+                    }
+                case 'version':
+                    if ($field['project_key'] !== $project_key)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        if (!$ext_info)
+                        {
+                            return false;
+                        }
+
+                        $vid = $field['_id'];
+                        return DB::collection('issue_' . $project_key)
+                                   ->where(function ($query) use ($vid, $ext_info) {
+                                       foreach ($ext_info as $key => $vf) {
+                                           if ($vf['type'] === 'SingleVersion') {
+                                               $query->orWhere($vf['key'], $vid);
+                                           } else {
+                                               $query->orWhere($vf['key'], 'like',  "%$vid%");
+                                           }
+                                       }
+                                   })
                                    ->where('del_flg', '<>', 1)
                                    ->exists();
                     }

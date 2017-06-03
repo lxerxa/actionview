@@ -29,6 +29,10 @@ class ModuleController extends Controller
     public function index($project_key)
     {
         $modules = Module::whereRaw([ 'project_key' => $project_key ])->orderBy('created_at', 'asc')->get();
+        foreach ($modules as $module)
+        {
+            $module->is_used = $this->isFieldUsedByIssue($project_key, 'module', $module->toArray()); 
+        }
         $users = Provider::getUserList($project_key);
         return Response()->json([ 'ecode' => 0, 'data' => $modules, 'options' => [ 'users' => $users ] ]);
     }
@@ -141,6 +145,12 @@ class ModuleController extends Controller
         if (!$module || $project_key != $module->project_key)
         {
             throw new \UnexpectedValueException('the module does not exist or is not in the project.', -10002);
+        }
+
+        $isUsed = $this->isFieldUsedByIssue($project_key, 'module', $module->toArray());
+        if ($isUsed)
+        {
+            throw new \UnexpectedValueException('the module has been used in issue.', -10002);
         }
 
         Module::destroy($id);

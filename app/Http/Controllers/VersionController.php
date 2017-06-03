@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Event;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Project\Eloquent\Version;
+use App\Project\Provider;
+use App\Customization\Eloquent\Field;
 
 class VersionController extends Controller
 {
@@ -26,7 +28,33 @@ class VersionController extends Controller
     public function index($project_key)
     {
         $versions = Version::whereRaw([ 'project_key' => $project_key ])->orderBy('created_at', 'desc')->get();
+
+        $version_fields = $this->getVersionFields($project_key);
+        foreach ($versions as $version)
+        {
+            $version->is_used = $this->isFieldUsedByIssue($project_key, 'version', $version->toArray(), $version_fields); 
+        }
         return Response()->json([ 'ecode' => 0, 'data' => $versions ]);
+    }
+
+    /**
+     * get all fields related with versiob 
+     *
+     * @return array 
+     */
+    public function getVersionFields($project_key)
+    {
+        $version_fields = [];
+        // get all project fields
+        $fields = Provider::getFieldList($project_key)->toArray();
+        foreach ($fields as $field)
+        {
+            if ($field['type'] === 'SingleVersion' || $field['type'] === 'MultiVersion')
+            {
+                $version_fields[] = [ 'type' => $field['type'], 'key' => $field['key'] ];
+            }
+        }
+        return $version_fields;
     }
 
     /**
@@ -129,6 +157,13 @@ class VersionController extends Controller
         if (!$version || $version->project_key != $project_key)
         {
             throw new \UnexpectedValueException('the version does not exist or is not in the project.', -10002);
+        }
+
+        $version_fields = $this->getVersionFields($project_key);
+        $isUsed = $this->isFieldUsedByIssue($project_key, 'version', $version->toArray(), $version_fields);
+        if ($isUsed)
+        {
+            throw new \UnexpectedValueException('the version has been used in issue.', -10002);
         }
 
         Version::destroy($id);
