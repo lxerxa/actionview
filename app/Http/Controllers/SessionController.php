@@ -43,19 +43,10 @@ class SessionController extends Controller
         if ($user)
         {
             Sentinel::login($user);
-            // get latest access project 
-            $latest_access_project = UserProject::where('user_id', $user->id)
-                ->where('latest_access_time', '>', time() - 2 * 7 * 24 * 3600)
-                ->orderBy('latest_access_time', 'desc')
-                ->first();
-
-            if ($latest_access_project && $latest_access_project->link_count > 0)
+            $latest_access_project = $this->getLatestAccessProject($user->id);
+            if ($latest_access_project)
             {
-                $project = Project::where('key', $latest_access_project->project_key)->first();
-                if ($project && $project->status === 'active')
-                {
-                    $user->latest_access_project = $latest_access_project->project_key;
-                }
+                $user->latest_access_project = $latest_access_project->key;
             }
 
             return Response()->json([ 'ecode' => 0, 'data' => [ 'user' => $user ] ]);
@@ -67,6 +58,31 @@ class SessionController extends Controller
     }
 
     /**
+     * get the latest project.
+     *
+     * @param  string  $uid
+     * @return Object 
+     */
+    public function getLatestAccessProject($uid)
+    {
+        // get latest access project 
+        $latest_access_project = UserProject::where('user_id', $uid)
+            ->where('latest_access_time', '>', time() - 2 * 7 * 24 * 3600)
+            ->orderBy('latest_access_time', 'desc')
+            ->first();
+
+        if ($latest_access_project && $latest_access_project->link_count > 0)
+        {
+            $project = Project::where('key', $latest_access_project->project_key)->first();
+            if ($project && $project->status === 'active')
+            {
+                return $project;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Remove the specified resource from storage.
      *
      * @param  int  $id
@@ -75,6 +91,14 @@ class SessionController extends Controller
     public function getSess(Request $request)
     {
         $user = Sentinel::getUser();
+        if ($user)
+        {
+            $latest_access_project = $this->getLatestAccessProject($user->id);
+            if ($latest_access_project)
+            {
+                $user->latest_access_project = $latest_access_project->key;
+            }
+        }
         return Response()->json([ 'ecode' => 0, 'data' => [ 'user' => $user ?: [] ] ]);
     }
 
