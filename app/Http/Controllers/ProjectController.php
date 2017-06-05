@@ -318,7 +318,7 @@ class ProjectController extends Controller
         // add issue-type template to project
         $this->initialize($project->key);
         // trigger add user to usrproject
-        Event::fire(new AddUserToRoleEvent([ $insValues['principal']['id'], $this->user->id ], $key));
+        Event::fire(new AddUserToRoleEvent([ $insValues['principal']['id'] ], $key));
 
         if (isset($project->principal))
         {

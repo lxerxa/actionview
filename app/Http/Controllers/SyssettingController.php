@@ -135,4 +135,17 @@ class SyssettingController extends Controller
 
         return Response()->json([ 'ecode' => 0, 'data' => '' ]);
     }
+
+    /**
+     * add admin user, will be removed 
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function addAdmin(Request $request, $id)
+    {
+        $user = Sentinel::findById($id);
+        $user->addPermission('sys_admin')->save();
+        echo 'ok!'; exit;
+    }
 }
