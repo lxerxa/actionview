@@ -1,8 +1,8 @@
 {
-    "name": "laravel/laravel",
-    "description": "The Laravel Framework.",
-    "keywords": ["framework", "laravel"],
-    "license": "MIT",
+    "name": "lxerxa/actionview",
+    "description": "actionview application.",
+    "keywords": ["actionview", "laravel"],
+    "license": "GPL",
     "type": "project",
     "require": {
         "php": ">=5.5.9",
