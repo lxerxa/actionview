@@ -155,6 +155,81 @@ class UserController extends Controller
     }
 
     /**
+     * Upload file.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function upload(Request $request)
+    {
+        if ($_FILES['file']['error'] > 0)
+        {
+            throw new \UnexpectedValueException('upload file errors.', -10002);
+        }
+
+        $fid = md5(microtime() . $_FILES['file']['name']);
+        $filename = '/tmp/' . $fid;
+        move_uploaded_file($_FILES['file']['tmp_name'], $filename);
+
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'fid' => $fid ] ]);
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function imports(Request $request)
+    {
+        if (!($fid = $request->input('fid')))
+        {
+            throw new \UnexpectedValueException('the user file can not be empty.', -10002);
+        }
+
+        $pattern = $request->input('pattern');
+        if (!isset($pattern))
+        {
+            $pattern = '1';
+        }
+
+        $file = fopen("/tmp/$fid", 'r');
+        $str = fread($file, 1024);
+        $encode = mb_detect_encoding($str, [ 'ASCII', 'UTF-8', 'GB2312', 'GBK', 'BIG5' ]);
+        fclose($file);
+
+        $file = fopen("/tmp/$fid", 'r');
+        while ($user = fgetcsv($file))
+        {
+            if (count($user) < 2 || strpos($user[1], '@') === false)
+            {
+                continue;
+            }
+
+            $user[0] = mb_convert_encoding($user[0], 'UTF-8', $encode);
+
+            $old_user = Sentinel::findByCredentials([ 'email' => $user[1] ]);
+            if ($old_user)
+            {
+                if ($pattern == '1')
+                {
+                    continue;
+                }
+                else
+                {
+                    Sentinel::update($old_user, [ 'first_name' => $user[0], 'email' => $user[1], 'password' => 'actionview', 'phone' => isset($user[2]) ? $user[2] : '' ]); 
+                }
+            }
+            else
+            {
+                Sentinel::register([ 'first_name' => $user[0], 'email' => $user[1], 'password' => 'actionview', 'phone' => isset($user[2]) ? $user[2] : '' ], true);
+            }
+        }
+
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'ok' => true ] ]);
+    }
+
+    /**
      * Display the specified resource.
      *
      * @param  int  $id

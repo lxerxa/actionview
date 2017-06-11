@@ -44,6 +44,8 @@ Route::group([ 'middleware' => 'can' ], function () {
     Route::get('api/user/search', 'UserController@search');
     Route::get('api/user/{id}/renewpwd', 'UserController@renewPwd');
     Route::post('api/user/batch/delete', 'UserController@delMultiUser');
+    Route::post('api/user/fileupload', 'UserController@upload');
+    Route::post('api/user/imports', 'UserController@imports');
     Route::resource('api/user', 'UserController');
 
     Route::get('api/mysetting', 'MysettingController@show');
