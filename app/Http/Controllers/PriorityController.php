@@ -41,12 +41,12 @@ class PriorityController extends Controller
         $name = $request->input('name');
         if (!$name || trim($name) == '')
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -10002);
+            throw new \UnexpectedValueException('the name can not be empty.', -12600);
         }
 
         if (Provider::isPriorityExisted($project_key, $name))
         {
-            throw new \UnexpectedValueException('priority name cannot be repeated', -10002);
+            throw new \UnexpectedValueException('priority name cannot be repeated', -12601);
         }
 
         $priority = Priority::create([ 'project_key' => $project_key, 'sn' => time() ] + $request->all());
@@ -83,7 +83,7 @@ class PriorityController extends Controller
         $priority = Priority::find($id);
         if (!$priority || $project_key != $priority->project_key)
         {
-            throw new \UnexpectedValueException('the priority does not exist, or is not in the project, or is a global definition.', -10002);
+            throw new \UnexpectedValueException('the priority does not exist or is not in the project.', -12602);
         }
 
         $name = $request->input('name');
@@ -91,11 +91,11 @@ class PriorityController extends Controller
         {
             if (!$name || trim($name) == '')
             {
-                throw new \UnexpectedValueException('the name can not be empty.', -10002);
+                throw new \UnexpectedValueException('the name can not be empty.', -12600);
             }
             if ($priority->name !== $name && Provider::isPriorityExisted($project_key, $name))
             {
-                throw new \UnexpectedValueException('priority name cannot be repeated', -10002);
+                throw new \UnexpectedValueException('priority name cannot be repeated', -12601);
             }
         }
 
@@ -116,13 +116,13 @@ class PriorityController extends Controller
         $priority = Priority::find($id);
         if (!$priority || $project_key != $priority->project_key)
         {
-            throw new \UnexpectedValueException('the priority does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the priority does not exist or is not in the project.', -12602);
         }
 
         $isUsed = $this->isFieldUsedByIssue($project_key, 'priority', $priority->toArray()); 
         if ($isUsed)
         {
-            throw new \UnexpectedValueException('the priority has been used in issue.', -10002);
+            throw new \UnexpectedValueException('the priority has been used in issue.', -12603);
         }
 
         Priority::destroy($id);
@@ -243,7 +243,7 @@ class PriorityController extends Controller
             $priority = Priority::find($default_priority_id);
             if (!$priority || $priority->project_key != $project_key)
             {
-                throw new \UnexpectedValueException('the priority does not exist or is not in the project.', -10002);
+                throw new \UnexpectedValueException('the priority does not exist or is not in the project.', -12602);
             }
 
             $priorities = Priority::where('project_key', $project_key)->get();

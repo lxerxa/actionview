@@ -45,12 +45,12 @@ class EventsController extends Controller
         $name = $request->input('name');
         if (!$name || trim($name) == '')
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -10002);
+            throw new \UnexpectedValueException('the name can not be empty.', -12800);
         }
 
         if (Provider::isEventExisted($project_key, $name))
         {
-            throw new \UnexpectedValueException('event name cannot be repeated', -10002);
+            throw new \UnexpectedValueException('event name cannot be repeated', -12801);
         }
 
         $event = Events::create([ 'project_key' => $project_key ] + $request->all());
@@ -81,7 +81,7 @@ class EventsController extends Controller
         $event = Events::find($id);
         if (!$event || $project_key != $event->project_key)
         {
-            throw new \UnexpectedValueException('the event does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the event does not exist or is not in the project.', -12802);
         }
 
         $name = $request->input('name');
@@ -89,11 +89,11 @@ class EventsController extends Controller
         {
             if (!$name || trim($name) == '')
             {
-                throw new \UnexpectedValueException('the name can not be empty.', -10002);
+                throw new \UnexpectedValueException('the name can not be empty.', -12800);
             }
             if ($event->name !== $name && Provider::isEventExisted($project_key, $name))
             {
-                throw new \UnexpectedValueException('event name cannot be repeated', -10002);
+                throw new \UnexpectedValueException('event name cannot be repeated', -12801);
             }
         }
         $event->fill($request->except(['project_key']))->save();
@@ -128,7 +128,7 @@ class EventsController extends Controller
         $event = Events::find($id);
         if (!$event || $project_key != $event->project_key)
         {
-            throw new \UnexpectedValueException('the event does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the event does not exist or is not in the project.', -12802);
         }
 
         $en = EventNotifications::where([ 'project_key' => $project_key, 'event_id' => $id ])->first();

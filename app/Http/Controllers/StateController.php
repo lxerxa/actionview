@@ -55,12 +55,12 @@ class StateController extends Controller
         $name = $request->input('name');
         if (!$name || trim($name) == '')
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -10002);
+            throw new \UnexpectedValueException('the name can not be empty.', -12400);
         }
 
         if (Provider::isStateExisted($project_key, $name))
         {
-            throw new \UnexpectedValueException('state name cannot be repeated', -10002);
+            throw new \UnexpectedValueException('state name cannot be repeated', -12401);
         }
 
         $state = State::create([ 'project_key' => $project_key ] + $request->all());
@@ -95,7 +95,7 @@ class StateController extends Controller
         $state = State::find($id);
         if (!$state || $project_key != $state->project_key)
         {
-            throw new \UnexpectedValueException('the state does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the state does not exist or is not in the project.', -12402);
         }
 
         $name = $request->input('name');
@@ -103,11 +103,11 @@ class StateController extends Controller
         {
             if (!$name || trim($name) == '')
             {
-                throw new \UnexpectedValueException('the name can not be empty.', -10002);
+                throw new \UnexpectedValueException('the name can not be empty.', -12400);
             }
             if ($state->name !== $name && Provider::isStateExisted($project_key, $name))
             {
-                throw new \UnexpectedValueException('state name cannot be repeated', -10002);
+                throw new \UnexpectedValueException('state name cannot be repeated', -12401);
             }
         }
 
@@ -126,19 +126,19 @@ class StateController extends Controller
         $state = State::find($id);
         if (!$state || $project_key != $state->project_key)
         {
-            throw new \UnexpectedValueException('the state does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the state does not exist or is not in the project.', -12402);
         }
 
         $isUsed = $this->isFieldUsedByIssue($project_key, 'state', $state->toArray()); 
         if ($isUsed)
         {
-            throw new \UnexpectedValueException('the state has been used in issue.', -10002);
+            throw new \UnexpectedValueException('the state has been used in issue.', -12403);
         }
 
         $isUsed = Definition::whereRaw([ 'state_ids' => isset($state->key) ? $state->key : $id ])->exists();
         if ($isUsed)
         {
-            throw new \UnexpectedValueException('the state has been used in workflow.', -10002);
+            throw new \UnexpectedValueException('the state has been used in workflow.', -12404);
         }
 
         State::destroy($id);

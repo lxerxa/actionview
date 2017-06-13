@@ -40,7 +40,7 @@ class WorkflowController extends Controller
         $name = $request->input('name');
         if (!$name || trim($name) == '')
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -10002);
+            throw new \UnexpectedValueException('the name can not be empty.', -12100);
         }
 
         $contents = $request->input('contents');
@@ -119,13 +119,13 @@ class WorkflowController extends Controller
         {
             if (!$name || trim($name) == '')
             {
-                throw new \UnexpectedValueException('the name can not be empty.', -10002);
+                throw new \UnexpectedValueException('the name can not be empty.', -12100);
             }
         }
         $workflow = Definition::find($id);
         if (!$workflow || $project_key != $workflow->project_key)
         {
-            throw new \UnexpectedValueException('the workflow does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the workflow does not exist or is not in the project.', -12101);
         }
 
         $contents = $request->input('contents');
@@ -156,13 +156,13 @@ class WorkflowController extends Controller
         $workflow = Definition::find($id);
         if (!$workflow || $project_key != $workflow->project_key)
         {
-            throw new \UnexpectedValueException('the workflow does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the workflow does not exist or is not in the project.', -12101);
         }
 
         $isUsed = Type::where('workflow_id', $id)->exists();
         if ($isUsed)
         {
-            throw new \UnexpectedValueException('the workflow has been bound to type.', -10002);
+            throw new \UnexpectedValueException('the workflow has been bound to type.', -12102);
         }
 
         Definition::destroy($id);

@@ -45,25 +45,25 @@ class WorklogController extends Controller
         $spend = $request->input('spend');
         if (!$spend || trim($spend) == '')
         {
-            throw new \UnexpectedValueException('the spend-time can not be empty.', -10002);
+            throw new \UnexpectedValueException('the spend-time can not be empty.', -11300);
         }
         if (!$this->ttCheck($spend))
         {
-            throw new \UnexpectedValueException('the format of spend-time is incorrect.', -10002);
+            throw new \UnexpectedValueException('the format of spend-time is incorrect.', -11301);
         }
         $values['spend'] = $this->ttHandle($spend);
 
         $started_at = $request->input('started_at');
         if (!$started_at)
         {
-            throw new \UnexpectedValueException('the start time can not be empty.', -10002);
+            throw new \UnexpectedValueException('the start time can not be empty.', -11302);
         }
         $values['started_at'] = $started_at;
 
         $adjust_type = $request->input('adjust_type');
         if (!in_array($adjust_type, ['1', '2', '3', '4']))
         {
-            throw new \UnexpectedValueException('the adjust-type value is incorrect.', -10002);
+            throw new \UnexpectedValueException('the adjust-type value is incorrect.', -11303);
         }
         $values['adjust_type'] = $adjust_type;
 
@@ -72,12 +72,12 @@ class WorklogController extends Controller
             $leave_estimate = $request->input('leave_estimate');
             if (!$leave_estimate || trim($leave_estimate) == '')
             {
-                throw new \UnexpectedValueException('the leave-estimate-time can not be empty.', -10002);
+                throw new \UnexpectedValueException('the leave-estimate-time can not be empty.', -11304);
             }
 
             if (!$this->ttCheck($leave_estimate))
             {
-                throw new \UnexpectedValueException('the format of leave-estimate-time is incorrect.', -10002);
+                throw new \UnexpectedValueException('the format of leave-estimate-time is incorrect.', -11305);
             }
             $values['leave_estimate'] = $this->ttHandle($leave_estimate);
         }
@@ -87,12 +87,12 @@ class WorklogController extends Controller
             $cut = $request->input('cut');
             if (!$cut || trim($cut) == '')
             {
-                throw new \UnexpectedValueException('the cut-time can not be empty.', -10002);
+                throw new \UnexpectedValueException('the cut-time can not be empty.', -11306);
             }
 
             if (!$this->ttCheck($cut))
             {
-                throw new \UnexpectedValueException('the format of cut-time is incorrect.', -10002);
+                throw new \UnexpectedValueException('the format of cut-time is incorrect.', -11307);
             }
             $values['cut'] = $this->ttHandle($cut);
         }
@@ -102,7 +102,7 @@ class WorklogController extends Controller
 
         $isIssueExisted = Provider::isIssueExisted($project_key, $issue_id);
         if (!$isIssueExisted) {
-            throw new \UnexpectedValueException('the issue is not existed.', -10002);
+            throw new \UnexpectedValueException('the issue is not existed.', -11308);
         }
 
         $recorder = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
@@ -142,7 +142,7 @@ class WorklogController extends Controller
         $worklog = Worklog::find($id);
         if (!$worklog || $project_key != $worklog->project_key || $issue_id != $worklog->issue_id)
         {
-            throw new \UnexpectedValueException('the worklog does not exist or is not in the issue or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the worklog does not exist or is not in the issue or is not in the project.', -11309);
         }
 
         if (!Acl::isAllowed($this->user->id, 'manage_project', $project_key) && $worklog->recorder['id'] !== $this->user->id) 
@@ -156,11 +156,11 @@ class WorklogController extends Controller
         {
             if (!$spend || trim($spend) == '')
             {
-                throw new \UnexpectedValueException('the spend-time can not be empty.', -10002);
+                throw new \UnexpectedValueException('the spend-time can not be empty.', -11300);
             }
             if (!$this->ttCheck($spend))
             {
-                throw new \UnexpectedValueException('the format of spend-time is incorrect.', -10002);
+                throw new \UnexpectedValueException('the format of spend-time is incorrect.', -11301);
             }
             $values['spend'] = $this->ttHandle($spend);
         }
@@ -170,7 +170,7 @@ class WorklogController extends Controller
         {
             if (!$started_at)
             {
-                throw new \UnexpectedValueException('the start time can not be empty.', -10002);
+                throw new \UnexpectedValueException('the start time can not be empty.', -11302);
             }
             $values['started_at'] = $started_at;
         }
@@ -180,7 +180,7 @@ class WorklogController extends Controller
         {
             if (!in_array($adjust_type, ['1', '2', '3', '4']))
             {
-                throw new \UnexpectedValueException('the adjust-type value is incorrect.', -10002);
+                throw new \UnexpectedValueException('the adjust-type value is incorrect.', -11303);
             }
 
             $values['adjust_type'] = $adjust_type;
@@ -189,11 +189,11 @@ class WorklogController extends Controller
                 $leave_estimate = $request->input('leave_estimate');
                 if (!$leave_estimate || trim($leave_estimate) == '')
                 {
-                    throw new \UnexpectedValueException('the leave-estimate-time can not be empty.', -10002);
+                    throw new \UnexpectedValueException('the leave-estimate-time can not be empty.', -11304);
                 }
                 if (!$this->ttCheck($leave_estimate))
                 {
-                    throw new \UnexpectedValueException('the format of leave-estimate-time is incorrect.', -10002);
+                    throw new \UnexpectedValueException('the format of leave-estimate-time is incorrect.', -11305);
                 }
                 $values['leave_estimate'] = $this->ttHandle($leave_estimate);
             } 
@@ -202,12 +202,12 @@ class WorklogController extends Controller
                 $cut = $request->input('cut');
                 if (!$cut || trim($cut) == '')
                 {
-                    throw new \UnexpectedValueException('the cut-time can not be empty.', -10002);
+                    throw new \UnexpectedValueException('the cut-time can not be empty.', -11306);
                 }
 
                 if (!$this->ttCheck($cut))
                 {
-                    throw new \UnexpectedValueException('the format of cut-time is incorrect.', -10002);
+                    throw new \UnexpectedValueException('the format of cut-time is incorrect.', -11307);
                 }
                 $values['cut'] = $this->ttHandle($cut);
             }
@@ -238,7 +238,7 @@ class WorklogController extends Controller
         $worklog = Worklog::find($id);
         if (!$worklog || $project_key != $worklog->project_key || $issue_id != $worklog->issue_id)
         {
-            throw new \UnexpectedValueException('the worklog does not exist or is not in the issue or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the worklog does not exist or is not in the issue or is not in the project.', -11309);
         }
 
         if (!Acl::isAllowed($this->user->id, 'manage_project', $project_key) && $worklog->recorder['id'] !== $this->user->id) 

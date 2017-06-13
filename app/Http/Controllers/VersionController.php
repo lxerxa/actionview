@@ -68,17 +68,17 @@ class VersionController extends Controller
         $name = $request->input('name');
         if (!$name || trim($name) == '')
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -10002);
+            throw new \UnexpectedValueException('the name can not be empty.', -11500);
         }
 
         if (Version::whereRaw([ 'name' => $name, 'project_key' => $project_key ])->exists())
         {
-            throw new \UnexpectedValueException('version name cannot be repeated', -10002);
+            throw new \UnexpectedValueException('version name cannot be repeated', -11501);
         }
 
         if ($request->input('start_time') && $request->input('end_time') && $request->input('start_time') > $request->input('end_time'))
         {
-            throw new \UnexpectedValueException('start-time must less then end-time', -10002);
+            throw new \UnexpectedValueException('start-time must less then end-time', -11502);
         }
 
         $creator = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
@@ -114,7 +114,7 @@ class VersionController extends Controller
         $version = Version::find($id);
         if (!$version || $version->project_key != $project_key)
         {
-            throw new \UnexpectedValueException('the version does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the version does not exist or is not in the project.', -11503);
         }
 
         $name = $request->input('name');
@@ -122,18 +122,18 @@ class VersionController extends Controller
         {
             if (!$name || trim($name) == '')
             {
-                throw new \UnexpectedValueException('the name can not be empty.', -10002);
+                throw new \UnexpectedValueException('the name can not be empty.', -11500);
             }
 
             if ($version->name !== $name && Version::whereRaw([ 'name' => $name, 'project_key' => $project_key ])->exists())
             {
-                throw new \UnexpectedValueException('version name cannot be repeated', -10002);
+                throw new \UnexpectedValueException('version name cannot be repeated', -11501);
             }
         }
 
         if ($request->input('start_time') && $request->input('end_time') && $request->input('start_time') > $request->input('end_time'))
         {
-            throw new \UnexpectedValueException('start-time must less then end-time', -10002);
+            throw new \UnexpectedValueException('start-time must less then end-time', -11502);
         }
 
         $version->fill(array_except($request->all(), [ 'creator', 'project_key' ]))->save();
@@ -156,14 +156,14 @@ class VersionController extends Controller
         $version = Version::find($id);
         if (!$version || $version->project_key != $project_key)
         {
-            throw new \UnexpectedValueException('the version does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the version does not exist or is not in the project.', -11503);
         }
 
         $version_fields = $this->getVersionFields($project_key);
         $isUsed = $this->isFieldUsedByIssue($project_key, 'version', $version->toArray(), $version_fields);
         if ($isUsed)
         {
-            throw new \UnexpectedValueException('the version has been used in issue.', -10002);
+            throw new \UnexpectedValueException('the version has been used in issue.', -11504);
         }
 
         Version::destroy($id);

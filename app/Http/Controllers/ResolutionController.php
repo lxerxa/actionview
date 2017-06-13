@@ -41,12 +41,12 @@ class ResolutionController extends Controller
         $name = $request->input('name');
         if (!$name || trim($name) == '')
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -10002);
+            throw new \UnexpectedValueException('the name can not be empty.', -12500);
         }
 
         if (Provider::isResolutionExisted($project_key, $name))
         {
-            throw new \UnexpectedValueException('resolution name cannot be repeated', -10002);
+            throw new \UnexpectedValueException('resolution name cannot be repeated', -12501);
         }
 
         $resolution = Resolution::create([ 'project_key' => $project_key, 'sn' => time() ] + $request->all());
@@ -83,7 +83,7 @@ class ResolutionController extends Controller
         $resolution = Resolution::find($id);
         if (!$resolution || $project_key != $resolution->project_key)
         {
-            throw new \UnexpectedValueException('the resolution does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the resolution does not exist or is not in the project.', -12502);
         }
 
         $name = $request->input('name');
@@ -91,11 +91,11 @@ class ResolutionController extends Controller
         {
             if (!$name || trim($name) == '')
             {
-                throw new \UnexpectedValueException('the name can not be empty.', -10002);
+                throw new \UnexpectedValueException('the name can not be empty.', -12500);
             }
             if ($resolution->name !== $name && Provider::isResolutionExisted($project_key, $name))
             {
-                throw new \UnexpectedValueException('resolution name cannot be repeated', -10002);
+                throw new \UnexpectedValueException('resolution name cannot be repeated', -12501);
             }
         }
 
@@ -116,13 +116,13 @@ class ResolutionController extends Controller
         $resolution = Resolution::find($id);
         if (!$resolution || $project_key != $resolution->project_key)
         {
-            throw new \UnexpectedValueException('the resolution does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the resolution does not exist or is not in the project.', -12502);
         }
 
         $isUsed = $this->isFieldUsedByIssue($project_key, 'resolution', $resolution->toArray());
         if ($isUsed)
         {
-            throw new \UnexpectedValueException('the resolution has been used in issue.', -10002);
+            throw new \UnexpectedValueException('the resolution has been used in issue.', -12503);
         }
 
         Resolution::destroy($id);
@@ -243,7 +243,7 @@ class ResolutionController extends Controller
             $resolution = Resolution::find($default_resolution_id);
             if (!$resolution || $resolution->project_key != $project_key)
             {
-                throw new \UnexpectedValueException('the resolution does not exist or is not in the project.', -10002);
+                throw new \UnexpectedValueException('the resolution does not exist or is not in the project.', -12502);
             }
 
             $resolutions = Resolution::where('project_key', $project_key)->get();

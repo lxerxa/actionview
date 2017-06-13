@@ -48,12 +48,12 @@ class ModuleController extends Controller
         $name = $request->input('name');
         if (!$name || trim($name) == '')
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -10002);
+            throw new \UnexpectedValueException('the name can not be empty.', -11400);
         }
 
         if (Module::whereRaw([ 'name' => $name ])->exists())
         {
-            throw new \UnexpectedValueException('module name cannot be repeated', -10002);
+            throw new \UnexpectedValueException('module name cannot be repeated', -11401);
         }
 
         $principal = [];
@@ -97,7 +97,7 @@ class ModuleController extends Controller
         $module = Module::find($id);
         if (!$module || $module->project_key != $project_key)
         {
-            throw new \UnexpectedValueException('the module does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the module does not exist or is not in the project.', -11402);
         }
 
         $name = $request->input('name');
@@ -105,11 +105,11 @@ class ModuleController extends Controller
         {
             if (!$name || trim($name) == '')
             {
-                throw new \UnexpectedValueException('the name can not be empty.', -10002);
+                throw new \UnexpectedValueException('the name can not be empty.', -11400);
             }
             if ($module->name !== $name && Module::whereRaw([ 'name' => $name ])->exists())
             {
-                throw new \UnexpectedValueException('module name cannot be repeated', -10002);
+                throw new \UnexpectedValueException('module name cannot be repeated', -11401);
             }
         }
 
@@ -144,13 +144,13 @@ class ModuleController extends Controller
         $module = Module::find($id);
         if (!$module || $project_key != $module->project_key)
         {
-            throw new \UnexpectedValueException('the module does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the module does not exist or is not in the project.', -11402);
         }
 
         $isUsed = $this->isFieldUsedByIssue($project_key, 'module', $module->toArray());
         if ($isUsed)
         {
-            throw new \UnexpectedValueException('the module has been used in issue.', -10002);
+            throw new \UnexpectedValueException('the module has been used in issue.', -11403);
         }
 
         Module::destroy($id);

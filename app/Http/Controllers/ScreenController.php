@@ -60,7 +60,7 @@ class ScreenController extends Controller
         $name = $request->input('name');
         if (!$name || trim($name) == '')
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -10002);
+            throw new \UnexpectedValueException('the name can not be empty.', -12300);
         }
 
         $source_id = $request->input('source_id');
@@ -114,13 +114,13 @@ class ScreenController extends Controller
         {
             if (!$name || trim($name) == '')
             {
-                throw new \UnexpectedValueException('the name can not be empty.', -10002);
+                throw new \UnexpectedValueException('the name can not be empty.', -12300);
             }
         }
         $screen = Screen::find($id);
         if (!$screen || $project_key != $screen->project_key)
         {
-            throw new \UnexpectedValueException('the screen does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the screen does not exist or is not in the project.', -12301);
         }
 
         // when screen fields change, re-generate schema
@@ -184,19 +184,19 @@ class ScreenController extends Controller
         $screen = Screen::find($id);
         if (!$screen || $project_key != $screen->project_key)
         {
-            throw new \UnexpectedValueException('the screen does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the screen does not exist or is not in the project.', -12301);
         }
 
         $isUsed = Type::where('screen_id', $id)->exists();
         if ($isUsed)
         {
-            throw new \UnexpectedValueException('the screen has been bound to type.', -10002);
+            throw new \UnexpectedValueException('the screen has been bound to type.', -12302);
         }
 
         $isUsed = Definition::whereRaw([ 'screen_ids' => $id ])->exists();
         if ($isUsed)
         {
-            throw new \UnexpectedValueException('the screen has been used in workflow.', -10002);
+            throw new \UnexpectedValueException('the screen has been used in workflow.', -12303);
         }
 
         Screen::destroy($id);

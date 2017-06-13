@@ -38,7 +38,7 @@ class CommentsController extends Controller
         $contents = $request->input('contents');
         if (!$contents || trim($contents) == '')
         {
-            throw new \UnexpectedValueException('the contents can not be empty.', -10002);
+            throw new \UnexpectedValueException('the contents can not be empty.', -11200);
         }
 
         $creator = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
@@ -78,7 +78,7 @@ class CommentsController extends Controller
         $comments = DB::collection('comments_' . $project_key)->find($id);
         if (!$comments)
         {
-            throw new \UnexpectedValueException('the comments does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the comments does not exist or is not in the project.', -11201);
         }
 
         $contents = $request->input('contents');
@@ -86,7 +86,7 @@ class CommentsController extends Controller
         {
             if (!$contents || trim($contents) == '')
             {
-                throw new \UnexpectedValueException('the contents can not be empty.', -10002);
+                throw new \UnexpectedValueException('the contents can not be empty.', -11200);
             }
         }
         // record the changed comments
@@ -99,7 +99,7 @@ class CommentsController extends Controller
         {
             if (!in_array($operation, [ 'addReply', 'editReply', 'delReply' ]))
             {
-                throw new \UnexpectedValueException('the operation is incorrect value.', -10002);
+                throw new \UnexpectedValueException('the operation is incorrect value.', -11204);
             }
             if (!isset($comments['reply']) || !$comments['reply'])
             {
@@ -117,7 +117,7 @@ class CommentsController extends Controller
                 $reply_id = $request->input('reply_id');
                 if (!isset($reply_id) || !$reply_id)
                 {
-                    throw new \UnexpectedValueException('the reply id can not be empty.', -10002);
+                    throw new \UnexpectedValueException('the reply id can not be empty.', -11202);
                 }
                 $index = $this->array_find([ 'id' => $reply_id ], $comments['reply']); 
                 if ($index !== false) 
@@ -132,7 +132,7 @@ class CommentsController extends Controller
                 }
                 else
                 {
-                    throw new \UnexpectedValueException('the reply does not exist', -10002);
+                    throw new \UnexpectedValueException('the reply does not exist', -11203);
                 }
             }
             else if ($operation == 'delReply')
@@ -140,7 +140,7 @@ class CommentsController extends Controller
                 $reply_id = $request->input('reply_id');
                 if (!isset($reply_id) || !$reply_id)
                 {
-                    throw new \UnexpectedValueException('the reply id can not be empty.', -10002);
+                    throw new \UnexpectedValueException('the reply id can not be empty.', -11202);
                 }
                 $index = $this->array_find([ 'id' => $reply_id ], $comments['reply']); 
                 if ($index !== false) 
@@ -155,7 +155,7 @@ class CommentsController extends Controller
                 }
                 else
                 {
-                    throw new \UnexpectedValueException('the reply does not exist', -10002);
+                    throw new \UnexpectedValueException('the reply does not exist', -11203);
                 }
             }
             DB::collection($table)->where('_id', $id)->update([ 'reply' => $comments['reply'] ]);
@@ -200,7 +200,7 @@ class CommentsController extends Controller
         $comments = DB::collection($table)->find($id);
         if (!$comments)
         {
-            throw new \UnexpectedValueException('the comments does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the comments does not exist or is not in the project.', -11201);
         }
 
         if (!Acl::isAllowed($this->user->id, 'manage_project', $project_key) && $comments['creator']['id'] !== $this->user->id) 

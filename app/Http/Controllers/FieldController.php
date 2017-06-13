@@ -51,33 +51,33 @@ class FieldController extends Controller
         $name = $request->input('name');
         if (!$name || trim($name) == '')
         {
-            throw new \UnexpectedValueException('the name cannot be empty.', -10002);
+            throw new \UnexpectedValueException('the name cannot be empty.', -12200);
         }
 
         $key = $request->input('key');
         if (!$key || trim($key) == '')
         {
-            throw new \InvalidArgumentException('field key cannot be empty.', -10002);
+            throw new \InvalidArgumentException('field key cannot be empty.', -12201);
         }
         if (in_array($key, [ 'id', 'type', 'state', 'reporter', 'created_at', 'updated_at', 'no', 'schema', 'parent_id', 'parents', 'links', 'subtasks', 'entry_id', 'definition_id', 'page', 'orderBy' ]))
         {
-            throw new \InvalidArgumentException('field key has been used by system.', -10002);
+            throw new \InvalidArgumentException('field key has been used by system.', -12202);
         }
         if (Provider::isFieldKeyExisted($project_key, $key))
         {
-            throw new \InvalidArgumentException('field key cannot be repeated.', -10002);
+            throw new \InvalidArgumentException('field key cannot be repeated.', -12203);
         }
 
         $type = $request->input('type');
         if (!$type)
         {
-            throw new \UnexpectedValueException('the type cannot be empty.', -10002);
+            throw new \UnexpectedValueException('the type cannot be empty.', -12204);
         }
 
         $allTypes = [ 'Tags', 'Number', 'Text', 'TextArea', 'Select', 'MultiSelect', 'RadioGroup', 'CheckboxGroup', 'DatePicker', 'DateTimePicker', 'TimeTracking', 'File', 'SingleVersion', 'MultiVersion', 'Url' ];
         if (!in_array($type, $allTypes))
         {
-            throw new \UnexpectedValueException('the type is incorrect type.', -10002);
+            throw new \UnexpectedValueException('the type is incorrect type.', -12205);
         }
 
         $optionTypes = [ 'Select', 'MultiSelect', 'RadioGroup', 'CheckboxGroup' ];
@@ -133,13 +133,13 @@ class FieldController extends Controller
         {
             if (!$name || trim($name) == '')
             {
-                throw new \UnexpectedValueException('the name can not be empty.', -10002);
+                throw new \UnexpectedValueException('the name can not be empty.', -12200);
             }
         }
         $field = Field::find($id);
         if (!$field || $project_key != $field->project_key)
         {
-            throw new \UnexpectedValueException('the field does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the field does not exist or is not in the project.', -12206);
         }
 
         $optionTypes = [ 'Select', 'MultiSelect', 'RadioGroup', 'CheckboxGroup' ];
@@ -177,13 +177,13 @@ class FieldController extends Controller
         $field = Field::find($id);
         if (!$field || $project_key != $field->project_key)
         {
-            throw new \UnexpectedValueException('the field does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the field does not exist or is not in the project.', -12206);
         }
 
         $isUsed = Screen::whereRaw([ 'field_ids' => $id ])->exists();
         if ($isUsed)
         {
-            throw new \UnexpectedValueException('the field has been used in screen.', -10002);
+            throw new \UnexpectedValueException('the field has been used in screen.', -12207);
         }
 
         Field::destroy($id);

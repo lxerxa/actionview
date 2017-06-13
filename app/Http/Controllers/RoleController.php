@@ -56,7 +56,7 @@ class RoleController extends Controller
         $name = $request->input('name');
         if (!$name || trim($name) == '')
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -10002);
+            throw new \UnexpectedValueException('the name can not be empty.', -12700);
         }
 
         $permissions = $request->input('permissions');
@@ -65,7 +65,7 @@ class RoleController extends Controller
             $allPermissions = Acl::getAllPermissions();
             if (array_diff($permissions, $allPermissions))
             {
-                throw new \UnexpectedValueException('the illegal permission.', -10002);
+                throw new \UnexpectedValueException('the illegal permission.', -12701);
             }
         }
 
@@ -135,13 +135,13 @@ class RoleController extends Controller
         {
             if (!$name || trim($name) == '')
             {
-                throw new \UnexpectedValueException('the name can not be empty.', -10002);
+                throw new \UnexpectedValueException('the name can not be empty.', -12700);
             }
         }
         $role = Role::find($id);
         if (!$role || $project_key != $role->project_key)
         {
-            throw new \UnexpectedValueException('the role does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the role does not exist or is not in the project.', -12702);
         }
 
         $permissions = $request->input('permissions');
@@ -150,7 +150,7 @@ class RoleController extends Controller
             $allPermissions = Acl::getAllPermissions();
             if (array_diff($permissions, $allPermissions))
             {
-                throw new \UnexpectedValueException('the illegal permission.', -10002);
+                throw new \UnexpectedValueException('the illegal permission.', -12701);
             }
             $role->permissions = $permissions;
         }
@@ -171,14 +171,14 @@ class RoleController extends Controller
         $role = Role::find($id);
         if (!$role || $project_key != $role->project_key)
         {
-            throw new \UnexpectedValueException('the role does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the role does not exist or is not in the project.', -12702);
         }
 
         if ($project_key === '$_sys_$')
         {
             if (Roleactor::where('role_id', $role->id)->exists())
             {
-                throw new \UnexpectedValueException('the role has been used in some projects.', -10002);
+                throw new \UnexpectedValueException('the role has been used in some projects.', -12703);
             }
         }
         else
