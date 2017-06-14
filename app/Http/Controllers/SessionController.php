@@ -27,7 +27,7 @@ class SessionController extends Controller
         $password = $request->input('password');
         if (!$email || !$password)
         {
-            throw new \UnexpectedValueException('email or password cannot be empty.', -10002);
+            throw new \UnexpectedValueException('email or password cannot be empty.', -10003);
         }
 
         if (strpos($email, '@') === false) 
@@ -53,7 +53,7 @@ class SessionController extends Controller
         }
         else 
         {
-            return Response()->json([ 'ecode' => -10002, 'data' => [] ]);
+            return Response()->json([ 'ecode' => -10000, 'data' => [] ]);
         }
     }
 

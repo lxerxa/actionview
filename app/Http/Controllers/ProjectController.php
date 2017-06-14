@@ -151,7 +151,7 @@ class ProjectController extends Controller
         $project = Project::find($id);
         if (!$project)
         {
-            throw new \UnexpectedValueException('the project does not exist.', -10002);
+            throw new \UnexpectedValueException('the project does not exist.', -14006);
         }
         if ($project->principal['id'] !== $this->user->id && !$this->user->hasAccess('sys_admin'))
         {
@@ -171,7 +171,7 @@ class ProjectController extends Controller
         $ids = $request->input('ids');
         if (!isset($ids) || !$ids)
         {
-            throw new \InvalidArgumentException('the selected projects cannot been empty.', -10002);
+            throw new \InvalidArgumentException('the selected projects cannot been empty.', -14007);
         }
         return Response()->json([ 'ecode' => 0, 'data' => [ 'ids' => $ids ] ]);
     }
@@ -186,13 +186,13 @@ class ProjectController extends Controller
         $ids = $request->input('ids');
         if (!isset($ids) || !$ids)
         {
-            throw new \InvalidArgumentException('the selected projects cannot been empty.', -10002);
+            throw new \InvalidArgumentException('the selected projects cannot been empty.', -14007);
         }
 
         $status = $request->input('status');
         if (!isset($status) || !$status)
         {
-            throw new \InvalidArgumentException('the status cannot be empty.', -10002);
+            throw new \InvalidArgumentException('the status cannot be empty.', -14008);
         }
 
         $newIds = [];
@@ -273,18 +273,18 @@ class ProjectController extends Controller
         $name = $request->input('name');
         if (!$name || trim($name) == '')
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -10002);
+            throw new \UnexpectedValueException('the name can not be empty.', -14000);
         }
         $insValues['name'] = trim($name);
 
         $key = $request->input('key');
         if (!$key || trim($key) == '')
         {
-            throw new \InvalidArgumentException('project key cannot be empty.', -10002);
+            throw new \InvalidArgumentException('project key cannot be empty.', -14001);
         }
         if (Project::Where('key', $key)->exists())
         {
-            throw new \InvalidArgumentException('project key has been taken.', -10002);
+            throw new \InvalidArgumentException('project key has been taken.', -14002);
         }
         $insValues['key'] = trim($key);
 
@@ -298,7 +298,7 @@ class ProjectController extends Controller
             $principal_info = Sentinel::findById($principal);
             if (!$principal_info)
             {
-                throw new \InvalidArgumentException('the user is not exists.', -10002);
+                throw new \InvalidArgumentException('the user is not exists.', -14003);
             }
             $insValues['principal'] = [ 'id' => $principal_info->id, 'name' => $principal_info->first_name, 'email' => $principal_info->email ];
         }
@@ -355,8 +355,9 @@ class ProjectController extends Controller
         $project = Project::where('key', $key)->first();
         if (!$project)
         {
-            throw new \UnexpectedValueException('the project does not exist.', -10002);
+            throw new \UnexpectedValueException('the project does not exist.', -14004);
         }
+
         // get action allow of the project.
         $permissions = Acl::getPermissions($this->user->id, $project->key);
         if ($this->user->id === $project->principal['id'] && !in_array('manage_project', $permissions))
@@ -401,7 +402,7 @@ class ProjectController extends Controller
         {
             if (!$name || trim($name) == '')
             {
-                throw new \UnexpectedValueException('the name can not be empty.', -10002);
+                throw new \UnexpectedValueException('the name can not be empty.', -14000);
             }
             $updValues['name'] = trim($name);
         }
@@ -411,13 +412,13 @@ class ProjectController extends Controller
         {
             if (!$principal_id)
             {
-                throw new \InvalidArgumentException('the principal must be appointed.', -10002);
+                throw new \InvalidArgumentException('the principal must be appointed.', -14005);
             }
 
             $principal_info = Sentinel::findById($principal_id);
             if (!$principal_info)
             {
-                throw new \InvalidArgumentException('the user is not exists.', -10002);
+                throw new \InvalidArgumentException('the user is not exists.', -14003);
             }
             $updValues['principal'] = [ 'id' => $principal_info->id, 'name' => $principal_info->first_name, 'email' =>  $principal_info->email ]; 
         }
@@ -437,7 +438,7 @@ class ProjectController extends Controller
         $project = Project::find($id);
         if (!$project)
         {
-            throw new \UnexpectedValueException('the project does not exist.', -10002);
+            throw new \UnexpectedValueException('the project does not exist.', -14004);
         }
         if ($project->principal['id'] !== $this->user->id && !$this->user->hasAccess('sys_admin'))
         {

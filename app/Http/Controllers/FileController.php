@@ -28,7 +28,7 @@ class FileController extends Controller
         $field = array_pop($fields);
         if ($_FILES[$field]['error'] > 0)
         {
-            throw new \UnexpectedValueException('upload file errors.', -10002);
+            throw new \UnexpectedValueException('upload file errors.', -15101);
         }
 
         $basename = md5(microtime() . $_FILES[$field]['name']);
@@ -120,7 +120,7 @@ class FileController extends Controller
 
         if (!file_exists($filename))
         {
-            throw new \UnexpectedValueException('file does not exist.', -10002);
+            throw new \UnexpectedValueException('file does not exist.', -15100);
         }
 
         header("Content-type: application/octet-stream"); 
@@ -155,7 +155,7 @@ class FileController extends Controller
         }
         else
         {
-            throw new \UnexpectedValueException('file deletion failed.', -10002);
+            throw new \UnexpectedValueException('file deletion failed.', -15102);
         }
     }
 }

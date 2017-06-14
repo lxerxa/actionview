@@ -21,7 +21,7 @@ class MysettingController extends Controller
         $user = Sentinel::findById($this->user->id);
         if (!$user)
         {
-            throw new \UnexpectedValueException('the user is not existed.', -10002);
+            throw new \UnexpectedValueException('the user is not existed.', -15000);
         }
         $data['accounts'] = $user;
 
@@ -54,32 +54,32 @@ class MysettingController extends Controller
         $password = $request->input('password');
         if (!$password || trim($password) == '')
         {
-            throw new \UnexpectedValueException('the old password can not be empty.', -10002);
+            throw new \UnexpectedValueException('the old password can not be empty.', -15001);
         }
 
         $user = Sentinel::findById($this->user->id);
         if (!$user)
         {
-            throw new \UnexpectedValueException('the user is not existed.', -10002);
+            throw new \UnexpectedValueException('the user is not existed.', -15000);
         }
 
         $credentials = [ 'email' => $this->user->email, 'password' => $password ];
         $valid = Sentinel::validateCredentials($user, $credentials);
         if (!$valid)
         {
-            throw new \UnexpectedValueException('the old password is not correct.', -10002);
+            throw new \UnexpectedValueException('the old password is not correct.', -15002);
         }
 
         $new_password = $request->input('new_password');
         if (!$new_password || trim($new_password) == '')
         {
-            throw new \UnexpectedValueException('the password can not be empty.', -10002);
+            throw new \UnexpectedValueException('the password can not be empty.', -15003);
         }
 
         $valid = Sentinel::validForUpdate($user, [ 'password' => $new_password ]);
         if (!$valid) 
         {
-            throw new \UnexpectedValueException('resetting the password fails.', -10002);
+            throw new \UnexpectedValueException('resetting the password fails.', -15004);
         }
         //$user->password = password_hash($new_password, PASSWORD_DEFAULT);
         Sentinel::update($user, [ 'password' => $new_password ]);
@@ -98,7 +98,7 @@ class MysettingController extends Controller
         $user = Sentinel::findById($this->user->id);
         if (!$user)
         {
-            throw new \UnexpectedValueException('the user is not existed.', -10002);
+            throw new \UnexpectedValueException('the user is not existed.', -15000);
         }
 
         $first_name = $request->input('first_name');
@@ -106,7 +106,7 @@ class MysettingController extends Controller
         {
             if (!$first_name || trim($first_name) == '')
             {
-                throw new \UnexpectedValueException('the name can not be empty.', -10002);
+                throw new \UnexpectedValueException('the name can not be empty.', -15005);
             }
             $user->first_name = trim($first_name);
         }

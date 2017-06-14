@@ -235,13 +235,13 @@ class IssueController extends Controller
         $issue_type = $request->input('type');
         if (!$issue_type)
         {
-            throw new \UnexpectedValueException('the issue type can not be empty.', -10002);
+            throw new \UnexpectedValueException('the issue type can not be empty.', -11100);
         }
 
         $schema = Provider::getSchemaByType($issue_type);
         if (!$schema)
         {
-            throw new \UnexpectedValueException('the schema of the type is not existed.', -10002);
+            throw new \UnexpectedValueException('the schema of the type is not existed.', -11101);
         }
         $valid_keys = array_merge(array_column($schema, 'key'), [ 'type', 'parent_id' ]);
 
@@ -256,7 +256,7 @@ class IssueController extends Controller
                 {
                     if (!$this->ttCheck($fieldValue))
                     {
-                        throw new \UnexpectedValueException('the format of timetracking is incorrect.', -10002);
+                        throw new \UnexpectedValueException('the format of timetracking is incorrect.', -11102);
                     }
                     $insValues[$field['key']] = $this->ttHandle($fieldValue);
                 }
@@ -371,7 +371,7 @@ class IssueController extends Controller
         $schema = Provider::getSchemaByType($issue['type']);
         if (!$schema)
         {
-            throw new \UnexpectedValueException('the schema of the type is not existed.', -10002);
+            throw new \UnexpectedValueException('the schema of the type is not existed.', -11101);
         }
 
         foreach ($schema as $field)
@@ -488,7 +488,7 @@ class IssueController extends Controller
         $issue = DB::collection($table)->find($id);
         if (!$issue)
         {
-            throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -11103);
         }
 
         $updValues = []; $assignee = [];
@@ -522,7 +522,7 @@ class IssueController extends Controller
         }
         else
         {
-            throw new \UnexpectedValueException('the issue assignee cannot be empty.', -10002);
+            throw new \UnexpectedValueException('the issue assignee cannot be empty.', -11104);
         }
 
         // issue assignee has no change.
@@ -563,13 +563,13 @@ class IssueController extends Controller
         $issue = DB::collection($table)->find($id);
         if (!$issue)
         {
-            throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -11103);
         }
 
         $schema = Provider::getSchemaByType($request->input('type') ?: $issue['type']);
         if (!$schema)
         {
-            throw new \UnexpectedValueException('the schema of the type is not existed.', -10002);
+            throw new \UnexpectedValueException('the schema of the type is not existed.', -11101);
         }
         $valid_keys = array_merge(array_column($schema, 'key'), [ 'type', 'assignee', 'parent_id' ]);
 
@@ -584,7 +584,7 @@ class IssueController extends Controller
                 {
                     if (!$this->ttCheck($fieldValue))
                     {
-                        throw new \UnexpectedValueException('the format of timetracking is incorrect.', -10002);
+                        throw new \UnexpectedValueException('the format of timetracking is incorrect.', -11102);
                     }
                     $updValues[$field['key']] = $this->ttHandle($fieldValue);
                 }
@@ -630,7 +630,7 @@ class IssueController extends Controller
         $issue = DB::collection($table)->find($id);
         if (!$issue)
         {
-            throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -11103);
         }
 
         $user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
@@ -680,12 +680,12 @@ class IssueController extends Controller
         $name = $request->input('name');
         if (!$name || trim($name) == '')
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -10002);
+            throw new \UnexpectedValueException('the name can not be empty.', -11105);
         }
 
         if (Searcher::whereRaw([ 'name' => $name, 'user' => $this->user->id, 'project_key' => $project_key ])->exists())
         {
-            throw new \UnexpectedValueException('searcher name cannot be repeated', -10002);
+            throw new \UnexpectedValueException('searcher name cannot be repeated', -11106);
         }
 
         $searcher = Searcher::create([ 'project_key' => $project_key, 'user' => $this->user->id, 'sn' => time() ] + $request->all());
@@ -736,7 +736,7 @@ class IssueController extends Controller
         $searcher = Searcher::find($id);
         if (!$searcher || $searcher->project_key != $project_key)
         {
-            throw new \UnexpectedValueException('the searcher does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the searcher does not exist or is not in the project.', -11107);
         }
 
         Searcher::destroy($id);
@@ -934,25 +934,25 @@ class IssueController extends Controller
         $title = $request->input('title');
         if (!$title || trim($title) == '')
         {
-            throw new \UnexpectedValueException('the issue title cannot be empty.', -10002);
+            throw new \UnexpectedValueException('the issue title cannot be empty.', -11108);
         }
 
         $src_id = $request->input('source_id');
         if (!isset($src_id) || !$src_id)
         {
-            throw new \UnexpectedValueException('the copied issue id cannot be empty.', -10002);
+            throw new \UnexpectedValueException('the copied issue id cannot be empty.', -11109);
         }
 
         $src_issue = DB::collection('issue_' . $project_key)->where('_id', $src_id)->first();
         if (!$src_issue )
         {
-            throw new \UnexpectedValueException('the copied issue does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the copied issue does not exist or is not in the project.', -11103);
         }
 
         $schema = Provider::getSchemaByType($src_issue['type']);
         if (!$schema)
         {
-            throw new \UnexpectedValueException('the schema of the type is not existed.', -10002);
+            throw new \UnexpectedValueException('the schema of the type is not existed.', -11101);
         }
 
         $valid_keys = array_merge(array_column($schema, 'key'), [ 'type', 'parent_id', 'priority', 'assignee' ]);
@@ -1001,13 +1001,13 @@ class IssueController extends Controller
         $issue = DB::collection($table)->find($id);
         if (!$issue)
         {
-            throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -11103);
         }
 
         $type = $request->input('type');
         if (!isset($type) || !$type)
         {
-            throw new \UnexpectedValueException('the issue type cannot be empty.', -10002);
+            throw new \UnexpectedValueException('the issue type cannot be empty.', -11100);
         }
 
         $parent_id = $request->input('parent_id');
@@ -1023,7 +1023,7 @@ class IssueController extends Controller
             $parent_issue = DB::collection($table)->find($parent_id);
             if (!$parent_issue)
             {
-                throw new \UnexpectedValueException('the dest parent issue does not exist or is not in the project.', -10002);
+                throw new \UnexpectedValueException('the dest parent issue does not exist or is not in the project.', -11110);
             }
         }
         $updValues['parent_id'] = $parent_id;
@@ -1056,18 +1056,18 @@ class IssueController extends Controller
         $issue = DB::collection($table)->find($id);
         if (!$issue)
         {
-            throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -11103);
         }
 
         $parent_id = $request->input('parent_id'); 
         if (!isset($parent_id) || !$parent_id)
         {
-            throw new \UnexpectedValueException('the dest parent cannot be empty.', -10002);
+            throw new \UnexpectedValueException('the dest parent cannot be empty.', -11111);
         }
         $parent_issue = DB::collection($table)->find($parent_id);
         if (!$parent_issue)
         {
-            throw new \UnexpectedValueException('the dest parent issue does not exist or is not in the project.', -10002);
+            throw new \UnexpectedValueException('the dest parent issue does not exist or is not in the project.', -11110);
         }
 
         if ($parent_id === $issue['parent_id'])
