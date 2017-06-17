@@ -94,6 +94,10 @@ class WorkflowController extends Controller
     public function show(Request $request, $project_key, $id)
     {
         $workflow = Definition::find($id);
+        if (!$workflow || $project_key != $workflow->project_key)
+        {
+            throw new \UnexpectedValueException('the workflow does not exist or is not in the project.', -12101);
+        }
 
         $states = Provider::getStateOptions($project_key);
         $screens = Provider::getScreenList($project_key, ['name']);

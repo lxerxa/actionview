@@ -355,7 +355,12 @@ class ProjectController extends Controller
         $project = Project::where('key', $key)->first();
         if (!$project)
         {
-            throw new \UnexpectedValueException('the project does not exist.', -14004);
+            return Response()->json(['ecode' => -14004, 'emsg' => 'the project does not exist.']);
+        }
+
+        if ($project->status !== 'active')
+        {
+            return Response()->json(['ecode' => -14009, 'emsg' => 'the project has been closed.']);
         }
 
         // get action allow of the project.
