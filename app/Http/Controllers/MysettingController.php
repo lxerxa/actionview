@@ -112,13 +112,13 @@ class MysettingController extends Controller
         }
 
         $department = $request->input('department');
-        if (isset($department) && trim($department))
+        if (isset($department))
         {
             $user->department = trim($department);
         }
 
         $position = $request->input('position');
-        if (isset($position) && trim($position))
+        if (isset($position))
         {
             $user->position = trim($position);
         }

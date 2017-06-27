@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Event;
 use App\Events\IssueEvent;
 
@@ -158,7 +159,27 @@ class ProjectController extends Controller
             return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
         }
 
-        return Response()->json([ 'ecode' => 0, 'data' => [ 'id' => $id ] ]);
+        Schema::collection('issue_' . $project->key, function($col) {
+          $col->index('type');
+          $col->index('state');
+          $col->index('resolution');
+          $col->index('priority');
+          $col->index('created_at');
+          $col->index('updated_at');
+          $col->index('module');
+          $col->index('resolve_version');
+          $col->index('no');
+          $col->index('assignee.id');
+          $col->index('reporter.id');
+        });
+        Schema::collection('activity_' . $project->key, function($col) {
+          $col->index('event_key');
+        });
+        Schema::collection('comments_' . $project->key, function($col) {
+          $col->index('issue_id');
+        });
+
+        return Response()->json([ 'ecode' => 0, 'data' => $project ]);
     }
 
     /**
@@ -172,6 +193,35 @@ class ProjectController extends Controller
         if (!isset($ids) || !$ids)
         {
             throw new \InvalidArgumentException('the selected projects cannot been empty.', -14007);
+        }
+
+        foreach ($ids as $id)
+        {
+            $project = Project::find($id);
+            if (!$project)
+            {
+                continue;
+            }
+
+            Schema::collection('issue_' . $project->key, function($col) {
+              $col->index('type');
+              $col->index('state');
+              $col->index('resolution');
+              $col->index('priority');
+              $col->index('created_at');
+              $col->index('updated_at');
+              $col->index('module');
+              $col->index('resolve_version');
+              $col->index('no');
+              $col->index('assignee.id');
+              $col->index('reporter.id');
+            });
+            Schema::collection('activity_' . $project->key, function($col) {
+              $col->index('event_key');
+            });
+            Schema::collection('comments_' . $project->key, function($col) {
+              $col->index('issue_id');
+            });
         }
         return Response()->json([ 'ecode' => 0, 'data' => [ 'ids' => $ids ] ]);
     }
