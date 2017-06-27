@@ -18,6 +18,8 @@ use App\Acl\Acl;
 use Sentinel;
 use DB;
 
+use MongoDB\BSON\ObjectID;
+
 class IssueController extends Controller
 {
     /**
@@ -29,7 +31,7 @@ class IssueController extends Controller
     {
         $page_size = 50;
 
-        $where = array_only($request->all(), [ 'type', 'assignee', 'reporter', 'state', 'resolution', 'priority' ]) ?: [];
+        $where = array_only($request->all(), [ 'type', 'assignee', 'reporter', 'state', 'resolution', 'priority', 'module', 'resolve_version' ]) ?: [];
         foreach ($where as $key => $val)
         {
             if ($key === 'assignee' || $key === 'reporter')
@@ -49,15 +51,16 @@ class IssueController extends Controller
             }
         }
 
-        $created_at = $request->input('created_at');
-        $updated_at = $request->input('updated_at');
-        $title = $request->input('title');
-        $no = $request->input('no');
-
-        $orderBy = $request->input('orderBy') ?: '';
-        if ($orderBy)
+        $watched_issues = array_column(Watch::where('project_key', $project_key)->where('user.id', $this->user->id)->get()->toArray(), 'issue_id');
+        $watcher = $request->input('watcher');
+        if (isset($watcher) && $watcher === 'me')
         {
-            $orderBy = explode(',', $orderBy);
+            $watchedIds = [];
+            foreach ($watched_issues as $id)
+            {
+                $watchedIds[] = new ObjectID($id);
+            }
+            $where['_id'] = [ '$in' => $watchedIds ]; 
         }
 
         $query = DB::collection('issue_' . $project_key);
@@ -65,24 +68,29 @@ class IssueController extends Controller
         {
             $query = $query->whereRaw($where);
         }
+
+        $no = $request->input('no');
         if (isset($no) && $no)
         {
             $query->where('no', intval($no));
         }
+
+        $title = $request->input('title');
         if (isset($title) && $title)
         {
             if (is_int($title + 0))
             {
-                $query->where(function ($query) use ($title)
-                    {
-                        $query->where('no', $title + 0)->orWhere('title', 'like', '%' . $title . '%');
-                    });
+                $query->where(function ($query) use ($title) {
+                    $query->where('no', $title + 0)->orWhere('title', 'like', '%' . $title . '%');
+                });
             }
             else
             {
                 $query->where('title', 'like', '%' . $title . '%');
             }
         }
+
+        $created_at = $request->input('created_at');
         if (isset($created_at) && $created_at)
         {
             if ($created_at == '1w')
@@ -102,6 +110,8 @@ class IssueController extends Controller
                 $query->where('created_at', '<', strtotime(date('Ymd', strtotime('-1 month'))));
             }
         }
+
+        $updated_at = $request->input('updated_at');
         if (isset($updated_at) && $updated_at)
         {
             if ($updated_at == '1w')
@@ -127,8 +137,10 @@ class IssueController extends Controller
         // get total num
         $total = $query->count();
 
+        $orderBy = $request->input('orderBy') ?: '';
         if ($orderBy)
         {
+            $orderBy = explode(',', $orderBy);
             foreach ($orderBy as $val)
             {
                 $val = explode(' ', trim($val));
@@ -143,7 +155,6 @@ class IssueController extends Controller
         $query = $query->skip($page_size * ($page - 1))->take($page_size);
         $issues = $query->get();
 
-        $watched_issues = array_column(Watch::where('project_key', $project_key)->where('user.id', $this->user->id)->get()->toArray(), 'issue_id');
         $cache_parents = [];
         foreach ($issues as $key => $issue)
         {
@@ -471,7 +482,7 @@ class IssueController extends Controller
         // get timetrack options
         $timetrack = $this->getTimeTrackSetting();
 
-        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange([ 'users' => $users, 'assignees' => $assignees, 'types' => $types, 'states' => $states, 'resolutions' => $resolutions, 'priorities' => $priorities, 'searchers' => $searchers, 'timetrack' => $timetrack ]) ]);
+        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange([ 'users' => $users, 'assignees' => $assignees, 'types' => $types, 'states' => $states, 'resolutions' => $resolutions, 'priorities' => $priorities, 'modules' => $modules, 'versions' => $versions, 'searchers' => $searchers, 'timetrack' => $timetrack ]) ]);
     }
 
     /**

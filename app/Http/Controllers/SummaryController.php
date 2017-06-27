@@ -36,6 +36,14 @@ class SummaryController extends Controller
                 $optPriorities[$priority['_id']] = $priority['name'];
             }
         }
+
+        $optModules = [];
+        $modules = Provider::getModuleList($project_key);
+        foreach ($modules as $module)
+        {
+            $optModules[$module->id] = $module->name;
+        }
+
         //$users = Provider::getUserList($project_key); 
 
         $issues = DB::collection('issue_' . $project_key)
@@ -74,13 +82,13 @@ class SummaryController extends Controller
         $issues = DB::collection('issue_' . $project_key)
             ->where('resolution', 'Unresolved')
             ->where('del_flg', '<>', 1)
-            ->get([ 'priority', 'assignee', 'type' ]);
+            ->get([ 'priority', 'assignee', 'type', 'module' ]);
 
         $users = [];
         $assignee_unresolved_issues = [];
         foreach ($issues as $issue)
         {
-            if (!isset($issue['assignee'])) 
+            if (!isset($issue['assignee']) || !$issue['assignee']) 
             {
                 continue;
             }
@@ -101,6 +109,10 @@ class SummaryController extends Controller
         $priority_unresolved_issues = [];
         foreach ($issues as $issue)
         {
+            if (!isset($issue['priority']) || !$issue['priority'])
+            {
+                continue;
+            }
             if (!isset($priority_unresolved_issues[$issue['priority']][$issue['type']]))
             {
                 $priority_unresolved_issues[$issue['priority']][$issue['type']] = 0;
@@ -122,6 +134,25 @@ class SummaryController extends Controller
             }
         }
 
-        return Response()->json([ 'ecode' => 0, 'data' => [ 'new_issues' => $new_issues, 'closed_issues' => $closed_issues, 'assignee_unresolved_issues' => $assignee_unresolved_issues, 'priority_unresolved_issues' => $sorted_priority_unresolved_issues ], 'options' => [ 'types' => $types, 'users' => $users, 'priorities' => $optPriorities, 'weekAgo' => date('Y/m/d', strtotime('-1 week')) ] ]);
+        $module_unresolved_issues = [];
+        foreach ($issues as $issue)
+        {
+            if (!isset($issue['module']) || !$issue['module'])
+            {
+                continue;
+            }
+            if (!isset($module_unresolved_issues[$issue['module']][$issue['type']]))
+            {
+                $module_unresolved_issues[$issue['module']][$issue['type']] = 0;
+            }
+            if (!isset($module_unresolved_issues[$issue['module']]['total']))
+            {
+                $module_unresolved_issues[$issue['module']]['total'] = 0;
+            }
+            $module_unresolved_issues[$issue['module']][$issue['type']] += 1;
+            $module_unresolved_issues[$issue['module']]['total'] += 1;
+        }
+
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'new_issues' => $new_issues, 'closed_issues' => $closed_issues, 'assignee_unresolved_issues' => $assignee_unresolved_issues, 'priority_unresolved_issues' => $sorted_priority_unresolved_issues, 'module_unresolved_issues' => $module_unresolved_issues ], 'options' => [ 'types' => $types, 'users' => $users, 'priorities' => $optPriorities, 'modules' => $optModules, 'weekAgo' => date('Y/m/d', strtotime('-1 week')) ] ]);
     }
 }
