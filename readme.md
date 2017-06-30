@@ -1,4 +1,4 @@
-# Laravel PHP Framework
+# ActionView
 
 [![Build Status](https://travis-ci.org/laravel/framework.svg)](https://travis-ci.org/laravel/framework)
 [![Total Downloads](https://poser.pugx.org/laravel/framework/d/total.svg)](https://packagist.org/packages/laravel/framework)
@@ -23,6 +23,7 @@ Thank you for considering contributing to the Laravel framework! The contributio
 If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell at taylor@laravel.com. All security vulnerabilities will be promptly addressed.
 
 ## License
-ActionView 遵从许可证[GNU General Public License version 3](http://https://www.gnu.org/licenses/gpl-3.0.html)
 
-The actionview is open-sourced software licensed under the [GNU General Public License version 3](http://https://www.gnu.org/licenses/gpl-3.0.html).
+ActionView 遵从许可证[GNU General Public License version 3](https://www.gnu.org/licenses/gpl-3.0.html)
+
+The actionview is open-sourced software licensed under the [GNU General Public License version 3](https://www.gnu.org/licenses/gpl-3.0.html).
