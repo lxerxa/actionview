@@ -24,4 +24,4 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](http://opensource.org/licenses/MIT).
+The actionview is open-sourced software licensed under the [GNU General Public License version 3](http://https://www.gnu.org/licenses/gpl-3.0.html).
