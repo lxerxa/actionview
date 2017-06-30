@@ -12,7 +12,7 @@ Laravel is accessible, yet powerful, providing tools needed for large, robust ap
 
 ## Official Documentation
 
-Documentation for the framework can be found on the [Laravel website](http://laravel.com/docs).
+该系统工具的参考文档将发布于 [ActionView站点](http://actionview.cn/docs)。由于时间原因，暂未整理，我们会尽快发布。
 
 ## Contributing
 
@@ -26,4 +26,4 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 
 ActionView 遵从许可证 [GNU General Public License version 3](http://www.gnu.org/licenses/gpl-3.0.html)
 
-The actionview is open-sourced software licensed under the [GNU General Public License version 3](http://www.gnu.org/licenses/gpl-3.0.html).
+The ActionView is open-sourced software licensed under the [GNU General Public License version 3](http://www.gnu.org/licenses/gpl-3.0.html).
