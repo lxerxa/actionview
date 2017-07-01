@@ -10,6 +10,13 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
 
 Laravel is accessible, yet powerful, providing tools needed for large, robust applications. A superb inversion of control container, expressive migration system, and tightly integrated unit testing support give you the tools you need to build any application with which you are tasked.
 
+## Feature
+
+* 支撑用户创建项目，项目不仅可引用全局配置方案，也可自定义本地方案。各项目间自定义方案是隔离的。
+* 各项目不仅可引用系统默认工作流，同事可自定义自己的工作流。
+* 简单易用的问题界面配置。
+* 完备的权限控制模型。
+
 ## Official Documentation
 
 该系统工具的参考文档将发布于 [ActionView站点](http://actionview.cn/docs)。由于时间原因，暂未整理，我们会尽快发布。
