@@ -570,6 +570,11 @@ class IssueController extends Controller
             return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
         }
 
+        if (!$request->all())
+        {
+            return $this->show($project_key, $id); 
+        }
+
         $table = 'issue_' . $project_key;
         $issue = DB::collection($table)->find($id);
         if (!$issue)
