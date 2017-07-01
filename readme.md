@@ -19,6 +19,13 @@ Laravel is accessible, yet powerful, providing tools needed for large, robust ap
 * 灵活可定制的消息通知方案。
 * 支持用户在问题上添加工作日志。
 
+## RoadMap
+
+* 开发移动APP（React Native）。
+* 开发敏捷看板（Agile Board）。
+* 支持多语言。
+* 开发报告模块。
+
 ## Official Documentation
 
 该系统工具的参考文档将发布于 [ActionView站点](http://actionview.cn/docs)。由于时间原因，暂未整理完成。
