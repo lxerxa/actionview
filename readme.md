@@ -12,7 +12,7 @@ Laravel is accessible, yet powerful, providing tools needed for large, robust ap
 
 ## Feature
 
-* 支撑用户创建项目，项目不仅可引用全局配置方案，也可自定义本地方案。
+* 支持用户创建项目，项目不仅可引用全局配置方案，也可自定义本地方案。
 * 各项目不仅可引用系统默认工作流，同时可自定义自己的工作流。
 * 简单易用的问题界面配置。
 * 完备的权限控制模型。
