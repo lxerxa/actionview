@@ -1,0 +1,3 @@
+[submodule "front-end"]
+	path = front-end
+	url = https://github.com/lxerxa/actionview-fe.git
