@@ -4,7 +4,9 @@
 
 # Installation
 
-系统要求：>= php 5.5.9
+系统要求：
+>= php 5.5.9
+
 全局安装composer： 
 curl -sS https://getcomposer.org/installer | php
 mv composer.phar /usr/local/bin/composer
