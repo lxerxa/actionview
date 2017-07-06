@@ -17,12 +17,13 @@
 > git clone https://github.com/lxerxa/actionview.git actionview
 
 安装ActionView(安装过程若缺少某个系统组件可手动安装):
-> cd actionview   
+> cd actionview   
 > composer install   
+> 将public目录配置成apache DocumentRoot   
 > chmod -R 777 storage    
 > cd bootstrap   
 > chmod -R 777 cache   
-> 将public目录配置成apache DocumentRoot   
+ 
 
 ## Feature
 
