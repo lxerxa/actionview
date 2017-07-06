@@ -2,6 +2,13 @@
 
 提供了一个基于Web的、开源的、免费的问题需求跟踪工具，致力于做成开源版的Jira。
 
+# Installation
+
+系统要求：>= php 5.5.9
+全局安装composer： 
+curl -sS https://getcomposer.org/installer | php
+mv composer.phar /usr/local/bin/composer
+
 ## Feature
 
 * 支持用户创建项目，项目不仅可引用全局配置方案，也可自定义本地方案。
