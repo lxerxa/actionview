@@ -16,7 +16,7 @@
 
 安装ActionView:  
 > cd actionview  
-> composer install  
+> composer install  
 > chmod -R 777 storage  
 > cd bootstrap   
 > chmod -R 777 cache  
