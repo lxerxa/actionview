@@ -18,11 +18,12 @@
 
 安装ActionView(安装过程若缺少某个系统组件可手动安装):
 > cd actionview   
-> composer install   
-> 将public目录配置成apache DocumentRoot   
+> composer install    
 > chmod -R 777 storage    
 > cd bootstrap   
-> chmod -R 777 cache   
+> chmod -R 777 cache 
+
+> 将public目录配置成apache DocumentRoot  
  
 
 ## Feature
