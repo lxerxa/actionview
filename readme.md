@@ -4,8 +4,10 @@
 
 # Installation
 
-系统要求：  
+系统要求：
+> apache 2.4.7+  
 > php 5.5.9+  
+> mongodb 2.4.9+  
 
 全局安装composer：   
 > curl -sS https://getcomposer.org/installer | php  
