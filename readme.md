@@ -4,13 +4,19 @@
 
 # Installation
 
-系统要求：
+系统要求：  
 > php 5.5.9+  
 
-全局安装composer： 
-
+全局安装composer：   
 > curl -sS https://getcomposer.org/installer | php  
 > mv composer.phar /usr/local/bin/composer
+
+下载程序：
+> git clone https://github.com/lxerxa/actionview.git actionview
+
+安装ActionView:  
+> cd actionview  
+> composer install  
 
 ## Feature
 
