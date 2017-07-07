@@ -37,6 +37,9 @@
 > vendor/cartalyst/sentinel/src/Activations/IlluminateActivationRepository.php  
 > create函数(line 75) add $activation->completed = false;  
 
+执行db脚本：  
+> aaaa  
+
 ## Feature
 
 * 支持用户创建项目，项目不仅可引用全局配置方案，也可自定义本地方案。
