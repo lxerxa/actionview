@@ -22,10 +22,11 @@
 
 > chmod -R 777 storage    
 > cd bootstrap   
-> chmod -R 777 cache 
-
-> 将public目录配置成apache DocumentRoot  
- 
+> chmod -R 777 cache  
+> cd ../  
+> 修改 vendor/cartalyst/sentinel/src/Users/EloquentUser.php  
+> 修改 vendor/cartalyst/sentinel/src/Activations/EloquentActivation.php  
+> 修改 vendor/cartalyst/sentinel/src/Persistences/EloquentPersistence.php   
 
 ## Feature
 
