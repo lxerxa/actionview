@@ -26,11 +26,11 @@
 > cd ../  
 
 > vendor/cartalyst/sentinel/src/Users/EloquentUser.php  
-> 修改 use Jenssegers\Mongodb\Eloquent\Model;   
+> 修改 use Jenssegers\Mongodb\Eloquent\Model;  
 > vendor/cartalyst/sentinel/src/Activations/EloquentActivation.php   
-> 修改 use Jenssegers\Mongodb\Eloquent\Model;   
-> vendor/cartalyst/sentinel/src/Persistences/EloquentPersistence.php   
-> 修改 use Jenssegers\Mongodb\Eloquent\Model;   
+> 修改 use Jenssegers\Mongodb\Eloquent\Model;  
+> vendor/cartalyst/sentinel/src/Persistences/EloquentPersistence.php  
+> 修改 use Jenssegers\Mongodb\Eloquent\Model;  
 
 ## Feature
 
