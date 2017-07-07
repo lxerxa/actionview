@@ -19,13 +19,13 @@
 安装ActionView(安装过程若缺少某个系统组件可手动安装):
 > cd actionview   
 > composer install    
-
 > chmod -R 777 storage    
 > cd bootstrap   
 > chmod -R 777 cache  
 > cd ../  
 
-> vendor/cartalyst/sentinel/src/Users/EloquentUser.php  
+修改文件：  
+> vendor/cartalyst/sentinel/src/Users/EloquentUser.php  
 > 修改 use Illuminate\Database\Eloquent\Model; ==> use Jenssegers\Mongodb\Eloquent\Model;  
 > vendor/cartalyst/sentinel/src/Activations/EloquentActivation.php   
 > 修改 use Illuminate\Database\Eloquent\Model; ==> use Jenssegers\Mongodb\Eloquent\Model;  
