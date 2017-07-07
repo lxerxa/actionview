@@ -16,7 +16,7 @@
 下载程序：
 > git clone https://github.com/lxerxa/actionview.git actionview
 
-安装ActionView(安装过程若缺少某个系统组件可手动安装):
+安装依赖(安装过程若缺少某个系统组件可手动安装):
 > cd actionview   
 > composer install    
 > chmod -R 777 storage    
