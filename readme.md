@@ -25,7 +25,7 @@
 > cd ../  
 
 修改文件：  
-> vendor/cartalyst/sentinel/src/Users/EloquentUser.php  
+> vendor/cartalyst/sentinel/src/Users/EloquentUser.php  
 > 修改 use Illuminate\Database\Eloquent\Model; ==> use Jenssegers\Mongodb\Eloquent\Model;  
 > vendor/cartalyst/sentinel/src/Activations/EloquentActivation.php   
 > 修改 use Illuminate\Database\Eloquent\Model; ==> use Jenssegers\Mongodb\Eloquent\Model;  
