@@ -1,6 +1,6 @@
 # ActionView
 
-提供了一个基于Web的、面向企业的、开源免费的问题需求跟踪工具，致力于做成开源版的Jira。
+提供了一个后端基于laravel-framework的、前端基于reactjs＋redux的问题需求跟踪工具，致力于做成开源版的Jira。
 
 # Installation
 
