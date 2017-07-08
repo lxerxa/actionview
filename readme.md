@@ -35,7 +35,20 @@
 > 修改 use Illuminate\Database\Eloquent\Model; ==> use Jenssegers\Mongodb\Eloquent\Model;  
 
 > vendor/cartalyst/sentinel/src/Activations/IlluminateActivationRepository.php  
-> create函数(line 75) add $activation->completed = false;  
+> create函数(line 75)添加 $activation->completed = false;  
+
+> config/database.php  
+&#160; &#160; &#160; &#160;mongodb' => [  
+&#160; &#160; &#160; &#160;&#160; &#160; &#160; &#160;'driver'   => 'mongodb',  
+&#160; &#160; &#160; &#160;&#160; &#160; &#160; &#160;'host'     => env('DB_HOST', 'localhost'),  
+&#160; &#160; &#160; &#160;&#160; &#160; &#160; &#160;'port'     => env('DB_PORT', 27017),  
+&#160; &#160; &#160; &#160;&#160; &#160; &#160; &#160;'database' => env('DB_DATABASE', 'xxxx'),  
+&#160; &#160; &#160; &#160;&#160; &#160; &#160; &#160;'username' => env('DB_USERNAME', 'xxxx'),  
+&#160; &#160; &#160; &#160;&#160; &#160; &#160; &#160;'password' => env('DB_PASSWORD', 'xxxx'),  
+&#160; &#160; &#160; &#160;&#160; &#160; &#160; &#160;'options' => array(  
+&#160; &#160; &#160; &#160;&#160; &#160; &#160; &#160;&#160; &#160; &#160; &#160;'db' => 'jirax'   
+&#160; &#160; &#160; &#160;&#160; &#160; &#160; &#160;)  
+&#160; &#160; &#160; &#160;],  
 
 执行db脚本：  
 > aaaa  
