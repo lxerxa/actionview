@@ -82,11 +82,7 @@
 
 ## Contributing
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](http://laravel.com/docs/contributions).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell at taylor@laravel.com. All security vulnerabilities will be promptly addressed.
+谢谢你能参与ActionView的开发当中。如果对系统有一些疑惑，或发现了一些bug，或建议增加新的feature，或对系统有一些改进时，欢迎在[issue board](https://github.com/lxerxa/actionview/issues)讨论。  
 
 ## License
 
