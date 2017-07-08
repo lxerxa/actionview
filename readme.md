@@ -26,13 +26,13 @@
 
 修改文件：  
 > vendor/cartalyst/sentinel/src/Users/EloquentUser.php  
-> 修改 use Illuminate\Database\Eloquent\Model; ==> use Jenssegers\Mongodb\Eloquent\Model;  
+> use Illuminate\Database\Eloquent\Model; ==> use Jenssegers\Mongodb\Eloquent\Model;  
 
 > vendor/cartalyst/sentinel/src/Activations/EloquentActivation.php   
-> 修改 use Illuminate\Database\Eloquent\Model; ==> use Jenssegers\Mongodb\Eloquent\Model; 
+> use Illuminate\Database\Eloquent\Model; ==> use Jenssegers\Mongodb\Eloquent\Model; 
 
 > vendor/cartalyst/sentinel/src/Persistences/EloquentPersistence.php  
-> 修改 use Illuminate\Database\Eloquent\Model; ==> use Jenssegers\Mongodb\Eloquent\Model;  
+> use Illuminate\Database\Eloquent\Model; ==> use Jenssegers\Mongodb\Eloquent\Model;  
 
 > vendor/cartalyst/sentinel/src/Activations/IlluminateActivationRepository.php  
 > create函数(line 75)添加 $activation->completed = false;  
