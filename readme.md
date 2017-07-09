@@ -60,8 +60,8 @@
 * 简单易用的问题界面配置。
 * 强大的数据筛选功能，可定义自己的过滤器。
 * 完备的权限控制模型。
-* 不仅可查看某个问题的改动记录，还可浏览整个项目的活动日志。  
 * 灵活可定制的消息通知方案。
+* 不仅可查看某个问题的改动记录，还可浏览整个项目的活动日志。  
 * 支持用户在问题上添加工作日志。
 * 支持用户针对问题发表评论。
 * 使用当前较流行的前后端技术框架，后端：php/larave, 前端：ReactJS+Redux。
@@ -83,7 +83,7 @@
 
 ## Contributing
 
-谢谢您能参与ActionView的开发当中。如果您对系统有一些疑惑，或发现了一些bug，或建议增加新的feature，或对系统有一些改进时，欢迎在[issue board](https://github.com/lxerxa/actionview/issues)中讨论，如果是前端相关的可以在[front-end issue board](https://github.com/lxerxa/actionview/issues)中讨论。如果发现有重大安全问题可发Email至：actionview@126.com。
+谢谢您能参与ActionView的开发当中。如果您对系统有什么疑惑，或发现了一些问题，或建议增加新的feature，或提出改进时，欢迎在[issue board](https://github.com/lxerxa/actionview/issues)中讨论，如果是前端相关的可以在[front-end issue board](https://github.com/lxerxa/actionview/issues)中讨论。如果发现有重大安全问题可发Email至：actionview@126.com。
 
 ## License
 
