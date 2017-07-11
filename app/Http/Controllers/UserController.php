@@ -17,7 +17,7 @@ class UserController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('privilege:sys_admin', [ 'except' => 'search' ]);
+        $this->middleware('privilege:sys_admin', [ 'except' => [ 'register', 'search' ] ]);
         parent::__construct();
     }
 
