@@ -48,7 +48,7 @@ class Provider {
         $states = State::Where('project_key', '$_sys_$')
             ->orWhere('project_key', $project_key)
             ->orderBy('project_key', 'asc')
-            ->orderBy('created_at', 'asc')
+            ->orderBy('_id', 'asc')
             ->get($fields)
             ->toArray();
 
@@ -89,7 +89,7 @@ class Provider {
         $events = Events::Where('project_key', '$_sys_$')
             ->orWhere('project_key', $project_key)
             ->orderBy('project_key', 'asc')
-            ->orderBy('created_at', 'asc')
+            ->orderBy('_id', 'asc')
             ->get($fields);
 
         return $events;
@@ -338,7 +338,7 @@ class Provider {
         $screens = Screen::Where('project_key', '$_sys_$')
             ->orWhere('project_key', $project_key)
             ->orderBy('project_key', 'asc')
-            ->orderBy('created_at', 'asc')
+            ->orderBy('_id', 'asc')
             ->get($fields);
 
         return $screens;
@@ -356,7 +356,7 @@ class Provider {
         $fields = Field::Where('project_key', '$_sys_$')
             ->orWhere('project_key', $project_key)
             ->orderBy('project_key', 'asc')
-            ->orderBy('created_at', 'asc')
+            ->orderBy('_id', 'asc')
             ->get($fields);
 
         return $fields;
@@ -374,7 +374,7 @@ class Provider {
         $workflows = Definition::Where('project_key', '$_sys_$')
             ->orWhere('project_key', $project_key)
             ->orderBy('project_key', 'asc')
-            ->orderBy('created_at', 'asc')
+            ->orderBy('_id', 'asc')
             ->get($fields);
 
         return $workflows;
@@ -409,7 +409,7 @@ class Provider {
         $roles = Role::Where('project_key', '$_sys_$')
             ->orWhere('project_key', $project_key)
             ->orderBy('project_key', 'asc')
-            ->orderBy('created_at', 'asc')
+            ->orderBy('_id', 'asc')
             ->get($fields);
 
         return $roles;
@@ -466,7 +466,7 @@ class Provider {
     public static function getVersionList($project_key, $fields=[])
     {
         $versions = Version::whereRaw([ 'project_key' => $project_key ])
-            ->orderBy('created_at', 'desc')
+            ->orderBy('_id', 'desc')
             ->get($fields);
 
         return $versions;
@@ -482,7 +482,7 @@ class Provider {
     public static function getModuleList($project_key, $fields=[])
     {
         $versions = Module::where([ 'project_key' => $project_key ])
-            ->orderBy('created_at', 'asc')
+            ->orderBy('_id', 'asc')
             ->get($fields);
 
         return $versions;
