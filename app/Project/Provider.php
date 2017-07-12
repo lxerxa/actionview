@@ -182,7 +182,7 @@ class Provider {
             {
                 foreach($priorities as $key => $val)
                 {
-                    if ($val['_id'] == $defaultValue || $val['key'] == $defaultValue)
+                    if ($val['_id'] == $defaultValue)
                     {
                         $priorities[$key]['default'] = true;
                     }
@@ -286,7 +286,7 @@ class Provider {
             {
                 foreach($resolutions as $key => $val)
                 {
-                    if ($val['_id'] == $defaultValue || $val['key'] == $defaultValue)
+                    if ($val['_id'] == $defaultValue)
                     {
                         $resolutions[$key]['default'] = true;
                     }
