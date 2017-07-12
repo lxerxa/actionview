@@ -12,6 +12,7 @@ class Events extends Model
     protected $fillable = array(
         'project_key',
         'name',
+        'apply',
         'description'
     );
 }

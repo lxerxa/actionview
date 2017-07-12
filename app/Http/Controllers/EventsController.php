@@ -53,7 +53,7 @@ class EventsController extends Controller
             throw new \UnexpectedValueException('event name cannot be repeated', -12801);
         }
 
-        $event = Events::create([ 'project_key' => $project_key ] + $request->all());
+        $event = Events::create([ 'project_key' => $project_key, 'apply' => 'workflow' ] + $request->all());
         return Response()->json(['ecode' => 0, 'data' => $event]);
     }
 
