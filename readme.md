@@ -39,7 +39,7 @@
 > create函数(line 75)添加 $activation->completed = false;  
 
 执行db脚本：  
-> aaaa  
+> mongorestore -h 127.0.0.1 -u username -p secret -d dbname --drop ./dbdata  
 
 ## Feature
 
