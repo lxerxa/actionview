@@ -23,7 +23,7 @@
 > cd bootstrap   
 > chmod -R 777 cache  
 > cd ../  
-> cp .env.example ./env (修改数据库连接参数)  
+> cp .env.example .env (修改数据库连接参数)  
 
 修改文件：  
 > vendor/cartalyst/sentinel/src/Users/EloquentUser.php  
