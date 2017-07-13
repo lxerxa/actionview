@@ -23,6 +23,7 @@
 > cd bootstrap   
 > chmod -R 777 cache  
 > cd ../  
+> cp .env.example ./env (修改数据库连接参数)  
 
 修改文件：  
 > vendor/cartalyst/sentinel/src/Users/EloquentUser.php  
@@ -36,19 +37,6 @@
 
 > vendor/cartalyst/sentinel/src/Activations/IlluminateActivationRepository.php  
 > create函数(line 75)添加 $activation->completed = false;  
-
-> config/database.php  
-&#160; &#160; &#160; &#160;mongodb' => [  
-&#160; &#160; &#160; &#160;&#160; &#160; &#160; &#160;'driver'   => 'mongodb',  
-&#160; &#160; &#160; &#160;&#160; &#160; &#160; &#160;'host'     => env('DB_HOST', 'localhost'),  
-&#160; &#160; &#160; &#160;&#160; &#160; &#160; &#160;'port'     => env('DB_PORT', 27017),  
-&#160; &#160; &#160; &#160;&#160; &#160; &#160; &#160;'database' => env('DB_DATABASE', 'xxxx'),  
-&#160; &#160; &#160; &#160;&#160; &#160; &#160; &#160;'username' => env('DB_USERNAME', 'xxxx'),  
-&#160; &#160; &#160; &#160;&#160; &#160; &#160; &#160;'password' => env('DB_PASSWORD', 'xxxx'),  
-&#160; &#160; &#160; &#160;&#160; &#160; &#160; &#160;'options' => array(  
-&#160; &#160; &#160; &#160;&#160; &#160; &#160; &#160;&#160; &#160; &#160; &#160;'db' => 'jirax'   
-&#160; &#160; &#160; &#160;&#160; &#160; &#160; &#160;)  
-&#160; &#160; &#160; &#160;],  
 
 执行db脚本：  
 > aaaa  
