@@ -82,11 +82,11 @@ return [
             'driver'   => 'mongodb',
             'host'     => env('DB_HOST', 'localhost'),
             'port'     => env('DB_PORT', 27017),
-            'database' => env('DB_DATABASE', 'jirax'),
-            'username' => env('DB_USERNAME', 'dev'),
-            'password' => env('DB_PASSWORD', '123456'),
+            'database' => env('DB_DATABASE', 'actionviewdb'),
+            'username' => env('DB_USERNAME', 'actionview'),
+            'password' => env('DB_PASSWORD', 'secret'),
             'options' => array(
-                'db' => 'jirax' // sets the authentication database required by mongo 3
+                'db' => env('DB_DATABASE', 'actionviewdb') // sets the authentication database required by mongo 3
             )
         ],
 
