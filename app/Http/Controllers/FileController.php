@@ -13,8 +13,6 @@ use DB;
 
 class FileController extends Controller
 {
-    const SAVE_PATH = '/var/local/docs/'; 
-
     /**
      * Upload file.
      *
@@ -32,7 +30,7 @@ class FileController extends Controller
         }
 
         $basename = md5(microtime() . $_FILES[$field]['name']);
-        $sub_save_path = self::SAVE_PATH . substr($basename, 0, 2) . '/';
+        $sub_save_path = config('filesystems.disks.local.root', '/tmp') . '/' . substr($basename, 0, 2) . '/';
         if (!is_dir($sub_save_path))
         {
             @mkdir($sub_save_path);
@@ -108,7 +106,7 @@ class FileController extends Controller
     public function download(Request $request, $project_key, $id)
     {
         $file = File::find($id); 
-        $filepath = self::SAVE_PATH . substr($file->index, 0, 2);
+        $filepath = config('filesystems.disks.local.root', '/tmp') . '/' . substr($file->index, 0, 2);
         if ($request->input('flag') == 's')
         {
             $filename = $filepath . '/' . $file->thumbnails_index;
