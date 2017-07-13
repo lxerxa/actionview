@@ -248,7 +248,7 @@ class Workflow {
         $history_step->fill($current_step->toArray());
         $history_step->status = $old_status ?: '';
         $history_step->caller = isset($this->options['caller']) ? $this->options['caller'] : '';
-        $history_step->finish_time = new \MongoDate(time());
+        $history_step->finish_time = time();
         $history_step->save();
         // delete from current step
         $current_step->delete();
@@ -271,7 +271,7 @@ class Workflow {
         $new_current_step->action_id = intval($action_id);
         $new_current_step->step_id = intval($result_descriptor['step']);
         $new_current_step->status = isset($result_descriptor['status']) ? $result_descriptor['status'] : '';
-        $new_current_step->start_time = new \MongoDate(time());
+        $new_current_step->start_time = time();
         $new_current_step->previous_id = $previous_id ?: '';
         $new_current_step->owners =  isset($result_descriptor['owners']) ? $result_descriptor['owners'] : '';
         $new_current_step->comments = isset($this->options['comments']) ? $this->options['comments'] : '';
