@@ -6,7 +6,7 @@
 
 系统要求：
 > apache 2.4.7+  
-> php 5.5.9+  
+> php 5.5.9+ (安装php-gd)  
 > mongodb 2.4.9+  
 
 全局安装composer：   
