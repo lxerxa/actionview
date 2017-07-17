@@ -181,7 +181,11 @@ class TypeController extends Controller
         }
 
         $type->fill($defaults + $request->except(['project_key', 'type']))->save();
-        return Response()->json(['ecode' => 0, 'data' => Type::find($id)]);
+
+        $new_type = Type::find($id);
+        $new_type->is_used = $this->isFieldUsedByIssue($project_key, 'type', $new_type->toArray());
+
+        return Response()->json(['ecode' => 0, 'data' => $new_type]);
     }
 
     /**
@@ -259,6 +263,10 @@ class TypeController extends Controller
         }
 
         $types = Type::where([ 'project_key' => $project_key ])->orderBy('sn', 'asc')->get();
+        foreach ($types as $type) {
+            $type->is_used = $this->isFieldUsedByIssue($project_key, 'type', $type->toArray());
+        }
+
         return Response()->json(['ecode' => 0, 'data' => $types]);
     }
 }
