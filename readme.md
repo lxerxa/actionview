@@ -6,7 +6,7 @@
 
 系统要求：
 > apache 2.4.7+  
-> php 5.5.9+ (安装php-gd)  
+> php 5.5.9+ (安装php-gd, 重新设置上传文件大小限制)  
 > mongodb 2.4.9+  
 
 全局安装composer：   
