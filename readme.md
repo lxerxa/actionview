@@ -56,7 +56,7 @@ http://www.actionview.cn
 * 不仅可查看某个问题的改动记录，还可浏览整个项目的活动日志。  
 * 支持用户在问题上添加工作日志。
 * 支持用户针对问题发表评论。
-* 使用当前较流行的前后端技术框架，后端：php/larave, 前端：ReactJS+Redux。
+* 使用当前较流行的前后端技术框架，后端：php/laravel, 前端：ReactJS+Redux。
 * 清晰的代码结构，方便进行二次开发。
 
 ## RoadMap
