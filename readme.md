@@ -2,6 +2,10 @@
 
 提供了一个后端基于laravel-framework、前端基于reactjs＋redux的问题需求跟踪工具，致力于做成开源版的Jira。
 
+# Demo
+
+http://www.actionview.cn  
+
 # Installation
 
 系统要求：
