@@ -419,6 +419,18 @@ class ProjectController extends Controller
         {
             $permissions[] = 'manage_project';
         }
+
+        if (!$permissions)
+        {
+            $isMember = UserProject::where('user_id', $this->user->id)
+                ->where('project_key', $key)
+                ->where('link_count', '>', 0)
+                ->exists();
+            if ($isMember)
+            {
+                $permissions[] = 'watch_project';
+            }
+        }
         // get searchers
         //$searchers = DB::collection('searcher_' . $key)->where('user', $this->user->id)->orderBy('created_at', 'asc')->get();
         // get project users
