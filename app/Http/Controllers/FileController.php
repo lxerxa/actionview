@@ -146,6 +146,9 @@ class FileController extends Controller
             Event::fire(new FileDelEvent($project_key, $issue_id, $field_key, $id, $user));
         }
 
+        // logically deleted
+        DB::collection('file')->where('_id', $id)->update([ 'del_flg' => 1 ]);
+
         $issue = DB::collection('issue_' . $project_key)->where('_id', $issue_id)->first();
         if (array_search($id, $issue[$field_key]) === false)
         {
