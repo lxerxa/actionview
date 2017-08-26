@@ -1,6 +1,6 @@
 # ActionView
 
-提供了一个后端基于laravel-framework、前端基于reactjs＋redux的问题需求跟踪工具，致力于做成开源版的Jira。
+提供了一个后端基于laravel-framework、前端基于reactjs＋redux的问题需求跟踪工具，致力于做成开源版的Jira。前端代码库：[actionview-fe](https://github.com/lxerxa/actionview-fe)。  
 
 # Demo
 
