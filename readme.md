@@ -1,12 +1,16 @@
 # ActionView
 
-提供了一个后端基于laravel-framework、前端基于reactjs＋redux的问题需求跟踪工具，致力于做成开源版的Jira。
+提供了一个后端基于laravel-framework、前端基于reactjs＋redux的问题需求跟踪工具，致力于做成开源版的Jira。前端代码库：[actionview-fe](https://github.com/lxerxa/actionview-fe)。  
+
+# Demo
+
+http://www.actionview.cn  
 
 # Installation
 
 系统要求：
 > apache 2.4.7+  
-> php 5.5.9+ (安装php-gd)  
+> php 5.5.9+ (安装php-gd, 重新设置上传文件大小限制)  
 > mongodb 2.4.9+  
 
 全局安装composer：   
@@ -52,7 +56,7 @@
 * 不仅可查看某个问题的改动记录，还可浏览整个项目的活动日志。  
 * 支持用户在问题上添加工作日志。
 * 支持用户针对问题发表评论。
-* 使用当前较流行的前后端技术框架，后端：php/larave, 前端：ReactJS+Redux。
+* 使用当前较流行的前后端技术框架，后端：php/laravel, 前端：ReactJS+Redux。
 * 清晰的代码结构，方便进行二次开发。
 
 ## RoadMap
