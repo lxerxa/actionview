@@ -32,7 +32,16 @@ class EventServiceProvider extends ServiceProvider
             'App\Listeners\UserRoleSetListener',
         ],
        'App\Events\DelUserEvent' => [
-            'App\Listeners\UserDelListener',
+            'App\Listeners\UserDelListener'
+        ],
+       'App\Events\AddGroupToRoleEvent' => [
+            'App\Listeners\GroupRoleSetListener',
+        ],
+       'App\Events\DelGroupFromRoleEvent' => [
+            'App\Listeners\GroupRoleSetListener',
+        ],
+       'App\Events\DelGroupEvent' => [
+            'App\Listeners\GroupDelListener'
         ],
        'App\Events\FileUploadEvent' => [
             'App\Listeners\FileChangeListener',
