@@ -6,7 +6,7 @@ use App\Events\Event;
 use App\Events\DelUserEvent;
 use App\Acl\Eloquent\Roleactor;
 use App\Acl\Eloquent\group;
-use App\Project\Eloquent\GroupProject;
+use App\Project\Eloquent\UserGroupProject;
 
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -38,7 +38,7 @@ class GroupDelListener
     /**
      * del user from project role
      *
-     * @param  string  $user_id
+     * @param  string  $group_id
      * @return void
      */
     public function delGroupFromRole($group_id)
@@ -70,12 +70,12 @@ class GroupDelListener
     /**
      * delete users from project
      *
-     * @param  array  $user_id
+     * @param  array  $group_id
      * @return void
      */
     public function delGroupProject($group_id)
     {
-        $links = GroupProject::where('group_id', $user_id)->get([ 'group_id' ]);
+        $links = UserGroupProject::where('ug_id', $group_id)->get();
         foreach ($links as $link)
         {
             $link->delete();

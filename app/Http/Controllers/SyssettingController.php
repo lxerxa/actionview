@@ -72,7 +72,7 @@ class SyssettingController extends Controller
             $added_user_ids = array_diff($new_sys_admin_ids, $old_sys_admin_ids) ?: [];
             $deleted_user_ids = array_diff($old_sys_admin_ids, $new_sys_admin_ids) ?: [];
 
-            $this->handelUserPermission('sys_admin', $added_user_ids, $deleted_user_ids);
+            $this->handleUserPermission('sys_admin', $added_user_ids, $deleted_user_ids);
         }
 
         $syssetting->fill($updValues)->save();
@@ -88,7 +88,7 @@ class SyssettingController extends Controller
      * @param  array   $deleted_user_ids
      * @return \Illuminate\Http\Response
      */
-    public function handelUserPermission($permission, $added_user_ids, $deleted_user_ids)
+    public function handleUserPermission($permission, $added_user_ids, $deleted_user_ids)
     {
         foreach($added_user_ids as $uid)
         {

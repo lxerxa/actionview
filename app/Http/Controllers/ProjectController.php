@@ -11,6 +11,7 @@ use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Project\Eloquent\Project;
 use App\Project\Eloquent\UserGroupProject;
+use App\Project\Eloquent\AccessProjectLog;
 use App\Customization\Eloquent\Type;
 use App\Acl\Acl;
 use App\Project\Provider;
@@ -39,11 +40,11 @@ class ProjectController extends Controller
     public function myproject(Request $request)
     {
         // get bound groups
-        $groups = Acl::getBoundGroups($this->user->id);
+        $group_ids = array_column(Acl::getBoundGroups($this->user->id), 'id');
         // fix me
-        $user_projects = UserGroupProject::whereIn('ug_id', array_merge(array_column($groups, 'id'), [ $this->user->id ]));
+        $user_projects = UserGroupProject::whereIn('ug_id', array_merge($group_ids, [ $this->user->id ]));
             ->where('link_count', '>', 0)
-            ->orderBy('created_at', 'desc')
+            ->orderBy('created_at', 'asc')
             ->get(['project_key'])
             ->toArray();
 
@@ -451,7 +452,10 @@ class ProjectController extends Controller
         //$types = Provider::getTypeListExt($project->key, [ 'assignee' => $users, 'state' => $states, 'resolution' => $resolutions, 'priority' => $priorities, 'version' => $versions, 'module' => $modules ]);
 
         // record the project access date
-        $user_project = UserProject::whereRaw([ 'project_key' => $key, 'user_id' => $this->user->id ])->update([ 'latest_access_time' => time() ]);
+         AccessProjectLog::where('project_key', $key)
+            ->where('user_id', $this->user->id)
+            ->delete();
+         AccessProjectLog::create([ 'project_key' => $key, 'user_id' => $this->user->id, 'latest_access_time' => time() ]);
 
         return Response()->json([ 'ecode' => 0, 'data' => $project, 'options' => parent::arrange([ 'permissions' => $permissions ]) ]);
     }

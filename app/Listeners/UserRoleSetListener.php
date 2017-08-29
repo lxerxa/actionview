@@ -6,7 +6,7 @@ use App\Events\Event;
 use App\Events\AddUserToRoleEvent;
 use App\Events\DelUserFromRoleEvent;
 
-use App\Project\Eloquent\UserProject;
+use App\Project\Eloquent\UserGroupProject;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
@@ -51,14 +51,14 @@ class UserRoleSetListener
     {
         foreach ($user_ids as $user_id)
         {
-            $link = UserProject::where('user_id', $user_id)->where('project_key', $project_key)->first();
+            $link = UserGroupProject::where('ug_id', $user_id)->where('project_key', $project_key)->first();
             if ($link)
             {
                 $link->increment('link_count');
             }
             else
             {
-                UserProject::create([ 'user_id' => $user_id, 'project_key' => $project_key, 'link_count' => 1 ]);
+                UserGroupProject::create([ 'ug_id' => $user_id, 'project_key' => $project_key, 'type' => 'user', 'link_count' => 1 ]);
             }
         }
     }
@@ -74,7 +74,7 @@ class UserRoleSetListener
     {
         foreach ($user_ids as $user_id)
         {
-            $link = UserProject::where('user_id', $user_id)->where('project_key', $project_key)->first();
+            $link = UserGroupProject::where('ug_id', $user_id)->where('project_key', $project_key)->first();
             if ($link)
             {
                 $link->decrement('link_count');

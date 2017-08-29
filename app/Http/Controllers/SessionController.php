@@ -8,7 +8,7 @@ use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Customization\Eloquent\State;
 use App\System\Eloquent\SysSetting;
-use App\Project\Eloquent\UserProject;
+use App\Project\Eloquent\AccessProjectLog;
 use App\Project\Eloquent\Project;
 
 use Sentinel;
@@ -66,7 +66,7 @@ class SessionController extends Controller
     public function getLatestAccessProject($uid)
     {
         // get latest access project 
-        $latest_access_project = UserProject::where('user_id', $uid)
+        $latest_access_project = AccessProjectLog::where('user_id', $uid)
             ->where('latest_access_time', '>', time() - 2 * 7 * 24 * 3600)
             ->orderBy('latest_access_time', 'desc')
             ->first();
