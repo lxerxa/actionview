@@ -3,7 +3,6 @@
 namespace App\Http\Middleware;
 
 use App\Project\Eloquent\Project;
-use App\Project\Eloquent\UserProject;
 use App\Acl\Acl;
 
 use Closure;
@@ -28,11 +27,11 @@ class Privilege
                 return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
             }
         }
-        else if ($permission === 'join_project')
+        else if ($permission === 'watch_project')
         {
             if ($request->isMethod('get')) 
             {
-                if (! $this->projectCheck($request, 'join_project'))
+                if (! $this->projectCheck($request, 'watch_project'))
                 {
                     return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
                 }
@@ -96,20 +95,13 @@ class Privilege
             return $user->hasAccess([ 'sys_admin' ]);
         }
 
-        if ($permission === 'join_project')
+        $isAllowed = Acl::isAllowed($user->id, $permission, $project_key);
+        if (! $isAllowed && $permission === 'manage_project')
         {
-            return UserProject::whereRaw([ 'project_key' => $project_key, 'user_id' => $user->id ])->exists();
-        }
-        else
-        {
-            $isAllowed = Acl::isAllowed($user->id, $permission, $project_key);
-            if (! $isAllowed && $permission === 'manage_project')
+            $project = Project::where('key', $project_key)->first();
+            if ($project && isset($project->principal) && isset($project->principal['id']) && $project->principal['id'] === $user->id)
             {
-                $project = Project::where('key', $project_key)->first();
-                if ($project && isset($project->principal) && isset($project->principal['id']) && $project->principal['id'] === $user->id)
-                {
-                    return true;
-                }
+                return true;
             }
         }
         return $isAllowed;

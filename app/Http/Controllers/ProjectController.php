@@ -10,7 +10,7 @@ use App\Events\IssueEvent;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Project\Eloquent\Project;
-use App\Project\Eloquent\UserProject;
+use App\Project\Eloquent\UserGroupProject;
 use App\Customization\Eloquent\Type;
 use App\Acl\Acl;
 use App\Project\Provider;
@@ -38,10 +38,12 @@ class ProjectController extends Controller
      */
     public function myproject(Request $request)
     {
+        // get bound groups
+        $groups = Acl::getBoundGroups($this->user->id);
         // fix me
-        $user_projects = UserProject::where('user_id', $this->user->id)
+        $user_projects = UserGroupProject::whereIn('ug_id', array_merge(array_column($groups, 'id'), [ $this->user->id ]));
             ->where('link_count', '>', 0)
-            ->orderBy('latest_access_time', 'desc')
+            ->orderBy('created_at', 'desc')
             ->get(['project_key'])
             ->toArray();
 

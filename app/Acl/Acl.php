@@ -3,6 +3,7 @@ namespace App\Acl;
 
 use App\Acl\Eloquent\Role;
 use App\Acl\Eloquent\Roleactor;
+use App\Acl\Eloquent\Group;
 use App\Acl\Permissions;
 
 class Acl {
@@ -66,7 +67,30 @@ class Acl {
     public static function isAllowed($user_id, $permission, $project_key)
     {
         $permissions = self::getPermissions($user_id, $project_key);
-        return in_array($permission, $permissions);
+        if ($permission == 'watch_project') 
+        {
+            return !!$permissions;
+        }
+        else
+        {
+            return in_array($permission, $permissions);
+        }
+    }
+
+    /**
+     * get groups user is bound 
+     *
+     * @var string $user_id
+     * @return array 
+     */
+    public static function getBoundGroups($user_id)
+    {
+        $groups = [];
+        $group_list = Group::where([ 'users' => $user_id ])->get(); 
+        foreach ($group_list as $group) {
+            $groups[] = [ 'id' => $group->id, 'name' => $group->name ];
+        }
+        return $groups;
     }
 
     /**
@@ -79,10 +103,20 @@ class Acl {
     public static function getPermissions($user_id, $project_key)
     {
         $role_ids = [];
-        $role_actors = Roleactor::whereRaw([ 'user_ids' => $user_id, 'project_key' => $project_key ])->get(['role_id'])->toArray();
+        $role_actors = Roleactor::whereRaw([ 'user_ids' => $user_id, 'project_key' => $project_key ])->get([ 'role_id' ])->toArray();
         foreach($role_actors as $actor)
         {
             $role_ids[] =  $actor['role_id'];
+        }
+
+        $groups = self::getBoundGroup($user_id);
+        foreach ($groups as $group) 
+        {
+            $role_actors = Roleactor::whereRaw([ 'group_ids' => $group['id'], 'project_key' => $project_key ])->get([ 'role_id' ])->toArray();
+            foreach($role_actors as $actor)
+            {
+                $role_ids[] =  $actor['role_id'];
+            }
         }
 
         $all_permissions = [];
