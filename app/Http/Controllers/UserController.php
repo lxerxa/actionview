@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Event;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Events\DelUserEvent;
+use App\Acl\Eloquent\Group;
 
 use Cartalyst\Sentinel\Users\EloquentUser;
 use Sentinel;
@@ -71,6 +72,16 @@ class UserController extends Controller
                 $query->where('email', 'like', '%' . $name . '%')->orWhere('name', 'like', '%' . $name . '%');
             });
         }
+
+        if ($group_id = $request->input('group'))
+        {
+            $group = Group::find($group_id);
+            if ($group)
+            {
+                $query->whereIn('id', $group->users ?: []);
+            }
+        }
+
         // get total
         $total = $query->count();
 
@@ -87,6 +98,8 @@ class UserController extends Controller
             $tmp['first_name'] = $user->first_name;
             $tmp['email'] = $user->email;
             $tmp['phone'] = isset($user->phone) ? $user->phone : '';
+            $tmp['groups'] = array_column(Group::whereRaw([ 'users' => $user->id ])->get([ 'name' ]) ?: [], 'name');
+ 
             $tmp['status'] = Activation::completed($user) ? 'active' : 'unactivated';
             $users[] = $tmp;
         }
@@ -103,22 +116,22 @@ class UserController extends Controller
     {
         if (!($first_name = $request->input('first_name')) || !($first_name = trim($first_name)))
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -10002);
+            throw new \UnexpectedValueException('the name can not be empty.', -10100);
         }
 
         if (!($email = $request->input('email')) || !($email = trim($email)))
         {
-            throw new \UnexpectedValueException('the email can not be empty.', -10002);
+            throw new \UnexpectedValueException('the email can not be empty.', -10101);
         }
 
         if (Sentinel::findByCredentials([ 'email' => $email ]))
         {
-            throw new \InvalidArgumentException('the email has already been registered.', -10002);
+            throw new \InvalidArgumentException('the email has already been registered.', -10102);
         }
 
         if (!$password = $request->input('password'))
         {
-            throw new \UnexpectedValueException('the password can not be empty.', -10002);
+            throw new \UnexpectedValueException('the password can not be empty.', -10103);
         }
 
         $user = Sentinel::register([ 'first_name' => $first_name, 'email' => $email, 'password' => $password ], true);
@@ -135,17 +148,17 @@ class UserController extends Controller
     {
         if (!($first_name = $request->input('first_name')) || !($first_name = trim($first_name)))
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -10002);
+            throw new \UnexpectedValueException('the name can not be empty.', -10100);
         }
 
         if (!($email = $request->input('email')) || !($email = trim($email)))
         {
-            throw new \UnexpectedValueException('the email can not be empty.', -10002);
+            throw new \UnexpectedValueException('the email can not be empty.', -10101);
         }
 
         if (Sentinel::findByCredentials([ 'email' => $email ]))
         {
-            throw new \InvalidArgumentException('email has already existed.', -10002);
+            throw new \InvalidArgumentException('email has already existed.', -10102);
         }
 
         $phone = $request->input('phone') ? trim($request->input('phone')) : '';
@@ -164,7 +177,7 @@ class UserController extends Controller
     {
         if ($_FILES['file']['error'] > 0)
         {
-            throw new \UnexpectedValueException('upload file errors.', -10002);
+            throw new \UnexpectedValueException('upload file errors.', -10104);
         }
 
         $fid = md5(microtime() . $_FILES['file']['name']);
@@ -184,7 +197,7 @@ class UserController extends Controller
     {
         if (!($fid = $request->input('fid')))
         {
-            throw new \UnexpectedValueException('the user file can not be empty.', -10002);
+            throw new \UnexpectedValueException('the user file can not be empty.', -10105);
         }
 
         $pattern = $request->input('pattern');
@@ -254,7 +267,7 @@ class UserController extends Controller
         {
             if (!$first_name = trim($first_name))
             {
-                throw new \UnexpectedValueException('the name can not be empty.', -10002);
+                throw new \UnexpectedValueException('the name can not be empty.', -10100);
             }
         }
 
@@ -263,12 +276,12 @@ class UserController extends Controller
         {
             if (! $email = trim($email))
             {
-                throw new \UnexpectedValueException('the email can not be empty.', -10002);
+                throw new \UnexpectedValueException('the email can not be empty.', -10101);
             }
             if ($user = Sentinel::findByCredentials([ 'email' => $email ]))
             {
                 if ($user->id !== $id) {
-                    throw new \InvalidArgumentException('email has already existed.', -10002);
+                    throw new \InvalidArgumentException('email has already existed.', -10102);
                 }
             }
         }
@@ -276,13 +289,13 @@ class UserController extends Controller
         $user = Sentinel::findById($id);
         if (!$user)
         {
-            throw new \UnexpectedValueException('the user does not exist.', -10002);
+            throw new \UnexpectedValueException('the user does not exist.', -10106);
         }
 
         $valid = Sentinel::validForUpdate($user, array_only($request->all(), ['first_name', 'email', 'phone']));
         if (!$valid)
         {
-            throw new \UnexpectedValueException('updating the user does fails.', -10002);
+            throw new \UnexpectedValueException('updating the user does fails.', -10107);
         }
 
         $user = Sentinel::update($user, array_only($request->all(), ['first_name', 'email', 'phone']));
@@ -302,7 +315,7 @@ class UserController extends Controller
         $user = Sentinel::findById($id);
         if (!$user)
         {
-            throw new \UnexpectedValueException('the user does not exist.', -10002);
+            throw new \UnexpectedValueException('the user does not exist.', -10106);
         }
 
         $user->delete();
@@ -320,7 +333,7 @@ class UserController extends Controller
         $ids = $request->input('ids');
         if (!isset($ids) || !$ids)
         {
-            throw new \InvalidArgumentException('the selected users cannot been empty.', -10002);
+            throw new \InvalidArgumentException('the selected users cannot been empty.', -10108);
         }
 
         $deleted_ids = [];
@@ -349,13 +362,13 @@ class UserController extends Controller
         $user = Sentinel::findById($id);
         if (!$user)
         {
-            throw new \UnexpectedValueException('the user does not exist.', -10002);
+            throw new \UnexpectedValueException('the user does not exist.', -10106);
         }
 
         $valid = Sentinel::validForUpdate($user, [ 'password' => 'actionview' ]);
         if (!$valid)
         {
-            throw new \UnexpectedValueException('updating the user does fails.', -10002);
+            throw new \UnexpectedValueException('updating the user does fails.', -10107);
         }
 
         $user = Sentinel::update($user, [ 'password' => 'actionview' ]);

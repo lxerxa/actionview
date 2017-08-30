@@ -48,6 +48,10 @@ Route::group([ 'middleware' => 'can' ], function () {
     Route::post('api/user/imports', 'UserController@imports');
     Route::resource('api/user', 'UserController');
 
+    Route::get('api/group/search', 'GroupController@search');
+    Route::post('api/group/batch/delete', 'GroupController@delMultiUser');
+    Route::resource('api/group', 'GroupController');
+
     Route::get('api/mysetting', 'MysettingController@show');
     Route::post('api/mysetting/account', 'MysettingController@updAccounts');
     Route::post('api/mysetting/resetpwd', 'MysettingController@resetPwd');

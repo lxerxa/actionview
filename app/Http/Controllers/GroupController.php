@@ -5,11 +5,11 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 
+use App\Events\DelGroupEvent;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Acl\Eloquent\Group;
-
-use Sentinel;
+use Cartalyst\Sentinel\Users\EloquentUser;
 
 class GroupController extends Controller
 {
@@ -24,7 +24,7 @@ class GroupController extends Controller
 
         if ($name = $request->input('name'))
         {
-            $query->where('email', 'like', '%' . $name . '%');
+            $query->where('name', 'like', '%' . $name . '%');
         }
         // get total
         $total = $query->count();
@@ -48,7 +48,7 @@ class GroupController extends Controller
         $name = $request->input('name');
         if (!$name || trim($name) == '')
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -12700);
+            throw new \UnexpectedValueException('the name can not be empty.', -10200);
         }
 
         $group = Group::create($request->all());
@@ -64,10 +64,12 @@ class GroupController extends Controller
     public function show($id)
     {
         $group = Group::find($id);
-        //if (!$role || $project_key != $role->project_key)
-        //{
-        //    throw new \UnexpectedValueException('the role does not exist or is not in the project.', -10002);
-        //}
+        if (!$group)
+        {
+            throw new \UnexpectedValueException('the group does not exist.', -10201);
+        }
+        $group->users = EloquentUser::find($group->users);
+
         return Response()->json([ 'ecode' => 0, 'data' => $group ]);
     }
 
@@ -80,17 +82,29 @@ class GroupController extends Controller
      */
     public function update(Request $request, $id)
     {
+        $updValues = [];
         $name = $request->input('name');
         if (isset($name))
         {
             if (!$name || trim($name) == '')
             {
-                throw new \UnexpectedValueException('the name can not be empty.', -12700);
+                throw new \UnexpectedValueException('the name can not be empty.', -10201);
             }
+            $updValues['name'] = $name;
+        }
+
+        $user_ids = $request->input('users');
+        if (isset($user_ids))
+        {
+            $updValues['users'] = $user_ids ?: [];
         }
 
         $group = Group::find($id);
-        $group->fill($request->all())->save();
+        if (!$group)
+        {
+            throw new \UnexpectedValueException('the group does not exist.', -10201);
+        }
+        $group->fill($updValues)->save();
 
         $data = Group::find($id);
         return Response()->json([ 'ecode' => 0, 'data' => $data ]);
@@ -104,24 +118,14 @@ class GroupController extends Controller
      */
     public function destroy($id)
     {
+        $group = Group::find($id);
+        if (!$group)
+        {
+            throw new \UnexpectedValueException('the group does not exist.', -10201);
+        }
+    
         Group::destroy($id);
+        Event::fire(new DelGroupEvent($id));
         return Response()->json([ 'ecode' => 0, 'data' => [ 'id' => $id ] ]);
-    }
-
-    /**
-     * set users.
-     *
-     * @param  string $project_key
-     * @param  array $uids
-     * @return array
-     */
-    public function setUsers($group_id)
-    {
-        $user_ids = $request->input('users');
-
-        $data = Role::find($id);
-        $data->users = $this->getUsers($project_key, $id);
-
-        return Response()->json([ 'ecode' => 0, 'data' => $data ]);
     }
 }
