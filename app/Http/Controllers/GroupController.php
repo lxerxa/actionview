@@ -64,15 +64,12 @@ class GroupController extends Controller
     public function show($id)
     {
         $group = Group::find($id);
-<<<<<<< HEAD
         if (!$group)
         {
             throw new \UnexpectedValueException('the group does not exist.', -10201);
         }
         $group->users = EloquentUser::find($group->users);
 
-=======
->>>>>>> 9906f3de55b99ee325b0058aafaad32e01bce0d4
         return Response()->json([ 'ecode' => 0, 'data' => $group ]);
     }
 
@@ -124,19 +121,11 @@ class GroupController extends Controller
         $group = Group::find($id);
         if (!$group)
         {
-<<<<<<< HEAD
             throw new \UnexpectedValueException('the group does not exist.', -10201);
         }
     
         Group::destroy($id);
         Event::fire(new DelGroupEvent($id));
-=======
-            throw new \UnexpectedValueException('the group does not exist.', -10002);
-        }
-
-        Group::destroy($id);
-        Event::fire(new DelUserEvent($id));
->>>>>>> 9906f3de55b99ee325b0058aafaad32e01bce0d4
         return Response()->json([ 'ecode' => 0, 'data' => [ 'id' => $id ] ]);
     }
 }
