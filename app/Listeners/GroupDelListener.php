@@ -5,7 +5,7 @@ namespace App\Listeners;
 use App\Events\Event;
 use App\Events\DelUserEvent;
 use App\Acl\Eloquent\Roleactor;
-use App\Acl\Eloquent\group;
+use App\Acl\Eloquent\Group;
 use App\Project\Eloquent\UserGroupProject;
 
 use Illuminate\Queue\InteractsWithQueue;

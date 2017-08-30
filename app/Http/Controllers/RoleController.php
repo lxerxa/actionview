@@ -7,14 +7,18 @@ use Illuminate\Support\Facades\Event;
 
 use App\Events\AddUserToRoleEvent;
 use App\Events\DelUserFromRoleEvent;
+use App\Events\AddGroupToRoleEvent;
+use App\Events\DelGroupFromRoleEvent;
 
 use App\Project\Provider;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
+use App\Acl\Eloquent\Group;
 use App\Acl\Eloquent\Role;
 use App\Acl\Eloquent\Roleactor;
 use App\Acl\Acl;
-use Sentinel;
+
+use Cartalyst\Sentinel\Users\EloquentUser;
 
 class RoleController extends Controller
 {
@@ -122,6 +126,36 @@ class RoleController extends Controller
     }
 
     /**
+     * set the role group actor.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function setGroupActor(Request $request, $project_key, $id)
+    {
+        $new_group_ids = $request->input('groups');
+        if (isset($new_group_ids))
+        {
+            $actor = Roleactor::where([ 'project_key' => $project_key, 'role_id' => $id ])->first();
+            $old_group_ids = $actor && $actor->group_ids ? $actor->group_ids : [];
+
+            $this->setGroups($project_key, $id, $new_group_ids ?: []);
+
+            $add_group_ids = array_diff($new_group_ids, $old_group_ids);
+            $del_group_ids = array_diff($old_group_ids, $new_group_ids);
+
+            Event::fire(new AddGroupToRoleEvent($add_group_ids, $project_key));
+            Event::fire(new DelGroupFromRoleEvent($del_group_ids, $project_key));
+        }
+
+        $data = Role::find($id);
+        $data->groups = $this->getGroups($project_key, $id);
+
+        return Response()->json([ 'ecode' => 0, 'data' => $data ]);
+    }
+
+    /**
      * Update the specified resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
@@ -189,6 +223,8 @@ class RoleController extends Controller
             {
                 $user_ids = $actor->user_ids; 
                 $user_ids && Event::fire(new DelUserFromRoleEvent($user_ids, $project_key));
+                $group_ids = $actor->group_ids;
+                $group_ids && Event::fire(new DelGroupFromRoleEvent($group_ids, $project_key));
                 $actor->delete();
             }
         }
@@ -209,7 +245,22 @@ class RoleController extends Controller
         $actor = Roleactor::where([ 'project_key' => $project_key, 'role_id' => $role_id ])->first();
         $actor && $actor->delete();
         
-        Roleactor::create([ 'role_id' => $role_id, 'project_key' => $project_key, 'user_ids' => $uids ]);
+        Roleactor::create([ 'role_id' => $role_id, 'project_key' => $project_key, 'user_ids' => $uids, 'group_ids' => $actor->group_ids ]);
+    }
+
+    /**
+     * set groups.
+     *
+     * @param  string $project_key
+     * @param  array $gids
+     * @return array
+     */
+    public function setGroups($project_key, $role_id, $gids)
+    {
+        $actor = Roleactor::where([ 'project_key' => $project_key, 'role_id' => $role_id ])->first();
+        $actor && $actor->delete();
+
+        Roleactor::create([ 'role_id' => $role_id, 'project_key' => $project_key, 'group_ids' => $gids, 'user_ids' => $actor->user_ids ]);
     }
 
     /**
@@ -222,17 +273,35 @@ class RoleController extends Controller
     public function getUsers($project_key, $role_id)
     {
         $actor = Roleactor::where([ 'project_key' => $project_key, 'role_id' => $role_id ])->first();
-        if (!$actor || !isset($actor['user_ids']))
+        if (!$actor || !isset($actor->user_ids) || !$actor->user_ids)
         {
             return [];
         }
 
-        $users = [];
-        foreach ($actor['user_ids'] as $uid)
+        $new_users = [];
+        $users = EloquentUser::find($actor->user_ids);
+        foreach ($users as $user)
         {
-            $user = Sentinel::findById($uid);
-            $user && $users[] = [ 'id' => $user->id, 'name' => $user->first_name, 'email' => $user->email, 'nameAndEmail' => $user->first_name . '('. $user->email . ')' ];
+            $new_users[] = [ 'id' => $user->id, 'name' => $user->first_name, 'email' => $user->email, 'nameAndEmail' => $user->first_name . '('. $user->email . ')' ];
         }
-        return $users;
+        return $new_users;
+    }
+
+    /**
+     * get groups by array id.
+     *
+     * @param  string $project_key
+     * @param  string $role_id
+     * @return array
+     */
+    public function getGroups($project_key, $role_id)
+    {
+        $actor = Roleactor::where([ 'project_key' => $project_key, 'role_id' => $role_id ])->first();
+        if (!$actor || !isset($actor->group_ids) || !$actor->group_ids)
+        {
+            return [];
+        }
+
+        return Group::find($actor->group_ids);
     }
 }
