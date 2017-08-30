@@ -123,7 +123,7 @@ class Acl {
         $roles = Role::find($role_ids)->toArray();
         foreach ($roles as $role)
         {
-            $all_permissions = array_merge($all_permissions, $role['permissions'] ?: [ 'watch_project' ]);
+            $all_permissions = array_merge($all_permissions, $role['permissions'] ?: []);
         }
         return array_values(array_unique($all_permissions));
     }

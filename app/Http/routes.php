@@ -94,7 +94,7 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     // Route::resource('version', 'VersionController', [ 'only' => [ 'store', 'update', 'destory' ] ]);
 });
 
-Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can', 'privilege:join_project' ] ], function () {
+Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can', 'privilege:watch_project' ] ], function () {
     // project summary 
     Route::get('summary', 'SummaryController@index');
     // config summary 
@@ -140,6 +140,6 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::delete('link/{id}', 'LinkController@destroy');
 
     Route::post('file', [ 'middleware' => 'privilege:edit_issue', 'uses' => 'FileController@upload' ]);
-    Route::get('file/{id}', [ 'middleware' => 'privilege:join_project', 'uses' => 'FileController@download' ]);
+    Route::get('file/{id}', [ 'middleware' => 'privilege:watch_project', 'uses' => 'FileController@download' ]);
     Route::delete('file/{id}', [ 'middleware' => 'privilege:edit_issue', 'uses' => 'FileController@delete' ]);
 });
