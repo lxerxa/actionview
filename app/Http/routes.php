@@ -30,6 +30,7 @@ Route::get('api/addadmin/{id}', 'SyssettingController@addAdmin'); // delete me
 Route::group([ 'middleware' => 'can' ], function () {
     // project route
     Route::get('api/myproject', 'ProjectController@myproject');
+    Route::get('api/project/recent', 'ProjectController@recent');
     Route::get('api/project', 'ProjectController@index');
     Route::get('api/project/checkkey/{key}', 'ProjectController@checkKey');
     Route::get('api/project/options', 'ProjectController@getOptions');

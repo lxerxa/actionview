@@ -37,6 +37,40 @@ class ProjectController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
+    public function recent(Request $request)
+    {
+        // get bound groups
+        $group_ids = array_column(Acl::getBoundGroups($this->user->id), 'id');
+        // fix me
+        $user_projects = UserGroupProject::whereIn('ug_id', array_merge($group_ids, [ $this->user->id ]));
+            ->where('link_count', '>', 0)
+            ->get(['project_key'])
+            ->toArray();
+        $pkeys = array_column($user_projects, 'project_key');
+
+        $accessed_projects = AccessProjectLog->where('user_id', $this->user->id)
+            ->orderBy('latest_access_time', 'desc')
+            ->get(['project_key'])
+            ->toArray();
+        $accessed_pkeys = array_column($accessed_projects, 'project_key');
+
+        $new_accessed_pkeys = array_intersect($accessed_pkeys, $pkeys);
+
+        $projects = [];
+        foreach ($pkeys as $pkey)
+        {
+            $project = Project::where('key', $pkey)->first(['name']);
+            $projects[] = $project;
+        }
+
+        return  Response()->json([ 'ecode' => 0, 'data' => $projects ]); 
+    }
+
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function myproject(Request $request)
     {
         // get bound groups
