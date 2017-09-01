@@ -59,8 +59,9 @@ class ProjectController extends Controller
         $projects = [];
         foreach ($pkeys as $pkey)
         {
-            $project = Project::where('key', $pkey)->first(['name']);
-            $projects[] = $project;
+            $project = Project::where('key', $pkey)->first();
+            $projects[] = [ 'key' => $project->key, 'name' => $project->name ];
+            if (count($projects) >= 5) { break; }
         }
 
         return  Response()->json([ 'ecode' => 0, 'data' => $projects ]); 
