@@ -128,4 +128,31 @@ class GroupController extends Controller
         Event::fire(new DelGroupEvent($id));
         return Response()->json([ 'ecode' => 0, 'data' => [ 'id' => $id ] ]);
     }
+
+    /**
+     * delete all selected groups.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function delMultiGroups(Request $request)
+    {
+        $ids = $request->input('ids');
+        if (!isset($ids) || !$ids)
+        {
+            throw new \InvalidArgumentException('the selected groups cannot been empty.', -10201);
+        }
+
+        $deleted_ids = [];
+        foreach ($ids as $id)
+        {
+            $group = Group::find($id);
+            if ($group)
+            {
+                $group->delete();
+                Event::fire(new DelGroupEvent($id));
+                $deleted_ids[] = $id;
+            }
+        }
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'ids' => $deleted_ids ] ]);
+    }
 }
