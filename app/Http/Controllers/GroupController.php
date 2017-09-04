@@ -9,6 +9,7 @@ use App\Events\DelGroupEvent;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Acl\Eloquent\Group;
+
 use Cartalyst\Sentinel\Users\EloquentUser;
 
 class GroupController extends Controller
@@ -18,7 +19,7 @@ class GroupController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
         $query = Group::where('name', '<>', '');
 
@@ -33,6 +34,11 @@ class GroupController extends Controller
         $page = $request->input('page') ?: 1;
         $query = $query->skip($page_size * ($page - 1))->take($page_size);
         $groups = $query->get([ 'name', 'users' ]);
+
+        foreach ($groups as $group)
+        {
+            $group->users = EloquentUser::find($group->users);
+        }
 
         return Response()->json([ 'ecode' => 0, 'data' => $groups ]);
     }

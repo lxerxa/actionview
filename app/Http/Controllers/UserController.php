@@ -78,7 +78,7 @@ class UserController extends Controller
             $group = Group::find($group_id);
             if ($group)
             {
-                $query->whereIn('id', $group->users ?: []);
+                $query->whereIn('_id', $group->users ?: []);
             }
         }
 
@@ -98,12 +98,12 @@ class UserController extends Controller
             $tmp['first_name'] = $user->first_name;
             $tmp['email'] = $user->email;
             $tmp['phone'] = isset($user->phone) ? $user->phone : '';
-            $tmp['groups'] = array_column(Group::whereRaw([ 'users' => $user->id ])->get([ 'name' ]) ?: [], 'name');
+            $tmp['groups'] = array_column(Group::whereRaw([ 'users' => $user->id ])->get([ 'name' ])->toArray() ?: [], 'name');
  
             $tmp['status'] = Activation::completed($user) ? 'active' : 'unactivated';
             $users[] = $tmp;
         }
-        return Response()->json([ 'ecode' => 0, 'data' => $users, 'options' => [ 'total' => $total, 'sizePerPage' => $page_size ] ]); 
+        return Response()->json([ 'ecode' => 0, 'data' => $users, 'options' => [ 'total' => $total, 'sizePerPage' => $page_size, 'groups' => Group::all() ] ]); 
     }
 
     /**

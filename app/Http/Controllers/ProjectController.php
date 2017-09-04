@@ -42,13 +42,13 @@ class ProjectController extends Controller
         // get bound groups
         $group_ids = array_column(Acl::getBoundGroups($this->user->id), 'id');
         // fix me
-        $user_projects = UserGroupProject::whereIn('ug_id', array_merge($group_ids, [ $this->user->id ]));
+        $user_projects = UserGroupProject::whereIn('ug_id', array_merge($group_ids, [ $this->user->id ]))
             ->where('link_count', '>', 0)
             ->get(['project_key'])
             ->toArray();
         $pkeys = array_column($user_projects, 'project_key');
 
-        $accessed_projects = AccessProjectLog->where('user_id', $this->user->id)
+        $accessed_projects = AccessProjectLog::where('user_id', $this->user->id)
             ->orderBy('latest_access_time', 'desc')
             ->get(['project_key'])
             ->toArray();
@@ -77,7 +77,7 @@ class ProjectController extends Controller
         // get bound groups
         $group_ids = array_column(Acl::getBoundGroups($this->user->id), 'id');
         // fix me
-        $user_projects = UserGroupProject::whereIn('ug_id', array_merge($group_ids, [ $this->user->id ]));
+        $user_projects = UserGroupProject::whereIn('ug_id', array_merge($group_ids, [ $this->user->id ]))
             ->where('link_count', '>', 0)
             ->orderBy('created_at', 'asc')
             ->get(['project_key'])

@@ -4,7 +4,7 @@ namespace App\Project\Eloquent;
 
 use Jenssegers\Mongodb\Eloquent\Model;
 
-class AcessProjectLog extends Model
+class AccessProjectLog extends Model
 {
     //
     protected $table = 'access_project_log';
