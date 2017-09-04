@@ -50,7 +50,7 @@ Route::group([ 'middleware' => 'can' ], function () {
     Route::resource('api/user', 'UserController');
 
     Route::get('api/group/search', 'GroupController@search');
-    Route::post('api/group/batch/delete', 'GroupController@delMultiGroup');
+    Route::post('api/group/batch/delete', 'GroupController@delMultiGroups');
     Route::resource('api/group', 'GroupController');
 
     Route::get('api/mysetting', 'MysettingController@show');
