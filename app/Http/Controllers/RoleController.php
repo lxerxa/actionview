@@ -44,6 +44,12 @@ class RoleController extends Controller
                 {
                     unset($roles[$key]['user_ids']);
                 }
+
+                $roles[$key]['groups'] = $this->getGroups($project_key, $role['_id']);
+                if (isset($role['group_ids']))
+                {
+                    unset($roles[$key]['group_ids']);
+                }
             }
         }
         return Response()->json([ 'ecode' => 0, 'data' => $roles ]);

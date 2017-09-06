@@ -14,6 +14,30 @@ use Cartalyst\Sentinel\Users\EloquentUser;
 
 class GroupController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('privilege:sys_admin', [ 'except' => [ 'search' ] ]);
+        parent::__construct();
+    }
+
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function search(Request $request)
+    {
+        $s = $request->input('s');
+        $groups = [];
+        if ($s)
+        {
+            $search_users = EloquentUser::Where('name', 'like', '%' . $s .  '%')
+                                ->get([ 'name' ]);
+
+        }
+        return Response()->json([ 'ecode' => 0, 'data' => $groups ]);
+    }
+
     /**
      * Display a listing of the resource.
      *
