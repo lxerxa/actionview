@@ -453,9 +453,10 @@ class ProjectController extends Controller
 
         // get action allow of the project.
         $permissions = Acl::getPermissions($this->user->id, $project->key);
-        if ($this->user->id === $project->principal['id'] && !in_array('manage_project', $permissions))
+        if ($this->user->id === $project->principal['id'])
         {
-            $permissions[] = 'manage_project';
+            !in_array('watch_project', $permissions) && $permissions[] = 'watch_project';
+            !in_array('manage_project', $permissions) && $permissions[] = 'manage_project';
         }
 
         //if (!$permissions)
@@ -487,10 +488,13 @@ class ProjectController extends Controller
         //$types = Provider::getTypeListExt($project->key, [ 'assignee' => $users, 'state' => $states, 'resolution' => $resolutions, 'priority' => $priorities, 'version' => $versions, 'module' => $modules ]);
 
         // record the project access date
-         AccessProjectLog::where('project_key', $key)
-            ->where('user_id', $this->user->id)
-            ->delete();
-         AccessProjectLog::create([ 'project_key' => $key, 'user_id' => $this->user->id, 'latest_access_time' => time() ]);
+        if (in_array('watch_project', $permissions))
+        {
+            AccessProjectLog::where('project_key', $key)
+                ->where('user_id', $this->user->id)
+                ->delete();
+            AccessProjectLog::create([ 'project_key' => $key, 'user_id' => $this->user->id, 'latest_access_time' => time() ]);
+        }
 
         return Response()->json([ 'ecode' => 0, 'data' => $project, 'options' => parent::arrange([ 'permissions' => $permissions ]) ]);
     }

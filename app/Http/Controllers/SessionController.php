@@ -71,7 +71,7 @@ class SessionController extends Controller
             ->orderBy('latest_access_time', 'desc')
             ->first();
 
-        if ($latest_access_project && $latest_access_project->link_count > 0)
+        if ($latest_access_project)
         {
             $project = Project::where('key', $latest_access_project->project_key)->first();
             if ($project && $project->status === 'active')

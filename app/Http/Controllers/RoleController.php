@@ -245,7 +245,7 @@ class RoleController extends Controller
         $actor = Roleactor::where([ 'project_key' => $project_key, 'role_id' => $role_id ])->first();
         $actor && $actor->delete();
         
-        Roleactor::create([ 'role_id' => $role_id, 'project_key' => $project_key, 'user_ids' => $uids, 'group_ids' => $actor->group_ids ]);
+        Roleactor::create([ 'role_id' => $role_id, 'project_key' => $project_key, 'user_ids' => $uids, 'group_ids' => isset($actor->group_ids) ? $actor->group_ids : [] ]);
     }
 
     /**
@@ -260,7 +260,7 @@ class RoleController extends Controller
         $actor = Roleactor::where([ 'project_key' => $project_key, 'role_id' => $role_id ])->first();
         $actor && $actor->delete();
 
-        Roleactor::create([ 'role_id' => $role_id, 'project_key' => $project_key, 'group_ids' => $gids, 'user_ids' => $actor->user_ids ]);
+        Roleactor::create([ 'role_id' => $role_id, 'project_key' => $project_key, 'group_ids' => $gids, 'user_ids' => isset($actor->user_ids) ? $actor->user_ids : [] ]);
     }
 
     /**

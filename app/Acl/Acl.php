@@ -109,7 +109,7 @@ class Acl {
             $role_ids[] =  $actor['role_id'];
         }
 
-        $groups = self::getBoundGroup($user_id);
+        $groups = self::getBoundGroups($user_id);
         foreach ($groups as $group) 
         {
             $role_actors = Roleactor::whereRaw([ 'group_ids' => $group['id'], 'project_key' => $project_key ])->get([ 'role_id' ])->toArray();

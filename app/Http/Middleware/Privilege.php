@@ -96,7 +96,7 @@ class Privilege
         }
 
         $isAllowed = Acl::isAllowed($user->id, $permission, $project_key);
-        if (! $isAllowed && $permission === 'manage_project')
+        if (! $isAllowed && ($permission === 'manage_project' || $permission === 'watch_project'))
         {
             $project = Project::where('key', $project_key)->first();
             if ($project && isset($project->principal) && isset($project->principal['id']) && $project->principal['id'] === $user->id)
