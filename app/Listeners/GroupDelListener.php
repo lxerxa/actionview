@@ -55,15 +55,9 @@ class GroupDelListener
                     $new_group_ids[] = $gid;
                 }
             }
-            if ($new_group_ids || (isset($roleactor->user_ids) && $roleactor->user_ids))
-            {
-                $roleactor->group_ids = $new_group_ids;
-                $roleactor->save();
-            }
-            else
-            {
-                $roleactor->delete();
-            }
+
+            $roleactor->group_ids = $new_group_ids;
+            $roleactor->save();
         }
     }
 

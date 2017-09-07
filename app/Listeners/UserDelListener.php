@@ -55,15 +55,9 @@ class UserDelListener
                     $new_user_ids[] = $uid;
                 }
             }
-            if ($new_user_ids || (isset($roleactor->group_ids) && $roleactor->group_ids))
-            {
-                $roleactor->user_ids = $new_user_ids;
-                $roleactor->save();
-            }
-            else
-            {
-                $roleactor->delete();
-            }
+
+            $roleactor->user_ids = $new_user_ids;
+            $roleactor->save();
         }
     }
 
