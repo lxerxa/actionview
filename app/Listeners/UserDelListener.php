@@ -47,7 +47,7 @@ class UserDelListener
         foreach ($roleactors as $roleactor)
         {
             $new_user_ids = [];
-            $old_user_ids = $roleactor->user_ids ?: [];
+            $old_user_ids = isset($roleactor->user_ids) ? $roleactor->user_ids : [];
             foreach ($old_user_ids as $uid)
             {
                 if ($uid != $user_id)
@@ -55,12 +55,12 @@ class UserDelListener
                     $new_user_ids[] = $uid;
                 }
             }
-            if ($new_user_ids)
+            if ($new_user_ids || (isset($roleactor->group_ids) && $roleactor->group_ids))
             {
                 $roleactor->user_ids = $new_user_ids;
                 $roleactor->save();
             }
-            else if (empty($roleactor->group_ids))
+            else
             {
                 $roleactor->delete();
             }
@@ -79,7 +79,7 @@ class UserDelListener
         foreach ($groups as $group)
         {
            $new_user_ids = [];
-           $old_user_ids = $group->user_ids ?: [];
+           $old_user_ids = isset($group->user_ids) ? $group->user_ids : [];
            foreach ($old_user_ids as $uid)
            {
                if ($uid != $user_id)

@@ -153,8 +153,6 @@ class GroupController extends Controller
             throw new \UnexpectedValueException('the group does not exist.', -10201);
         }
 
-sleep(5);
-    
         Group::destroy($id);
         Event::fire(new DelGroupEvent($id));
         return Response()->json([ 'ecode' => 0, 'data' => [ 'id' => $id ] ]);

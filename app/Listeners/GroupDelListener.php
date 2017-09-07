@@ -47,7 +47,7 @@ class GroupDelListener
         foreach ($roleactors as $roleactor)
         {
             $new_group_ids = [];
-            $old_group_ids = $roleactor->group_ids ?: [];
+            $old_group_ids = isset($roleactor->group_ids) ? $roleactor->group_ids : [];
             foreach ($old_group_ids as $gid)
             {
                 if ($gid != $group_id)
@@ -55,12 +55,12 @@ class GroupDelListener
                     $new_group_ids[] = $gid;
                 }
             }
-            if ($new_group_ids)
+            if ($new_group_ids || (isset($roleactor->user_ids) && $roleactor->user_ids))
             {
                 $roleactor->group_ids = $new_group_ids;
                 $roleactor->save();
             }
-            else if (empty($roleactor->user_ids))
+            else
             {
                 $roleactor->delete();
             }

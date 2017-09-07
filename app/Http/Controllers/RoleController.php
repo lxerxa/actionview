@@ -277,7 +277,7 @@ class RoleController extends Controller
     public function getGroupsAndUsers($project_key, $role_id)
     {
         $actor = Roleactor::where([ 'project_key' => $project_key, 'role_id' => $role_id ])->first();
-        if (!$actor) { return []; }
+        if (!$actor) { return [ 'users' => [], 'groups' => [] ]; }
 
         $new_users = [];
         if (isset($actor->user_ids) && $actor->user_ids)
