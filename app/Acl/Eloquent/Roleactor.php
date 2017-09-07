@@ -11,6 +11,7 @@ class Roleactor extends Model
     protected $fillable = array(
         'role_id',
         'project_key',
-        'user_ids'
+        'user_ids',
+        'group_ids'
     );
 }

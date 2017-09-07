@@ -43,7 +43,7 @@ class UserDelListener
      */
     public function delUserFromRole($user_id)
     {
-        $roleactors = Roleactor::whereRaw([ 'user_ids' => $user_id ])->get([ 'user_ids' ]);
+        $roleactors = Roleactor::whereRaw([ 'user_ids' => $user_id ])->get([ 'user_ids', 'group_ids' ]);
         foreach ($roleactors as $roleactor)
         {
             $new_user_ids = [];
@@ -60,7 +60,7 @@ class UserDelListener
                 $roleactor->user_ids = $new_user_ids;
                 $roleactor->save();
             }
-            else
+            else if (empty($roleactor->group_ids))
             {
                 $roleactor->delete();
             }

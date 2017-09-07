@@ -43,7 +43,7 @@ class GroupDelListener
      */
     public function delGroupFromRole($group_id)
     {
-        $roleactors = Roleactor::whereRaw([ 'group_ids' => $group_id ])->get([ 'group_ids' ]);
+        $roleactors = Roleactor::whereRaw([ 'group_ids' => $group_id ])->get([ 'group_ids', 'user_ids' ]);
         foreach ($roleactors as $roleactor)
         {
             $new_group_ids = [];
@@ -60,7 +60,7 @@ class GroupDelListener
                 $roleactor->group_ids = $new_group_ids;
                 $roleactor->save();
             }
-            else
+            else if (empty($roleactor->user_ids))
             {
                 $roleactor->delete();
             }

@@ -31,8 +31,8 @@ class GroupController extends Controller
         $groups = [];
         if ($s)
         {
-            $search_users = EloquentUser::Where('name', 'like', '%' . $s .  '%')
-                                ->get([ 'name' ]);
+            $groups = Group::Where('name', 'like', '%' . $s .  '%')
+                ->get([ 'name' ]);
 
         }
         return Response()->json([ 'ecode' => 0, 'data' => $groups ]);

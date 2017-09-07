@@ -39,13 +39,14 @@ class RoleController extends Controller
             }
             else 
             {
-                $roles[$key]['users'] = $this->getUsers($project_key, $role['_id']);
+                $user_groups = $this->getGroupsAndUsers($project_key, $role['_id']);
+                $roles[$key]['users'] = $user_groups['users'];
+                $roles[$key]['groups'] = $user_groups['groups'];
+
                 if (isset($role['user_ids']))
                 {
                     unset($roles[$key]['user_ids']);
                 }
-
-                $roles[$key]['groups'] = $this->getGroups($project_key, $role['_id']);
                 if (isset($role['group_ids']))
                 {
                     unset($roles[$key]['group_ids']);
@@ -79,8 +80,6 @@ class RoleController extends Controller
             }
         }
 
-        //$user_ids = $request->users ?: [];
-
         $role = Role::create($request->all() + [ 'project_key' => $project_key ]);
         return Response()->json([ 'ecode' => 0, 'data' => $role ]);
     }
@@ -94,10 +93,6 @@ class RoleController extends Controller
     public function show($project_key, $id)
     {
         $role = Role::find($id);
-        //if (!$role || $project_key != $role->project_key)
-        //{
-        //    throw new \UnexpectedValueException('the role does not exist or is not in the project.', -10002);
-        //}
         return Response()->json([ 'ecode' => 0, 'data' => $role ]);
     }
 
@@ -126,7 +121,9 @@ class RoleController extends Controller
         }
 
         $data = Role::find($id);
-        $data->users = $this->getUsers($project_key, $id);
+        $user_groups = $this->getGroupsAndUsers($project_key, $id);
+        $data->users = $user_groups['users'];
+        $data->groups = $user_groups['groups'];
 
         return Response()->json([ 'ecode' => 0, 'data' => $data ]);
     }
@@ -156,7 +153,9 @@ class RoleController extends Controller
         }
 
         $data = Role::find($id);
-        $data->groups = $this->getGroups($project_key, $id);
+        $user_groups = $this->getGroupsAndUsers($project_key, $id);
+        $data->users = $user_groups['users'];
+        $data->groups = $user_groups['groups'];
 
         return Response()->json([ 'ecode' => 0, 'data' => $data ]);
     }
@@ -223,13 +222,12 @@ class RoleController extends Controller
         }
         else
         {
-            $user_ids = [];
             $actor = Roleactor::where([ 'project_key' => $project_key, 'role_id' => $id ])->first();
             if ($actor)
             {
-                $user_ids = $actor->user_ids; 
+                $user_ids = isset($actor->user_ids) ? $actor->user_ids : []; 
                 $user_ids && Event::fire(new DelUserFromRoleEvent($user_ids, $project_key));
-                $group_ids = $actor->group_ids;
+                $group_ids = isset($actor->group_ids) ? $actor->group_ids : [];
                 $group_ids && Event::fire(new DelGroupFromRoleEvent($group_ids, $project_key));
                 $actor->delete();
             }
@@ -276,38 +274,27 @@ class RoleController extends Controller
      * @param  string $role_id
      * @return array 
      */
-    public function getUsers($project_key, $role_id)
+    public function getGroupsAndUsers($project_key, $role_id)
     {
         $actor = Roleactor::where([ 'project_key' => $project_key, 'role_id' => $role_id ])->first();
-        if (!$actor || !isset($actor->user_ids) || !$actor->user_ids)
-        {
-            return [];
-        }
+        if (!$actor) { return []; }
 
         $new_users = [];
-        $users = EloquentUser::find($actor->user_ids);
-        foreach ($users as $user)
+        if (isset($actor->user_ids) && $actor->user_ids)
         {
-            $new_users[] = [ 'id' => $user->id, 'name' => $user->first_name, 'email' => $user->email, 'nameAndEmail' => $user->first_name . '('. $user->email . ')' ];
-        }
-        return $new_users;
-    }
-
-    /**
-     * get groups by array id.
-     *
-     * @param  string $project_key
-     * @param  string $role_id
-     * @return array
-     */
-    public function getGroups($project_key, $role_id)
-    {
-        $actor = Roleactor::where([ 'project_key' => $project_key, 'role_id' => $role_id ])->first();
-        if (!$actor || !isset($actor->group_ids) || !$actor->group_ids)
-        {
-            return [];
+            $users = EloquentUser::find($actor->user_ids);
+            foreach ($users as $user)
+            {
+                $new_users[] = [ 'id' => $user->id, 'name' => $user->first_name, 'email' => $user->email, 'nameAndEmail' => $user->first_name . '('. $user->email . ')' ];
+            }
         }
 
-        return Group::find($actor->group_ids);
+        $new_groups = [];
+        if (isset($actor->group_ids) && $actor->group_ids)
+        {
+            $new_groups = Group::find($actor->group_ids)->toArray();
+        }
+
+        return [ 'users' => $new_users, 'groups' => $new_groups ];
     }
 }
