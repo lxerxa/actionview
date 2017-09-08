@@ -96,7 +96,7 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     // Route::resource('version', 'VersionController', [ 'only' => [ 'store', 'update', 'destory' ] ]);
 });
 
-Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can', 'privilege:watch_project' ] ], function () {
+Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can', 'privilege:view_project' ] ], function () {
     // project summary 
     Route::get('summary', 'SummaryController@index');
     // config summary 
@@ -141,7 +141,7 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::post('link', 'LinkController@store');
     Route::delete('link/{id}', 'LinkController@destroy');
 
-    Route::post('file', [ 'middleware' => 'privilege:edit_issue', 'uses' => 'FileController@upload' ]);
-    Route::get('file/{id}', [ 'middleware' => 'privilege:watch_project', 'uses' => 'FileController@download' ]);
-    Route::delete('file/{id}', [ 'middleware' => 'privilege:edit_issue', 'uses' => 'FileController@delete' ]);
+    Route::post('file', [ 'middleware' => 'privilege:upload_file', 'uses' => 'FileController@upload' ]);
+    Route::get('file/{id}', [ 'middleware' => 'privilege:view_project', 'uses' => 'FileController@download' ]);
+    Route::delete('file/{id}', [ 'middleware' => 'privilege:remove_file', 'uses' => 'FileController@delete' ]);
 });

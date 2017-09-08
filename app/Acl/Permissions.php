@@ -4,7 +4,7 @@ namespace App\Acl;
 
 class Permissions {
 
-    const WATCH_PROJECT       = 'watch_project';
+    const VIEW_PROJECT       = 'view_project';
     const MANAGE_PROJECT      = 'manage_project';
 
     const ASSIGNED_ISSUE      = 'assigned_issue';
@@ -23,6 +23,8 @@ class Permissions {
     //const VIEW_WORKFLOW       = 'view_workflow';
     const EXEC_WORKFLOW       = 'exec_workflow';
 
+    const UPLOAD_FILE         = 'upload_file';
+    const REMOVE_FILE         = 'remove_file';
     //const ADD_COMMNETS        = 'add_comments';
     //const EDIT_COMMNETS       = 'edit_comments';
     //const EDIT_SELF_COMMNETS  = 'edit_self_comments';
@@ -43,7 +45,7 @@ class Permissions {
     public static function all()
     {
         return [
-            static::WATCH_PROJECT,
+            static::VIEW_PROJECT,
             static::MANAGE_PROJECT,
 
             static::ASSIGNED_ISSUE,
@@ -61,6 +63,9 @@ class Permissions {
 
             //static::VIEW_WORKFLOW,
             static::EXEC_WORKFLOW,
+
+            static::UPLOAD_FILE,
+            static::REMOVE_FILE,
 
             //static::ADD_COMMNETS,
             //static::EDIT_COMMNETS,

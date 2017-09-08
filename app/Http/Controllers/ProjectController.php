@@ -455,7 +455,7 @@ class ProjectController extends Controller
         $permissions = Acl::getPermissions($this->user->id, $project->key);
         if ($this->user->id === $project->principal['id'])
         {
-            !in_array('watch_project', $permissions) && $permissions[] = 'watch_project';
+            !in_array('view_project', $permissions) && $permissions[] = 'view_project';
             !in_array('manage_project', $permissions) && $permissions[] = 'manage_project';
         }
 
@@ -467,7 +467,7 @@ class ProjectController extends Controller
         //        ->exists();
         //    if ($isMember)
         //    {
-        //        $permissions[] = 'watch_project';
+        //        $permissions[] = 'view_project';
         //    }
         //}
         // get searchers
@@ -488,7 +488,7 @@ class ProjectController extends Controller
         //$types = Provider::getTypeListExt($project->key, [ 'assignee' => $users, 'state' => $states, 'resolution' => $resolutions, 'priority' => $priorities, 'version' => $versions, 'module' => $modules ]);
 
         // record the project access date
-        if (in_array('watch_project', $permissions))
+        if (in_array('view_project', $permissions))
         {
             AccessProjectLog::where('project_key', $key)
                 ->where('user_id', $this->user->id)
