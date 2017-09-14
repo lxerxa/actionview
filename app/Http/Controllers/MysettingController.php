@@ -9,6 +9,86 @@ use Sentinel;
 
 class MysettingController extends Controller
 {
+
+    /**
+     * Set user avatar.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function setAvatar(Request $request)
+    {
+        $basename = md5(microtime() . $this->user->id);
+        $avatar_save_path = config('filesystems.disks.local.root', '/tmp') . '/avatar/';
+        if (!is_dir($avatar_save_path))
+        {
+            @mkdir($avatar_save_path);
+        }
+        $filename = '/tmp/' . $basename;
+
+        $data = $request->input('data');
+        if ($data)
+        {
+            return;
+        }
+        file_put_contents($filename, base64_decode($data));
+
+        $fileinfo = getimagesize($filename);
+        if ($fileinfo['MIME'] == 'image/jpeg' || $fileinfo['MIME'] == 'image/jpg' || $fileinfo['MIME'] == 'image/png' || $fileinfo['MIME'] == 'image/gif')
+        {
+            $size = getimagesize($filename);
+            $width = $size[0]; $height = $size[1];
+            $scale = $width < $height ? $height : $width;
+            $thumbnails_width = floor(150 * $width / $scale);
+            $thumbnails_height = floor(150 * $height / $scale);
+            $thumbnails_filename = $filename . '_thumbnails';
+            if ($scale <= 150)
+            {
+                @copy($filename, $thumbnails_filename);
+            }
+            else if ($fileinfo['MIME'] == 'image/jpeg' || $fileinfo['MIME'] == 'image/jpg')
+            {
+                $src_image = imagecreatefromjpeg($filename);
+                $dst_image = imagecreatetruecolor($thumbnails_width, $thumbnails_height);
+                imagecopyresized($dst_image, $src_image, 0, 0, 0, 0, $thumbnails_width, $thumbnails_height, $width, $height);
+                imagejpeg($dst_image, $thumbnails_filename);
+            }
+            else if ($fileinfo['MIME'] == 'image/png')
+            {
+                $src_image = imagecreatefrompng($filename);
+                $dst_image = imagecreatetruecolor($thumbnails_width, $thumbnails_height);
+                imagecopyresized($dst_image, $src_image, 0, 0, 0, 0, $thumbnails_width, $thumbnails_height, $width, $height);
+                imagepng($dst_image, $thumbnails_filename);
+            }
+            else if ($fileinfo['MIME'] == 'image/gif')
+            {
+                $src_image = imagecreatefromgif($filename);
+                $dst_image = imagecreatetruecolor($thumbnails_width, $thumbnails_height);
+                imagecopyresized($dst_image, $src_image, 0, 0, 0, 0, $thumbnails_width, $thumbnails_height, $width, $height);
+                imagegif($dst_image, $thumbnails_filename);
+            }
+            else 
+            {
+                @copy($filename, $thumbnails_filename);
+            }
+
+            @rename($thumbnails_filename, $avatar_save_path . $basename);
+        }
+        else
+        {
+            return;
+        }
+
+        $user = Sentinel::findById($this->user->id);
+        if (!$user)
+        {
+            throw new \UnexpectedValueException('the user is not existed.', -15000);
+        }
+        $user->fill([ 'avatar' => $basename ])->save();
+
+        return $this->show(); 
+    }
+
     /**
      * Display a listing of the resource.
      *

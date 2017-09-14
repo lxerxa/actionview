@@ -129,6 +129,32 @@ class FileController extends Controller
     }
 
     /**
+     * get avatar file.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     */
+    public function getAvatar(Request $request)
+    {
+        $fid = $request->input('fid');
+        if (!isset($fid) || !$fid)
+        {
+            throw new \UnexpectedValueException('the avatar file id cannot empty.', -15100);
+        }
+
+        $filename = config('filesystems.disks.local.root', '/tmp') . '/avatar/' . $fid;
+        if (!file_exists($filename))
+        {
+            throw new \UnexpectedValueException('the avatar file does not exist.', -15100);
+        }
+
+        header("Content-type: application/octet-stream");
+        header("Accept-Ranges: bytes");
+        header("Accept-Length:" . filesize($filename));
+        header("Content-Disposition: attachment; filename=" . $filename);
+        echo file_get_contents($filename);
+    }
+
+    /**
      * Delete file.
      *
      * @param  \Illuminate\Http\Request  $request
