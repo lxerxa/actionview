@@ -27,14 +27,14 @@ class MysettingController extends Controller
         $filename = '/tmp/' . $basename;
 
         $data = $request->input('data');
-        if ($data)
+        if (!$data)
         {
             return;
         }
         file_put_contents($filename, base64_decode($data));
 
         $fileinfo = getimagesize($filename);
-        if ($fileinfo['MIME'] == 'image/jpeg' || $fileinfo['MIME'] == 'image/jpg' || $fileinfo['MIME'] == 'image/png' || $fileinfo['MIME'] == 'image/gif')
+        if ($fileinfo['mime'] == 'image/jpeg' || $fileinfo['mime'] == 'image/jpg' || $fileinfo['mime'] == 'image/png' || $fileinfo['mime'] == 'image/gif')
         {
             $size = getimagesize($filename);
             $width = $size[0]; $height = $size[1];
@@ -46,21 +46,21 @@ class MysettingController extends Controller
             {
                 @copy($filename, $thumbnails_filename);
             }
-            else if ($fileinfo['MIME'] == 'image/jpeg' || $fileinfo['MIME'] == 'image/jpg')
+            else if ($fileinfo['mime'] == 'image/jpeg' || $fileinfo['mime'] == 'image/jpg')
             {
                 $src_image = imagecreatefromjpeg($filename);
                 $dst_image = imagecreatetruecolor($thumbnails_width, $thumbnails_height);
                 imagecopyresized($dst_image, $src_image, 0, 0, 0, 0, $thumbnails_width, $thumbnails_height, $width, $height);
                 imagejpeg($dst_image, $thumbnails_filename);
             }
-            else if ($fileinfo['MIME'] == 'image/png')
+            else if ($fileinfo['mime'] == 'image/png')
             {
                 $src_image = imagecreatefrompng($filename);
                 $dst_image = imagecreatetruecolor($thumbnails_width, $thumbnails_height);
                 imagecopyresized($dst_image, $src_image, 0, 0, 0, 0, $thumbnails_width, $thumbnails_height, $width, $height);
                 imagepng($dst_image, $thumbnails_filename);
             }
-            else if ($fileinfo['MIME'] == 'image/gif')
+            else if ($fileinfo['mime'] == 'image/gif')
             {
                 $src_image = imagecreatefromgif($filename);
                 $dst_image = imagecreatetruecolor($thumbnails_width, $thumbnails_height);

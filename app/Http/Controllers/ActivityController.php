@@ -9,6 +9,8 @@ use App\Http\Controllers\Controller;
 use App\Project\Provider;
 use DB;
 
+use Sentinel;
+
 class ActivityController extends Controller
 {
     /**
@@ -71,9 +73,17 @@ class ActivityController extends Controller
         }
         $query->take(intval($limit));
 
+        $avatars = [];
         $activities = $query->get();
         foreach ($activities as $key => $activity)
         {
+            if (!array_key_exists($activity['user']['id'], $avatars))
+            {
+                $user = Sentinel::findById($activity['user']['id']);
+                $avatars[$activity['user']['id']] = isset($user->avatar) ? $user->avatar : '';
+            }
+            $activities[$key]['user']['avatar'] = $avatars[$activity['user']['id']];
+
             if ($activity['event_key'] == 'create_link' || $activity['event_key'] == 'del_link')
             {
                 $activities[$key]['issue_link'] = [];
