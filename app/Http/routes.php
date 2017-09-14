@@ -58,6 +58,7 @@ Route::group([ 'middleware' => 'can' ], function () {
     Route::post('api/mysetting/resetpwd', 'MysettingController@resetPwd');
     Route::post('api/mysetting/notify', 'MysettingController@setNotifications');
     Route::post('api/mysetting/favorite', 'MysettingController@setFavorites');
+    Route::post('api/mysetting/avatar', 'MysettingController@setAvatar');
 
     // middleware is put into controller
     Route::get('api/syssetting', 'SyssettingController@show');
@@ -66,7 +67,6 @@ Route::group([ 'middleware' => 'can' ], function () {
     Route::post('api/syssetting/sendtestmail', 'SyssettingController@sendTestMail');
 
     Route::get('api/getavatar', 'FileController@getAvatar');
-    Route::get('api/setavatar', 'MysettingController@setAvatar');
 });
 
 // project config
