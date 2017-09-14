@@ -29,7 +29,7 @@ class MysettingController extends Controller
         $data = $request->input('data');
         if (!$data)
         {
-            return;
+            throw new \UnexpectedValueException('the uploaded avatar file can not be empty.', -15006);
         }
         file_put_contents($filename, base64_decode($data));
 
@@ -76,7 +76,7 @@ class MysettingController extends Controller
         }
         else
         {
-            return;
+            throw new \UnexpectedValueException('the avatar file type has errors.', -15007);
         }
 
         $user = Sentinel::findById($this->user->id);
