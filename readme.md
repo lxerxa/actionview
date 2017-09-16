@@ -42,6 +42,9 @@ http://www.actionview.cn
 > vendor/cartalyst/sentinel/src/Activations/IlluminateActivationRepository.php  
 > create函数(line 75)添加 $activation->completed = false;  
 
+> vendor/cartalyst/sentinel/src/Users/EloquentUser.php  
+> $fillable 中添加 avatar 字段  
+
 执行db脚本：  
 > mongorestore -h 127.0.0.1 -u username -p secret -d dbname --drop ./dbdata  
 
