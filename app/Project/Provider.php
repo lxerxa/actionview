@@ -14,10 +14,12 @@ use App\Acl\Eloquent\Role;
 use App\Acl\Acl;
 use App\Workflow\Eloquent\Definition;
 use App\Project\Eloquent\Project;
-use App\Project\Eloquent\UserProject;
+use App\Project\Eloquent\UserGroupProject;
 use App\Project\Eloquent\File;
 use App\Project\Eloquent\Version;
 use App\Project\Eloquent\Module;
+
+use Cartalyst\Sentinel\Users\EloquentUser;
 use Sentinel;
 use MongoDB\BSON\ObjectID;
 use DB;
@@ -423,15 +425,39 @@ class Provider {
      */
     public static function getUserList($project_key)
     {
-        $users = UserProject::Where('project_key', $project_key)
+        $user_group_ids = UserGroupProject::Where('project_key', $project_key)
             ->Where('link_count', '>', 0)
-            ->get(['user_id']);
+            ->get(['ug_id', 'type']);
+
+        $user_ids = [];
+        $group_ids = [];
+        foreach ($user_group_ids as $value)
+        {
+            if (isset($value->type) && $value->type === 'group')
+            {
+                $group_ids[] = $value->ug_id;
+            }
+            else
+            {
+                $user_ids[] = $value->ug_id;
+            }
+        }
+
+        if ($group_ids)
+        {
+            $groups = Group::find($group_ids);
+            foreach($groups as $group)
+            {
+                $user_ids = array_merge($user_ids, $group->users);
+            }
+        }
+        $user_ids = array_unique($user_ids);
 
         $user_list = [];
+        $users = EloquentUser::find($user_ids);
         foreach ($users as $user)
         {
-            $user_info = Sentinel::findById($user['user_id']);
-            $user_info && $user_list[] = ['id' => $user['user_id'], 'name' => $user_info->first_name, 'email' => $user_info->email ];
+            $user_list[] = ['id' => $user->id, 'name' => $user->first_name, 'email' => $user->email ];
         }
 
         return $user_list;

@@ -48,11 +48,29 @@ class Acl {
         }
 
         $user_ids = [];
+        $group_ids = [];
         $role_actors = Roleactor::whereRaw([ 'project_key' => $project_key, 'role_id' => [ '$in' => $role_ids ] ])->get();
         foreach ($role_actors as $actor)
         {
-            $user_ids = array_merge($user_ids, $actor->user_ids);
+            if (isset($actor->user_ids) && $actor->user_ids)
+            {
+                $user_ids = array_merge($user_ids, $actor->user_ids);
+            }
+            if (isset($actor->group_ids) && $actor->group_ids)
+            {
+                $group_ids = array_merge($group_ids, $actor->group_ids);
+            }
         }
+
+        foreach ($group_ids as $group_id)
+        {
+            $group = Group::find($group_id);
+            if ($group && isset($group->users) && $group->users)
+            {
+                $user_ids = array_merge($user_ids, $group->users);
+            }
+        }
+
         return array_values(array_unique($user_ids));
     }
 
