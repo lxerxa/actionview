@@ -11,6 +11,7 @@ use App\Customization\Eloquent\Field;
 use App\Customization\Eloquent\Screen;
 use App\Customization\Eloquent\Events;
 use App\Acl\Eloquent\Role;
+use App\Acl\Eloquent\Group;
 use App\Acl\Acl;
 use App\Workflow\Eloquent\Definition;
 use App\Project\Eloquent\Project;
