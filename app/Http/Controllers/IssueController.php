@@ -457,6 +457,30 @@ class IssueController extends Controller
      * Display the specified resource.
      *
      * @param  string  $project_key
+     * @param  string  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function wfactions($project_key, $id)
+    {
+        $issue = DB::collection('issue_' . $project_key)->where('_id', $id)->first();
+
+        $wf = new Workflow($issue['entry_id']);
+        $wfactions = $wf->getAvailableActions([ 'project_key' => $project_key, 'issue_id' => $id, 'caller' => $this->user->id ]);
+        foreach ($wfactions as $key => $action)
+        {
+            if (isset($action['screen']) && $action['screen'])
+            {
+                $wfactions[$key]['schema'] = Provider::getSchemaByScreenId($project_key, $issue['type'], $action['screen']);
+            }
+        }
+
+        return Response()->json(['ecode' => 0, 'data' => parent::arrange($wfactions)]);
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param  string  $project_key
      * @return \Illuminate\Http\Response
      */
     public function getOptions($project_key)

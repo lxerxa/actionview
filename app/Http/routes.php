@@ -138,6 +138,8 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::post('issue/{id}/convert', [ 'middleware' => 'privilege:edit_issue', 'uses' => 'IssueController@convert' ]);
     Route::get('issue/{id}/reset', [ 'middleware' => 'privilege:reset_issue', 'uses' => 'IssueController@resetState' ]);
 
+    Route::get('issue/{id}/wfactions', 'IssueController@wfactions');
+
     Route::resource('issue/{id}/comments', 'CommentsController');
     Route::resource('issue/{id}/worklog', 'WorklogController');
 
@@ -147,4 +149,7 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::post('file', [ 'middleware' => 'privilege:upload_file', 'uses' => 'FileController@upload' ]);
     Route::get('file/{id}', [ 'middleware' => 'privilege:view_project', 'uses' => 'FileController@download' ]);
     Route::delete('file/{id}', [ 'middleware' => 'privilege:remove_file', 'uses' => 'FileController@delete' ]);
+
+    Route::get('kanban/access', 'BoardController@getAccess');
+    Route::post('kanban/access', 'BoardController@setAccess');
 });
