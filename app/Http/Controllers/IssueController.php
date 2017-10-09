@@ -482,7 +482,21 @@ class IssueController extends Controller
         // get timetrack options
         $timetrack = $this->getTimeTrackSetting();
 
-        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange([ 'users' => $users, 'assignees' => $assignees, 'types' => $types, 'states' => $states, 'resolutions' => $resolutions, 'priorities' => $priorities, 'modules' => $modules, 'versions' => $versions, 'searchers' => $searchers, 'timetrack' => $timetrack ]) ]);
+        return Response()->json([ 
+            'ecode' => 0, 
+            'data' => parent::arrange([ 
+                'users' => $users, 
+                'assignees' => $assignees, 
+                'types' => $types, 
+                'states' => $states, 
+                'resolutions' => $resolutions, 
+                'priorities' => $priorities, 
+                'modules' => $modules, 
+                'versions' => $versions, 
+                'searchers' => $searchers, 
+                'timetrack' => $timetrack 
+            ]) 
+        ]);
     }
 
     /**
