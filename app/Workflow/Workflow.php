@@ -530,9 +530,11 @@ class Workflow {
     /**
      * get all available actions
      *
+     * @param array $info
+     * @param bool $dest_state added for kanban dnd, is not common param.
      * @return array
      */
-    public function getAvailableActions($options=[])
+    public function getAvailableActions($options=[], $dest_state = false)
     {
         // set options
         $this->options = array_merge($this->options, $options);
@@ -542,7 +544,7 @@ class Workflow {
         $current_steps = $this->getCurrentSteps();
         foreach ($current_steps as $current_step)
         {
-            $actions = $this->getAvailableActionsFromStep($current_step->step_id);
+            $actions = $this->getAvailableActionsFromStep($current_step->step_id, $dest_state);
             $actions && $available_actions += $actions;
         }
         return $available_actions;
@@ -552,9 +554,10 @@ class Workflow {
      * get available actions for step
      *
      * @param string $step_id
+     * @param bool $dest_state added for kanban dnd, is not common param.
      * @return array
      */
-    private function getAvailableActionsFromStep($step_id)
+    private function getAvailableActionsFromStep($step_id, $dest_state = false)
     {
         $step_descriptor = $this->getStepDescriptor($step_id);
         if (!$step_descriptor)
@@ -576,7 +579,21 @@ class Workflow {
         {
             if ($this->isActionAvailable($action))
             {
-                $available_actions[] = [ 'id' => $action['id'], 'name' => $action['name'], 'screen' => $action['screen'] ?: '' ];
+                if ($dest_state)
+                {
+                    $state = '';
+                    if (isset($action['results']) && is_array($action['results']) && count($action['results']) > 0 && isset($action['results'][0]['step']))
+                    {
+                        $dest_step_descriptor = $this->getStepDescriptor($action['results'][0]['step']);
+                        $state = $dest_step_descriptor['state'];
+                    }
+                    
+                    $available_actions[] = [ 'id' => $action['id'], 'name' => $action['name'], 'screen' => $action['screen'] ?: '', 'state' => $state ];
+                }
+                else
+                {
+                    $available_actions[] = [ 'id' => $action['id'], 'name' => $action['name'], 'screen' => $action['screen'] ?: '' ];
+                }
             }
         }
 

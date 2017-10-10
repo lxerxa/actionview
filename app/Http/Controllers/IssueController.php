@@ -465,7 +465,7 @@ class IssueController extends Controller
         $issue = DB::collection('issue_' . $project_key)->where('_id', $id)->first();
 
         $wf = new Workflow($issue['entry_id']);
-        $wfactions = $wf->getAvailableActions([ 'project_key' => $project_key, 'issue_id' => $id, 'caller' => $this->user->id ]);
+        $wfactions = $wf->getAvailableActions([ 'project_key' => $project_key, 'issue_id' => $id, 'caller' => $this->user->id ], true);
         foreach ($wfactions as $key => $action)
         {
             if (isset($action['screen']) && $action['screen'])
