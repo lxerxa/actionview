@@ -173,7 +173,7 @@ class IssueController extends Controller
                 else
                 {
                     $parent = DB::collection('issue_' . $project_key)->where('_id', $issue['parent_id'])->first();
-                    $issues[$key]['parent'] = $parent ? array_only($parent, [ '_id', 'title' ]) : [];
+                    $issues[$key]['parent'] = $parent ? array_only($parent, [ '_id', 'title', 'no', 'type', 'state' ]) : [];
                     $cache_parents[$issue['parent_id']] = $issues[$key]['parent'];
                 }
                 unset($issues[$key]['parent_id']);
@@ -389,7 +389,7 @@ class IssueController extends Controller
         {
             if ($field['type'] === 'File' && isset($issue[$field['key']]) && $issue[$field['key']]) 
             {
-                foreach ($issue[$field['key']] as $key => $fid)
+               foreach ($issue[$field['key']] as $key => $fid)
                 {
                     $issue[$field['key']][$key] = File::find($fid);
                 }
