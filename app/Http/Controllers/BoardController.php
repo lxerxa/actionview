@@ -22,9 +22,59 @@ class BoardController extends Controller
      */
     public function index($project_key)
     {
+        $boards = Board::Where('project_key', $project_key)
+            ->orderBy('_id', 'asc')
+            ->get();
+
+        return Response()->json([ 'ecode' => 0, 'data' => $boards ]);
     }
 
+    /**
+     * get user accessed board list
+     *
+     * @param  string  $project_key
+     * @return response 
+     */
     public function getList($project_key) {
+
+        // get all boards
+        //$boards = Board::Where('project_key', $project_key)
+        //    ->orderBy('_id', 'asc')
+        //    ->get();
+
+        //$access_records = AccessBoardLog::where('project_key', $project_key)
+        //    ->where('user_id', $this->user->id)
+        //    ->orderBy('latest_access_time', 'desc')
+        //    ->get();
+
+        //$list = [];
+        //$accessed_boards = [];
+        //foreach($access_records as $record)
+        //{
+        //    foreach($boards as $board)
+        //    {
+        //        if ($board->id == $record->board_id)
+        //        {
+        //            $accessed_boards[] = $record->board_id; 
+        //            break;
+        //        }
+        //    }
+        //    if (in_array($accessed_boards, $record->board_id))
+        //    {
+        //        $list[] = $board;
+        //    }
+        //}
+
+        //foreach ($boards as $board)
+        //{
+        //    if (!in_array($accessed_boards, $board->id))
+        //    {
+        //        $list[] = $board;
+        //    }
+        //}
+
+        //return Response()->json([ 'ecode' => 0, 'data' => $boards ]);
+
 
 $example = [ 
   'id' => '111',
