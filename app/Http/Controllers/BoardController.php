@@ -230,4 +230,29 @@ $example = [
         AccessBoardLog::create([ 'project_key' => $project_key, 'board_id' => $id, 'latest_access_time' => time() ]);
         return Response()->json(['ecode' => 0, 'data' => [ 'id' => $id ] ]);
     }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function destroy($project_key, $id)
+    {
+        $board = Board::find($id);
+        if (!$board || $project_key != $board->project_key)
+        {
+            throw new \UnexpectedValueException('the board does not exist or is not in the project.', -12402);
+        }
+
+        // delete access log
+        AccessBoardLog::where('board_id' => $id)->delete();
+
+        // delete board rank
+        BoardRankMap::where('board_id' => $id)->delete();
+
+        Board::destroy($id);
+        return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
+        
+    }
 }
