@@ -246,10 +246,10 @@ $example = [
         }
 
         // delete access log
-        AccessBoardLog::where('board_id' => $id)->delete();
+        AccessBoardLog::where('board_id', $id)->delete();
 
         // delete board rank
-        BoardRankMap::where('board_id' => $id)->delete();
+        BoardRankMap::where('board_id', $id)->delete();
 
         Board::destroy($id);
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
