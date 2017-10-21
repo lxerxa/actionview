@@ -181,13 +181,30 @@ $example = [
     }
 
     /**
+     * get the kanban rank
+     *
+     * @param  string  $project_key
+     * @param  string  $id
+     * @return void
+     */
+    public function getRank($project_key, $id)
+    {
+        // record the access time
+        $this->setAccess($project_key, $id);
+
+        // get the kanban ranks
+        $ranks = BoardRankMap::where([ 'board_id' => $id ])->get(); 
+        return Response()->json(['ecode' => 0, 'data' => $ranks ]);
+    }
+
+    /**
      * rank the column issues 
      *
      * @param  string  $project_key
      * @param  string  $id
      * @return void
      */
-    public function setRank($project_key, $id)
+    public function setRank(Request $request, $project_key, $id)
     {
         $col_no = $request->input('col_no');
         if (!isset($col_no))
@@ -210,9 +227,10 @@ $example = [
         $old_rank = BoardRankMap::where([ 'board_id' => $id, 'col_no' => $col_no, 'parent' => $parent, 'rank' => $rank ])->first(); 
         $old_rank && $old_rank->delete();
 
-        $rank = BoardRankMap::create([ 'board_id' => $id, 'col_no' => $col_no, 'parent' => $parent, 'rank' => $rank ]);
+        BoardRankMap::create([ 'board_id' => $id, 'col_no' => $col_no, 'parent' => $parent, 'rank' => $rank ]);
 
-        return Response()->json(['ecode' => 0, 'data' => $rank ]);
+        $ranks = BoardRankMap::where([ 'board_id' => $id ])->get(); 
+        return Response()->json(['ecode' => 0, 'data' => $ranks ]);
     }
 
     /**
