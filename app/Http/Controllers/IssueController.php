@@ -132,6 +132,12 @@ class IssueController extends Controller
             }
         }
 
+        $from = $request->input('from');
+        if (isset($from) && $from === 'kanban')
+        {
+            $query->where('resolve_version', '<>', '');
+        }
+
         $query->where('del_flg', '<>', 1);
 
         // get total num
@@ -1145,6 +1151,34 @@ class IssueController extends Controller
         Event::fire(new IssueEvent($project_key, $id, $updValues['modifier'], [ 'event_key' => 'move_issue', 'data' => [ 'old_parent' => $issue['parent_id'], 'new_parent' => $parent_id ] ]));
 
         return $this->show($project_key, $id);
+    }
+
+    /**
+     * release issue.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  string  $project_key
+     * @return \Illuminate\Http\Response
+     */
+    public function release(Request $request, $project_key) {
+        $ids = $request->input('ids'); 
+        if (!$ids)
+        {
+            throw new \UnexpectedValueException('the released issues cannot be empty.', -11112);
+        }
+
+        $version = $request->input('version');
+        if (!$version)
+        {
+            throw new \UnexpectedValueException('the resolved version must be assigned.', -11113);
+        }
+
+        foreach ($ids as $id) 
+        {
+            DB::collection('issue_' . $project_key)->where('_id', $id)->update([ 'resolve_version' => $version ]);
+        }
+
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'ids' => $ids ] ]);
     }
 
     /**

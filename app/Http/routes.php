@@ -143,6 +143,8 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::resource('issue/{id}/comments', 'CommentsController');
     Route::resource('issue/{id}/worklog', 'WorklogController');
 
+    Route::post('issue/release', 'IssueController@release');
+
     Route::post('link', 'LinkController@store');
     Route::delete('link/{id}', 'LinkController@destroy');
 
