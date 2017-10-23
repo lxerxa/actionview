@@ -51,12 +51,17 @@ class IssueController extends Controller
             }
         }
 
-        $watched_issues = array_column(Watch::where('project_key', $project_key)->where('user.id', $this->user->id)->get()->toArray(), 'issue_id');
+        $watched_issues = Watch::where('project_key', $project_key)
+            ->where('user.id', $this->user->id)
+            ->get()
+            ->toArray();
+        $watched_issue_ids = array_column($watched_issues, 'issue_id');
+
         $watcher = $request->input('watcher');
         if (isset($watcher) && $watcher === 'me')
         {
             $watchedIds = [];
-            foreach ($watched_issues as $id)
+            foreach ($watched_issue_ids as $id)
             {
                 $watchedIds[] = new ObjectID($id);
             }
@@ -135,7 +140,9 @@ class IssueController extends Controller
         $from = $request->input('from');
         if (isset($from) && $from === 'kanban')
         {
-            $query->where('resolve_version', '<>', '');
+            $query->where(function ($query) {
+                $query->whereRaw([ 'resolve_version' => [ '$exists' => 0 ] ])->orWhere('resolve_version', '');
+            });
         }
 
         $query->where('del_flg', '<>', 1);
@@ -162,13 +169,17 @@ class IssueController extends Controller
         $issues = $query->get();
 
         $cache_parents = [];
+        $cache_avatars = [];
+        $kanban_issues = [];
+        $kanban_types  = $request->input('type') ?: ''; //for kanban
         foreach ($issues as $key => $issue)
         {
             // set issue watching flag
-            if (in_array($issue['_id']->__toString(), $watched_issues))
+            if (in_array($issue['_id']->__toString(), $watched_issue_ids))
             {
                 $issues[$key]['watching'] = true;
             }
+
             // get the parent issue
             if (isset($issue['parent_id']) && $issue['parent_id'])
             {
@@ -184,9 +195,30 @@ class IssueController extends Controller
                 }
                 unset($issues[$key]['parent_id']);
             }
+
+            if (isset($from) && $from === 'kanban')
+            {
+                //get assignee avatar for kanban
+                if (!array_key_exists($issue['assignee']['id'], $cache_avatars))
+                {
+                    $user = Sentinel::findById($issue['assignee']['id']);
+                    $cache_avatars[$issue['assignee']['id']] = isset($user->avatar) ? $user->avatar : '';
+                }
+                $issues[$key]['assignee']['avatar'] = $cache_avatars[$issue['assignee']['id']];
+
+                // filter subtask type
+                if (isset($issues[$key]['parent']) && $issues[$key]['parent'])
+                {
+                    if ($kanban_types && strpos($kanban_types, $issues[$key]['parent']['type']) === false)
+                    {
+                        continue;
+                    }
+                }
+                $kanban_issues[] = $issues[$key];
+            }
         }
 
-        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($issues), 'options' => [ 'total' => $total, 'sizePerPage' => $page_size ] ]);
+        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($kanban_issues ?: $issues), 'options' => [ 'total' => $total, 'sizePerPage' => $page_size ] ]);
     }
 
     /**
