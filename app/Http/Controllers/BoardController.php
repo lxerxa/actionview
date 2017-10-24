@@ -109,7 +109,7 @@ $example = [
         $name = $request->input('name');
         if (!$name || trim($name) == '')
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -12400);
+            throw new \UnexpectedValueException('the name can not be empty.', -11600);
         }
 
         $board = State::create([ 'project_key' => $project_key ] + $request->all());
@@ -128,7 +128,7 @@ $example = [
         $board = Board::find($id);
         if (!$board || $project_key != $board->project_key)
         {
-            throw new \UnexpectedValueException('the board does not exist or is not in the project.', -12402);
+            throw new \UnexpectedValueException('the board does not exist or is not in the project.', -11601);
         }
 
         $updValues = [];
@@ -137,7 +137,7 @@ $example = [
         {
             if (!$name || trim($name) == '')
             {
-                throw new \UnexpectedValueException('the name can not be empty.', -12400);
+                throw new \UnexpectedValueException('the name can not be empty.', -11600);
             }
             $updValues['name'] = $name;
         }
@@ -209,7 +209,7 @@ $example = [
         $col_no = $request->input('col_no');
         if (!isset($col_no))
         {
-            throw new \UnexpectedValueException('the column no can not be empty.', -11500);
+            throw new \UnexpectedValueException('the column no can not be empty.', -11602);
         }
 
         $parent = $request->input('parent');
@@ -221,7 +221,7 @@ $example = [
         $rank = $request->input('rank');
         if (!isset($rank) || !$rank) 
         {
-            throw new \UnexpectedValueException('the rank can not be empty.', -11500);
+            throw new \UnexpectedValueException('the rank can not be empty.', -11603);
         }
 
         $old_rank = BoardRankMap::where([ 'board_id' => $id, 'col_no' => $col_no, 'parent' => $parent, 'rank' => $rank ])->first(); 
@@ -260,7 +260,7 @@ $example = [
         $board = Board::find($id);
         if (!$board || $project_key != $board->project_key)
         {
-            throw new \UnexpectedValueException('the board does not exist or is not in the project.', -12402);
+            throw new \UnexpectedValueException('the board does not exist or is not in the project.', -11601);
         }
 
         // delete access log

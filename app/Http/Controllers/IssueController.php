@@ -133,9 +133,10 @@ class IssueController extends Controller
         }
 
         $from = $request->input('from');
+echo $from;exit;
         if (isset($from) && $from === 'kanban')
         {
-            $query->where('resolve_version', '<>', '');
+            $query->where('resolve_version', 'sss');
         }
 
         $query->where('del_flg', '<>', 1);
@@ -1164,18 +1165,24 @@ class IssueController extends Controller
         $ids = $request->input('ids'); 
         if (!$ids)
         {
-            throw new \UnexpectedValueException('the released issues cannot be empty.', -11112);
+            throw new \UnexpectedValueException('the released issues cannot be empty.', -11132);
         }
 
         $version = $request->input('version');
         if (!$version)
         {
-            throw new \UnexpectedValueException('the resolved version must be assigned.', -11113);
+            throw new \UnexpectedValueException('the resolved version must be assigned.', -11131);
         }
+
+        $user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
 
         foreach ($ids as $id) 
         {
             DB::collection('issue_' . $project_key)->where('_id', $id)->update([ 'resolve_version' => $version ]);
+            // add to histroy table
+            $snap_id = Provider::snap2His($project_key, $id, null, [ 'resolve_version' ]);
+            // trigger event of issue moved
+            Event::fire(new IssueEvent($project_key, $id, $user, [ 'event_key' => 'edit_issue', 'snap_id' => $snap_id ] ));
         }
 
         return Response()->json([ 'ecode' => 0, 'data' => [ 'ids' => $ids ] ]);
