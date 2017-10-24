@@ -205,7 +205,6 @@ class IssueController extends Controller
                     $cache_avatars[$issue['assignee']['id']] = isset($user->avatar) ? $user->avatar : '';
                 }
                 $issues[$key]['assignee']['avatar'] = $cache_avatars[$issue['assignee']['id']];
-
                 // filter subtask type
                 if (isset($issues[$key]['parent']) && $issues[$key]['parent'])
                 {
@@ -1205,9 +1204,14 @@ class IssueController extends Controller
             throw new \UnexpectedValueException('the resolved version must be assigned.', -11113);
         }
 
-        foreach ($ids as $id) 
+        $user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        foreach ($ids as $id)
         {
             DB::collection('issue_' . $project_key)->where('_id', $id)->update([ 'resolve_version' => $version ]);
+            // add to histroy table
+            $snap_id = Provider::snap2His($project_key, $id, null, [ 'resolve_version' ]);
+            // trigger event of issue moved
+            Event::fire(new IssueEvent($project_key, $id, $user, [ 'event_key' => 'edit_issue', 'snap_id' => $snap_id ] ));
         }
 
         return Response()->json([ 'ecode' => 0, 'data' => [ 'ids' => $ids ] ]);
