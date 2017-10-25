@@ -95,7 +95,12 @@ class ActivityController extends Controller
                 {
                     $issue = DB::collection('issue_' . $project_key)->where('_id', $activity['issue_id'])->first();
                 }
-                $activities[$key]['issue_link'][ 'src'] = [ 'id' => $activity['issue_id'], 'no' => $issue['no'], 'title' => isset($issue['title']) ? $issue['title'] : '', 'state' => isset($issue['state']) ? $issue['state'] : '', 'del_flg' => isset($issue['del_flg']) ? $issue['del_flg'] : 0 ];
+                $activities[$key]['issue_link'][ 'src'] = [ 
+                    'id' => $activity['issue_id'], 
+                    'no' => $issue['no'], 
+                    'title' => isset($issue['title']) ? $issue['title'] : '', 
+                    'state' => isset($issue['state']) ? $issue['state'] : '', 
+                    'del_flg' => isset($issue['del_flg']) ? $issue['del_flg'] : 0 ];
 
                 $activities[$key]['issue_link']['relation'] = $activity['data']['relation'];
 
@@ -107,7 +112,12 @@ class ActivityController extends Controller
                 {
                     $issue = DB::collection('issue_' . $project_key)->where('_id', $activity['data']['dest'])->first();
                 }
-                $activities[$key]['issue_link']['dest'] = [ 'id' => $activity['data']['dest'], 'no' => $issue['no'], 'title' => isset($issue['title']) ? $issue['title'] : '', 'state' => isset($issue['state']) ? $issue['state'] : '', 'del_flg' => isset($issue['del_flg']) ? $issue['del_flg'] : 0 ];
+                $activities[$key]['issue_link']['dest'] = [ 
+                    'id' => $activity['data']['dest'], 
+                    'no' => $issue['no'], 
+                    'title' => isset($issue['title']) ? $issue['title'] : '', 
+                    'state' => isset($issue['state']) ? $issue['state'] : '', 
+                    'del_flg' => isset($issue['del_flg']) ? $issue['del_flg'] : 0 ];
             }
             else if (isset($activity['issue_id']))
             {
@@ -119,7 +129,12 @@ class ActivityController extends Controller
                 {
                     $issue = DB::collection('issue_' . $project_key)->where('_id', $activity['issue_id'])->first();
                 }
-                $activities[$key]['issue'] = [ 'id' => $activity['issue_id'], 'no' => $issue['no'], 'title' => isset($issue['title']) ? $issue['title'] : '', 'state' => isset($issue['state']) ? $issue['state'] : '', 'del_flg' => isset($issue['del_flg']) ? $issue['del_flg'] : 0 ];
+                $activities[$key]['issue'] = [ 
+                    'id' => $activity['issue_id'], 
+                    'no' => $issue['no'], 
+                    'title' => isset($issue['title']) ? $issue['title'] : '', 
+                    'state' => isset($issue['state']) ? $issue['state'] : '', 
+                    'del_flg' => isset($issue['del_flg']) ? $issue['del_flg'] : 0 ];
                 $cache_issues[$activity['issue_id']] = $issue;
             }
 

@@ -79,9 +79,7 @@ class BoardController extends Controller
 $example = [ 
   'id' => '111',
   'name' => '1111111111',
-  'subtask' => true,
-  'query' => [],
-  'rank' => [],
+  'query' => [ 'type' => [ '59af4ad51d41c85e9108a8a7' ], 'subtask' => true ],
   'last_access_time' => 11111111,
   'columns' => [
     [ 'name' => '待处理', 'states' => [ 'Open', 'Reopened' ] ],
@@ -89,7 +87,7 @@ $example = [
     [ 'name' => '关闭', 'states' => [ 'Resolved', 'Closed' ] ]
   ],
   'filters' => [
-    [ 'id' => '11111', 'name' => '111111' ],
+    [ 'id' => '11111', 'name' => '111111', 'query' => [ 'updated_at' => '1m' ] ],
     [ 'id' => '22222', 'name' => '222222' ],
     [ 'id' => '33333', 'name' => '333333' ],
   ],
@@ -224,7 +222,7 @@ $example = [
             throw new \UnexpectedValueException('the rank can not be empty.', -11603);
         }
 
-        $old_rank = BoardRankMap::where([ 'board_id' => $id, 'col_no' => $col_no, 'parent' => $parent, 'rank' => $rank ])->first(); 
+        $old_rank = BoardRankMap::where([ 'board_id' => $id, 'col_no' => $col_no, 'parent' => $parent ])->first(); 
         $old_rank && $old_rank->delete();
 
         BoardRankMap::create([ 'board_id' => $id, 'col_no' => $col_no, 'parent' => $parent, 'rank' => $rank ]);

@@ -29,7 +29,7 @@ class IssueController extends Controller
      */
     public function index(Request $request, $project_key)
     {
-        $page_size = 50;
+        $from = $request->input('from');
 
         $where = array_only($request->all(), [ 'type', 'assignee', 'reporter', 'state', 'resolution', 'priority', 'module', 'resolve_version' ]) ?: [];
         foreach ($where as $key => $val)
@@ -51,12 +51,17 @@ class IssueController extends Controller
             }
         }
 
-        $watched_issues = array_column(Watch::where('project_key', $project_key)->where('user.id', $this->user->id)->get()->toArray(), 'issue_id');
+        $watched_issues = Watch::where('project_key', $project_key)
+            ->where('user.id', $this->user->id)
+            ->get()
+            ->toArray();
+        $watched_issue_ids = array_column($watched_issues, 'issue_id');
+
         $watcher = $request->input('watcher');
         if (isset($watcher) && $watcher === 'me')
         {
             $watchedIds = [];
-            foreach ($watched_issues as $id)
+            foreach ($watched_issue_ids as $id)
             {
                 $watchedIds[] = new ObjectID($id);
             }
@@ -132,11 +137,11 @@ class IssueController extends Controller
             }
         }
 
-        $from = $request->input('from');
-echo $from;exit;
         if (isset($from) && $from === 'kanban')
         {
-            $query->where('resolve_version', 'sss');
+            $query->where(function ($query) {
+                $query->whereRaw([ 'resolve_version' => [ '$exists' => 0 ] ])->orWhere('resolve_version', '');
+            });
         }
 
         $query->where('del_flg', '<>', 1);
@@ -156,20 +161,26 @@ echo $from;exit;
                 $query = $query->orderBy($field, $sort);
             }
         }
-        $query->orderBy('created_at', 'desc');
 
+        $query->orderBy('created_at', isset($from) && $from === 'kanban' ? 'asc' : 'desc');
+
+        $page_size = $request->input('limit') ? intval($request->input('limit')) : 50;
         $page = $request->input('page') ?: 1;
         $query = $query->skip($page_size * ($page - 1))->take($page_size);
         $issues = $query->get();
 
         $cache_parents = [];
+        $cache_avatars = [];
+        $kanban_issues = [];
+        $kanban_types  = $request->input('type') ?: ''; //for kanban
         foreach ($issues as $key => $issue)
         {
             // set issue watching flag
-            if (in_array($issue['_id']->__toString(), $watched_issues))
+            if (in_array($issue['_id']->__toString(), $watched_issue_ids))
             {
                 $issues[$key]['watching'] = true;
             }
+
             // get the parent issue
             if (isset($issue['parent_id']) && $issue['parent_id'])
             {
@@ -185,9 +196,29 @@ echo $from;exit;
                 }
                 unset($issues[$key]['parent_id']);
             }
+
+            if (isset($from) && $from === 'kanban')
+            {
+                //get assignee avatar for kanban
+                if (!array_key_exists($issue['assignee']['id'], $cache_avatars))
+                {
+                    $user = Sentinel::findById($issue['assignee']['id']);
+                    $cache_avatars[$issue['assignee']['id']] = isset($user->avatar) ? $user->avatar : '';
+                }
+                $issues[$key]['assignee']['avatar'] = $cache_avatars[$issue['assignee']['id']];
+                // filter subtask type
+                if (isset($issues[$key]['parent']) && $issues[$key]['parent'])
+                {
+                    if ($kanban_types && strpos($kanban_types, $issues[$key]['parent']['type']) === false)
+                    {
+                        continue;
+                    }
+                }
+                $kanban_issues[] = $issues[$key];
+            }
         }
 
-        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($issues), 'options' => [ 'total' => $total, 'sizePerPage' => $page_size ] ]);
+        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($kanban_issues ?: $issues), 'options' => [ 'total' => $total, 'sizePerPage' => $page_size ] ]);
     }
 
     /**
@@ -1175,8 +1206,7 @@ echo $from;exit;
         }
 
         $user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
-
-        foreach ($ids as $id) 
+        foreach ($ids as $id)
         {
             DB::collection('issue_' . $project_key)->where('_id', $id)->update([ 'resolve_version' => $version ]);
             // add to histroy table

@@ -937,7 +937,7 @@ class Provider {
 
         foreach ($schema as $field)
         {
-            if ($change_fields && !in_array($field['key'], $change_fields))
+            if ($field['key'] === 'assignee' || ($change_fields && !in_array($field['key'], $change_fields)))
             {
                 continue;
             }
