@@ -29,7 +29,7 @@ class IssueController extends Controller
      */
     public function index(Request $request, $project_key)
     {
-        $page_size = 50;
+        $from = $request->input('from');
 
         $where = array_only($request->all(), [ 'type', 'assignee', 'reporter', 'state', 'resolution', 'priority', 'module', 'resolve_version' ]) ?: [];
         foreach ($where as $key => $val)
@@ -137,7 +137,6 @@ class IssueController extends Controller
             }
         }
 
-        $from = $request->input('from');
         if (isset($from) && $from === 'kanban')
         {
             $query->where(function ($query) {
@@ -162,8 +161,10 @@ class IssueController extends Controller
                 $query = $query->orderBy($field, $sort);
             }
         }
-        $query->orderBy('created_at', 'desc');
 
+        $query->orderBy('created_at', isset($from) && $from === 'kanban' ? 'asc' : 'desc');
+
+        $page_size = $request->input('limit') ? intval($request->input('limit')) : 50;
         $page = $request->input('page') ?: 1;
         $query = $query->skip($page_size * ($page - 1))->take($page_size);
         $issues = $query->get();

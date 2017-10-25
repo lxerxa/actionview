@@ -87,7 +87,7 @@ $example = [
     [ 'name' => '关闭', 'states' => [ 'Resolved', 'Closed' ] ]
   ],
   'filters' => [
-    [ 'id' => '11111', 'name' => '111111' ],
+    [ 'id' => '11111', 'name' => '111111', 'query' => [ 'updated_at' => '1m' ] ],
     [ 'id' => '22222', 'name' => '222222' ],
     [ 'id' => '33333', 'name' => '333333' ],
   ],
