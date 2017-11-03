@@ -152,7 +152,7 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::get('file/{id}', [ 'middleware' => 'privilege:view_project', 'uses' => 'FileController@download' ]);
     Route::delete('file/{id}', [ 'middleware' => 'privilege:remove_file', 'uses' => 'FileController@delete' ]);
 
-    Route::get('kanban/list', 'BoardController@getList');
+    Route::get('kanban', 'BoardController@getList');
     Route::get('kanban/{id}/rank', 'BoardController@getRank');
     Route::post('kanban/{id}/rank', 'BoardController@setRank');
 });
