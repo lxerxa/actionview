@@ -16,84 +16,70 @@ use App\Project\Provider;
 class BoardController extends Controller
 {
     /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function index($project_key)
-    {
-        $boards = Board::Where('project_key', $project_key)
-            ->orderBy('_id', 'asc')
-            ->get();
-
-        return Response()->json([ 'ecode' => 0, 'data' => $boards ]);
-    }
-
-    /**
      * get user accessed board list
      *
      * @param  string  $project_key
      * @return response 
      */
-    public function getList($project_key) {
-
+    public function index($project_key) {
         // get all boards
-        //$boards = Board::Where('project_key', $project_key)
-        //    ->orderBy('_id', 'asc')
-        //    ->get();
+        $boards = Board::Where('project_key', $project_key)
+            ->orderBy('_id', 'asc')
+            ->get();
 
-        //$access_records = AccessBoardLog::where('project_key', $project_key)
-        //    ->where('user_id', $this->user->id)
-        //    ->orderBy('latest_access_time', 'desc')
-        //    ->get();
+        $access_records = AccessBoardLog::where('project_key', $project_key)
+            ->where('user_id', $this->user->id)
+            ->orderBy('latest_access_time', 'desc')
+            ->get();
 
-        //$list = [];
-        //$accessed_boards = [];
-        //foreach($access_records as $record)
-        //{
-        //    foreach($boards as $board)
-        //    {
-        //        if ($board->id == $record->board_id)
-        //        {
-        //            $accessed_boards[] = $record->board_id; 
-        //            break;
-        //        }
-        //    }
-        //    if (in_array($accessed_boards, $record->board_id))
-        //    {
-        //        $list[] = $board;
-        //    }
-        //}
+        $list = [];
+        $accessed_boards = [];
+        foreach($access_records as $record)
+        {
+            foreach($boards as $board)
+            {
+                if ($board->id == $record->board_id)
+                {
+                    $accessed_boards[] = $record->board_id; 
+                    break;
+                }
+            }
+            if (in_array($record->board_id, $accessed_boards))
+            {
+                $list[] = $board;
+            }
+        }
 
-        //foreach ($boards as $board)
-        //{
-        //    if (!in_array($accessed_boards, $board->id))
-        //    {
-        //        $list[] = $board;
-        //    }
-        //}
+        foreach ($boards as $board)
+        {
+            if (!in_array($board->id, $accessed_boards))
+            {
+                $list[] = $board;
+            }
+        }
 
-        //return Response()->json([ 'ecode' => 0, 'data' => $boards ]);
+        return Response()->json([ 'ecode' => 0, 'data' => $list ]);
 
-
+/*
 $example = [ 
   'id' => '111',
   'name' => '1111111111',
+  'type' => 'kanban',
   'query' => [ 'type' => [ '59af4ad51d41c85e9108a8a7' ], 'subtask' => true ],
   'last_access_time' => 11111111,
   'columns' => [
-    [ 'name' => '待处理', 'states' => [ 'Open', 'Reopened' ] ],
-    [ 'name' => '处理中', 'states' => [ 'In Progess' ] ],
-    [ 'name' => '关闭', 'states' => [ 'Resolved', 'Closed' ] ]
+    [ 'no' => 1, 'name' => '待处理', 'states' => [ 'Open', 'Reopened' ] ],
+    [ 'no' => 2, 'name' => '处理中', 'states' => [ 'In Progess' ] ],
+    [ 'no' => 3, 'name' => '关闭', 'states' => [ 'Resolved', 'Closed' ] ]
   ],
   'filters' => [
-    [ 'id' => '11111', 'name' => '111111', 'query' => [ 'updated_at' => '1m' ] ],
-    [ 'id' => '22222', 'name' => '222222' ],
-    [ 'id' => '33333', 'name' => '333333' ],
+    [ 'no' => 1, 'id' => '11111', 'name' => '111111', 'query' => [ 'updated_at' => '1m' ] ],
+    [ 'no' => 2, 'id' => '22222', 'name' => '222222' ],
+    [ 'no' => 3, 'id' => '33333', 'name' => '333333' ],
   ],
 ];
-
         return Response()->json([ 'ecode' => 0, 'data' => [ $example ] ]);
+*/
     }
 
     /**
@@ -110,7 +96,8 @@ $example = [
             throw new \UnexpectedValueException('the name can not be empty.', -11600);
         }
 
-        $board = State::create([ 'project_key' => $project_key ] + $request->all());
+        // only support for kanban type, fix me
+        $board = Board::create([ 'project_key' => $project_key, 'type' => 'kanban', 'query' => [ 'subtask' => true ] ] + $request->all());
         return Response()->json(['ecode' => 0, 'data' => $board]);
     }
 
@@ -140,10 +127,23 @@ $example = [
             $updValues['name'] = $name;
         }
 
+        $description = $request->input('description');
+        if (isset($description))
+        {
+            $updValues['description'] = $description;
+        }
+
         $query = $request->input('query');
         if (isset($query))
         {
-            $updValues['query'] = $query;
+            // defaultly display subtask issue
+            $updValues['query'] = [ 'subtask' => true ] + $query;
+        }
+
+        $filters = $request->input('filters');
+        if (isset($filters))
+        {
+            $updValues['filters'] = $filters;
         }
 
         $columns = $request->input('columns');
@@ -152,11 +152,11 @@ $example = [
             $updValues['columns'] = $columns;
         }
 
-        $subtask = $request->input('subtask');
-        if (isset($subtask))
-        {
-            $updValues['subtask'] = $subtask;
-        }
+        //$subtask = $request->input('subtask');
+        //if (isset($subtask))
+        //{
+        //    $updValues['subtask'] = $subtask;
+        //}
 
         $board->fill($updValues)->save();
         return Response()->json(['ecode' => 0, 'data' => Board::find($id)]);
@@ -243,7 +243,11 @@ $example = [
         $record = AccessBoardLog::where([ 'board_id' => $id, 'user_id' => $this->user->id ])->first();
         $record && $record->delete();
 
-        AccessBoardLog::create([ 'project_key' => $project_key, 'board_id' => $id, 'latest_access_time' => time() ]);
+        AccessBoardLog::create([ 
+          'project_key' => $project_key, 
+          'user_id' => $this->user->id, 
+          'board_id' => $id, 
+          'latest_access_time' => time() ]);
         return Response()->json(['ecode' => 0, 'data' => [ 'id' => $id ] ]);
     }
 

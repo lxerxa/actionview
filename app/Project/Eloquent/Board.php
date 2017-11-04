@@ -12,6 +12,8 @@ class Board extends Model
     protected $fillable = array(
         'project_key',
         'name',
+        'type',
+        'description',
         'columns',
         'filters',
         'query',
