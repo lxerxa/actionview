@@ -423,6 +423,12 @@ class IssueController extends Controller
             throw new \UnexpectedValueException('the schema of the type is not existed.', -11101);
         }
 
+        if (isset($issue['assignee']['id']))
+        {
+            $user = Sentinel::findById($issue['assignee']['id']);
+            $issue['assignee']['avatar'] = isset($user->avatar) ? $user->avatar : '';
+        }
+
         foreach ($schema as $field)
         {
             if ($field['type'] === 'File' && isset($issue[$field['key']]) && $issue[$field['key']]) 
