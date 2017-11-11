@@ -83,6 +83,6 @@ http://www.actionview.cn
 
 ## License
 
-ActionView 遵从许可证 [GNU General Public License version 3](http://www.gnu.org/licenses/gpl-3.0.html)
+ActionView 遵从许可证 [ Apache License Version 2.0](https://www.apache.org/licenses/LICENSE-2.0)
 
-The ActionView is open-sourced software licensed under the [GNU General Public License version 3](http://www.gnu.org/licenses/gpl-3.0.html).
+The ActionView is open-sourced software licensed under the [ Apache License Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
