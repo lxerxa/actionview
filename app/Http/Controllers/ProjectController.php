@@ -60,6 +60,9 @@ class ProjectController extends Controller
         foreach ($pkeys as $pkey)
         {
             $project = Project::where('key', $pkey)->first();
+            if ($project->status === 'closed') {
+                continue;
+            }
             $projects[] = [ 'key' => $project->key, 'name' => $project->name ];
             if (count($projects) >= 5) { break; }
         }
