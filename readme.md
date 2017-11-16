@@ -6,6 +6,8 @@
 
 http://www.actionview.cn  
 
+![image](https://github.com/lxerxa/actionview/raw/master/public/board.png
+
 # Installation
 
 系统要求：
