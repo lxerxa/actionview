@@ -6,7 +6,9 @@
 
 http://www.actionview.cn  
 
+![image](https://github.com/lxerxa/actionview/raw/master/public/issue.png)
 ![image](https://github.com/lxerxa/actionview/raw/master/public/board.png)
+![image](https://github.com/lxerxa/actionview/raw/master/public/workflow.png)
 
 # Installation
 
