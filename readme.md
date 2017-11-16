@@ -72,7 +72,7 @@ http://www.actionview.cn
 ## RoadMap
 
 * 开发移动APP（React Native）。
-* 开发敏捷看板（Agile Board）。
+* 开发敏捷Scrum看板（Agile Board, 已支持Kanban Board）。
 * 开发报告模块。
 * 支持动态密码登录。
 * 支持多语言。
