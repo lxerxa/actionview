@@ -6,9 +6,9 @@
 
 http://www.actionview.cn  
 
-![image](https://github.com/lxerxa/actionview/raw/master/public/issue.png)
-![image](https://github.com/lxerxa/actionview/raw/master/public/board.png)
-![image](https://github.com/lxerxa/actionview/raw/master/public/workflow.png)
+问题：![image](https://github.com/lxerxa/actionview/raw/master/public/issue.png)
+看板：![image](https://github.com/lxerxa/actionview/raw/master/public/board.png)
+工作流配置：![image](https://github.com/lxerxa/actionview/raw/master/public/workflow.png)
 
 # Installation
 
