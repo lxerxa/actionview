@@ -61,8 +61,8 @@ class WorkflowController extends Controller
         if (isset($source_id) && $source_id)
         {
             $source_definition = Definition::find($source_id);
-            $latest_modifier = $source_definition->latest_modifier;
-            $latest_modified_time = $source_definition->latest_modified_time;
+            $latest_modifier = [ 'id' => $this->user->id, 'name' => $this->user->first_name ];
+            $latest_modified_time = date('Y-m-d H:i:s'); 
             $state_ids = $source_definition->state_ids;
             $screen_ids = $source_definition->screen_ids;
             $steps = $source_definition->steps;
