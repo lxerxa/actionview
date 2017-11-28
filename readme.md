@@ -1,6 +1,8 @@
 # ActionView
 
-提供了一个后端基于laravel-framework、前端基于reactjs＋redux的问题需求跟踪工具，致力于做成开源版的Jira。前端代码库：[actionview-fe](https://github.com/lxerxa/actionview-fe)。  
+提供了一个后端基于php laravel-framework、前端基于reactjs＋redux的类Jira的问题需求跟踪工具。前端代码库：[actionview-fe](https://github.com/lxerxa/actionview-fe)。  
+
+我们实际开发过程一直都是在用Jira进行任务管理和Bug跟踪，除了采购License价格不菲外，使用过程中觉得Jira还是有点重、全局方案配置到了后期越来越难维护、页面体验也不像现在流行的SPA那么好，所以有了做ActionView的想法，当然和Jira比还有太多的路要走，我们会努力的！
 
 # Demo
 
@@ -58,10 +60,10 @@ http://www.actionview.cn
 
 * 支持用户创建项目，项目不仅可引用全局配置方案，也可自定义本地方案。
 * 各项目不仅可引用系统默认工作流，同时可自定义自己的工作流，工作流的每一步可进行精细控制，确保正确的人在正确的时间执行正确的操作。
-* 支撑敏捷开发的看板视图。
+* 支持敏捷开发的看板视图。
 * 简单易用的问题界面配置。
 * 强大的数据筛选功能，可定义自己的过滤器。
-* 完备的权限控制模型。
+* 完备的权限控制模型，支持给用户组授权。
 * 灵活可定制的消息通知方案。
 * 不仅可查看某个问题的改动记录，还可浏览整个项目的活动日志。  
 * 支持用户在问题上添加工作日志。
