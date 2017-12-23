@@ -14,7 +14,7 @@ http://www.actionview.cn
 
 ![image](https://github.com/lxerxa/actionview/raw/master/public/workflow.png)
 
-# Installation(Linux)
+# Installation(Linux,Mac)
 
 系统要求：
 > apache 2.4.7+  
@@ -40,7 +40,7 @@ http://www.actionview.cn
 apache配置：  
 > 配置apache访问路径至actionview/public下    
 
-系统管理员：user: admin@action.view, password: actionview
+系统管理员登录：user: admin@action.view, password: actionview
 
 ## Feature
 
