@@ -28,33 +28,17 @@ http://www.actionview.cn
 下载程序：
 > git clone https://github.com/lxerxa/actionview.git actionview
 
-安装依赖(安装过程若缺少某个系统组件可手动安装):
-> cd actionview   
-> composer install    
-> chmod -R 777 storage    
-> cd bootstrap   
-> chmod -R 777 cache  
-> cd ../  
-> cp .env.example .env (修改数据库连接参数)  
+安装依赖(安装过程若缺少某个系统组件可手动安装)：   
+> cd actionview   
+> composer install (需要一段时间)   
+> sh config.sh      
+> cp .env.example .env (修改mongodb数据库连接参数)  
 
-修改文件：  
-> vendor/cartalyst/sentinel/src/Users/EloquentUser.php  
-> use Illuminate\Database\Eloquent\Model; ==> use Jenssegers\Mongodb\Eloquent\Model;  
+执行db数据初始化脚本（在安装mongodb机器上）：  
+> mongorestore -h 127.0.0.1 -u username -p secret -d dbname --drop ./dbdata  
 
-> vendor/cartalyst/sentinel/src/Activations/EloquentActivation.php   
-> use Illuminate\Database\Eloquent\Model; ==> use Jenssegers\Mongodb\Eloquent\Model; 
-
-> vendor/cartalyst/sentinel/src/Persistences/EloquentPersistence.php  
-> use Illuminate\Database\Eloquent\Model; ==> use Jenssegers\Mongodb\Eloquent\Model;  
-
-> vendor/cartalyst/sentinel/src/Activations/IlluminateActivationRepository.php  
-> create函数(line 75)添加 $activation->completed = false;  
-
-> vendor/cartalyst/sentinel/src/Users/EloquentUser.php  
-> $fillable 中添加 avatar 字段  
-
-执行db脚本：  
-> mongorestore -h 127.0.0.1 -u username -p secret -d dbname --drop ./dbdata  
+apache配置：  
+> 配置apache访问路径至actionview/public下    
 
 ## Feature
 
