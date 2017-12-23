@@ -29,9 +29,9 @@ http://www.actionview.cn
 > git clone https://github.com/lxerxa/actionview.git actionview
 
 安装依赖(安装过程若缺少某个系统组件可手动安装)：   
-> cd actionview   
-> composer install (需要一段时间)   
-> sh config.sh      
+> cd actionview  
+> composer install (需要一段时间)  
+> sh config.sh  
 > cp .env.example .env (修改mongodb数据库连接参数)  
 
 执行db数据初始化脚本（在安装mongodb机器上）：  
