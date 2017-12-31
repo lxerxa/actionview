@@ -105,7 +105,7 @@ class ProjectController extends Controller
         $limit = $request->input('limit');
         if (!isset($limit))
         {
-            $limit = 30;
+            $limit = 36;
         }
         $limit = intval($limit);
 
@@ -522,15 +522,15 @@ class ProjectController extends Controller
             $updValues['name'] = trim($name);
         }
         // check is user is available
-        $principal_id = $request->input('principal_id');
-        if (isset($principal_id))
+        $principal = $request->input('principal');
+        if (isset($principal))
         {
-            if (!$principal_id)
+            if (!$principal)
             {
                 throw new \InvalidArgumentException('the principal must be appointed.', -14005);
             }
 
-            $principal_info = Sentinel::findById($principal_id);
+            $principal_info = Sentinel::findById($principal);
             if (!$principal_info)
             {
                 throw new \InvalidArgumentException('the user is not exists.', -14003);
