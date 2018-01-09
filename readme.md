@@ -1,6 +1,8 @@
 # ActionView
 
-提供了一个后端基于php laravel-framework、前端基于reactjs＋redux的类Jira的问题需求跟踪工具。前端代码库：[actionview-fe](https://github.com/lxerxa/actionview-fe)。  
+![](https://img.shields.io/badge/language-php-orange.svg) ![](https://img.shields.io/badge/framework-laravel+reactjs-brightgreen.svg) ![](https://img.shields.io/badge/license-apache2.0-brightgreen.svg)  
+
+提供了一个后端基于php laravel-framework、前端基于reactjs＋redux的类Jira的问题需求跟踪工具。前端代码库：[actionview-fe](https://github.com/lxerxa/actionview-fe)。  
 
 我们实际开发过程一直都是在用Jira进行任务管理和Bug跟踪，除了采购License价格不菲外，使用过程中觉得Jira还是有点重、全局方案配置到了后期越来越难维护、页面体验也不像现在流行的SPA那么好，所以有了做ActionView的想法，当然和Jira比还有太多的路要走，我们会努力的！
 
@@ -18,7 +20,7 @@ http://www.actionview.cn
 
 系统要求：
 > apache 2.4.7+  
-> php 5.5.9+ (安装php-gd, 重新设置上传文件大小限制)  
+> php 5.5.9+ (安装php-gd, php-mongodb)  
 > mongodb 2.4.9+  
 
 全局安装composer：   
@@ -38,7 +40,13 @@ http://www.actionview.cn
 > mongorestore -h 127.0.0.1 -u username -p secret -d dbname --drop ./dbdata  
 
 apache配置：  
-> 配置apache访问路径至actionview/public下    
+> 配置apache访问路径至actionview/public下, 示例如下:  
+> DocumentRoot /var/www/actionview/public  
+> <Directory /var/www/actionview/public>  
+> &emsp;Options FollowSymLinks  
+> &emsp;Order deny,allow  
+> &emsp;AllowOverride All  
+> &lt;/Directory&gt;  
 
 系统管理员登录：user: admin@action.view, password: actionview
 
