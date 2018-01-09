@@ -38,7 +38,13 @@ http://www.actionview.cn
 > mongorestore -h 127.0.0.1 -u username -p secret -d dbname --drop ./dbdata  
 
 apache配置：  
-> 配置apache访问路径至actionview/public下    
+> 配置apache访问路径至actionview/public下, 示例如下:  
+> DocumentRoot /var/www/actionview/public  
+> <Directory /var/www/actionview/public>  
+> &emsp;Options FollowSymLinks  
+> &emsp;Order deny,allow  
+> &emsp;AllowOverride All  
+> &lt;/Directory&gt;  
 
 系统管理员登录：user: admin@action.view, password: actionview
 
