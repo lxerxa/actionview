@@ -1,6 +1,6 @@
 # ActionView
 
-![](https://img.shields.io/badge/language-php-orange.svg)![]&nbps;(https://img.shields.io/badge/license-apache2.0-brightgreen.svg)  
+![](https://img.shields.io/badge/language-php-orange.svg)&nbps;![](https://img.shields.io/badge/license-apache2.0-brightgreen.svg)  
 
 提供了一个后端基于php laravel-framework、前端基于reactjs＋redux的类Jira的问题需求跟踪工具。前端代码库：[actionview-fe](https://github.com/lxerxa/actionview-fe)。  
 
