@@ -163,8 +163,9 @@ class UserController extends Controller
 
         $phone = $request->input('phone') ? trim($request->input('phone')) : '';
 
-        $user = Sentinel::register([ 'first_name' => $first_name, 'email' => $email, 'password' => 'actionview', 'phone' => $phone ], true)->toArray();
-        $user['status'] = 'active';
+        $user = Sentinel::register([ 'first_name' => $first_name, 'email' => $email, 'password' => 'actionview', 'phone' => $phone ], true);
+        $user->status = Activation::completed($user) ? 'active' : 'unactivated';
+
         return Response()->json([ 'ecode' => 0, 'data' => $user ]);
     }
 
