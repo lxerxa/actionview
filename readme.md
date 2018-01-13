@@ -30,10 +30,10 @@ http://www.actionview.cn
 下载程序：
 > git clone https://github.com/lxerxa/actionview.git actionview
 
-安装依赖(安装过程若缺少某个系统组件可手动安装)：   
+安装依赖：   
 > cd actionview  
 > composer install (需要一段时间)  
-> sh config.sh (mac系统请先安装gnu-sed, brew install gnu-sed --with-default-names)  
+> sh config.sh (Mac系统请先安装gnu-sed, brew install gnu-sed --with-default-names)  
 > cp .env.example .env (修改mongodb数据库连接参数)  
 
 执行db数据初始化脚本（在安装mongodb机器上）：  
