@@ -67,6 +67,7 @@ Route::group([ 'middleware' => 'can' ], function () {
     Route::post('api/syssetting/sendtestmail', 'SyssettingController@sendTestMail');
 
     Route::get('api/getavatar', 'FileController@getAvatar');
+    Route::get('api/downloadusertpl', 'UserController@downloadUserTpl');
 });
 
 // project config

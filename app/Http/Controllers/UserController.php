@@ -18,7 +18,7 @@ class UserController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('privilege:sys_admin', [ 'except' => [ 'register', 'search' ] ]);
+        $this->middleware('privilege:sys_admin', [ 'except' => [ 'register', 'search', 'downloadUserTpl' ] ]);
         parent::__construct();
     }
 
@@ -375,5 +375,24 @@ class UserController extends Controller
 
         $user = Sentinel::update($user, [ 'password' => 'actionview' ]);
         return Response()->json([ 'ecode' => 0, 'data' => $user ]);
+    }
+
+    /**
+     * Download user template file.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     */
+    public function downloadUserTpl(Request $request)
+    {
+        $output = fopen('php://output', 'w') or die("can't open php://output");  
+
+        header("Content-type:text/csv;charset=utf-8");
+        header("Content-Disposition:attachment;filename=import-user-template.csv");
+
+        fputcsv($output, [ 'name', 'email', 'phone' ]);  
+        fputcsv($output, [ 'Tom', 'tom@actionview.cn', '13811111111' ]);  
+        fputcsv($output, [ 'Alice', 'alice@actionview.cn', '13611111111' ]);  
+        fclose($output) or die("can't close php://output"); 
+        exit;
     }
 }
