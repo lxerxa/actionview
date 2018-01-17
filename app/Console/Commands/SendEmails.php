@@ -14,6 +14,7 @@ use App\Acl\Eloquent\Group;
 use Cartalyst\Sentinel\Users\EloquentUser;
 
 use DB;
+use Mail;
 
 class SendEmails extends Command
 {
@@ -194,6 +195,7 @@ class SendEmails extends Command
               'event_key' => $activity['event_key'], 
               'user' => $activity['user'], 
               'data' => isset($activity['data']) ? $activity['data'] : [], 
+              'domain' => env('DOMAIN', 'www.actionview.cn'),
             ];
 
             $to_users = EloquentUser::find(array_unique($uids)); 
@@ -206,12 +208,13 @@ class SendEmails extends Command
                 }
 
                 $from = $activity['user']['name']; 
+                $to = $to_user['email'];
                 $subject = '[ActionView](' . $project['key'] . '-' . $issue['no'] . ')' . (isset($issue['title']) ? $issue['title'] : '-');
 
-                //var_dump($new_data);
-                Mail::send('emails.issue', $new_data, function($message){
-                  $message->to($to_user['email'])->subject($subject);
+                Mail::send('emails.issue', $new_data, function($message) use($from, $to, $subject) {
+                  $message->from(env('MAIL_ADDRESS', 'actionview@126.com'), $from)->to($to)->subject($subject);
                 });
+                break;
             }
             //DB::collection('mq')->where('_id', $val['_id']->__toString())->delete();
         }

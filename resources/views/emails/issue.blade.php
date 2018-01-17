@@ -58,7 +58,7 @@
       <td class='title'>
         <b>{{ $user['name'] }}</b> 
         @if ($event_key == 'create_issue') 创建了
-        @elseif ($event_key == 'edit_issue') 更新了
+        @elseif ($event_key == 'edit_issue' || $event_key == 'normal') 更新了
         @elseif ($event_key == 'del_issue') 删除了
         @elseif ($event_key == 'assign_issue') 分配了
         @elseif ($event_key == 'reset_issue') 重置了
@@ -130,7 +130,8 @@
             or $event_key == 'stop_progress_issue' 
             or $event_key == 'resolve_issue' 
             or $event_key == 'close_issue' 
-            or $event_key == 'reopen_issue')
+            or $event_key == 'reopen_issue'
+            or $event_key == 'normal')
             @foreach ($data as $item)
               <tr>
                 <td class='cell-title' width='70pt'>
