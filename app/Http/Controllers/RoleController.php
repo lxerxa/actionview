@@ -268,7 +268,7 @@ class RoleController extends Controller
     }
 
     /**
-     * get users by array id.
+     * get users and Groups by role id.
      *
      * @param  string $project_key
      * @param  string $role_id

@@ -39,15 +39,18 @@ class ActivityAddListener
 
         if ($event instanceof FileUploadEvent)
         {
-            $this->addFileActivity($event->project_key, $event->issue_id, $event->user, $event->file_id, 'add_file');
+            $activity_id = $this->addFileActivity($event->project_key, $event->issue_id, $event->user, $event->file_id, 'add_file');
+            $this->putMQ($event->project_key, $activity_id);
         }
         else if ($event instanceof FileDelEvent)
         {
-            $this->addFileActivity($event->project_key, $event->issue_id, $event->user, $event->file_id, 'del_file');
+            $activity_id = $this->addFileActivity($event->project_key, $event->issue_id, $event->user, $event->file_id, 'del_file');
+            $this->putMQ($event->project_key, $activity_id);
         }
         else if ($event instanceof IssueEvent)
         {
-            $this->addIssueActivity($event->project_key, $event->issue_id, $event->user, $event->param);
+            $activity_id = $this->addIssueActivity($event->project_key, $event->issue_id, $event->user, $event->param);
+            $this->putMQ($event->project_key, $activity_id);
         }
         else if ($event instanceof VersionEvent)
         {
@@ -79,7 +82,7 @@ class ActivityAddListener
 
         // insert activity into db.
         $info = [ 'issue_id' => $issue_id, 'event_key' => $event_key, 'user' => $user, 'data' => $file_info->name, 'created_at' => time() ];
-        return DB::collection('activity_' . $project_key)->insert($info);
+        return DB::collection('activity_' . $project_key)->insertGetId($info);
     }
 
     /**
@@ -93,7 +96,7 @@ class ActivityAddListener
     public function addProjectActivity($project_key, $user, $param)
     {
         $info = [ 'event_key' => $param['event_key'], 'user' => $user, 'data' => isset($param['data']) ? $param['data'] : '', 'created_at' => time() ];
-        DB::collection('activity_' . $project_key)->insert($info);
+        return DB::collection('activity_' . $project_key)->insertGetId($info);
     }
 
     /**
@@ -183,13 +186,31 @@ class ActivityAddListener
             {
                 // insert activity into db.
                 $info = [ 'issue_id' => $issue_id, 'event_key' => $param['event_key'], 'user' => $user, 'data' => $diff_items, 'created_at' => time() ];
-                DB::collection('activity_' . $project_key)->insert($info);
+                return DB::collection('activity_' . $project_key)->insertGetId($info);
             }
         }
         else
         {
             $info = [ 'issue_id' => $issue_id, 'event_key' => $param['event_key'], 'user' => $user, 'data' => isset($param['data']) ? $param['data'] : '', 'created_at' => time() ];
-            DB::collection('activity_' . $project_key)->insert($info);
+            return DB::collection('activity_' . $project_key)->insertGetId($info);
         }
+        return '';
+    }
+
+    /**
+     * add notice queue.
+     *
+     * @param  string $project_key
+     * @param  string $activity_id
+     * @return void
+     */
+    public function putMQ($project_key, $activity_id)
+    {
+        if (!$activity_id)
+        {
+            return;
+        }
+        $info = [ 'project_key' => $project_key, 'activity_id' => $activity_id->__toString(), 'flag' => 0, 'created_at' => time() ];
+        DB::collection('mq')->insert($info);
     }
 }

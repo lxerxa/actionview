@@ -46,16 +46,13 @@ class EventServiceProvider extends ServiceProvider
        'App\Events\FileUploadEvent' => [
             'App\Listeners\FileChangeListener',
             'App\Listeners\ActivityAddListener',
-            'App\Listeners\NoticeAddListener',
         ],
        'App\Events\FileDelEvent' => [
             'App\Listeners\FileChangeListener',
             'App\Listeners\ActivityAddListener',
-            'App\Listeners\NoticeAddListener',
         ],
        'App\Events\IssueEvent' => [
             'App\Listeners\ActivityAddListener',
-            'App\Listeners\NoticeAddListener',
         ],
        'App\Events\VersionEvent' => [
             'App\Listeners\ActivityAddListener',

@@ -139,7 +139,7 @@ class EventsController extends Controller
     }
 
     /**
-     * get users by array id.
+     * get notifications by project_key and eventid. 
      *
      * @param  string $project_key
      * @param  string $event_id
