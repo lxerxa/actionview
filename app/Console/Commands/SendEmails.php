@@ -212,11 +212,12 @@ class SendEmails extends Command
                 $subject = '[ActionView](' . $project['key'] . '-' . $issue['no'] . ')' . (isset($issue['title']) ? $issue['title'] : '-');
 
                 Mail::send('emails.issue', $new_data, function($message) use($from, $to, $subject) {
-                  $message->from(env('MAIL_ADDRESS', 'actionview@126.com'), $from)->to($to)->subject($subject);
+                  $message->from(env('MAIL_ADDRESS', 'actionview@126.com'), $from)
+                      ->to($to)
+                      ->subject($subject);
                 });
-                break;
             }
-            //DB::collection('mq')->where('_id', $val['_id']->__toString())->delete();
+            DB::collection('mq')->where('_id', $val['_id']->__toString())->delete();
         }
     }
 }
