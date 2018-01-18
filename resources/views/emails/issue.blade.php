@@ -41,10 +41,12 @@
   .cell-before {
     background:#FFE7E7;
     padding:2px;
+    display: inline-block;
     text-decoration:line-through
   }
   .cell-after {
     background:#DDFADE;
+    display: inline-block;
     padding:2px;
   }
   .footer {
@@ -108,7 +110,7 @@
           </tr>
           @if ($event_key == 'create_issue')
             @foreach ($issue as $key => $field)
-              @if ($key !== 'assignee' && $key !== 'type' && $key !== 'priority' && $key !== 'description')
+              @if ($key !== 'assignee' && $key !== 'type' && $key !== 'priority' && $key !== 'descriptions')
                 @continue
               @endif
               <tr>
@@ -116,7 +118,7 @@
                   @if ($key == 'assignee') 经办人：
                   @elseif ($key == 'type') 类型：
                   @elseif ($key == 'priority') 优先级：
-                  @elseif ($key == 'description') 描述：
+                  @elseif ($key == 'descriptions') 描述：
                   @endif
                 </td>
                 <td class='cell'>
@@ -130,8 +132,12 @@
                 经办人：
               </td>
               <td class='cell'>
-                <span class='cell-before'>{{ $data['old_user']['name'] }}</span>
-                <span class='cell-after'>{{ $data['new_user']['name'] }}</span>
+                @if(isset($data['old_user']) && isset($data['old_user']['name']) && $data['old_user']['name'])
+                  <div class='cell-before'>{{ $data['old_user']['name'] }}</div>
+                @endif
+                @if(isset($data['new_user']) && isset($data['new_user']['name']) && $data['new_user']['name'])
+                  <div class='cell-after'>{{ $data['new_user']['name'] }}</div>
+                @endif
               </td>
             </tr> 
           @elseif ($event_key == 'edit_issue' 
@@ -149,8 +155,12 @@
                   {{ $item['field'] }}：
                 </td>
                 <td class='cell'>
-                  <span class='cell-before'>{{ $item['before_value'] }}</span>
-                  <span class='cell-after'>{{ $item['after_value'] }}</span>
+                  @if (isset($item['before_value']) && $item['before_value'])
+                    <div class='cell-before'>{!! str_replace(["\r\n", "\n", "\r"], '<br/>', $item['before_value']) !!}</div>
+                  @endif
+                  @if (isset($item['after_value']) && $item['after_value'])
+                    <div class='cell-after'>{!! str_replace(["\r\n", "\n", "\r"], '<br/>', $item['after_value']) !!}</div>
+                  @endif
                 </td>
               </tr>
             @endforeach
