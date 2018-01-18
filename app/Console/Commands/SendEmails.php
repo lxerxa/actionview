@@ -188,6 +188,13 @@ class SendEmails extends Command
                         $atWho[] = $who['id'];
                     }
                 }
+                if (isset($activity['data']) && isset($activity['data']['to']) && $activity['data']['to'])
+                {
+                    foreach ($activity['data']['to'] as $who)
+                    {
+                        $uids[] = $who['id'];
+                    }
+                }
             }
 
             $data = [ 
@@ -196,7 +203,7 @@ class SendEmails extends Command
               'event_key' => $activity['event_key'], 
               'user' => $activity['user'], 
               'data' => isset($activity['data']) ? $activity['data'] : [], 
-              'domain' => env('DOMAIN', 'www.actionview.cn'),
+              'http_host' => env('HTTP_HOST', 'www.actionview.cn'),
             ];
 
             $to_users = EloquentUser::find(array_unique($uids)); 

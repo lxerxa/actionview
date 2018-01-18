@@ -69,7 +69,7 @@
         @elseif ($event_key == 'close_issue') 关闭了
         @elseif ($event_key == 'reopen_issue') 重新打开
         @endif
-        问题 <a href={{ $domain . '/project/' . $project['key'] . '/issue' . '?no=' . $issue['no'] }} target='_blank'>{{ $issue['title'] }}</a>
+        问题 <a href={{ $http_host . '/project/' . $project['key'] . '/issue' . '?no=' . $issue['no'] }} target='_blank'>{{ $issue['title'] }}</a>
         @if ($event_key == 'create_issue')
         @elseif ($event_key == 'add_file') 上传了文档
         @elseif ($event_key == 'del_file') 删除了文档
@@ -90,18 +90,18 @@
         <table class='contents'>
           <tr>
             <td style='padding: 12.5pt 0cm 1.5pt 10pt;' colspan=2>
-              <a href={{ $domain . '/project/' . $project['key'] }} target='_blank'>
+              <a href={{ $http_host . '/project/' . $project['key'] }} target='_blank'>
                 {{ $project['key'] }} - {{ $project['name'] }}
               </a>
               / 
-              <a href={{ $domain . '/project/' . $project['key'] . '/issue' . '?no=' . $issue['no'] }} target='_blank'>
+              <a href={{ $http_host . '/project/' . $project['key'] . '/issue' . '?no=' . $issue['no'] }} target='_blank'>
                 {{ $project['key'] }} - {{ $issue['no'] }}
               </a>
             <td>
           </tr>
           <tr>
             <td style='padding: 2.5pt 0cm 12.5pt 10pt;' colspan=2>
-              <a href={{ $domain . '/project/' . $project['key'] . '/issue' . '?no=' . $issue['no'] }} target='_blank'>
+              <a href={{ $http_host . '/project/' . $project['key'] . '/issue' . '?no=' . $issue['no'] }} target='_blank'>
                 <span style='font-size: 16px'>{{ $issue['title'] }}</span>
               </a>
             </td>
