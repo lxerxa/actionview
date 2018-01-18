@@ -108,7 +108,7 @@
           </tr>
           @if ($event_key == 'create_issue')
             @foreach ($issue as $key => $field)
-              @if ($key == 'no' or $key == 'title')
+              @if ($key !== 'assignee' && $key !== 'type' && $key !== 'priority' && $key !== 'description')
                 @continue
               @endif
               <tr>
@@ -120,7 +120,7 @@
                   @endif
                 </td>
                 <td class='cell'>
-                {{ is_array($field) && isset($field['name']) ? $fields['name'] : $field }}
+                {{ is_array($field) && isset($field['name']) ? $field['name'] : $field }}
                 </td>
               </tr>
             @endforeach

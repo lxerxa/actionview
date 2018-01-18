@@ -3,6 +3,8 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use App\Customization\Eloquent\Type;
+use App\Customization\Eloquent\Priority;
 use App\Customization\Eloquent\Events;
 use App\Customization\Eloquent\EventNotifications;
 use App\Project\Eloquent\Project;
@@ -177,6 +179,20 @@ class SendEmails extends Command
                 }
             }
 
+            if ($activity['event_key'] == 'create_issue')
+            {
+                if (isset($issue['type']) && $issue['type'])
+                {
+                    $type = Type::find($issue['type']);
+                    $issue['type'] = $type ? $type->name : '-';
+                }
+                if (isset($issue['priority']) && $issue['priority'])
+                {
+                    $priority = Priority::where('_id', $issue['priority'])->orWhere('key', $issue['priority'])->first();
+                    $issue['priority'] = $priority ? $priority->name : '-';
+                }
+            }
+
             $atWho = [];
             if ($activity['event_key'] == 'add_comments' or $activity['event_key'] == 'edit_comments' or $activity['event_key'] == 'del_comments')
             {
@@ -218,7 +234,6 @@ class SendEmails extends Command
                 $from = $activity['user']['name']; 
                 $to = $to_user['email'];
                 $subject = '[ActionView](' . $project['key'] . '-' . $issue['no'] . ')' . (isset($issue['title']) ? $issue['title'] : '-');
-
                 try {
                     Mail::send('emails.issue', $new_data, function($message) use($from, $to, $subject) {
                       $message->from(env('MAIL_ADDRESS', 'actionview@126.com'), $from)
