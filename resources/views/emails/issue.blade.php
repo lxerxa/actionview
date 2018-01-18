@@ -120,12 +120,21 @@
                   @endif
                 </td>
                 <td class='cell'>
-                {{ $field }}
+                {{ is_array($field) && isset($field['name']) ? $fields['name'] : $field }}
                 </td>
               </tr>
             @endforeach
+          @elseif ($event_key == 'assign_issue')
+            <tr>
+              <td class='cell-title' width='70pt'>
+                经办人：
+              </td>
+              <td class='cell'>
+                <span class='cell-before'>{{ $data['old_user']['name'] }}</span>
+                <span class='cell-after'>{{ $data['new_user']['name'] }}</span>
+              </td>
+            </tr> 
           @elseif ($event_key == 'edit_issue' 
-            or $event_key == 'assign_issue' 
             or $event_key == 'reset_issue' 
             or $event_key == 'move_issue' 
             or $event_key == 'start_progress_issue' 

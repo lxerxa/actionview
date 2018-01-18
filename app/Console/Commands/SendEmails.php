@@ -15,6 +15,7 @@ use Cartalyst\Sentinel\Users\EloquentUser;
 
 use DB;
 use Mail;
+use Exception;
 
 class SendEmails extends Command
 {
@@ -211,11 +212,14 @@ class SendEmails extends Command
                 $to = $to_user['email'];
                 $subject = '[ActionView](' . $project['key'] . '-' . $issue['no'] . ')' . (isset($issue['title']) ? $issue['title'] : '-');
 
-                Mail::send('emails.issue', $new_data, function($message) use($from, $to, $subject) {
-                  $message->from(env('MAIL_ADDRESS', 'actionview@126.com'), $from)
-                      ->to($to)
-                      ->subject($subject);
-                });
+                try {
+                    Mail::send('emails.issue', $new_data, function($message) use($from, $to, $subject) {
+                      $message->from(env('MAIL_ADDRESS', 'actionview@126.com'), $from)
+                          ->to($to)
+                          ->subject($subject);
+                    });
+                } catch (Exception $e){
+                }
             }
             DB::collection('mq')->where('_id', $val['_id']->__toString())->delete();
         }
