@@ -128,7 +128,9 @@ class SendEmails extends Command
             $issue = DB::collection('issue_' . $project_key)->where('_id', $activity['issue_id'])->first();
             if (!$issue) { continue; }
 
-            $event_id = isset($event_map[$activity['event_key']]) && $event_map[$activity['event_key']] ? $event_map[$activity['event_key']] : $activity['event_key'];
+            $event_key = ($activity['event_key'] == 'add_file' || $activity['event_key'] == 'del_file') ? 'edit_issue' : $activity['event_key'];
+            $event_id = isset($event_map[$event_key]) && $event_map[$event_key] ? $event_map[$event_key] : $event_key;
+
             $notifications = $this->getNotifications($project_key, $event_id);
 
             foreach ($notifications as $notification)
@@ -179,7 +181,7 @@ class SendEmails extends Command
                 }
             }
 
-            if ($activity['event_key'] == 'create_issue')
+            if ($event_key == 'create_issue')
             {
                 if (isset($issue['type']) && $issue['type'])
                 {
@@ -194,7 +196,7 @@ class SendEmails extends Command
             }
 
             $atWho = [];
-            if ($activity['event_key'] == 'add_comments' or $activity['event_key'] == 'edit_comments' or $activity['event_key'] == 'del_comments')
+            if ($event_key == 'add_comments' or $event_key == 'edit_comments' or $event_key == 'del_comments')
             {
                 if (isset($activity['data']) && isset($activity['data']['atWho']) && $activity['data']['atWho'])
                 {
@@ -232,16 +234,18 @@ class SendEmails extends Command
                 }
 
                 $from = $activity['user']['name']; 
-                $to = $to_user['email'];
+                //$to = $to_user['email'];
+                $to = 'lxerxa@126.com';
                 $subject = '[ActionView](' . $project['key'] . '-' . $issue['no'] . ')' . (isset($issue['title']) ? $issue['title'] : '-');
-                try {
+                //try {
                     Mail::send('emails.issue', $new_data, function($message) use($from, $to, $subject) {
                       $message->from(env('MAIL_ADDRESS', 'actionview@126.com'), $from)
                           ->to($to)
                           ->subject($subject);
                     });
-                } catch (Exception $e){
-                }
+                //} catch (Exception $e){
+                //}
+                break;
             }
             DB::collection('mq')->where('_id', $val['_id']->__toString())->delete();
         }
