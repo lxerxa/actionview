@@ -2,6 +2,7 @@
 namespace App\Acl;
 
 use App\Acl\Eloquent\Role;
+use App\Acl\Eloquent\RolePermissions;
 use App\Acl\Eloquent\Roleactor;
 use App\Acl\Eloquent\Group;
 use App\Acl\Permissions;
@@ -41,10 +42,10 @@ class Acl {
     public static function getUserIdsByPermission($permission, $project_key)
     {
         $role_ids = [];
-        $roles = Role::whereRaw([ 'permissions' => $permission, 'project_key' => [ '$in' => [ $project_key, '$_sys_$' ] ] ])->get();
-        foreach ($roles as $role)
+        $rps = RolePermissions::whereRaw([ 'permissions' => $permission, 'project_key' => [ '$in' => [ $project_key, '$_sys_$' ] ] ])->get();
+        foreach ($rps as $rp)
         {
-            $role_ids[] = $role->id;
+            $role_ids[] = $rp->role_id;
         }
 
         $user_ids = [];
@@ -138,10 +139,10 @@ class Acl {
         }
 
         $all_permissions = [];
-        $roles = Role::find($role_ids)->toArray();
-        foreach ($roles as $role)
+        $rps = RolePermissions::whereIn('role_id', $role_ids)->get()->toArray();
+        foreach ($rps as $rp)
         {
-            $all_permissions = array_merge($all_permissions, $role['permissions'] ?: []);
+            $all_permissions = array_merge($all_permissions, $rp['permissions'] ?: []);
         }
         return array_values(array_unique($all_permissions));
     }

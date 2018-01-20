@@ -15,6 +15,7 @@ use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Acl\Eloquent\Group;
 use App\Acl\Eloquent\Role;
+use App\Acl\Eloquent\RolePermissions;
 use App\Acl\Eloquent\Roleactor;
 use App\Acl\Acl;
 
@@ -29,7 +30,6 @@ class RoleController extends Controller
      */
     public function index($project_key)
     {
-
         $roles = Provider::getRoleList($project_key)->toArray();
         foreach ($roles as $key => $role)
         {
@@ -52,6 +52,8 @@ class RoleController extends Controller
                     unset($roles[$key]['group_ids']);
                 }
             }
+
+            $roles[$key]['permissions'] = $this->getPermissions($project_key, $role['_id']);
         }
         return Response()->json([ 'ecode' => 0, 'data' => $roles ]);
     }
@@ -81,6 +83,13 @@ class RoleController extends Controller
         }
 
         $role = Role::create($request->all() + [ 'project_key' => $project_key ]);
+
+        if (isset($permissions) && $role)
+        {
+            RolePermissions::create([ 'project_key' => $project_key, 'role_id' => $role_id, 'permissions' => $permissions ]);
+            $role->permissions = $permissions;
+        }
+
         return Response()->json([ 'ecode' => 0, 'data' => $role ]);
     }
 
@@ -296,5 +305,76 @@ class RoleController extends Controller
         }
 
         return [ 'users' => $new_users, 'groups' => $new_groups ];
+    }
+
+    /**
+     * set permissions 
+     *
+     * @param  string $project_key
+     * @param  string $role_id
+     * @return array
+     */
+    public function setPermissions(Request $request, $project_key, $id)
+    {
+        $role = Role::find($id);
+        if (!$role || ($role->project_key != '$_sys_$' && $project_key != $role->project_key))
+        {
+            throw new \UnexpectedValueException('the role does not exist or is not in the project.', -12702);
+        }
+
+        $permissions = $request->input('permissions');
+        if (isset($permissions))
+        {
+            $allPermissions = Acl::getAllPermissions();
+            if (array_diff($permissions, $allPermissions))
+            {
+                throw new \UnexpectedValueException('the illegal permission.', -12701);
+            }
+
+            $rp = RolePermissions::where([ 'project_key' => $project_key, 'role_id' => $id ])->first();
+            $rp && $rp->delete();
+
+            RolePermissions::create([ 'project_key' => $project_key, 'role_id' => $id, 'permissions' => $permissions ]);
+        }
+
+        $role->permissions = $this->getPermissions($project_key, $id);
+        return Response()->json(['ecode' => 0, 'data' => $role]);
+    }
+
+    /**
+     * get permissions by project_key and roleid.
+     *
+     * @param  string $project_key
+     * @param  string $role_id
+     * @return array
+     */
+    public function getPermissions($project_key, $role_id)
+    {
+        $rp = RolePermissions::where([ 'project_key' => $project_key, 'role_id' => $role_id ])->first();
+        if (!$rp && $project_key !== '$_sys_$')
+        {
+            $rp = RolePermissions::where([ 'project_key' => '$_sys_$', 'role_id' => $role_id ])->first();
+        }
+        return $rp && isset($rp->permissions) ? $rp->permissions : [];
+    }
+
+    /**
+     * reset the role permissions.
+     *
+     * @param  string  $project_key
+     * @param  string  $role_id
+     * @return \Illuminate\Http\Response
+     */
+    public function reset($project_key, $role_id)
+    {
+        $rp = RolePermissions::where([ 'project_key' => $project_key, 'role_id' => $role_id ])->first();
+        $rp && $rp->delete();
+
+        $role = Role::find($role_id)->toArray();
+
+        $rp = RolePermissions::where([ 'project_key' => '$_sys_$', 'role_id' => $role_id ])->first();
+        $role['permissions'] = $rp && isset($rp->permissions) ? $rp->permissions : [];
+
+        return Response()->json(['ecode' => 0, 'data' => $role]);
     }
 }

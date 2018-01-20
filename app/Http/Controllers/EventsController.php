@@ -19,14 +19,10 @@ class EventsController extends Controller
      */
     public function index($project_key)
     {
-        $events = Provider::getEventList($project_key)->toArray();
+        $events = Provider::getEventList($project_key);
         foreach ($events as $key => $event)
         {
-            $notifications = $this->getNotifications($project_key, $event['_id']);
-            if ($notifications)
-            {
-                $events[$key]['notifications'] = $notifications;
-            }
+            $event->notifications = $this->getNotifications($project_key, $event['_id']);
         }
 
 	$roles = Provider::getRoleList($project_key, ['name']);
@@ -98,21 +94,8 @@ class EventsController extends Controller
         }
         $event->fill($request->except(['project_key']))->save();
 
-        $notifications = $request->input('notifications');
-        if (isset($notifications))
-        {
-            $en = EventNotifications::where([ 'project_key' => $project_key, 'event_id' => $id ])->first();
-            $en && $en->delete();
-
-            EventNotifications::create([ 'project_key' => $project_key, 'event_id' => $id, 'notifications' => $notifications ]);
-        }
-
         $event = Events::find($id);
-        $en = EventNotifications::where([ 'project_key' => $project_key, 'event_id' => $id ])->first();
-        if ($en)
-        {
-            $event->notifications = $en->notifications;
-        }
+        $event->notifications = $this->getNotifications($project_key, $id);
 
         return Response()->json(['ecode' => 0, 'data' => $event]);
     }
@@ -136,6 +119,34 @@ class EventsController extends Controller
 
         Events::destroy($id);
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
+    }
+
+    /**
+     * set notifications
+     *
+     * @param  string $project_key
+     * @param  string $event_id
+     * @return array
+     */
+    public function setNotify(Request $request, $project_key, $id)
+    {
+        $event = Events::find($id);
+        if (!$event || ($event->project_key != '$_sys_$' && $project_key != $event->project_key))
+        {
+            throw new \UnexpectedValueException('the event does not exist or is not in the project.', -12802);
+        }
+
+        $notifications = $request->input('notifications');
+        if (isset($notifications))
+        {
+            $en = EventNotifications::where([ 'project_key' => $project_key, 'event_id' => $id ])->first();
+            $en && $en->delete();
+
+            EventNotifications::create([ 'project_key' => $project_key, 'event_id' => $id, 'notifications' => $notifications ]);
+        }
+        $event->notifications = $this->getNotifications($project_key, $id);
+
+        return Response()->json(['ecode' => 0, 'data' => $event]);
     }
 
     /**
@@ -168,7 +179,9 @@ class EventsController extends Controller
         $en && $en->delete();
 
         $event = Events::find($event_id)->toArray();
-        $event['notifications'] = EventNotifications::where([ 'project_key' => '$_sys_$', 'event_id' => $event_id ])->first() ?: [];
+
+        $en = EventNotifications::where([ 'project_key' => '$_sys_$', 'event_id' => $event_id ])->first();
+        $event['notifications'] = $en && isset($en->notifications) ? $en->notifications : [];
 
         return Response()->json(['ecode' => 0, 'data' => $event]);
     }

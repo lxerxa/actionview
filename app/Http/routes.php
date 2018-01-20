@@ -82,12 +82,15 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     // project workflow config
     Route::resource('workflow', 'WorkflowController');
     // project role config
+    Route::get('role/{id}/reset', 'RoleController@reset');
+    Route::post('role/{id}/permissions', 'RoleController@setPermissions');
     Route::post('role/{id}/actor', 'RoleController@setActor');
     Route::post('role/{id}/groupactor', 'RoleController@setGroupActor');
     Route::resource('role', 'RoleController');
     // project event config
-    Route::resource('events', 'EventsController');
     Route::get('events/{event_id}/reset', 'EventsController@reset');
+    Route::post('events/{event_id}/notify', 'EventsController@setNotify');
+    Route::resource('events', 'EventsController');
     // project priority config
     Route::resource('priority', 'PriorityController');
     Route::post('priority/batch', 'PriorityController@handle');

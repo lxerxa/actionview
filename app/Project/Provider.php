@@ -979,7 +979,8 @@ class Provider {
                 }
                 else if ($field['type'] == 'DatePicker' || $field['type'] == 'DateTimePicker')
                 {
-                    $val['value'] = date($field['type'] == 'DatePicker' ? 'y/m/d' : 'y/m/d H:i:s', $issue[$field['key']]);
+                    $val['value'] = $issue[$field['key']] ? date($field['type'] == 'DatePicker' ? 'y/m/d' : 'y/m/d H:i:s', $issue[$field['key']]) : $issue[$field['key']];
+                    
                 }
                 else
                 {

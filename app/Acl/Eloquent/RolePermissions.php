@@ -4,13 +4,13 @@ namespace App\Acl\Eloquent;
 
 use Jenssegers\Mongodb\Eloquent\Model;
 
-class Role extends Model
+class RolePermissions extends Model
 {
-    protected $table = 'acl_role';
+    protected $table = 'acl_role_permissions';
 
     protected $fillable = array(
-        'name',
+        'role_id',
         'project_key',
-        'description'
+        'permissions'
     );
 }

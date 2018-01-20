@@ -182,7 +182,7 @@
                 备注:
               </td>
               <td class='cell'>
-                {{ $data['contents'] }}
+                {!! str_replace(["\r\n", "\n", "\r"], '<br/>', $data['contents'] ?: '-') !!}
               </td>
             </tr>
           @elseif ($event_key == 'add_worklog' 
@@ -193,7 +193,7 @@
                 开始时间:
               </td>
               <td class='cell'>
-                {{ $data['started_at'] }}
+                {{ date('y/m/d H:i:s', $data['started_at']) }}
               </td>
             </tr>
             <tr>
@@ -204,7 +204,7 @@
                 {{ $data['spend'] }}
               </td>
             </tr>
-            @if (isset($data['cut']) && $data['cut'])
+            @if (isset($data['leave_estimate']) && $data['leave_estimate'])
               <tr>
                 <td class='cell-title' width='70pt'>
                   剩余时间设置为:
@@ -229,7 +229,7 @@
                 备注:
               </td>
               <td class='cell'>
-                {{ $data['comments'] ?: '-' }}
+                {!! str_replace(["\r\n", "\n", "\r"], '<br/>', $data['comments'] ?: '-') !!}
               </td>
             </tr>
           @endif
