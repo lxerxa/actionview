@@ -16,39 +16,9 @@ http://www.actionview.cn
 
 ![image](https://github.com/lxerxa/actionview/raw/master/public/workflow.png)
 
-# Installation(Linux,Mac)
+# Installation(Ubuntu)
 
-系统要求：
-> apache 2.4.7+  
-> php 5.5.9+ (安装php-gd, php-mbstring, php-mcrypt, php-mongodb)  
-> mongodb 2.4.9+  
-
-全局安装composer：   
-> curl -sS https://getcomposer.org/installer | php  
-> mv composer.phar /usr/local/bin/composer
-
-下载程序：
-> git clone https://github.com/lxerxa/actionview.git actionview
-
-安装依赖：   
-> cd actionview  
-> composer install (需要一段时间)  
-> sh config.sh (Mac系统请先安装gnu-sed, brew install gnu-sed --with-default-names)  
-> cp .env.example .env (修改mongodb数据库连接参数)  
-
-执行db数据初始化脚本（在安装mongodb机器上）：  
-> mongorestore -h 127.0.0.1 -u username -p secret -d dbname --drop ./dbdata  
-
-apache配置：  
-> 配置apache访问路径至actionview/public下, 示例如下:  
-> DocumentRoot /var/www/actionview/public  
-> <Directory /var/www/actionview/public>  
-> &emsp;Options FollowSymLinks  
-> &emsp;Order deny,allow  
-> &emsp;AllowOverride All  
-> &lt;/Directory&gt;  
-
-系统管理员登录：user: admin@action.view, password: actionview
+[Ubuntu Installation](https://github.com/lxerxa/actionview/wiki/Ubuntu-Installation)
 
 ## Feature
 
