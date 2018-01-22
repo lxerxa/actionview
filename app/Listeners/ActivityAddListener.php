@@ -210,7 +210,7 @@ class ActivityAddListener
         {
             return;
         }
-        $info = [ 'project_key' => $project_key, 'activity_id' => $activity_id->__toString(), 'flag' => 0, 'created_at' => time() ];
+        $info = [ 'project_key' => $project_key, 'activity_id' => $activity_id->__toString(), 'created_at' => time() ];
         DB::collection('mq')->insert($info);
     }
 }

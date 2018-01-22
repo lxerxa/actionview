@@ -86,7 +86,7 @@ class RoleController extends Controller
 
         if (isset($permissions) && $role)
         {
-            RolePermissions::create([ 'project_key' => $project_key, 'role_id' => $role_id, 'permissions' => $permissions ]);
+            RolePermissions::create([ 'project_key' => $project_key, 'role_id' => $role->id, 'permissions' => $permissions ]);
             $role->permissions = $permissions;
         }
 
