@@ -122,7 +122,7 @@
                   @endif
                 </td>
                 <td class='cell'>
-                {{ is_array($field) && isset($field['name']) ? $field['name'] : $field }}
+                {!! is_array($field) && isset($field['name']) ? $field['name'] : str_replace(["\r\n", "\n", "\r"], '<br/>', $field) !!}
                 </td>
               </tr>
             @endforeach
