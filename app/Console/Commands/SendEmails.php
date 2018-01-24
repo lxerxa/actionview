@@ -114,7 +114,10 @@ class SendEmails extends Command
     {
         $event_map = $this->getEventMap();
 
-        $data = DB::collection('mq')->orderBy('_id', 'asc')->get();
+        $point = time();
+        DB::collection('mq')->where('flag', 0)->update([ 'flag' => $point ]);
+
+        $data = DB::collection('mq')->where('flag', $point)->orderBy('_id', 'asc')->get();
         foreach ($data as $val)
         {
             $uids = [];
@@ -234,18 +237,16 @@ class SendEmails extends Command
                 }
 
                 $from = $activity['user']['name']; 
-                //$to = $to_user['email'];
-                $to = 'lxerxa@126.com';
+                $to = $to_user['email'];
                 $subject = '[ActionView](' . $project['key'] . '-' . $issue['no'] . ')' . (isset($issue['title']) ? $issue['title'] : '-');
-                //try {
+                try {
                     Mail::send('emails.issue', $new_data, function($message) use($from, $to, $subject) {
                       $message->from(env('MAIL_ADDRESS', 'actionview@126.com'), $from)
                           ->to($to)
                           ->subject($subject);
                     });
-                //} catch (Exception $e){
-                //}
-                break;
+                } catch (Exception $e){
+                }
             }
             DB::collection('mq')->where('_id', $val['_id']->__toString())->delete();
         }
