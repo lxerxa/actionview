@@ -20,7 +20,7 @@ http://www.actionview.cn
 
 [Ubuntu Installation](https://github.com/lxerxa/actionview/wiki/Ubuntu-Installation)
 
-## Feature
+# Feature
 
 * 支持用户创建项目，项目不仅可引用全局配置方案，也可自定义本地方案。
 * 各项目不仅可引用系统默认工作流，同时可自定义自己的工作流，工作流的每一步可进行精细控制，确保正确的人在正确的时间执行正确的操作。
@@ -35,7 +35,7 @@ http://www.actionview.cn
 * 使用当前较流行的前后端技术框架，后端：php/laravel, 前端：ReactJS+Redux。
 * 清晰的代码结构，方便进行二次开发。
 
-## RoadMap
+# RoadMap
 
 * 开发移动APP（React Native）。
 * 开发敏捷Scrum看板（Agile Board, 已支持Kanban Board）。
@@ -45,15 +45,15 @@ http://www.actionview.cn
 * 增加wiki功能。
 
 
-## Official Documentation
+# Official Documentation
 
 该系统工具的参考文档将发布于 [ActionView站点](http://actionview.cn/docs)。由于时间原因，暂未整理完成。
 
-## Contributing
+# Contributing
 
 谢谢您能参与ActionView的开发当中。如果您对系统有什么疑惑，或发现了一些问题，或建议增加新的feature，或提出改进时，欢迎在[issue board](https://github.com/lxerxa/actionview/issues)中讨论，如果是前端相关的可以在[front-end issue board](https://github.com/lxerxa/actionview/issues)中讨论。如果发现有重大安全问题可发Email至：actionview@126.com。
 
-## License
+# License
 
 ActionView 遵从许可证 [ Apache License Version 2.0](https://www.apache.org/licenses/LICENSE-2.0)
 
