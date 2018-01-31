@@ -1,0 +1,20 @@
+version: '2'
+
+services:
+  actinviewweb:
+    image: lxerxa/actionview:latest
+    restart: unless-stopped
+    volumes:
+      - ./data/uploads:/var/www/actionview/storage/app
+    ports:
+      - 8080:80
+    depends_on:
+      - actionviewdb
+    links:
+      - actionviewdb:db 
+
+  actionviewdb:
+    image: lxerxa/actionviewdb:latest
+    restart: unless-stopped
+    volumes:
+      - ./data/db:/data 
