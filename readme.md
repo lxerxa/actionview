@@ -18,7 +18,8 @@ http://www.actionview.cn
 
 # Installation(Ubuntu)
 
-[Ubuntu Installation](https://github.com/lxerxa/actionview/wiki/Ubuntu-Installation)
+[Ubuntu Installation](https://github.com/lxerxa/actionview/wiki/Ubuntu-Installation)  
+[Docker Installation](https://github.com/lxerxa/actionview/wiki/Docker-Installation)  
 
 # Feature
 
