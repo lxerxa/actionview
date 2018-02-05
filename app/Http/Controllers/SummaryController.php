@@ -130,11 +130,11 @@ class SummaryController extends Controller
         {
             if (!isset($issue['priority']) || !$issue['priority'])
             {
-                $priority_id = -1;
+                $priority_id = '-1';
             }
             else
             {
-                $priority_id = $optPriorities[$issue['priority']] ? $issue['priority'] : -1; 
+                $priority_id = $optPriorities[$issue['priority']] ? $issue['priority'] : '-1'; 
             }
 
             if (!isset($priority_unresolved_issues[$priority_id][$issue['type']]))
@@ -157,6 +157,10 @@ class SummaryController extends Controller
                 $sorted_priority_unresolved_issues[$key] = $priority_unresolved_issues[$key];
             }
         }
+        if (isset($priority_unresolved_issues['-1'])) {
+            $sorted_priority_unresolved_issues['-1'] = $priority_unresolved_issues['-1'];
+        }
+
         $sorted_priority_unresolved_issues = $this->calPercent($sorted_priority_unresolved_issues);
 
         $module_unresolved_issues = [];
@@ -164,11 +168,11 @@ class SummaryController extends Controller
         {
             if (!isset($issue['module']) || !$issue['module'])
             {
-                $module_id = -1;
+                $module_id = '-1';
             }
             else
             {
-                $module_id = isset($optModules[$issue['module']]) ? $issue['module'] : -1;
+                $module_id = isset($optModules[$issue['module']]) ? $issue['module'] : '-1';
             }
 
             if (!isset($module_unresolved_issues[$module_id][$issue['type']]))
@@ -182,14 +186,29 @@ class SummaryController extends Controller
             $module_unresolved_issues[$module_id][$issue['type']] += 1;
             $module_unresolved_issues[$module_id]['total'] += 1;
         }
-        $module_unresolved_issues = $this->calPercent($module_unresolved_issues);
 
-        return Response()->json([ 'ecode' => 0, 'data' => [ 
-            'new_issues' => $new_issues, 
-            'closed_issues' => $closed_issues, 
-            'assignee_unresolved_issues' => $assignee_unresolved_issues, 
-            'priority_unresolved_issues' => $sorted_priority_unresolved_issues, 
-            'module_unresolved_issues' => $module_unresolved_issues ], 
+        $sorted_module_unresolved_issues = [];
+        foreach ($optModules as $key => $val)
+        {   
+            if (isset($module_unresolved_issues[$key]))
+            {   
+                $sorted_module_unresolved_issues[$key] = $module_unresolved_issues[$key];
+            }
+        }
+        if (isset($module_unresolved_issues['-1'])) {
+            $sorted_module_unresolved_issues['-1'] = $module_unresolved_issues['-1'];
+        }
+
+        $sorted_module_unresolved_issues = $this->calPercent($sorted_module_unresolved_issues);
+
+        return Response()->json([ 
+            'ecode' => 0, 
+            'data' => [ 
+                'new_issues' => $new_issues, 
+                'closed_issues' => $closed_issues, 
+                'assignee_unresolved_issues' => $assignee_unresolved_issues, 
+                'priority_unresolved_issues' => $sorted_priority_unresolved_issues, 
+                'module_unresolved_issues' => $sorted_module_unresolved_issues ], 
             'options' => [ 
                 'types' => $types, 
                 'users' => $users, 
