@@ -8,6 +8,8 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Cartalyst\Sentinel\Checkpoints\ThrottlingException;
+use Cartalyst\Sentinel\Checkpoints\NotActivatedException;
 
 class Handler extends ExceptionHandler
 {
@@ -45,7 +47,21 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Exception $e)
     {
-        return [ 'ecode' => $e->getCode(), 'emsg' => $e->getMessage() ];
+        $ecode = 0;
+        if ($e instanceof ThrottlingException) 
+        {
+            $ecode = -10004;
+        } 
+        else if ($e instanceof NotActivatedException)
+        {
+            $ecode = -10005;
+        } 
+        else 
+        {
+            $ecode = $e->getCode() ?: -99999;
+        }
+
+        return [ 'ecode' => $ecode, 'emsg' => $e->getMessage() ];
         //return parent::render($request, $e);
     }
 }
