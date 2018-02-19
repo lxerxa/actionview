@@ -65,8 +65,17 @@ class Workflow {
         if ($entry)
         {
             $this->entry = $entry;
-            $this->wf_config = Definition::find($entry->definition_id)->contents;
-            if (!$this->wf_config)
+            $definition = Definition::find($entry->definition_id);
+            if (!$definition)
+            {
+                throw new ConfigNotFoundException();
+            }
+
+            if (isset($definition->contents) && $definition->contents)
+            {
+                $this->wf_config = $definition->contents;
+            }
+            else
             {
                 throw new ConfigNotFoundException();
             }
