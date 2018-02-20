@@ -197,6 +197,11 @@ class IssueController extends Controller
                 unset($issues[$key]['parent_id']);
             }
 
+            if (!isset($from))
+            {
+                $issues[$key]['hasSubtasks'] = DB::collection('issue_' . $project_key)->where('parent_id', $issue['_id']->__toString())->exists();
+            }
+
             if (isset($from) && $from === 'kanban')
             {
                 //get assignee avatar for kanban
@@ -497,6 +502,8 @@ class IssueController extends Controller
         {
             $issue['watching'] = true;
         }
+
+        $issue['hasSubtasks'] = DB::collection('issue_' . $project_key)->where('parent_id', $id)->exists();
 
         return Response()->json(['ecode' => 0, 'data' => parent::arrange($issue)]);
     }
@@ -1126,8 +1133,8 @@ class IssueController extends Controller
         if ($parent_id)
         {
             // standard convert to subtask 
-            $hasChildren = DB::collection($table)->where('parent_id', $id)->exists();
-            if ($hasChildren)
+            $hasSubtasks = DB::collection($table)->where('parent_id', $id)->exists();
+            if ($hasSubtasks)
             {
                 throw new \UnexpectedValueException('the issue can not convert to subtask.', -11114);
             }
