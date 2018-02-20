@@ -196,8 +196,7 @@ class IssueController extends Controller
                 }
                 unset($issues[$key]['parent_id']);
             }
-
-            if (!isset($from))
+            else if (!isset($from))
             {
                 $issues[$key]['hasSubtasks'] = DB::collection('issue_' . $project_key)->where('parent_id', $issue['_id']->__toString())->exists();
             }
@@ -466,6 +465,10 @@ class IssueController extends Controller
         if (isset($issue['parent_id']) && $issue['parent_id']) {
             $issue['parent'] = DB::collection('issue_' . $project_key)->where('_id', $issue['parent_id'])->first(['no', 'type', 'title', 'state']);
         }
+        else
+        {
+            $issue['hasSubtasks'] = DB::collection('issue_' . $project_key)->where('parent_id', $id)->exists();
+        }
 
         $issue['subtasks'] = DB::collection('issue_' . $project_key)->where('parent_id', $id)->where('del_flg', '<>', 1)->orderBy('created_at', 'asc')->get(['no', 'type', 'title', 'state']);
 
@@ -502,8 +505,6 @@ class IssueController extends Controller
         {
             $issue['watching'] = true;
         }
-
-        $issue['hasSubtasks'] = DB::collection('issue_' . $project_key)->where('parent_id', $id)->exists();
 
         return Response()->json(['ecode' => 0, 'data' => parent::arrange($issue)]);
     }
