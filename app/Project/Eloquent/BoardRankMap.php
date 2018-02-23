@@ -11,8 +11,6 @@ class BoardRankMap extends Model
 
     protected $fillable = array(
         'board_id',
-        'col_no',
-        'parent',
         'rank'
     );
 }

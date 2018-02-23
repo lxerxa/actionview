@@ -1109,5 +1109,26 @@ class Provider {
         $isExisted = DB::collection('issue_' . $project_key)->where('_id', $issue_id)->exists();
         return $isExisted;
     }
+
+    /**
+     * get all subtasks of the parent  
+     *
+     * @param string $project_key
+     * @param string $parent_no
+     * @return bool
+     */
+    public static function getChildrenByParentNo($project_key, $parent_no)
+    {
+        $parent = DB::collection('issue_' . $project_key)->where('no', $parent_no)->first();
+        if (!$parent) { return []; }
+
+        $children = [];
+        $subtasks = DB::collection('issue_' . $project_key)->where('parent_id', $parent['_id']->__toString())->get(['no']);
+        foreach ($subtasks as $subtask)
+        {
+            $children[] = $subtask['no'];
+        }
+        return $children;
+    }
 }
 

@@ -59,7 +59,7 @@ class FieldController extends Controller
         {
             throw new \InvalidArgumentException('field key cannot be empty.', -12201);
         }
-        if (in_array($key, [ 'id', 'type', 'state', 'reporter', 'created_at', 'updated_at', 'no', 'schema', 'parent_id', 'parents', 'links', 'subtasks', 'entry_id', 'definition_id', 'page', 'orderBy', 'from', 'limit' ]))
+        if (in_array($key, [ 'id', 'type', 'state', 'reporter', 'created_at', 'updated_at', 'no', 'schema', 'parent_id', 'parents', 'links', 'subtasks', 'entry_id', 'definition_id', 'page', 'orderBy', 'from', 'from_kanban_id', 'filter', 'limit' ]))
         {
             throw new \InvalidArgumentException('field key has been used by system.', -12202);
         }

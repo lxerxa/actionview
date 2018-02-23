@@ -179,23 +179,6 @@ $example = [
     }
 
     /**
-     * get the kanban rank
-     *
-     * @param  string  $project_key
-     * @param  string  $id
-     * @return void
-     */
-    public function getRank($project_key, $id)
-    {
-        // record the access time
-        $this->setAccess($project_key, $id);
-
-        // get the kanban ranks
-        $ranks = BoardRankMap::where([ 'board_id' => $id ])->get(); 
-        return Response()->json(['ecode' => 0, 'data' => $ranks ]);
-    }
-
-    /**
      * rank the column issues 
      *
      * @param  string  $project_key
@@ -204,31 +187,91 @@ $example = [
      */
     public function setRank(Request $request, $project_key, $id)
     {
-        $col_no = $request->input('col_no');
-        if (!isset($col_no))
+        $current = $request->input('current') ?: '';
+        if (!$current)
         {
-            throw new \UnexpectedValueException('the column no can not be empty.', -11602);
+            throw new \UnexpectedValueException('the ranked issue not be empty.', -11603);
         }
 
-        $parent = $request->input('parent');
-        if (!$parent || trim($parent) == '')
+        $up = $request->input('up') ?: -1;
+        $down = $request->input('down') ?: -1;
+        if ($up == -1 && $down == -1)
         {
-            $parent = '';
+            throw new \UnexpectedValueException('the ranked position can not be empty.', -11604);
         }
 
-        $rank = $request->input('rank');
-        if (!isset($rank) || !$rank) 
+        $rankmap = BoardRankMap::where([ 'board_id' => $id ])->first();
+        if (!$rankmap || !isset($rankmap->rank))
         {
-            throw new \UnexpectedValueException('the rank can not be empty.', -11603);
+            throw new \UnexpectedValueException('the rank list is not exist.', -11605);
         }
 
-        $old_rank = BoardRankMap::where([ 'board_id' => $id, 'col_no' => $col_no, 'parent' => $parent ])->first(); 
+        $rank = $rankmap->rank;
+        $curInd = array_search($current, $rank);
+        if ($curInd === false)
+        {
+            throw new \UnexpectedValueException('the issue is not found in the rank list.', -11606);
+        }
+
+        // delete current issue from the rank
+        array_splice($rank, $curInd, 1);
+
+        if ($up != -1)
+        {
+            $upInd = array_search($up, $rank);
+
+            $subtasks = Provider::getChildrenByParentNo($project_key, $up);
+            $intersects = array_intersect($rank, $subtasks);
+
+            if ($upInd === false && !$intersects)
+            {
+                throw new \UnexpectedValueException('the ranked position is not found.', -11607);
+            }
+            else
+            {
+                $realBeforeInd = -1;
+                if ($intersects)
+                {
+                    $realBeforeInd = array_search(array_pop($intersects), $rank);
+                }
+                else
+                {
+                    $realBeforeInd = $upInd;
+                }
+                // insert current issue into the rank
+                array_splice($rank, $realBeforeInd + 1, 0, $current);
+            }
+        }
+        else
+        {
+            $downInd = array_search($down, $rank);
+            if ($downInd !== false)
+            {
+                // insert current issue into the rank
+                array_splice($rank, $downInd, 0, $current);
+            }
+            else
+            {
+                $subtasks = Provider::getChildrenByParentNo($project_key, $down);
+                $intersects = array_intersect($rank, $subtasks);
+
+                if (!$intersects)
+                {
+                    throw new \UnexpectedValueException('the ranked position is not found.', -11607);
+                }
+                $realAfterInd = array_search(array_shift($intersects), $rank); 
+                // insert current issue into the rank
+                array_splice($rank, $realAfterInd, 0, $current);
+            }
+        } 
+
+        $old_rank = BoardRankMap::where([ 'board_id' => $id ])->first(); 
         $old_rank && $old_rank->delete();
 
-        BoardRankMap::create([ 'board_id' => $id, 'col_no' => $col_no, 'parent' => $parent, 'rank' => $rank ]);
+        BoardRankMap::create([ 'board_id' => $id, 'rank' => $rank ]);
 
-        $ranks = BoardRankMap::where([ 'board_id' => $id ])->get(); 
-        return Response()->json(['ecode' => 0, 'data' => $ranks ]);
+        $rankmap = BoardRankMap::where([ 'board_id' => $id ])->first(); 
+        return Response()->json([ 'ecode' => 0, 'data' => $rankmap ]);
     }
 
     /**
@@ -238,7 +281,7 @@ $example = [
      * @param  string  $id
      * @return void
      */
-    public function setAccess($project_key, $id) 
+    public function recordAccess($project_key, $id) 
     {
         $record = AccessBoardLog::where([ 'board_id' => $id, 'user_id' => $this->user->id ])->first();
         $record && $record->delete();

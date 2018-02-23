@@ -12,6 +12,11 @@ use App\Project\Eloquent\File;
 use App\Project\Eloquent\Watch;
 use App\Project\Eloquent\Searcher;
 use App\Project\Eloquent\Linked;
+
+use App\Project\Eloquent\Board;
+use App\Project\Eloquent\Sprint;
+use App\Project\Eloquent\BoardRankMap;
+
 use App\Workflow\Workflow;
 use App\System\Eloquent\SysSetting;
 use App\Acl\Acl;
@@ -137,11 +142,38 @@ class IssueController extends Controller
             }
         }
 
-        if (isset($from) && $from === 'kanban')
+        if (isset($from)) 
         {
-            $query->where(function ($query) {
-                $query->whereRaw([ 'resolve_version' => [ '$exists' => 0 ] ])->orWhere('resolve_version', '');
-            });
+            if ($from === 'kanban')
+            {
+                $query->where(function ($query) {
+                    $query->whereRaw([ 'resolve_version' => [ '$exists' => 0 ] ])->orWhere('resolve_version', '');
+                });
+            }
+            else if (($from === 'scrum' || $from === 'backlog') && isset($from_kanban_id) && $from_kanban_id)
+            {
+                $last_column_states = [];
+                $board = Board::find($from_kanban_id);
+                if ($board && isset($board->columns))
+                {
+                    $last_column = end($board->columns) ?: [];
+                    if ($last_column && isset($last_column->states) && $last_column->states)
+                    {
+                        $last_column_states = $last_column->states; 
+                    }
+                }
+ 
+                $active_sprint_issues = [];
+                $active_sprint = Sprint::where('status', 'active')->first();
+                if ($active_sprint && isset($active_sprint->issues) && $active_sprint->issues)
+                {
+                    $active_sprint_issues = $active_sprint->issues;
+                }
+
+                $query->where(function ($query) {
+                    $query->whereRaw([ 'state' => [ '$nin' => $last_column_states ] ])->orWhereIn('no', $active_sprint_issues);
+                });
+            }
         }
 
         $query->where('del_flg', '<>', 1);
@@ -162,7 +194,7 @@ class IssueController extends Controller
             }
         }
 
-        $query->orderBy('created_at', isset($from) && $from === 'kanban' ? 'asc' : 'desc');
+        $query->orderBy('created_at', isset($from) && $from ? 'asc' : 'desc');
 
         $page_size = $request->input('limit') ? intval($request->input('limit')) : 50;
         $page = $request->input('page') ?: 1;
@@ -170,9 +202,6 @@ class IssueController extends Controller
         $issues = $query->get();
 
         $cache_parents = [];
-        $cache_avatars = [];
-        $kanban_issues = [];
-        $kanban_types  = $request->input('type') ?: ''; //for kanban
         foreach ($issues as $key => $issue)
         {
             // set issue watching flag
@@ -196,29 +225,17 @@ class IssueController extends Controller
                 }
                 unset($issues[$key]['parent_id']);
             }
-
-            if (isset($from) && $from === 'kanban')
-            {
-                //get assignee avatar for kanban
-                if (!array_key_exists($issue['assignee']['id'], $cache_avatars))
-                {
-                    $user = Sentinel::findById($issue['assignee']['id']);
-                    $cache_avatars[$issue['assignee']['id']] = isset($user->avatar) ? $user->avatar : '';
-                }
-                $issues[$key]['assignee']['avatar'] = $cache_avatars[$issue['assignee']['id']];
-                // filter subtask type
-                if (isset($issues[$key]['parent']) && $issues[$key]['parent'])
-                {
-                    if ($kanban_types && strpos($kanban_types, $issues[$key]['parent']['type']) === false)
-                    {
-                        continue;
-                    }
-                }
-                $kanban_issues[] = $issues[$key];
-            }
         }
 
-        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($kanban_issues ?: $issues), 'options' => [ 'total' => $total, 'sizePerPage' => $page_size ] ]);
+        if ($issues && isset($from) && $from)
+        {
+            $filter = $request->input('filter') ?: '';
+            $from_kanban_id = $request->input('from_kanban_id') ?: '';
+            $board_types  = $request->input('type') ?: '';
+            $issues = $this->arrangeIssues($issues, $from, $from_kanban_id, $board_types, $filter === 'all' || $from == 'backlog');
+        }
+
+        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($issues), 'options' => [ 'total' => $total, 'sizePerPage' => $page_size ] ]);
     }
 
     /**
@@ -1246,5 +1263,239 @@ class IssueController extends Controller
             }
         }
         return $options;
+    }
+
+    /**
+     * classify issues by parent_id.
+     *
+     * @return array
+     */
+    public function classifyIssues($issues)
+    {
+        if (!$issues) { return []; }
+
+        $classified_issues  = [];
+        foreach ($issues as $issue)
+        {
+            if (isset($issue['parent']) && $issue['parent'])
+            {
+                if (isset($classified_issues[$issue['parent']['no']]) && $classified_issues[$issue['parent']['no']])
+                {
+                    $classified_issues[$issue['parent']['no']][] =  $issue;
+                }
+                else
+                {
+                    $classified_issues[$issue['parent']['no']] = [ $issue ];
+                }
+            }
+            else
+            {
+                if (isset($classified_issues[$issue['no']]) && $classified_issues[$issue['no']])
+                {
+                    array_unshift($classified_issues[$issue['no']], $issue);
+                }
+                else
+                {
+                    $classified_issues[$issue['no']] = [ $issue ];
+                }
+            }
+        }
+
+        return $classified_issues;
+    }
+
+    /**
+     * add avatar for issues
+     *
+     * @return array
+     */
+    public function addAvatar(&$issues)
+    {
+        $cache_avatars = [];
+        foreach ($issues as $key => $issue)
+        {
+            //get assignee avatar for kanban
+            if (!array_key_exists($issue['assignee']['id'], $cache_avatars))
+            {
+                $user = Sentinel::findById($issue['assignee']['id']);
+                $cache_avatars[$issue['assignee']['id']] = isset($user->avatar) ? $user->avatar : '';
+            }
+            $issues[$key]['assignee']['avatar'] = $cache_avatars[$issue['assignee']['id']];
+        }
+        return;
+    }
+
+    /**
+     * flat issues from 2d to 1d.
+     *
+     * @return array
+     */
+    public function flatIssues($classified_issues)
+    {
+        $issues = [];
+        foreach ($classified_issues as $some)
+        {
+            foreach ($some as $one)
+            {
+                $issues[] = $one;
+            }
+        }
+        return $issues;
+    }
+
+    /**
+     * arrange issues for kanban.
+     *
+     * @return array 
+     */
+    public function arrangeIssues($issues, $from, $from_board_id, $board_types='', $isUpdRank=false)
+    {
+        $board_issues = [];
+        foreach ($issues as $key => $issue)
+        {
+            // filter subtask type
+            if (isset($issues[$key]['parent']) && $issues[$key]['parent'])
+            {
+                if ($board_types && strpos($board_types, $issues[$key]['parent']['type']) === false)
+                {
+                    continue;
+                }
+            }
+            $board_issues[] = $issue;
+        }
+
+
+        // classify the issues
+        $classified_issues = $this->classifyIssues($board_issues);
+
+        // whether the board is ranked
+        $rankmap = BoardRankMap::where([ 'board_id' => $from_board_id ])->first();
+        if (!$rankmap)
+        {
+            $issues = $this->flatIssues($classified_issues);
+
+            $rank = [];
+            foreach ($issues as $issue)
+            {
+                $rank[] = $issue['no'];
+            }
+            
+            BoardRankMap::create([ 'board_id' => $from_board_id, 'rank' => $rank ]);
+
+            $this->addAvatar($issues);
+
+            return $issues;
+        }
+ 
+        $sub2parent_map = []; 
+        foreach ($board_issues as $issue)
+        {
+            if (isset($issue['parent']) && $issue['parent'])
+            {
+                $sub2parent_map[$issue['no']] = $issue['parent']['no'];
+            }
+        }
+
+        $rank = $rankmap->rank; 
+        foreach ($classified_issues as $no => $some)
+        {
+            if (count($some) <= 1) { continue; }
+
+            $group_issues = [];
+            foreach ($some as $one)
+            {
+                $group_issues[$one['no']] = $one;
+            }
+
+            $sorted_group_issues = [];
+            foreach ($rank as $val)
+            {
+                if (isset($group_issues[$val]))
+                {
+                    $sorted_group_issues[$val] = $group_issues[$val];
+                }
+            }
+
+            foreach ($group_issues as $no2 => $issue)
+            {
+                if (!isset($sorted_group_issues[$no2]))
+                {
+                    $sorted_group_issues[$no2] = $issue;
+                }
+            }
+            $classified_issues[$no] = array_values($sorted_group_issues);
+        }
+
+        $sorted_issues = [];
+        foreach ($rank as $val)
+        {
+            if (isset($classified_issues[$val]) && $classified_issues[$val])
+            {
+                $sorted_issues[$val] = $classified_issues[$val]; 
+            }
+            else
+            {
+                if (isset($sub2parent_map[$val]) && $sub2parent_map[$val])
+                {
+                    $parent = $sub2parent_map[$val];
+                    if (!isset($sorted_issues[$parent]))
+                    {
+                        $sorted_issues[$parent] = $classified_issues[$parent]; 
+                    }
+                }
+            }
+        }
+
+        // append some issues which is ranked
+        foreach ($classified_issues as $key => $val)
+        {
+            if (!isset($sorted_issues[$key]))
+            {
+                $sorted_issues[$key] = $val;
+            }
+        }
+
+        // convert array to ordered array
+        $issues = $this->flatIssues($sorted_issues); 
+
+        if ($isUpdRank)
+        {
+            $new_rank = [];
+            foreach ($issues as $issue)
+            {
+                $new_rank[] = $issue['no'];
+            }
+
+            if (array_diff_assoc($new_rank, $rank) || array_diff_assoc($rank, $new_rank))
+            {
+                //BoardRankMap::update([ 'rank' => $new_rank ])->where('board_id', $from_board_id);
+            }
+        }
+
+        if ($from === 'scrum')
+        {
+            $active_sprint_issues = [];
+            $active_sprint = Sprint::where('status', 'active')->first();
+            if ($active_sprint && isset($active_sprint->issues) && $active_sprint->issues)
+            {
+                $active_sprint_issues = $active_sprint->issues;
+            }
+
+            foreach($issues as $issue)
+            {
+                if (in_array($issue['no'], $active_sprint_issues))
+                {
+                    $active_sprint_issues[] = $issue;
+                }
+            }
+
+            $this->addAvatar($active_sprint_issues);
+            return $active_sprint_issues;
+        }
+        else 
+        {
+            $this->addAvatar($issues);
+            return $issues;
+        }
     }
 }
