@@ -225,6 +225,10 @@ class IssueController extends Controller
                 }
                 unset($issues[$key]['parent_id']);
             }
+            else if (!isset($from))
+            {
+                $issues[$key]['hasSubtasks'] = DB::collection('issue_' . $project_key)->where('parent_id', $issue['_id']->__toString())->exists();
+            }
         }
 
         if ($issues && isset($from) && $from)
@@ -392,13 +396,12 @@ class IssueController extends Controller
 
         $id = DB::collection($table)->insertGetId($insValues + array_only($request->all(), $valid_keys));
 
-        $issue = DB::collection($table)->where('_id', $id)->first();
         // add to histroy table
         Provider::snap2His($project_key, $id, $schema);
         // trigger event of issue created
         Event::fire(new IssueEvent($project_key, $id->__toString(), $insValues['reporter'], [ 'event_key' => 'create_issue' ]));
 
-        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($issue) ]);
+        return $this->show($project_key, $id->__toString());
     }
 
     /**
@@ -460,8 +463,13 @@ class IssueController extends Controller
         // get avaliable actions for wf
         if (isset($issue['entry_id']) && $issue['entry_id'])
         {
-            $wf = new Workflow($issue['entry_id']);
-            $issue['wfactions'] = $wf->getAvailableActions([ 'project_key' => $project_key, 'issue_id' => $id, 'caller' => $this->user->id ]);
+            try {
+                $wf = new Workflow($issue['entry_id']);
+                $issue['wfactions'] = $wf->getAvailableActions([ 'project_key' => $project_key, 'issue_id' => $id, 'caller' => $this->user->id ]);
+            } catch (Exception $e) {
+                $issue['wfactions'] = [];
+            }
+
             foreach ($issue['wfactions'] as $key => $action)
             {
                 if (isset($action['screen']) && $action['screen'] && $action['screen'] != 'comments')
@@ -473,6 +481,10 @@ class IssueController extends Controller
 
         if (isset($issue['parent_id']) && $issue['parent_id']) {
             $issue['parent'] = DB::collection('issue_' . $project_key)->where('_id', $issue['parent_id'])->first(['no', 'type', 'title', 'state']);
+        }
+        else
+        {
+            $issue['hasSubtasks'] = DB::collection('issue_' . $project_key)->where('parent_id', $id)->exists();
         }
 
         $issue['subtasks'] = DB::collection('issue_' . $project_key)->where('parent_id', $id)->where('del_flg', '<>', 1)->orderBy('created_at', 'asc')->get(['no', 'type', 'title', 'state']);
@@ -1138,7 +1150,13 @@ class IssueController extends Controller
         $updValues = [];
         if ($parent_id)
         {
-            // subtask convert to standard
+            // standard convert to subtask 
+            $hasSubtasks = DB::collection($table)->where('parent_id', $id)->exists();
+            if ($hasSubtasks)
+            {
+                throw new \UnexpectedValueException('the issue can not convert to subtask.', -11114);
+            }
+
             $parent_issue = DB::collection($table)->find($parent_id);
             if (!$parent_issue)
             {
