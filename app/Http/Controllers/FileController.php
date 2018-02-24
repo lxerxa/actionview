@@ -98,6 +98,30 @@ class FileController extends Controller
     }
 
     /**
+     * Download small image file.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  String $id
+     */
+    public function downloadThumbnail(Request $request, $project_key, $id)
+    {
+        $file = File::find($id);
+        $filepath = config('filesystems.disks.local.root', '/tmp') . '/' . substr($file->index, 0, 2);
+        $filename = $filepath . '/' . $file->thumbnails_index;
+
+        if (!file_exists($filename))
+        {
+            throw new \UnexpectedValueException('file does not exist.', -15100);
+        }
+
+        header("Content-type: application/octet-stream");
+        header("Accept-Ranges: bytes");
+        header("Accept-Length:" . filesize($filename));
+        header("Content-Disposition: attachment; filename=" . $file->name);
+        echo file_get_contents($filename);
+    }
+
+    /**
      * Download file.
      *
      * @param  \Illuminate\Http\Request  $request
@@ -107,14 +131,7 @@ class FileController extends Controller
     {
         $file = File::find($id); 
         $filepath = config('filesystems.disks.local.root', '/tmp') . '/' . substr($file->index, 0, 2);
-        if ($request->input('flag') == 's')
-        {
-            $filename = $filepath . '/' . $file->thumbnails_index;
-        }
-        else 
-        {
-            $filename = $filepath . '/' . $file->index;
-        }
+        $filename = $filepath . '/' . $file->index;
 
         if (!file_exists($filename))
         {

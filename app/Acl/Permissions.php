@@ -24,6 +24,7 @@ class Permissions {
     const EXEC_WORKFLOW       = 'exec_workflow';
 
     const UPLOAD_FILE         = 'upload_file';
+    const DOWNLOAD_FILE       = 'download_file';
     const REMOVE_FILE         = 'remove_file';
     //const ADD_COMMNETS        = 'add_comments';
     //const EDIT_COMMNETS       = 'edit_comments';
@@ -65,6 +66,7 @@ class Permissions {
             static::EXEC_WORKFLOW,
 
             static::UPLOAD_FILE,
+            static::DOWNLOAD_FILE,
             static::REMOVE_FILE,
 
             //static::ADD_COMMNETS,

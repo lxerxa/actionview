@@ -1486,7 +1486,8 @@ class IssueController extends Controller
 
             if (array_diff_assoc($new_rank, $rank) || array_diff_assoc($rank, $new_rank))
             {
-                //BoardRankMap::update([ 'rank' => $new_rank ])->where('board_id', $from_board_id);
+                $rankmap = BoardRankMap::where('board_id', $from_board_id)->first();
+                $rankmap && $rankmap->update([ 'rank' => $new_rank ]);
             }
         }
 

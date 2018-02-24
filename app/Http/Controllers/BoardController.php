@@ -213,8 +213,16 @@ $example = [
             throw new \UnexpectedValueException('the issue is not found in the rank list.', -11606);
         }
 
+        $blocks = [ $current ];
+        $subtasks = Provider::getChildrenByParentNo($project_key, $current);
+        if ($subtasks)
+        {
+            $rankedSubtasks = array_intersect($rank, $subtasks);
+            $blocks = array_merge($blocks, $rankedSubtasks);
+        }
+
         // delete current issue from the rank
-        array_splice($rank, $curInd, 1);
+        array_splice($rank, $curInd, count($blocks));
 
         if ($up != -1)
         {
@@ -239,7 +247,7 @@ $example = [
                     $realBeforeInd = $upInd;
                 }
                 // insert current issue into the rank
-                array_splice($rank, $realBeforeInd + 1, 0, $current);
+                array_splice($rank, $realBeforeInd + 1, 0, $blocks);
             }
         }
         else
@@ -261,7 +269,7 @@ $example = [
                 }
                 $realAfterInd = array_search(array_shift($intersects), $rank); 
                 // insert current issue into the rank
-                array_splice($rank, $realAfterInd, 0, $current);
+                array_splice($rank, $realAfterInd, 0, $blocks);
             }
         } 
 

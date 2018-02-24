@@ -153,7 +153,8 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::delete('link/{id}', 'LinkController@destroy');
 
     Route::post('file', [ 'middleware' => 'privilege:upload_file', 'uses' => 'FileController@upload' ]);
-    Route::get('file/{id}', [ 'middleware' => 'privilege:view_project', 'uses' => 'FileController@download' ]);
+    Route::get('file/{id}/thumbnail', [ 'middleware' => 'privilege:view_project', 'uses' => 'FileController@downloadThumbnail' ]);
+    Route::get('file/{id}', [ 'middleware' => 'privilege:download_file', 'uses' => 'FileController@download' ]);
     Route::delete('file/{id}', [ 'middleware' => 'privilege:remove_file', 'uses' => 'FileController@delete' ]);
 
     Route::resource('kanban', 'BoardController');
