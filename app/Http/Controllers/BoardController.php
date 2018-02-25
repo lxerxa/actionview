@@ -256,7 +256,7 @@ $example = [
             if ($downInd !== false)
             {
                 // insert current issue into the rank
-                array_splice($rank, $downInd, 0, $current);
+                array_splice($rank, $downInd, 0, $blocks);
             }
             else
             {
