@@ -237,17 +237,17 @@ $example = [
             }
             else
             {
-                $realBeforeInd = -1;
+                $realUpInd = -1;
                 if ($intersects)
                 {
-                    $realBeforeInd = array_search(array_pop($intersects), $rank);
+                    $realUpInd = array_search(array_pop($intersects), $rank);
                 }
                 else
                 {
-                    $realBeforeInd = $upInd;
+                    $realUpInd = $upInd;
                 }
                 // insert current issue into the rank
-                array_splice($rank, $realBeforeInd + 1, 0, $blocks);
+                array_splice($rank, $realUpInd + 1, 0, $blocks);
             }
         }
         else
@@ -267,9 +267,9 @@ $example = [
                 {
                     throw new \UnexpectedValueException('the ranked position is not found.', -11607);
                 }
-                $realAfterInd = array_search(array_shift($intersects), $rank); 
+                $realDownInd = array_search(array_shift($intersects), $rank); 
                 // insert current issue into the rank
-                array_splice($rank, $realAfterInd, 0, $blocks);
+                array_splice($rank, $realDownInd, 0, $blocks);
             }
         } 
 

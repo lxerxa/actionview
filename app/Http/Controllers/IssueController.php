@@ -1442,6 +1442,14 @@ class IssueController extends Controller
                 }
             }
             $classified_issues[$no] = array_values($sorted_group_issues);
+
+            // prevent the sort confusion 
+            $parentInd = array_search($no, $classified_issues[$no]);
+            if ($parentInd > 0)
+            {
+                array_splice($classified_issues[$no], $parentInd, 1);
+                array_unshift($classified_issues[$no], $no);
+            }
         }
 
         $sorted_issues = [];
