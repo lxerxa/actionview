@@ -11,6 +11,7 @@ use App\Http\Controllers\Controller;
 use App\Project\Eloquent\Board;
 use App\Project\Eloquent\BoardRankMap;
 use App\Project\Eloquent\AccessBoardLog;
+use App\Project\Eloquent\Sprint;
 use App\Project\Provider;
 
 class BoardController extends Controller
@@ -58,7 +59,12 @@ class BoardController extends Controller
             }
         }
 
-        return Response()->json([ 'ecode' => 0, 'data' => $list ]);
+        $sprints = Sprint::where('project_key', $project_key)
+            ->whereIn('status', [ 'active', 'waiting' ])
+            ->orderBy('no', 'asc')
+            ->get();
+
+        return Response()->json([ 'ecode' => 0, 'data' => $list, 'options' => [ 'sprints' => $sprints ] ]);
 
 /*
 $example = [ 
@@ -96,8 +102,15 @@ $example = [
             throw new \UnexpectedValueException('the name can not be empty.', -11600);
         }
 
+        $type = $request->input('type');
+        if (!$type || ($type != 'kanban' && $type != 'scrum'))
+        {
+            throw new \UnexpectedValueException('the type value has error.', -11608);
+        }
+
+
         // only support for kanban type, fix me
-        $board = Board::create([ 'project_key' => $project_key, 'type' => 'kanban', 'query' => [ 'subtask' => true ] ] + $request->all());
+        $board = Board::create([ 'project_key' => $project_key, 'query' => [ 'subtask' => true ] ] + $request->all());
         return Response()->json(['ecode' => 0, 'data' => $board]);
     }
 

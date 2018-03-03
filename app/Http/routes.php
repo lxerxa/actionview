@@ -160,4 +160,10 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::resource('kanban', 'BoardController');
     Route::get('kanban/{id}/access', 'BoardController@recordAccess');
     Route::post('kanban/{id}/rank', 'BoardController@setRank');
+
+    Route::post('sprint', 'SprintController@store');
+    Route::post('sprint/moveissue', 'SprintController@moveIssue');
+    Route::post('sprint/{no}/publish', 'SprintController@publish');
+    Route::post('sprint/{no}/complete', 'SprintController@complete');
+    Route::delete('sprint/{no}', 'SprintController@destroy');
 });

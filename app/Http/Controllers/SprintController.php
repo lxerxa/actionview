@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Project\Eloquent\Sprint;
+use App\Project\Eloquent\Board;
 use App\Project\Provider;
 use DB;
 
@@ -29,8 +30,56 @@ class SprintController extends Controller
     public function store(Request $request, $project_key)
     {
         $sprint_count = Sprint::where('project_key', $project_key)->count();
-        $sprint = Sprint::create([ 'project_key' => $project_key, no: $sprint_count + 1 ]);
-        return Response()->json(['ecode' => 0, 'data' => $sprint]);
+        $sprint = Sprint::create([ 'project_key' => $project_key, 'no' => $sprint_count + 1, 'status' => 'waiting', 'issues' => [] ]);
+        return Response()->json(['ecode' => 0, 'data' => $this->getValidSprintList($project_key)]);
+    }
+
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function moveIssue(Request $request, $project_key)
+    {
+        $issue_no = $request->input('issue_no');
+        if (!$issue_no)
+        {
+            throw new \UnexpectedValueException('the moved issue cannot be empty', -11700);
+        }
+
+        $src_sprint_no = $request->input('src_sprint_no');
+        if (!isset($src_sprint_no))
+        {
+            throw new \UnexpectedValueException('the src sprint of moved issue cannot be empty', -11701);
+        }
+
+        $dest_sprint_no = $request->input('dest_sprint_no');
+        if (!isset($dest_sprint_no))
+        {
+            throw new \UnexpectedValueException('the dest sprint of moved issue cannot be empty', -11702);
+        }
+
+        if ($src_sprint_no > 0)
+        {
+            $src_sprint = Sprint::where('project_key', $project_key)->where('no', $src_sprint_no)->first(); 
+            if (!in_array($issue_no, $src_sprint->issues ?: []))
+            {
+                throw new \UnexpectedValueException('the moved issue cannot be found in the src sprint', -11703);
+            }
+            $src_sprint->fill([ 'issues' => array_diff($src_sprint->issues, [ $issue_no ]) ?: [] ])->save();
+        }
+
+        if ($dest_sprint_no > 0)
+        {
+            $dest_sprint = Sprint::where('project_key', $project_key)->where('no', $dest_sprint_no)->first();
+            if (in_array($issue_no, $dest_sprint->issues ?: []))
+            {
+                throw new \UnexpectedValueException('the moved issue has been in the dest sprint', -11704);
+            }
+            $dest_sprint->fill([ 'issues' => array_merge($dest_sprint->issues ?: [], [ $issue_no ]) ])->save();
+        }
+
+        return Response()->json([ 'ecode' => 0, 'data' => $this->getValidSprintList($project_key) ]);
     }
 
     /**
@@ -46,43 +95,119 @@ class SprintController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * publish the sprint.
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $project_key, $no)
+    public function publish(Request $request, $project_key, $no)
     {
+        if (!$no)
+        {
+            throw new \UnexpectedValueException('the published sprint cannot be empty', -11705);
+        }
+        $no = intval($no);
+
+        $active_sprint_exists = Sprint::where('project_key', $project_key)->where('status', 'active')->exists();
+        if ($active_sprint_exists)
+        {
+            throw new \UnexpectedValueException('the active sprint has been exists.', -11706);
+        }
+
+        $before_waiting_sprint_exists = Sprint::where('project_key', $project_key)->where('status', 'waiting')->where('no', '<', $no)->exists();
+        if ($before_waiting_sprint_exists)
+        {
+            throw new \UnexpectedValueException('the more first sprint has been exists.', -11707);
+        }
+
         $sprint = Sprint::where('project_key', $project_key)->where('no', $no)->first();
         if (!$sprint || $project_key != $sprint->project_key)
         {
-            throw new \UnexpectedValueException('the sprint does not exist or is not in the project.', -12402);
+            throw new \UnexpectedValueException('the sprint does not exist or is not in the project.', -11708);
         }
 
-        $updValues = [];
-        $status = $request->input('status');
-        if (isset($status))
-        {
-            $updValues['status'] = $status;
-        }
+        $updValues = [ 'status' => 'active' ];
 
         $start_time = $request->input('start_time');
-        if (isset($start_time))
+        if (isset($start_time) && $start_time)
         {
             $updValues['start_time'] = $start_time;
         }
-
-        $end_time = $request->input('end_time');
-        if (isset($end_time))
+        else
         {
-            $updValues['end_time'] = $end_time;
+            throw new \UnexpectedValueException('the sprint start time cannot be empty.', -11709);
+        }
+
+        $complete_time = $request->input('complete_time');
+        if (isset($complete_time) && $complete_time)
+        {
+            $updValues['complete_time'] = $complete_time;
+        }
+        else
+        {
+            throw new \UnexpectedValueException('the sprint complete time cannot be empty.', -11710);
         }
 
         $sprint->fill($updValues)->save();
 
+        return Response()->json([ 'ecode' => 0, 'data' => $this->getValidSprintList($project_key) ]);
+    }
+
+    /**
+     * publish the sprint.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function complete(Request $request, $project_key, $no)
+    {
+        if (!$no)
+        {
+            throw new \UnexpectedValueException('the completed sprint cannot be empty', -11711);
+        }
+        $no = intval($no);
+
         $sprint = Sprint::where('project_key', $project_key)->where('no', $no)->first();
-        return Response()->json([ 'ecode' => 0, 'data' => sprint ]);
+        if (!$sprint || $project_key != $sprint->project_key)
+        {
+            throw new \UnexpectedValueException('the sprint does not exist or is not in the project.', -11708);
+        }
+
+        if (!isset($sprint->status) || $sprint->status != 'active')
+        {
+            throw new \UnexpectedValueException('the completed sprint must be active.', -11712);
+        }
+
+        $completed_issues = $request->input('completed_issues') ?: [];
+        if (array_diff($completed_issues, $sprint->issues))
+        {
+            throw new \UnexpectedValueException('the completed sprint issues have errors.', -11713);
+        }
+
+        $incompleted_issues = array_diff($sprint->issues, $completed_issues);
+
+        $updValues = [ 
+            'status' => 'completed', 
+            'real_complete_time' => time(), 
+            'completed_issues' => $completed_issues,
+            'incompleted_issues' => $incompleted_issues ];
+
+        $sprint->fill($updValues)->save();
+
+        if (!$incompleted_issues)
+        {
+            $next_sprint = Sprint::where('projet_key', $project_key)->where('status', 'waiting')->orderBy('no', 'asc')->first();
+            if ($next_sprint)
+            {
+                $issues = !isset($next_sprint->issues) || !$next_sprint->issues ? [] : $next_sprint->issues;
+                $issues = array_merge($incompleted_issues, $issues);
+                $next_sprint->fill([ 'issues' => $issues ])->save();
+            }
+        }
+
+        return Response()->json([ 'ecode' => 0, 'data' => $this->getValidSprintList($project_key) ]);
     }
 
     /**
@@ -91,27 +216,55 @@ class SprintController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($project_key, $id)
+    public function destroy($project_key, $no)
     {
-        $state = State::find($id);
-        if (!$state || $project_key != $state->project_key)
+        if (!$no)
         {
-            throw new \UnexpectedValueException('the state does not exist or is not in the project.', -12402);
+            throw new \UnexpectedValueException('the deleted sprint cannot be empty', -11714);
+        }
+        $no = intval($no);
+
+        $sprint = Sprint::where('project_key', $project_key)->where('no', $no)->first();
+        if (!$sprint || $project_key != $sprint->project_key)
+        {
+            throw new \UnexpectedValueException('the sprint does not exist or is not in the project.', -11708);
         }
 
-        $isUsed = $this->isFieldUsedByIssue($project_key, 'state', $state->toArray()); 
-        if ($isUsed)
-        {
-            throw new \UnexpectedValueException('the state has been used in issue.', -12403);
+        if ($sprint->status == 'completed' || $sprint->status == 'active')
+	{
+            throw new \UnexpectedValueException('the active or completed sprint cannot be removed.', -11715);
         }
 
-        $isUsed = Definition::whereRaw([ 'state_ids' => isset($state->key) ? $state->key : $id ])->exists();
-        if ($isUsed)
+        if (isset($sprint->issues) && $sprint->issues)
         {
-            throw new \UnexpectedValueException('the state has been used in workflow.', -12404);
+            $next_sprint = Sprint::where('project_key', $project_key)->where('no', '>', $no)->first();
+            if ($next_sprint)
+            {
+                $issues = !isset($next_sprint->issues) || !$next_sprint->issues ? [] : $next_sprint->issues;
+                $issues = array_merge($sprint->issues, $issues);
+                $next_sprint->fill([ 'issues' => $issues ])->save();
+            }
         }
 
-        State::destroy($id);
-        return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
+        $sprint->delete();
+
+        Sprint::where('project_key', $project_key)->where('no', '>', $no)->decrement('no');
+
+        return Response()->json([ 'ecode' => 0, 'data' => $this->getValidSprintList($project_key) ]);
+    }
+
+    /**
+     * get waiting or active sprint list.
+     *
+     * @param  string  $project_key
+     * @return array 
+     */
+    public function getValidSprintList($project_key)
+    {
+        $sprints = Sprint::where('project_key', $project_key)
+            ->whereIn('status', [ 'active', 'waiting' ])
+            ->orderBy('no', 'asc')
+            ->get();
+        return $sprints;
     }
 }

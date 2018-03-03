@@ -34,7 +34,6 @@ class IssueController extends Controller
      */
     public function index(Request $request, $project_key)
     {
-        $from = $request->input('from');
 
         $where = array_only($request->all(), [ 'type', 'assignee', 'reporter', 'state', 'resolution', 'priority', 'module', 'resolve_version' ]) ?: [];
         foreach ($where as $key => $val)
@@ -142,6 +141,8 @@ class IssueController extends Controller
             }
         }
 
+        $from = $request->input('from');
+        $from_kanban_id = $request->input('from_kanban_id');
         if (isset($from)) 
         {
             if ($from === 'kanban')
@@ -152,25 +153,30 @@ class IssueController extends Controller
             }
             else if (($from === 'scrum' || $from === 'backlog') && isset($from_kanban_id) && $from_kanban_id)
             {
+                $active_sprint_issues = [];
+                $active_sprint = Sprint::where('status', 'active')->first();
+                if ($from === 'scrum' && !$active_sprint) 
+                {
+                    Response()->json([ 'ecode' => 0, 'data' => []]);
+                }
+                else if ($active_sprint && isset($active_sprint['issues']) && $active_sprint['issues'])
+                {
+                    $active_sprint_issues = $active_sprint['issues'];
+                }
+
                 $last_column_states = [];
                 $board = Board::find($from_kanban_id);
                 if ($board && isset($board->columns))
                 {
-                    $last_column = end($board->columns) ?: [];
-                    if ($last_column && isset($last_column->states) && $last_column->states)
+                    $board_columns = $board->columns;
+                    $last_column = array_pop($board_columns) ?: [];
+                    if ($last_column && isset($last_column['states']) && $last_column['states'])
                     {
-                        $last_column_states = $last_column->states; 
+                        $last_column_states = $last_column['states']; 
                     }
                 }
  
-                $active_sprint_issues = [];
-                $active_sprint = Sprint::where('status', 'active')->first();
-                if ($active_sprint && isset($active_sprint->issues) && $active_sprint->issues)
-                {
-                    $active_sprint_issues = $active_sprint->issues;
-                }
-
-                $query->where(function ($query) {
+                $query->where(function ($query) use ($last_column_states, $active_sprint_issues) {
                     $query->whereRaw([ 'state' => [ '$nin' => $last_column_states ] ])->orWhereIn('no', $active_sprint_issues);
                 });
             }
@@ -234,7 +240,6 @@ class IssueController extends Controller
         if ($issues && isset($from) && $from)
         {
             $filter = $request->input('filter') ?: '';
-            $from_kanban_id = $request->input('from_kanban_id') ?: '';
             $board_types  = $request->input('type') ?: '';
             $issues = $this->arrangeIssues($issues, $from, $from_kanban_id, $board_types, $filter === 'all' || $from == 'backlog');
         }
@@ -1382,7 +1387,6 @@ class IssueController extends Controller
             $board_issues[] = $issue;
         }
 
-
         // classify the issues
         $classified_issues = $this->classifyIssues($board_issues);
 
@@ -1502,15 +1506,16 @@ class IssueController extends Controller
         if ($from === 'scrum')
         {
             $active_sprint_issues = [];
+            $active_sprint_issue_nos = [];
             $active_sprint = Sprint::where('status', 'active')->first();
-            if ($active_sprint && isset($active_sprint->issues) && $active_sprint->issues)
+            if ($active_sprint && isset($active_sprint['issues']) && $active_sprint['issues'])
             {
-                $active_sprint_issues = $active_sprint->issues;
+                $active_sprint_issue_nos = $active_sprint['issues'];
             }
 
             foreach($issues as $issue)
             {
-                if (in_array($issue['no'], $active_sprint_issues))
+                if (in_array($issue['no'], $active_sprint_issue_nos))
                 {
                     $active_sprint_issues[] = $issue;
                 }

@@ -13,8 +13,10 @@ class Sprint extends Model
         'project_key',
         'no',
         'status',
-        'start_at',
-        'end_at',
-        'issues'
+        'start_time',
+        'complete_time',
+        'issues',
+        'completed_issues',
+        'incompleted_issues'
     );
 }
