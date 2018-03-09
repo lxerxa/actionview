@@ -35,7 +35,7 @@ class IssueController extends Controller
     public function index(Request $request, $project_key)
     {
 
-        $where = array_only($request->all(), [ 'type', 'assignee', 'reporter', 'state', 'resolution', 'priority', 'module', 'resolve_version' ]) ?: [];
+        $where = array_only($request->all(), [ 'type', 'assignee', 'reporter', 'state', 'resolution', 'priority', 'module', 'resolve_version', 'epic' ]) ?: [];
         foreach ($where as $key => $val)
         {
             if ($key === 'assignee' || $key === 'reporter')
@@ -51,8 +51,14 @@ class IssueController extends Controller
             }
             else
             {
-                $where[ $key ] = [ '$in' => explode(',', $val) ];
+                $where[$key] = [ '$in' => explode(',', $val) ];
             }
+        }
+
+        $sprint = $request->input('sprint');
+        if (isset($sprint) && $sprint)
+        {
+            $where['sprints'] = [ '$all' => explode(',', $sprint) ];
         }
 
         $watched_issues = Watch::where('project_key', $project_key)
@@ -577,8 +583,18 @@ class IssueController extends Controller
         $versions = Provider::getVersionList($project_key, ['name']);
         // get module list
         $modules = Provider::getModuleList($project_key, ['name']);
+        // get project epics
+        $epics = Provider::getEpicList($project_key);
         // get project types
-        $types = Provider::getTypeListExt($project_key, [ 'assignee' => $users, 'state' => $states, 'resolution' => $resolutions, 'priority' => $priorities, 'version' => $versions, 'module' => $modules ]);
+        $types = Provider::getTypeListExt($project_key, [ 'assignee' => $users, 'state' => $states, 'resolution' => $resolutions, 'priority' => $priorities, 'version' => $versions, 'module' => $modules, 'epic' => $epics ]);
+        // get project sprints
+        $sprint_nos = [];
+        $sprints = Provider::getSprintList($project_key);
+        foreach ($sprints as $sprint)
+        {
+            $sprint_nos[] = strval($sprint['no']);
+        }
+       
         // get defined searchers
         $searchers = $this->getSearchers($project_key, ['name', 'query']);
         // get timetrack options
@@ -595,6 +611,8 @@ class IssueController extends Controller
                 'priorities' => $priorities, 
                 'modules' => $modules, 
                 'versions' => $versions, 
+                'epics' => $epics,
+                'sprints' => $sprint_nos,
                 'searchers' => $searchers, 
                 'timetrack' => $timetrack 
             ]) 
@@ -796,7 +814,9 @@ class IssueController extends Controller
      */
     public function getSearchers($project_key, $fields=[])
     {
-        $searchers = Searcher::whereRaw([ 'user' => $this->user->id, 'project_key' => $project_key ])->orderBy('sn', 'asc')->get($fields);
+        $searchers = Searcher::whereRaw([ 'user' => $this->user->id, 'project_key' => $project_key ])
+            ->orderBy('sn', 'asc')
+            ->get($fields);
         return $searchers ?: [];
     }
 

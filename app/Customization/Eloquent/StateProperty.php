@@ -4,16 +4,13 @@ namespace App\Customization\Eloquent;
 
 use Jenssegers\Mongodb\Eloquent\Model;
 
-class State extends Model
+class StateProperty extends Model
 {
     //
-    protected $table = 'config_state';
+    protected $table = 'config_state_property';
 
     protected $fillable = array(
-        'name',
-        'category',
-        'description',
         'project_key',
-        'sn'
+        'sequence'
     );
 }

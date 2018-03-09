@@ -66,7 +66,16 @@ class SprintController extends Controller
             {
                 throw new \UnexpectedValueException('the moved issue cannot be found in the src sprint', -11703);
             }
+            if ($src_sprint->status == 'completed')
+            {
+                throw new \UnexpectedValueException('the moved issue cannot be moved into or moved out of the completed sprint', -11706);
+            }
             $src_sprint->fill([ 'issues' => array_diff($src_sprint->issues, [ $issue_no ]) ?: [] ])->save();
+
+            if ($src_sprint->status == 'active')
+            {
+                $this->popSprint($project_key, $issue_no, $src_sprint_no);
+            }
         }
 
         if ($dest_sprint_no > 0)
@@ -76,7 +85,16 @@ class SprintController extends Controller
             {
                 throw new \UnexpectedValueException('the moved issue has been in the dest sprint', -11704);
             }
+            if ($dest_sprint->status == 'completed')
+            {
+                throw new \UnexpectedValueException('the moved issue cannot be moved into or moved out of the completed sprint', -11706);
+            }
             $dest_sprint->fill([ 'issues' => array_merge($dest_sprint->issues ?: [], [ $issue_no ]) ])->save();
+
+            if ($dest_sprint->status == 'active')
+            {
+                $this->pushSprint($project_key, $issue_no, $dest_sprint_no);
+            }
         }
 
         return Response()->json([ 'ecode' => 0, 'data' => $this->getValidSprintList($project_key) ]);
@@ -150,6 +168,14 @@ class SprintController extends Controller
         }
 
         $sprint->fill($updValues)->save();
+
+        if (isset($sprint->issues) && $sprint->issues)
+        {
+            foreach ($sprint->issues as $issue_no)
+            {
+                $this->pushSprint($project_key, $issue_no, $no);
+            }
+        }
 
         return Response()->json([ 'ecode' => 0, 'data' => $this->getValidSprintList($project_key) ]);
     }
@@ -266,5 +292,57 @@ class SprintController extends Controller
             ->orderBy('no', 'asc')
             ->get();
         return $sprints;
+    }
+
+    /**
+     * push sprint to issue detail.
+     *
+     * @param  string  $project_key
+     * @param  string  $issue_no
+     * @param  string  $sprint_no
+     * @return void 
+     */
+    public function pushSprint($project_key, $issue_no, $sprint_no)
+    {
+        $issue = DB::collection('issue_' . $project_key)->where('no', $issue_no)->first();
+        if (!$issue)
+        {
+            return;
+        }
+
+        $sprints = [];
+        if (isset($issue['sprints']) && $issue['sprints'])
+        {
+            $sprints = $issue['sprints'];
+        }
+        array_push($sprints, $sprint_no);
+
+        DB::collection('issue_' . $project_key)->where('no', $issue_no)->update(['sprints' => $sprints]);
+    }
+
+    /**
+     * pop sprint from issue detail.
+     *
+     * @param  string  $project_key
+     * @param  string  $issue_no
+     * @param  string  $sprint_no
+     * @return void 
+     */
+    public function popSprint($project_key, $issue_no, $sprint_no)
+    {
+        $issue = DB::collection('issue_' . $project_key)->where('no', $issue_no)->first();
+        if (!$issue)
+        {
+            return;
+        }
+
+        $sprints = [];
+        if (isset($issue['sprints']) && $issue['sprints'])
+        {
+            $sprints = $issue['sprints'];
+        }
+        $new_sprints = array_diff($sprints, [ $sprint_no ]);
+
+        DB::collection('issue_' . $project_key)->where('no', $issue_no)->update(['sprints' => $new_sprints]);
     }
 }

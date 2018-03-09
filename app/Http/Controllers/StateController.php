@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Customization\Eloquent\State;
+use App\Customization\Eloquent\StateProperty;
 use App\Workflow\Eloquent\Definition;
 use App\Project\Provider;
 use DB;
@@ -56,6 +57,12 @@ class StateController extends Controller
         if (!$name || trim($name) == '')
         {
             throw new \UnexpectedValueException('the name can not be empty.', -12400);
+        }
+
+        $category = $request->input('category');
+        if (!$category)
+        {
+            throw new \UnexpectedValueException('the category can not be empty.', -12405);
         }
 
         if (Provider::isStateExisted($project_key, $name))
@@ -111,6 +118,12 @@ class StateController extends Controller
             }
         }
 
+        $category = $request->input('category');
+        if (!$category)
+        {
+            throw new \UnexpectedValueException('the category can not be empty.', -12405);
+        }
+
         $state->fill($request->except(['project_key']))->save();
         return Response()->json(['ecode' => 0, 'data' => State::find($id)]);
     }
@@ -143,5 +156,83 @@ class StateController extends Controller
 
         State::destroy($id);
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
+    }
+
+    /**
+     * update sort or defaultValue etc..
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return void
+     */
+    public function handle(Request $request, $project_key)
+    {
+        if ($project_key === '$_sys_$')
+        {
+            return $this->handleSys($request, $project_key);
+        }
+        else
+        {
+            return $this->handleProject($request, $project_key);
+        }
+    }
+
+    /**
+     * update sort or defaultValue etc..
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return void
+     */
+    public function handleProject(Request $request, $project_key)
+    {
+        $properties = [];
+        // set state sort.
+        $sequence = $request->input('sequence');
+        if (isset($sequence))
+        {
+            $properties['sequence'] = $sequence;
+        }
+
+        $state_property = StateProperty::Where('project_key', $project_key)->first();
+        if ($state_property)
+        {
+             $state_property->fill($properties);
+             $state_property->save();
+        }
+        else
+        {
+             StateProperty::create([ 'project_key' => $project_key ] + $properties);
+        }
+
+        $states = Provider::getStateList($project_key);
+        return Response()->json(['ecode' => 0, 'data' => $states]);
+    }
+
+    /**
+     * update sort or defaultValue etc..
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return void
+     */
+    public function handleSys(Request $request, $project_key)
+    {
+        // set type sort.
+        $sequence = $request->input('sequence');
+        if (isset($sequence))
+        {
+            $i = 1;
+            foreach ($sequence as $state_id)
+            {
+                $state = State::find($state_id);
+                if (!$state || $state->project_key != $project_key)
+                {
+                    continue;
+                }
+                $state->sn = $i++;
+                $state->save();
+            }
+        }
+
+        $states = State::where([ 'project_key' => $project_key ])->orderBy('sn', 'asc')->get();
+        return Response()->json(['ecode' => 0, 'data' => $states]);
     }
 }

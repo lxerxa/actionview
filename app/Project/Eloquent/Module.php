@@ -15,6 +15,7 @@ class Module extends Model
         'principal',
         'defaultAssignee',
         'creator',
-        'description'
+        'description',
+        'sn'
     );
 }

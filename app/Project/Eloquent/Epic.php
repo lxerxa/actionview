@@ -1,17 +1,17 @@
 <?php
 
-namespace App\Customization\Eloquent; 
+namespace App\Project\Eloquent; 
 
 use Jenssegers\Mongodb\Eloquent\Model;
 
-class State extends Model
+class Epic extends Model
 {
     //
-    protected $table = 'config_state';
+    protected $table = 'epic';
 
     protected $fillable = array(
         'name',
-        'category',
+        'bgcolor',
         'description',
         'project_key',
         'sn'

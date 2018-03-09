@@ -2,6 +2,7 @@
 namespace App\Project;
 
 use App\Customization\Eloquent\State;
+use App\Customization\Eloquent\StateProperty;
 use App\Customization\Eloquent\Resolution;
 use App\Customization\Eloquent\ResolutionProperty;
 use App\Customization\Eloquent\Priority;
@@ -19,6 +20,8 @@ use App\Project\Eloquent\UserGroupProject;
 use App\Project\Eloquent\File;
 use App\Project\Eloquent\Version;
 use App\Project\Eloquent\Module;
+use App\Project\Eloquent\Epic;
+use App\Project\Eloquent\Sprint;
 
 use Cartalyst\Sentinel\Users\EloquentUser;
 use Sentinel;
@@ -51,9 +54,25 @@ class Provider {
         $states = State::Where('project_key', '$_sys_$')
             ->orWhere('project_key', $project_key)
             ->orderBy('project_key', 'asc')
-            ->orderBy('_id', 'asc')
+            ->orderBy('sn', 'asc')
             ->get($fields)
             ->toArray();
+
+        $stateProperty = StateProperty::Where('project_key', $project_key)->first();
+        if ($stateProperty)
+        {
+            if ($sequence = $stateProperty->sequence)
+            {
+                $func = function($v1, $v2) use ($sequence) {
+                    $i1 = array_search($v1['_id'], $sequence);
+                    $i1 = $i1 !== false ? $i1 : 998;
+                    $i2 = array_search($v2['_id'], $sequence);
+                    $i2 = $i2 !== false ? $i2 : 999;
+                    return $i1 >= $i2 ? 1 : -1;
+                };
+                usort($states, $func);
+            }
+        }
 
         return $states;
     }
@@ -75,6 +94,7 @@ class Provider {
             $tmp = [];
             $tmp['_id'] = isset($state['key']) ? $state['key'] : $state['_id'];
             $tmp['name'] = isset($state['name']) ? $state['name'] : '';
+            $tmp['category'] = isset($state['category']) ? $state['category'] : '';
             $options[] = $tmp;
         }
         return $options;
@@ -509,7 +529,7 @@ class Provider {
     public static function getModuleList($project_key, $fields=[])
     {
         $versions = Module::where([ 'project_key' => $project_key ])
-            ->orderBy('_id', 'asc')
+            ->orderBy('sn', 'asc')
             ->get($fields);
 
         return $versions;
@@ -701,6 +721,14 @@ class Provider {
                 }
                 $val['optionValues'] = self::pluckFields($options['module'], ['_id', 'name']);
             }
+            else if ($val['key'] == 'epic')
+            {
+                if (!isset($options['epic']))
+                {
+                    $options['epic'] = self::getEpicList($project_key);
+                }
+                $val['optionValues'] = self::pluckFields($options['epic'], ['_id', 'name', 'bgColor']);
+            }
             else if (array_key_exists($val['key'], $options))
             {
                 $val['optionValues'] = self::pluckFields($options[$val['key']], ['_id', 'name']);
@@ -875,6 +903,11 @@ class Provider {
             {
                 $modules = self::getModuleList($project_key);
                 $val['optionValues'] = self::pluckFields($modules, ['_id', 'name']);
+            }
+            else if ($val['key'] == 'epic')
+            {
+                $epics = self::getEpicList($project_key);
+                $val['optionValues'] = self::pluckFields($modules, ['_id', 'name', 'bgColor']);
             }
             else if ($val['type'] == 'SingleVersion' || $val['type'] == 'MultiVersion')
             {
@@ -1129,6 +1162,56 @@ class Provider {
             $children[] = $subtask['no'];
         }
         return $children;
+    }
+
+    /**
+     * get epic list.
+     *
+     * @param string $project_key
+     * @param array $fields
+     * @return collection
+     */
+    public static function getEpicList($project_key, $fields=[])
+    {
+        $epics = Epic::Where('project_key', $project_key)
+            ->orderBy('sn', 'asc')
+            ->get($fields)
+            ->toArray();
+
+        return $epics;
+    }
+
+    /**
+     * check if Epic has existed.
+     *
+     * @param string $project_key
+     * @param string $name
+     * @return bool
+     */
+    public static function isEpicExisted($project_key, $name)
+    {
+        $isExisted = Epic::Where('project_key', $project_key)
+            ->Where('name', $name)
+            ->exists();
+
+        return $isExisted;
+    }
+
+    /**
+     * get sprint list.
+     *
+     * @param string $project_key
+     * @return collection
+     */
+    public static function getSprintList($project_key, $fields=[])
+    {
+        $epics = Sprint::Where('project_key', $project_key)
+            ->WhereIn('status', [ 'active', 'completed' ])
+            ->orderBy('no', 'desc')
+            ->get($fields)
+            ->toArray();
+
+        return $epics;
     }
 }
 

@@ -28,7 +28,7 @@ class ModuleController extends Controller
      */
     public function index($project_key)
     {
-        $modules = Module::whereRaw([ 'project_key' => $project_key ])->orderBy('created_at', 'asc')->get();
+        $modules = Module::whereRaw([ 'project_key' => $project_key ])->orderBy('sn', 'asc')->get();
         foreach ($modules as $module)
         {
             $module->is_used = $this->isFieldUsedByIssue($project_key, 'module', $module->toArray()); 
@@ -65,7 +65,11 @@ class ModuleController extends Controller
         }
 
         $creator = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
-        $module = Module::create([ 'project_key' => $project_key, 'principal' => $principal, 'creator' => $creator ] + $request->all());
+        $module = Module::create([ 
+            'project_key' => $project_key, 
+            'principal' => $principal, 
+            'sn' => time(), 
+            'creator' => $creator ] + $request->all());
 
         // trigger event of version added
         //Event::fire(new ModuleEvent($project_key, $creator, [ 'event_key' => 'create_module', 'data' => $module->name ]));
@@ -160,5 +164,33 @@ class ModuleController extends Controller
         //Event::fire(new ModuleEvent($project_key, $cur_user, [ 'event_key' => 'del_module', 'data' => $module->name ]));
 
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
+    }
+
+    /**
+     * update sort etc..
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return void
+     */
+    public function handle(Request $request, $project_key)
+    {
+        // set module sort.
+        $sequence_modules = $request->input('sequence') ?: [];
+        if ($sequence_modules)
+        {
+            $i = 1;
+            foreach ($sequence_modules as $module_id)
+            {
+                $module = Module::find($module_id);
+                if (!$module || $module->project_key != $project_key)
+                {
+                    continue;
+                }
+                $module->sn = $i++;
+                $module->save();
+            }
+        }
+
+        return Response()->json(['ecode' => 0, 'data' => $sequence_modules ]);
     }
 }

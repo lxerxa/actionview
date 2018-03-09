@@ -96,6 +96,7 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::post('priority/batch', 'PriorityController@handle');
     // project state config
     Route::resource('state', 'StateController');
+    Route::post('state/batch', 'StateController@handle');
     // project resolution config
     Route::resource('resolution', 'ResolutionController');
     Route::post('resolution/batch', 'ResolutionController@handle');
@@ -112,6 +113,7 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::get('activity', 'ActivityController@index');
     // project module config
     Route::resource('module', 'ModuleController');
+    Route::post('module/batch', 'ModuleController@handle');
     // project version config
     Route::resource('version', 'VersionController');
     // project team
@@ -166,4 +168,8 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::post('sprint/{no}/publish', 'SprintController@publish');
     Route::post('sprint/{no}/complete', 'SprintController@complete');
     Route::delete('sprint/{no}', 'SprintController@destroy');
+
+    // project module config
+    Route::resource('epic', 'EpicController');
+    Route::post('epic/batch', 'EpicController@handle');
 });

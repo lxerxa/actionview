@@ -233,6 +233,7 @@ class Controller extends BaseController
                 case 'priority':
                 case 'resolution':
                 case 'module':
+                case 'epic':
                     if ($field['project_key'] !== $project_key)
                     {
                         return true;

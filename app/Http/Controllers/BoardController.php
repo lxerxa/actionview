@@ -12,7 +12,10 @@ use App\Project\Eloquent\Board;
 use App\Project\Eloquent\BoardRankMap;
 use App\Project\Eloquent\AccessBoardLog;
 use App\Project\Eloquent\Sprint;
+use App\Project\Eloquent\Epic;
 use App\Project\Provider;
+
+use MongoDB\BSON\ObjectID;
 
 class BoardController extends Controller
 {
@@ -64,7 +67,11 @@ class BoardController extends Controller
             ->orderBy('no', 'asc')
             ->get();
 
-        return Response()->json([ 'ecode' => 0, 'data' => $list, 'options' => [ 'sprints' => $sprints ] ]);
+        $epics = Epic::where('project_key', $project_key)
+            ->orderBy('sn', 'asc')
+            ->get(['bgcolor', 'name']);
+
+        return Response()->json([ 'ecode' => 0, 'data' => $list, 'options' => [ 'epics' => $epics, 'sprints' => $sprints ] ]);
 
 /*
 $example = [ 
@@ -108,9 +115,35 @@ $example = [
             throw new \UnexpectedValueException('the type value has error.', -11608);
         }
 
+        $columns = [ 
+            [ 'no' => 1, 'name' => 'Start', 'states' => [] ], 
+            [ 'no' => 2, 'name' => 'In Progress', 'states' => [] ],
+            [ 'no' => 2, 'name' => 'Complete', 'states' => [] ],
+        ];
+        $states = Provider::getStateList($project_key);
+        foreach ($states as $state)
+        {
+            $state_val = $state['id'] instanceof ObjectID ? $state['id']->__toString() : $state['id'];
+            if ($state['category'] === 'new')
+            {
+                array_push($columns[0]['states'], $state_val);
+            }
+            else if ($state['category'] === 'inprogress')
+            {
+                array_push($columns[1]['states'], $state_val);
+            }
+            else if ($state['category'] === 'completed')
+            {
+                array_push($columns[2]['states'], $state_val);
+            }
+        }
 
         // only support for kanban type, fix me
-        $board = Board::create([ 'project_key' => $project_key, 'query' => [ 'subtask' => true ] ] + $request->all());
+        $board = Board::create([ 
+            'project_key' => $project_key, 
+            'query' => [ 'subtask' => true ], 
+            'columns' => $columns ] + $request->all());
+
         return Response()->json(['ecode' => 0, 'data' => $board]);
     }
 
