@@ -8,6 +8,7 @@ use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Customization\Eloquent\State;
 use App\Project\Eloquent\Epic;
+use App\Project\Eloquent\Board;
 use App\Project\Provider;
 use DB;
 
@@ -24,7 +25,7 @@ class EpicController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index($project_key)
+    public function index(Request $request, $project_key)
     {
         $kanban_id = $request->input('kanban_id');
         $board = Board::find($kanban_id);

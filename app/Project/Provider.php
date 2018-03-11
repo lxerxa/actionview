@@ -907,7 +907,7 @@ class Provider {
             else if ($val['key'] == 'epic')
             {
                 $epics = self::getEpicList($project_key);
-                $val['optionValues'] = self::pluckFields($modules, ['_id', 'name', 'bgColor']);
+                $val['optionValues'] = self::pluckFields($epics, ['_id', 'name', 'bgColor']);
             }
             else if ($val['type'] == 'SingleVersion' || $val['type'] == 'MultiVersion')
             {

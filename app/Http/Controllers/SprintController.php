@@ -52,12 +52,14 @@ class SprintController extends Controller
         {
             throw new \UnexpectedValueException('the src sprint of moved issue cannot be empty', -11701);
         }
+        $src_sprint_no = intval($src_sprint_no);
 
         $dest_sprint_no = $request->input('dest_sprint_no');
         if (!isset($dest_sprint_no))
         {
             throw new \UnexpectedValueException('the dest sprint of moved issue cannot be empty', -11702);
         }
+        $dest_sprint_no = intval($dest_sprint_no);
 
         if ($src_sprint_no > 0)
         {
@@ -70,7 +72,7 @@ class SprintController extends Controller
             {
                 throw new \UnexpectedValueException('the moved issue cannot be moved into or moved out of the completed sprint', -11706);
             }
-            $src_sprint->fill([ 'issues' => array_diff($src_sprint->issues, [ $issue_no ]) ?: [] ])->save();
+            $src_sprint->fill([ 'issues' => array_values(array_diff($src_sprint->issues, [ $issue_no ]) ?: []) ])->save();
 
             if ($src_sprint->status == 'active')
             {
@@ -89,7 +91,7 @@ class SprintController extends Controller
             {
                 throw new \UnexpectedValueException('the moved issue cannot be moved into or moved out of the completed sprint', -11706);
             }
-            $dest_sprint->fill([ 'issues' => array_merge($dest_sprint->issues ?: [], [ $issue_no ]) ])->save();
+            $dest_sprint->fill([ 'issues' => array_values(array_merge($dest_sprint->issues ?: [], [ $issue_no ])) ])->save();
 
             if ($dest_sprint->status == 'active')
             {
@@ -222,9 +224,9 @@ class SprintController extends Controller
 
         $sprint->fill($updValues)->save();
 
-        if (!$incompleted_issues)
+        if ($incompleted_issues)
         {
-            $next_sprint = Sprint::where('projet_key', $project_key)->where('status', 'waiting')->orderBy('no', 'asc')->first();
+            $next_sprint = Sprint::where('project_key', $project_key)->where('status', 'waiting')->orderBy('no', 'asc')->first();
             if ($next_sprint)
             {
                 $issues = !isset($next_sprint->issues) || !$next_sprint->issues ? [] : $next_sprint->issues;

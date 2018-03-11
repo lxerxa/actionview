@@ -11,7 +11,7 @@ class Epic extends Model
 
     protected $fillable = array(
         'name',
-        'bgcolor',
+        'bgColor',
         'description',
         'project_key',
         'sn'

@@ -58,7 +58,7 @@ class IssueController extends Controller
         $sprint = $request->input('sprint');
         if (isset($sprint) && $sprint)
         {
-            $where['sprints'] = [ '$all' => explode(',', $sprint) ];
+            $where['sprints'] = intval($sprint);
         }
 
         $watched_issues = Watch::where('project_key', $project_key)
@@ -247,7 +247,7 @@ class IssueController extends Controller
         {
             $filter = $request->input('filter') ?: '';
             $board_types  = $request->input('type') ?: '';
-            $issues = $this->arrangeIssues($issues, $from, $from_kanban_id, $board_types, $filter === 'all' || $from == 'backlog');
+            $issues = $this->arrangeIssues($project_key, $issues, $from, $from_kanban_id, $board_types, $filter === 'all');
         }
 
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($issues), 'options' => [ 'total' => $total, 'sizePerPage' => $page_size ] ]);
@@ -1391,7 +1391,7 @@ class IssueController extends Controller
      *
      * @return array 
      */
-    public function arrangeIssues($issues, $from, $from_board_id, $board_types='', $isUpdRank=false)
+    public function arrangeIssues($project_key, $issues, $from, $from_board_id, $board_types='', $isUpdRank=false)
     {
         $board_issues = [];
         foreach ($issues as $key => $issue)
@@ -1527,7 +1527,7 @@ class IssueController extends Controller
         {
             $active_sprint_issues = [];
             $active_sprint_issue_nos = [];
-            $active_sprint = Sprint::where('status', 'active')->first();
+            $active_sprint = Sprint::where('project_key', $project_key)->where('status', 'active')->first();
             if ($active_sprint && isset($active_sprint['issues']) && $active_sprint['issues'])
             {
                 $active_sprint_issue_nos = $active_sprint['issues'];

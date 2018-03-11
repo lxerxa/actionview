@@ -15,8 +15,6 @@ use App\Project\Eloquent\Sprint;
 use App\Project\Eloquent\Epic;
 use App\Project\Provider;
 
-use MongoDB\BSON\ObjectID;
-
 class BoardController extends Controller
 {
     /**
@@ -69,7 +67,7 @@ class BoardController extends Controller
 
         $epics = Epic::where('project_key', $project_key)
             ->orderBy('sn', 'asc')
-            ->get(['bgcolor', 'name']);
+            ->get(['bgColor', 'name']);
 
         return Response()->json([ 'ecode' => 0, 'data' => $list, 'options' => [ 'epics' => $epics, 'sprints' => $sprints ] ]);
 
@@ -116,14 +114,14 @@ $example = [
         }
 
         $columns = [ 
-            [ 'no' => 1, 'name' => 'Start', 'states' => [] ], 
-            [ 'no' => 2, 'name' => 'In Progress', 'states' => [] ],
-            [ 'no' => 2, 'name' => 'Complete', 'states' => [] ],
+            [ 'no' => 1, 'name' => '开始', 'states' => [] ], 
+            [ 'no' => 2, 'name' => '处理中', 'states' => [] ],
+            [ 'no' => 3, 'name' => '完成', 'states' => [] ],
         ];
-        $states = Provider::getStateList($project_key);
+        $states = Provider::getStateOptions($project_key);
         foreach ($states as $state)
         {
-            $state_val = $state['id'] instanceof ObjectID ? $state['id']->__toString() : $state['id'];
+            $state_val = $state['_id'];
             if ($state['category'] === 'new')
             {
                 array_push($columns[0]['states'], $state_val);
