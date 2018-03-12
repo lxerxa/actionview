@@ -39,8 +39,8 @@ class StateController extends Controller
             }
 
             $states[$key]['workflows'] = array_filter($workflows, function($item) use($project_key) { 
-                                             return $item['project_key'] === $project_key || $item['project_key'] === '$_sys_$';
-                                         });
+                return $item['project_key'] === $project_key || $item['project_key'] === '$_sys_$';
+            });
         }
         return Response()->json(['ecode' => 0, 'data' => $states]);
     }
@@ -203,8 +203,7 @@ class StateController extends Controller
              StateProperty::create([ 'project_key' => $project_key ] + $properties);
         }
 
-        $states = Provider::getStateList($project_key);
-        return Response()->json(['ecode' => 0, 'data' => $states]);
+        return Response()->json(['ecode' => 0, 'data' => [ 'sequence' => $sequence ]]);
     }
 
     /**
@@ -232,7 +231,6 @@ class StateController extends Controller
             }
         }
 
-        $states = State::where([ 'project_key' => $project_key ])->orderBy('sn', 'asc')->get();
-        return Response()->json(['ecode' => 0, 'data' => $states]);
+        return Response()->json(['ecode' => 0, 'data' => [ 'sequence' => $sequence ]]);
     }
 }

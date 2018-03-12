@@ -207,8 +207,7 @@ class PriorityController extends Controller
              PriorityProperty::create([ 'project_key' => $project_key ] + $properties);
         }
 
-        $priorities = Provider::getPriorityList($project_key);
-        return Response()->json(['ecode' => 0, 'data' => $priorities]);
+        return Response()->json(['ecode' => 0, 'data' => [ 'sequence' => $sequence ?: null, 'default' => $defaultValue ?: null ]]);
     }
 
     /**
@@ -261,7 +260,6 @@ class PriorityController extends Controller
             }
         }
 
-        $priorities = Priority::where([ 'project_key' => $project_key ])->orderBy('sn', 'asc')->get();
-        return Response()->json(['ecode' => 0, 'data' => $priorities]);
+        return Response()->json(['ecode' => 0, 'data' => [ 'sequence' => $sequence ?: null, 'default' => $default_priority_id ?: null ]]);
     }
 }

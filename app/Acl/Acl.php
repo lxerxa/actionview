@@ -42,7 +42,20 @@ class Acl {
     public static function getUserIdsByPermission($permission, $project_key)
     {
         $role_ids = [];
-        $rps = RolePermissions::whereRaw([ 'permissions' => $permission, 'project_key' => [ '$in' => [ $project_key, '$_sys_$' ] ] ])->get();
+        $rps = RolePermissions::whereRaw([ 'permissions' => $permission, 'project_key' => $project_key ])->get();
+        foreach ($rps as $rp)
+        {
+            $role_ids[] = $rp->role_id;
+        }
+
+        $local_role_ids = [];
+        $local_rps = RolePermissions::whereRaw([ 'project_key' => $project_key ])->get();
+        foreach ($local_rps as $rp)
+        {
+            $local_role_ids[] = $rp->role_id;
+        }
+
+        $rps = RolePermissions::whereRaw([ 'permissions' => $permission, 'project_key' => '$_sys_$', 'role_id' => [ '$nin' => $local_role_ids ] ])->get();
         foreach ($rps as $rp)
         {
             $role_ids[] = $rp->role_id;
@@ -122,7 +135,9 @@ class Acl {
     public static function getPermissions($user_id, $project_key)
     {
         $role_ids = [];
-        $role_actors = Roleactor::whereRaw([ 'user_ids' => $user_id, 'project_key' => $project_key ])->get([ 'role_id' ])->toArray();
+        $role_actors = Roleactor::whereRaw([ 'user_ids' => $user_id, 'project_key' => $project_key ])
+          ->get([ 'role_id' ])
+          ->toArray();
         foreach($role_actors as $actor)
         {
             $role_ids[] =  $actor['role_id'];
@@ -131,7 +146,9 @@ class Acl {
         $groups = self::getBoundGroups($user_id);
         foreach ($groups as $group) 
         {
-            $role_actors = Roleactor::whereRaw([ 'group_ids' => $group['id'], 'project_key' => $project_key ])->get([ 'role_id' ])->toArray();
+            $role_actors = Roleactor::whereRaw([ 'group_ids' => $group['id'], 'project_key' => $project_key ])
+              ->get([ 'role_id' ])
+              ->toArray();
             foreach($role_actors as $actor)
             {
                 $role_ids[] =  $actor['role_id'];
@@ -139,10 +156,24 @@ class Acl {
         }
 
         $all_permissions = [];
-        $rps = RolePermissions::whereIn('role_id', $role_ids)->get()->toArray();
-        foreach ($rps as $rp)
+
+        foreach ($role_ids as $role_id)
         {
-            $all_permissions = array_merge($all_permissions, $rp['permissions'] ?: []);
+            $rp = RolePermissions::where('project_key', $project_key)
+                ->where('role_id', $role_id)
+                ->first();
+
+            if (!$rp)
+            {
+                $rp = RolePermissions::where('project_key', '$_sys_$')
+                    ->where('role_id', $role_id)
+                    ->first();
+            }
+
+            if ($rp)
+            {
+                $all_permissions = array_merge($all_permissions, $rp->permissions ?: []);
+            }
         }
         return array_values(array_unique($all_permissions));
     }

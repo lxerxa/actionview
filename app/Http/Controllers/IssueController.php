@@ -1424,8 +1424,12 @@ class IssueController extends Controller
             
             BoardRankMap::create([ 'board_id' => $from_board_id, 'rank' => $rank ]);
 
-            $this->addAvatar($issues);
+            if ($from === 'scrum')
+            {
+                $issues = $this->sprintFilter($project_key, $issues);
+            }
 
+            $this->addAvatar($issues);
             return $issues;
         }
  
@@ -1525,29 +1529,31 @@ class IssueController extends Controller
 
         if ($from === 'scrum')
         {
-            $active_sprint_issues = [];
-            $active_sprint_issue_nos = [];
-            $active_sprint = Sprint::where('project_key', $project_key)->where('status', 'active')->first();
-            if ($active_sprint && isset($active_sprint['issues']) && $active_sprint['issues'])
-            {
-                $active_sprint_issue_nos = $active_sprint['issues'];
-            }
-
-            foreach($issues as $issue)
-            {
-                if (in_array($issue['no'], $active_sprint_issue_nos))
-                {
-                    $active_sprint_issues[] = $issue;
-                }
-            }
-
-            $this->addAvatar($active_sprint_issues);
-            return $active_sprint_issues;
+            $issues = $this->sprintFilter($project_key, $issues);
         }
-        else 
+
+        $this->addAvatar($issues);
+        return $issues;
+    }
+
+    public function sprintFilter($project_key, $issues)
+    {
+        $active_sprint_issues = [];
+        $active_sprint_issue_nos = [];
+        $active_sprint = Sprint::where('project_key', $project_key)->where('status', 'active')->first();
+        if ($active_sprint && isset($active_sprint->issues) && $active_sprint->issues)
         {
-            $this->addAvatar($issues);
-            return $issues;
+            $active_sprint_issue_nos = $active_sprint->issues;
         }
+
+        foreach($issues as $issue)
+        {
+            if (in_array($issue['no'], $active_sprint_issue_nos))
+            {
+                $active_sprint_issues[] = $issue;
+           }
+        }
+
+        return $active_sprint_issues;
     }
 }

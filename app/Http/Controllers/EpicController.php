@@ -46,6 +46,7 @@ class EpicController extends Controller
             $epic->is_used = $this->isFieldUsedByIssue($project_key, 'epic', $epic->toArray());
 
             $completed_issue_cnt = $incompleted_issue_cnt = $inestimable_issue_cnt = 0;
+
             $issues = DB::collection('issue_' . $project_key)
                 ->where('epic', $epic->id)
                 ->where('del_flg', '<>', 1)
@@ -84,18 +85,18 @@ class EpicController extends Controller
         $name = $request->input('name');
         if (!$name || trim($name) == '')
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -12000);
+            throw new \UnexpectedValueException('the name can not be empty.', -11800);
         }
 
         $bgColor = $request->input('bgColor');
         if (!$bgColor)
         {
-            throw new \UnexpectedValueException('the bgColor can not be empty.', -12000);
+            throw new \UnexpectedValueException('the bgColor can not be empty.', -11801);
         }
 
         if (Provider::isEpicExisted($project_key, $name))
         {
-            throw new \UnexpectedValueException('epic name cannot be repeated', -12001);
+            throw new \UnexpectedValueException('epic name cannot be repeated', -11802);
         }
 
         $epic = Epic::create([ 'project_key' => $project_key, 'sn' => time() ] + $request->all());
@@ -128,7 +129,7 @@ class EpicController extends Controller
         {
             if (!$name || trim($name) == '')
             {
-                throw new \UnexpectedValueException('the name can not be empty.', -12000);
+                throw new \UnexpectedValueException('the name can not be empty.', -11800);
             }
         }
 
@@ -137,27 +138,24 @@ class EpicController extends Controller
         {
             if (!$bgColor)
             {
-                throw new \UnexpectedValueException('the bgColor can not be empty.', -12001);
+                throw new \UnexpectedValueException('the bgColor can not be empty.', -11801);
             }
         }
 
         $epic = Epic::find($id);
         if (!$epic || $project_key != $epic->project_key)
         {
-            throw new \UnexpectedValueException('the epic does not exist or is not in the project.', -12006);
+            throw new \UnexpectedValueException('the epic does not exist or is not in the project.', -11803);
         }
 
         if ($epic->name !== $name && Provider::isEpicExisted($project_key, $name))
         {
-            throw new \UnexpectedValueException('epic name cannot be repeated', -12001);
+            throw new \UnexpectedValueException('epic name cannot be repeated', -11802);
         }
 
         $epic->fill($request->except(['project_key']))->save();
 
-        $new_epic = Epic::find($id);
-        $new_epic->is_used = $this->isFieldUsedByIssue($project_key, 'epic', $new_epic->toArray());
-
-        return Response()->json(['ecode' => 0, 'data' => $new_epic]);
+        return Response()->json(['ecode' => 0, 'data' => Epic::find($id)]);
     }
 
     /**
@@ -171,17 +169,17 @@ class EpicController extends Controller
         $epic = Epic::find($id);
         if (!$epic || $project_key != $epic->project_key)
         {
-            throw new \UnexpectedValueException('the epic does not exist or is not in the project.', -12006);
+            throw new \UnexpectedValueException('the epic does not exist or is not in the project.', -11803);
         }
 
         $isUsed = $this->isFieldUsedByIssue($project_key, 'epic', $epic->toArray()); 
         if ($isUsed)
         {
-            throw new \UnexpectedValueException('the epic has been used in issue.', -12007);
+            throw new \UnexpectedValueException('the epic has been used in issue.', -11804);
         }
 
         Epic::destroy($id);
-        return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
+        return Response()->json(['ecode' => 0, 'data' => [ 'id' => $id ]]);
     }
 
     /**
@@ -209,6 +207,6 @@ class EpicController extends Controller
             }
         }
 
-        return Response()->json(['ecode' => 0, 'data' => $sequence_epics]);
+        return Response()->json(['ecode' => 0, 'data' => [ 'sequence' => $sequence_epics ]]);
     }
 }

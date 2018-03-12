@@ -207,8 +207,7 @@ class ResolutionController extends Controller
              ResolutionProperty::create([ 'project_key' => $project_key ] + $properties);
         }
 
-        $resolutions = Provider::getResolutionList($project_key);
-        return Response()->json(['ecode' => 0, 'data' => $resolutions]);
+        return Response()->json(['ecode' => 0, 'data' => [ 'sequence' => $sequence ?: null, 'default' => $defaultValue ?: null ]]);
     }
 
     /**
@@ -261,7 +260,6 @@ class ResolutionController extends Controller
             }
         }
 
-        $resolutions = Resolution::where([ 'project_key' => $project_key ])->orderBy('sn', 'asc')->get();
-        return Response()->json(['ecode' => 0, 'data' => $resolutions]);
+        return Response()->json(['ecode' => 0, 'data' => [ 'sequence' => $sequence ?: null, 'default' => $default_resolution_id ?: null ]]);
     }
 }

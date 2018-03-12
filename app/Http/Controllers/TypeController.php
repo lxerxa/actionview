@@ -262,11 +262,6 @@ class TypeController extends Controller
             }
         }
 
-        $types = Type::where([ 'project_key' => $project_key ])->orderBy('sn', 'asc')->get();
-        foreach ($types as $type) {
-            $type->is_used = $this->isFieldUsedByIssue($project_key, 'type', $type->toArray());
-        }
-
-        return Response()->json(['ecode' => 0, 'data' => $types]);
+        return Response()->json(['ecode' => 0, 'data' => [ 'sequence' => $sequence_types ?: null, 'default' => $default_type_id ?: null ]]);
     }
 }

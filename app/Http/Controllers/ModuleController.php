@@ -191,6 +191,6 @@ class ModuleController extends Controller
             }
         }
 
-        return Response()->json(['ecode' => 0, 'data' => $sequence_modules ]);
+        return Response()->json(['ecode' => 0, 'data' => [ 'sequence' => $sequence_modules ] ]);
     }
 }
