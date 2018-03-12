@@ -1,0 +1,25 @@
+
+merge front-code:
+
+actionview-fe:
+cd /var/www/actionview/front-code
+npm run build
+sh deploy.sh
+
+actionview:
+cd /var/www/actionview/public/scripts
+git add ./
+cd /var/www/actionview/public/assets 
+git add ./
+git commit -m 'merge front code'
+
+
+dbdata update:
+
+mongodump -h localhost -u actionview -p -d actionviewdb
+cd dump/actonviewdb
+cp xxxx yyyy /var/www/actionview/dbdata 
+cd /var/www/actionview/dbdata
+cp * /var/www/actionview/docker/db/dbdata 
+git add ./
+git commit -m 'dbdata update'
