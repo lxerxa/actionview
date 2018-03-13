@@ -586,7 +586,7 @@ class IssueController extends Controller
         // get project epics
         $epics = Provider::getEpicList($project_key);
         // get project types
-        $types = Provider::getTypeListExt($project_key, [ 'assignee' => $users, 'state' => $states, 'resolution' => $resolutions, 'priority' => $priorities, 'version' => $versions, 'module' => $modules, 'epic' => $epics ]);
+        $types = Provider::getTypeListExt($project_key, [ 'assignee' => $assignees, 'state' => $states, 'resolution' => $resolutions, 'priority' => $priorities, 'version' => $versions, 'module' => $modules, 'epic' => $epics ]);
         // get project sprints
         $sprint_nos = [];
         $sprints = Provider::getSprintList($project_key);
