@@ -20,34 +20,6 @@ class ActivityController extends Controller
      */
     public function index(Request $request, $project_key)
     {
-        $time_points = [ 'just' => time(), 
-                         '15m' => strtotime('-15 minute'), 
-                         '30m' => strtotime('-30 minute'), 
-                         '1h' => strtotime('-1 hour'), 
-                         '3h' => strtotime('-3 hour') , 
-                         '5h' => strtotime('-5 hour'), 
-                         '7h' => strtotime('-7 hour'), 
-                         '9h' => strtotime('-9 hour'), 
-                         '1d' => strtotime('-1 day'), 
-                         '2d' => strtotime('-2 day'), 
-                         '3d' => strtotime('-3 day'), 
-                         '4d' => strtotime('-4 day'), 
-                         '5d' => strtotime('-5 day'), 
-                         '6d' => strtotime('-6 day'), 
-                         '1w' => strtotime('-1 week'), 
-                         '2w' => strtotime('-2 week'), 
-                         '3w' => strtotime('-3 week'), 
-                         '4w' => strtotime('-4 week'), 
-                         '1m' => strtotime('-1 month'), 
-                         '3m' => strtotime('-3 month'), 
-                         '5m' => strtotime('-5 month'), 
-                         '7m' => strtotime('-7 month'), 
-                         '9m' => strtotime('-9 month'), 
-                         '11m' => strtotime('-11 month'), 
-                         '1y' => strtotime('-1 year'), 
-                         '2y' => strtotime('-2 year'), 
-                       ];
-
         $cache_issues = [];
 
         $query = DB::collection('activity_' . $project_key);
@@ -137,20 +109,7 @@ class ActivityController extends Controller
                     'del_flg' => isset($issue['del_flg']) ? $issue['del_flg'] : 0 ];
                 $cache_issues[$activity['issue_id']] = $issue;
             }
-
-            $pre_timepoint_key = 'just';
-            foreach ($time_points as $tkey => $time_point)
-            {
-                if ($activity['created_at'] > $time_point) 
-                {
-                    break;
-                }
-                $pre_timepoint_key = $tkey;
-            }
-
-            $activities[$key]['ago_key'] = $pre_timepoint_key;
-
         }
-        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($activities) ]);
+        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($activities), 'options' => [ 'current_time' => time() ] ]);
     }
 }
