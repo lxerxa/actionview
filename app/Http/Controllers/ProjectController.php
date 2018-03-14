@@ -86,7 +86,7 @@ class ProjectController extends Controller
             ->get(['project_key'])
             ->toArray();
 
-        $pkeys = array_column($user_projects, 'project_key');
+        $pkeys = array_unique(array_column($user_projects, 'project_key'));
 
         $offset_key = $request->input('offset_key');
         if (isset($offset_key))
