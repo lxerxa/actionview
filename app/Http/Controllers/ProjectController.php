@@ -57,7 +57,7 @@ class ProjectController extends Controller
         $new_accessed_pkeys = array_intersect($accessed_pkeys, $pkeys);
 
         $projects = [];
-        foreach ($pkeys as $pkey)
+        foreach ($new_accessed_pkeys as $pkey)
         {
             $project = Project::where('key', $pkey)->first();
             if ($project->status === 'closed') {
