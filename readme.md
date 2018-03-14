@@ -34,12 +34,13 @@ http://www.actionview.cn
 * 支持用户在问题上添加工作日志。
 * 支持用户针对问题发表评论。
 * 使用当前较流行的前后端技术框架，后端：php/laravel, 前端：ReactJS+Redux。
+* 支持Docker安装。
 * 清晰的代码结构，方便进行二次开发。
 
 # RoadMap
 
 * 开发移动APP（React Native）。
-* 开发报告模块。
+* 开发BI模块。
 * 支持多语言。
 
 
