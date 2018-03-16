@@ -70,7 +70,8 @@ Development document will be released on ActionView website, not ready yet due t
 
 # Contributing
 
-谢谢您能参与ActionView的开发当中。如果您对系统有什么疑惑，或发现了一些问题，或建议增加新的feature，或提出改进时，欢迎在[issue board](https://github.com/lxerxa/actionview/issues)中讨论，如果是前端相关的可以在[front-end issue board](https://github.com/lxerxa/actionview/issues)中讨论。如果发现有重大安全问题可发Email至：actionview@126.com。
+谢谢您能参与ActionView的开发当中。如果您对系统有什么疑惑，或发现了一些问题，或建议增加新的feature，或提出改进时，欢迎在[issue board](https://github.com/lxerxa/actionview/issues)中讨论，如果是前端相关的可以在[front-end issue board](https://github.com/lxerxa/actionview/issues)中讨论。如果发现有重大安全问题可发Email至：actionview@126.com。  
+Thank you for considering contributing to the ActionView! If you have some doubts, find some issues, propose a new feature, or improvements of existing behavior, be willing to discuss in the [issue board](https://github.com/lxerxa/actionview/issues). The front-end issues may be discussed in the [front-end issue board](https://github.com/lxerxa/actionview/issues). If find some major security problems, please mail to: actionview@126.com.
 
 # License
 
