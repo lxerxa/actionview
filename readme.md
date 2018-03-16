@@ -55,14 +55,18 @@ Clear code structure, easy for second development.
 
 # RoadMap
 
-* 开发移动APP（React Native）。
-* 开发BI模块。
-* 支持多语言。
+* 开发移动APP（React Native）。  
+Mobile App development (React Native)
+* 开发BI模块。  
+BI module development
+* 支持多语言。  
+Support multi-language
 
 
 # Official Documentation
 
-该系统工具的参考文档将发布于 [ActionView站点](http://actionview.cn/docs)。由于时间原因，暂未整理完成。
+该系统工具的参考文档将发布于 [ActionView站点](http://actionview.cn/docs)。由于时间原因，暂未整理完成。  
+Development document will be released on ActionView website, not ready yet due to tight time schedule
 
 # Contributing
 
