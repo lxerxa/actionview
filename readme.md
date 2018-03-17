@@ -14,15 +14,11 @@ http://www.actionview.cn
 
 ![image](http://actionview.cn/summary.png)
 
-![image](http://actionview.cn/list.png)
-
 ![image](http://actionview.cn/workflow.png)
 
-![image](http://actionview.cn/kanban.png)
+![image](http://actionview.cn/backlog.png)
 
 ![image](http://actionview.cn/kanban-drag.png)
-
-![image](http://actionview.cn/backlog.png)
 
 ![image](http://actionview.cn/activity.png)
 
