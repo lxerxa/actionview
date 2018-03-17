@@ -18,6 +18,8 @@ http://www.actionview.cn
 
 ![image](http://actionview.cn/kanban-drag.png)
 
+![image](http://actionview.cn/backlog.png)
+
 ![image](http://actionview.cn/type.png)
 
 # Installation
