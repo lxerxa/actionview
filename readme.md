@@ -14,6 +14,8 @@ http://www.actionview.cn
 
 ![image](http://actionview.cn/summary.png)
 
+![image](http://actionview.cn/issue-list.png)
+
 ![image](http://actionview.cn/workflow.png)
 
 ![image](http://actionview.cn/kanban-list.png)
