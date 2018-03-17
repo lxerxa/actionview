@@ -12,11 +12,19 @@ We are using Jira to do the task management and bug tracking, but found that the
 
 http://www.actionview.cn  
 
-![image](https://github.com/lxerxa/actionview/raw/master/public/issue.png)
+![image](http://actionview.cn/summary.png)
 
-![image](https://github.com/lxerxa/actionview/raw/master/public/board.png)
+![image](http://actionview.cn/list.png)
 
-![image](https://github.com/lxerxa/actionview/raw/master/public/workflow.png)
+![image](http://actionview.cn/kanban.png)
+
+![image](http://actionview.cn/kanban-drag.png)
+
+![image](http://actionview.cn/backlog.png)
+
+![image](http://actionview.cn/activity.png)
+
+![image](http://actionview.cn/type.png)
 
 # Installation(Ubuntu)
 
