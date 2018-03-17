@@ -40,9 +40,9 @@ Every project could use the default system workflow, and could define its own wo
 * 支持敏捷开发的看板视图(Kanban和Scrum)。  
 Support Board view in agile development(Scrum and Kanban).
 * 简单易用的问题界面配置。  
-Configure question page simply and easily.
-* 强大的数据筛选功能，可定义自己的过滤器。  
-Powerful data filtering function, could define your own filter.
+Configure issue page simply and easily.
+* 强大的问题筛选功能，可定义自己的过滤器。  
+Powerful issue filtering function, could define your own filter.
 * 完备的权限控制模型，支持给用户组授权。  
 Complete access control model, support authorizing user group.
 * 灵活可定制的消息通知方案。  
