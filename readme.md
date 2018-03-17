@@ -16,15 +16,11 @@ http://www.actionview.cn
 
 ![image](http://actionview.cn/workflow.png)
 
-![image](http://actionview.cn/backlog.png)
-
 ![image](http://actionview.cn/kanban-drag.png)
-
-![image](http://actionview.cn/activity.png)
 
 ![image](http://actionview.cn/type.png)
 
-# Installation(Ubuntu)
+# Installation
 
 [Ubuntu Installation](https://github.com/lxerxa/actionview/wiki/Ubuntu-Installation)  
 [Docker Installation](https://github.com/lxerxa/actionview/wiki/Docker-Installation)  
