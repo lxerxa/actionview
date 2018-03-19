@@ -527,7 +527,7 @@ class IssueController extends Controller
             array_push($issue['links'], $link);
         }
 
-        $issue['watchers'] = array_column(Watch::where('issue_id', $id)->get()->toArray(), 'user');
+        $issue['watchers'] = array_column(Watch::where('issue_id', $id)->orderBy('_id', 'desc')->get()->toArray(), 'user');
         
         if (Watch::where('issue_id', $id)->where('user.id', $this->user->id)->exists())
         {
