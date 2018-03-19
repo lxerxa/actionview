@@ -926,7 +926,7 @@ class IssueController extends Controller
 
                 foreach ($after_data as $key => $val)
                 {
-                    if (!isset($before_data[$key]) || $val != $before_data[$key])
+                    if (!isset($before_data[$key]) || $val !== $before_data[$key])
                     {
                         $tmp = [];
                         $tmp['field'] = isset($val['name']) ? $val['name'] : '';
@@ -963,7 +963,7 @@ class IssueController extends Controller
                         continue;
                     }
 
-                    if (!isset($after_data[$key]) || $val != $after_data[$key])
+                    if (!isset($after_data[$key]) || $val !== $after_data[$key])
                     {
                         $tmp = [];
                         $tmp['field'] = isset($val['name']) ? $val['name'] : '';
