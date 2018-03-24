@@ -72,7 +72,7 @@ http://www.actionview.cn
 # Official Documentation
 
 Development document will be released on ActionView website, not ready yet due to tight time schedule  
-该系统工具的参考文档将发布于 [ActionView站点](http://actionview.cn/docs)。由于时间原因，暂未整理完成。  
+该系统工具的参考文档将发布于 ActionView 站点。由于时间原因，暂未整理完成。  
 
 # Contributing
 
