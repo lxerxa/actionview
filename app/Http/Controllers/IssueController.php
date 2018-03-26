@@ -330,16 +330,39 @@ class IssueController extends Controller
         $insValues = [];
         foreach ($schema as $field)
         {
+            $fieldValue = $request->input($field['key']);
+            if (!isset($fieldValue) || !$fieldValue)
+            {
+                continue;
+            }
+
             if ($field['type'] == 'TimeTracking')
             {
-                $fieldValue = $request->input($field['key']);
-                if (isset($fieldValue) && $fieldValue)
+                if (!$this->ttCheck($fieldValue))
                 {
-                    if (!$this->ttCheck($fieldValue))
+                    throw new \UnexpectedValueException('the format of timetracking is incorrect.', -11102);
+                }
+                $insValues[$field['key']] = $this->ttHandle($fieldValue);
+            }
+            else if ($field['type'] == 'SingleUser')
+            {
+                $user_info = Sentinel::findById($fieldValue);
+                if ($user_info)
+                {
+                    $insValues[$field['key']] = [ 'id' => $fieldValue, 'name' => $user_info->first_name, 'email' => $user_info->email ];
+                }
+            }
+            else if ($field['type'] == 'MultiUser')
+            {
+                $user_ids = explode(',', $fieldValue);
+                $insValues[$field['key']] = [];
+                foreach ($user_ids as $uid)
+                {
+                    $user_info = Sentinel::findById($uid);
+                    if ($user_info)
                     {
-                        throw new \UnexpectedValueException('the format of timetracking is incorrect.', -11102);
+                        array_push($insValues[$field['key']], [ 'id' => $uid, 'name' => $user_info->first_name, 'email' => $user_info->email ]);
                     }
-                    $insValues[$field['key']] = $this->ttHandle($fieldValue);
                 }
             }
         }
@@ -586,7 +609,7 @@ class IssueController extends Controller
         // get project epics
         $epics = Provider::getEpicList($project_key);
         // get project types
-        $types = Provider::getTypeListExt($project_key, [ 'assignee' => $assignees, 'state' => $states, 'resolution' => $resolutions, 'priority' => $priorities, 'version' => $versions, 'module' => $modules, 'epic' => $epics ]);
+        $types = Provider::getTypeListExt($project_key, [ 'user' => $users, 'assignee' => $assignees, 'state' => $states, 'resolution' => $resolutions, 'priority' => $priorities, 'version' => $versions, 'module' => $modules, 'epic' => $epics ]);
         // get project sprints
         $sprint_nos = [];
         $sprints = Provider::getSprintList($project_key);
@@ -727,16 +750,39 @@ class IssueController extends Controller
         $updValues = [];
         foreach ($schema as $field)
         {
+            $fieldValue = $request->input($field['key']);
+            if (!isset($fieldValue) || !$fieldValue)
+            {
+                continue;
+            }
+
             if ($field['type'] == 'TimeTracking')
             {
-                $fieldValue = $request->input($field['key']);
-                if (isset($fieldValue) && $fieldValue)
+                if (!$this->ttCheck($fieldValue))
                 {
-                    if (!$this->ttCheck($fieldValue))
+                    throw new \UnexpectedValueException('the format of timetracking is incorrect.', -11102);
+                }
+                $updValues[$field['key']] = $this->ttHandle($fieldValue);
+            }
+            else if ($field['type'] == 'SingleUser')
+            {
+                $user_info = Sentinel::findById($fieldValue);
+                if ($user_info)
+                {
+                    $updValues[$field['key']] = [ 'id' => $fieldValue, 'name' => $user_info->first_name, 'email' => $user_info->email ];
+                }
+            }
+            else if ($field['type'] == 'MultiUser')
+            {
+                $user_ids = explode(',', $fieldValue);
+                $updValues[$field['key']] = [];
+                foreach ($user_ids as $uid)
+                {
+                    $user_info = Sentinel::findById($uid);
+                    if ($user_info)
                     {
-                        throw new \UnexpectedValueException('the format of timetracking is incorrect.', -11102);
+                        array_push($updValues[$field['key']], [ 'id' => $uid, 'name' => $user_info->first_name, 'email' => $user_info->email ]);
                     }
-                    $updValues[$field['key']] = $this->ttHandle($fieldValue);
                 }
             }
         }

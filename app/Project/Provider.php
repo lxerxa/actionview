@@ -704,6 +704,15 @@ class Provider {
                 }
                 $val['optionValues'] = self::pluckFields($options['version'], ['_id', 'name']);
             }
+            else if ($val['type'] == 'SingleUser' || $val['type'] == 'MultiUser')
+            {
+                $val['optionValues'] = self::pluckFields($options['user'], ['id', 'name', 'email']);
+                foreach ($val['optionValues'] as $k => $v)
+                {
+                    $val['optionValues'][$k]['name'] = $v['name'] . '(' . $v['email'] . ')';
+                    unset($val['optionValues'][$k]['email']);
+                }
+            }
             else if ($val['key'] == 'assignee')
             {
                 $val['optionValues'] = self::pluckFields($options['assignee'], ['id', 'name', 'email']);
@@ -853,6 +862,7 @@ class Provider {
     {
         $new_schema = [];
         $versions = null;
+        $users = null;
         foreach ($screen->schema ?: [] as $key => $val)
         {
             if (isset($val['applyToTypes']))
@@ -913,6 +923,15 @@ class Provider {
             {
                 $versions === null && $versions = self::getVersionList($project_key);
                 $val['optionValues'] = self::pluckFields($versions, ['_id', 'name']);
+            }
+            else if ($val['type'] == 'SingleUser' || $val['type'] == 'MultiUser')
+            {
+                $users === null && $users = self::getUserList($project_key);
+                foreach ($users as $key => $user)
+                {
+                    $users[$key]['name'] = $user['name'] . '(' . $user['email'] . ')';
+                }
+                $val['optionValues'] = self::pluckFields($users, ['id', 'name']);
             }
 
             if (isset($val['_id']))
@@ -980,7 +999,26 @@ class Provider {
                 $val = [];
                 $val['name'] = $field['name'];
                 
-                if (isset($field['optionValues']) && $field['optionValues'])
+                if ($field['type'] === 'SingleUser' || $field['type'] === 'MultiUser')
+                {
+                    if ($field['type'] === 'SingleUser')
+                    {
+                        $val['value'] = $issue[$field['key']] ? $issue[$field['key']]['name'] : $issue[$field['key']];
+                    }
+                    else
+                    {
+                        $tmp_users = [];
+                        if ($issue[$field['key']])
+                        {
+                            foreach ($issue[$field['key']] as $tmp_user)
+                            {
+                                $tmp_users[] = $tmp_user['name'];
+                            }
+                        }
+                        $val['value'] = implode(',', $tmp_users);
+                    }
+                }
+                else if (isset($field['optionValues']) && $field['optionValues'])
                 {
                     $opv = [];
                     

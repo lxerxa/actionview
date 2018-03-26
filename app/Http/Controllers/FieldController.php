@@ -74,7 +74,7 @@ class FieldController extends Controller
             throw new \UnexpectedValueException('the type cannot be empty.', -12204);
         }
 
-        $allTypes = [ 'Tags', 'Number', 'Text', 'TextArea', 'Select', 'MultiSelect', 'RadioGroup', 'CheckboxGroup', 'DatePicker', 'DateTimePicker', 'TimeTracking', 'File', 'SingleVersion', 'MultiVersion', 'Url' ];
+        $allTypes = [ 'Tags', 'Number', 'Text', 'TextArea', 'Select', 'MultiSelect', 'RadioGroup', 'CheckboxGroup', 'DatePicker', 'DateTimePicker', 'TimeTracking', 'File', 'SingleVersion', 'MultiVersion', 'SingleUser', 'MultiUser', 'Url' ];
         if (!in_array($type, $allTypes))
         {
             throw new \UnexpectedValueException('the type is incorrect type.', -12205);
