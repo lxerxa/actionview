@@ -181,6 +181,22 @@ class SendEmails extends Command
                         $role_users = $this->getUsersByRoleId($project_key, $notification['value']);
                         $uids = array_merge($uids, $role_users);
                     }
+                    else if ($notification['key'] === 'single_user_field' && isset($notification['value']))
+                    {
+                        $key = $notification['value']['id'];
+                        $uids[] = $issue[$key]['id'];
+                    }
+                    else if ($notification['key'] === 'multi_user_field' && isset($notification['value']))
+                    {
+                        $key = $notification['value']['id'];
+                        if ($issue[$key])
+                        {
+                            foreach ($issue[$key] as $v)
+                            {
+                                $uids[] = $v['id'];
+                            }
+                        }
+                    }
                 }
             }
 

@@ -27,7 +27,23 @@ class EventsController extends Controller
 
 	$roles = Provider::getRoleList($project_key, ['name']);
         $users = Provider::getUserList($project_key);
-        return Response()->json(['ecode' => 0, 'data' => $events, 'options' => [ 'roles' => $roles, 'users' => $users ]]);
+
+        $single_user_fields = [];
+        $multi_user_fields = [];
+        $fields = Provider::getFieldList($project_key);
+        foreach ($fields as $field)
+        {
+            if ($field->type === 'SingleUser')
+            {
+                $single_user_fields[] = [ 'id' => $field->key, 'name' => $field->name ];
+            } 
+            else if ($field->type === 'MultiUser')
+            {
+                $multi_user_fields[] = [ 'id' => $field->key, 'name' => $field->name ];
+            } 
+        }
+
+        return Response()->json(['ecode' => 0, 'data' => $events, 'options' => [ 'roles' => $roles, 'users' => $users, 'single_user_fields' => $single_user_fields, 'multi_user_fields' => $multi_user_fields ]]);
     }
 
     /**
