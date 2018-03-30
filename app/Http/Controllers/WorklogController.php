@@ -221,10 +221,11 @@ class WorklogController extends Controller
         $worklog->fill([ 'edited_flag' => 1 ] + array_except($values, [ 'recorder', 'recorded_at' ]))->save();
 
         // trigger event of worklog edited 
+        $worklog = Worklog::find($id);
         $cur_user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
-        Event::fire(new IssueEvent($project_key, $issue_id, $cur_user, [ 'event_key' => 'edit_worklog', 'data' => $values ]));
+        Event::fire(new IssueEvent($project_key, $issue_id, $cur_user, [ 'event_key' => 'edit_worklog', 'data' => $worklog->toArray() ]));
 
-        return Response()->json(['ecode' => 0, 'data' => Worklog::find($id)]);
+        return Response()->json(['ecode' => 0, 'data' => $worklog]);
     }
 
     /**
