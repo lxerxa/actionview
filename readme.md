@@ -39,7 +39,7 @@ http://www.actionview.cn
 各项目不仅可引用系统默认工作流，同时可自定义自己的工作流，工作流的每一步可进行精细控制，确保正确的人在正确的时间执行正确的操作。  
 * Support Board view in agile development(Scrum and Kanban).  
 支持敏捷开发的看板视图(Kanban和Scrum)。  
-* Configure issue page simply and easily.  
+* Configure issue screen simply and easily.  
 简单易用的问题界面配置。  
 * Powerful issue filtering function, could define your own filter.    
 强大的问题筛选功能，可定义自己的过滤器。  
