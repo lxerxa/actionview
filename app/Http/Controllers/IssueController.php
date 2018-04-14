@@ -35,7 +35,7 @@ class IssueController extends Controller
     public function index(Request $request, $project_key)
     {
 
-        $where = array_only($request->all(), [ 'type', 'assignee', 'reporter', 'state', 'resolution', 'priority', 'module', 'resolve_version', 'epic' ]) ?: [];
+        $where = array_only($request->all(), [ 'type', 'assignee', 'reporter', 'state', 'resolution', 'priority', 'resolve_version', 'epic' ]) ?: [];
         foreach ($where as $key => $val)
         {
             if ($key === 'assignee' || $key === 'reporter')
@@ -103,6 +103,18 @@ class IssueController extends Controller
             {
                 $query->where('title', 'like', '%' . $title . '%');
             }
+        }
+
+        $module = $request->input('module');
+        if (isset($module) && $module)
+        {
+            $query->where(function ($query) use ($module) {
+                $modules = explode(',', $module);
+                foreach ($modules as $m)
+                {
+                    $query->orWhere('module', 'like', '%' . $m . '%');
+                }
+            });
         }
 
         $created_at = $request->input('created_at');
