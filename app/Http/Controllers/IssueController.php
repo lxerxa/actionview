@@ -638,7 +638,7 @@ class IssueController extends Controller
             $sprint_nos[] = strval($sprint['no']);
         }
         // get defined fields
-        $fields = Provider::getFieldList($project_key, ['key', 'name']);
+        $fields = Provider::getFieldList($project_key, ['key', 'name', 'type']);
         // get defined searchers
         $searchers = $this->getSearchers($project_key, ['name', 'query']);
         // get timetrack options
@@ -1843,6 +1843,6 @@ class IssueController extends Controller
                     $sheet->appendRow($issue);
                 }
             });
-        })->download('xlsx');
+        })->download('xls');
     }
 }
