@@ -1834,7 +1834,7 @@ class IssueController extends Controller
             $new_issues[] = $tmp;
         }
 
-        $file_name = time();
+        $file_name = 'issue-list';
         Excel::create($file_name, function ($excel) use($headers, $new_issues) {
             $excel->sheet('Sheetname', function ($sheet) use($headers, $new_issues) {
                 $sheet->appendRow($headers);
