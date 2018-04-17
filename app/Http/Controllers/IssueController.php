@@ -24,6 +24,7 @@ use Sentinel;
 use DB;
 
 use MongoDB\BSON\ObjectID;
+use Maatwebsite\Excel\Facades\Excel;
 
 class IssueController extends Controller
 {
@@ -224,6 +225,13 @@ class IssueController extends Controller
         $page = $request->input('page') ?: 1;
         $query = $query->skip($page_size * ($page - 1))->take($page_size);
         $issues = $query->get();
+
+        if (isset($from) && $from == 'export')
+        {
+            $export_fields = $request->input('export_fields');
+            $this->export($project_key, isset($export_fields) ? explode(',', $export_fields) : [], $issues);
+            exit();
+        }
 
         $cache_parents = [];
         foreach ($issues as $key => $issue)
@@ -629,7 +637,8 @@ class IssueController extends Controller
         {
             $sprint_nos[] = strval($sprint['no']);
         }
-       
+        // get defined fields
+        $fields = Provider::getFieldList($project_key, ['key', 'name']);
         // get defined searchers
         $searchers = $this->getSearchers($project_key, ['name', 'query']);
         // get timetrack options
@@ -649,7 +658,8 @@ class IssueController extends Controller
                 'epics' => $epics,
                 'sprints' => $sprint_nos,
                 'searchers' => $searchers, 
-                'timetrack' => $timetrack 
+                'timetrack' => $timetrack, 
+                'fields' => $fields 
             ]) 
         ]);
     }
@@ -1613,5 +1623,226 @@ class IssueController extends Controller
         }
 
         return $active_sprint_issues;
+    }
+
+    public function getOptionsForExport($project_key)
+    {
+        $types = [];
+        $type_list = Provider::getTypeList($project_key);
+        foreach ($type_list as $type)
+        {
+            $types[$type->id] = $type->name;
+        }
+
+        $states = [];
+        $state_list =  Provider::getStateOptions($project_key);
+        foreach ($state_list as $state)
+        {
+            $states[$state['_id']] = $state['name'];
+        }
+
+        $resolutions = [];
+        $resolution_list = Provider::getResolutionOptions($project_key);
+        foreach ($resolution_list as $resolution)
+        {
+            $resolutions[$resolution['_id']] = $resolution['name'];
+        }
+
+        $priorities = [];
+        $priority_list = Provider::getPriorityOptions($project_key);
+        foreach ($priority_list as $priority)
+        {
+            $priorities[$priority['_id']] = $priority['name'];
+        }
+
+        $versions = [];
+        $version_list = Provider::getVersionList($project_key);
+        foreach($version_list as $version)
+        {
+            $versions[$version->id] = $version->name;
+        }
+
+        $modules = [];
+        $module_list =  Provider::getModuleList($project_key);
+        foreach ($module_list as $module)
+        {
+            $modules[$module->id] = $module->name;
+        }
+
+        $epics = [];
+        $epic_list =  Provider::getEpicList($project_key);
+        foreach ($epic_list as $epic)
+        {
+            $epics[$epic['_id']] = $epic['name'];
+        }
+
+        $fields = [];
+        $field_list = Provider::getFieldList($project_key);
+        foreach ($field_list as $field)
+        {
+            $tmp = [];
+            $tmp['name'] = $field->name;
+            $tmp['type'] = $field->type;
+            $fields[$field->key] = $tmp;
+        }
+
+        $fields['no'] = [ 'name' => 'NO', 'type' => 'Number' ];
+        $fields['type'] = [ 'name' => '类型', 'type' => 'Select' ];
+        $fields['state'] = [ 'name' => '状态', 'type' => 'Select' ];
+        $fields['created_at'] = [ 'name' => '创建时间', 'type' => 'DateTimePicker' ];
+        $fields['updated_at'] = [ 'name' => '更新时间', 'type' => 'DateTimePicker' ];
+        $fields['reporter'] = [ 'name' => '报告者', 'type' => '' ];
+        $fields['sprints'] = [ 'name' => 'Sprint', 'type' => '' ];
+
+        return [
+          'types' => $types,
+          'states' => $states,
+          'resolutions' => $resolutions,
+          'priorities' => $priorities,
+          'versions' => $versions,
+          'modules' => $modules,
+          'epics' => $epics,
+          'fields' => $fields,
+        ];
+
+    }
+
+    public function export($project_key, $export_fields, $issues) 
+    {
+        $options = $this->getOptionsForExport($project_key);
+        foreach ($options as $key => $val)
+        {
+            $$key = $val;
+        }
+
+        $headers = [];
+        foreach ($export_fields as $fk)
+        {
+            $headers[] = isset($fields[$fk]) && $fields[$fk] ? $fields[$fk]['name'] : '';
+        }
+
+        $new_issues = [];
+        foreach ($issues as $issue)
+        {
+            $tmp = [];
+            foreach ($export_fields as $fk)
+            {
+                if (!isset($issue[$fk]) || (!$issue[$fk] && $issue[$fk] !== 0))
+                {
+                    $tmp[] = '';
+                    continue;
+                }
+
+                if ($fk == 'assignee' || $fk == 'reporter')
+                {
+                    $tmp[] = isset($issue[$fk]['name']) ? $issue[$fk]['name'] : '';
+                }
+                else if ($fk == 'module')
+                {
+                    $new_modules = [];
+                    $module_ids = explode(',', $issue[$fk]);
+                    foreach ($module_ids as $id)
+                    {
+                        if (!isset($modules[$id]) || !$modules[$id])
+                        {
+                            continue;
+                        }
+                        $new_modules[] = $modules[$id];
+                    }
+                    $tmp[] = implode(',', $new_modules);
+                }
+                else if ($fk == 'type')
+                {
+                    $tmp[] = isset($types[$issue[$fk]]) && $types[$issue[$fk]] ? $types[$issue[$fk]] : '';
+                }
+                else if ($fk == 'priority')
+                {
+                    $tmp[] = isset($priorities[$issue[$fk]]) && $priorities[$issue[$fk]] ? $priorities[$issue[$fk]] : '';
+                }
+                else if ($fk == 'state')
+                {
+                    $tmp[] = isset($states[$issue[$fk]]) && $states[$issue[$fk]] ? $states[$issue[$fk]] : '';
+                }
+                else if ($fk == 'resolution')
+                {
+                    $tmp[] = isset($resolutions[$issue[$fk]]) && $resolutions[$issue[$fk]] ? $resolutions[$issue[$fk]] : '';
+                }
+                else if ($fk == 'epic')
+                {
+                    $tmp[] = isset($epics[$issue[$fk]]) && $epics[$issue[$fk]] ? $epics[$issue[$fk]] : '';
+                }
+                else if ($fk == 'sprints')
+                {
+                    $tmp[] = 'Sprint ' . implode(',', $issue[$fk]);
+                }
+                else if (isset($fields[$fk]) && $fields[$fk])
+                {
+                    if ($fields[$fk]['type'] == 'DateTimePicker')
+                    {
+                        $tmp[] = date('Y-m-d H:i:s', $issue[$fk]);
+                    }
+                    else if ($fields[$fk]['type'] == 'DatePicker')
+                    {
+                        $tmp[] = date('Y-m-d', $issue[$fk]);
+                    }
+                    else if ($fields[$fk]['type'] == 'SingleVersion' || $fields[$fk]['type'] == 'MultiVersion')
+                    {
+                        $new_versions = [];
+                        $version_ids = explode(',', $issue[$fk]);
+                        foreach ($version_ids as $id)
+                        {
+                            if (isset($versions[$id]) && $versions[$id])
+                            {
+                                $new_versions[] = $versions[$id];
+                            }
+                        }
+                        $tmp[] = implode(',', $new_versions);
+                    } 
+                    else if ($fields[$fk]['type'] == 'SingleUser')
+                    {
+                        $tmp[] = isset($issue[$fk]['name']) ? $issue[$fk]['name'] : '';
+                    }
+                    else if ($fields[$fk]['type'] == 'MultiUser')
+                    {
+                        $new_users = [];
+                        foreach ($issue[$fk] as $user)
+                        {
+                            if (isset($user['name']) && $user['name'])
+                            {
+                                $new_users[] = $user['name'];
+                            }
+                        }
+                        $tmp[] = implode(',', $new_users);
+                    }
+                    else
+                    {
+                        if (is_array($issue[$fk]))
+                        {
+                            $tmp[] = implode(',', $issue[$fk]);
+                        }
+                        else
+                        {
+                            $tmp[] = $issue[$fk];
+                        }
+                    }
+                }
+                else
+                {
+                    $tmp[] = $issue[$fk];
+                }
+            }
+            $new_issues[] = $tmp;
+        }
+
+        $file_name = time();
+        Excel::create($file_name, function ($excel) use($headers, $new_issues) {
+            $excel->sheet('Sheetname', function ($sheet) use($headers, $new_issues) {
+                $sheet->appendRow($headers);
+                foreach ($new_issues as $issue)
+                {
+                    $sheet->appendRow($issue);
+                }
+            });
+        })->download('xlsx');
     }
 }

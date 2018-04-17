@@ -160,6 +160,8 @@ return [
 
         Jenssegers\Mongodb\MongodbServiceProvider::class,
         Cartalyst\Sentinel\Laravel\SentinelServiceProvider::class,
+
+        Maatwebsite\Excel\ExcelServiceProvider::class,
     ],
 
     /*
