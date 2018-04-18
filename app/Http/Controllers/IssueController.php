@@ -1715,6 +1715,15 @@ class IssueController extends Controller
             $$key = $val;
         }
 
+        foreach ($export_fields as $key => $field)
+        {
+            if (!array_key_exists($field, $fields))
+            {
+                unset($export_fields[$key]);
+            }
+        }
+        $export_fields = array_values($export_fields);
+
         $headers = [];
         foreach ($export_fields as $fk)
         {
