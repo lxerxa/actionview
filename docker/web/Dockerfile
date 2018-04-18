@@ -15,6 +15,7 @@ RUN apt-get update && \
         php-gd\
         php-mcrypt\
         php-curl\
+        php-dom\
         php-mongodb
 
 RUN a2enmod rewrite
