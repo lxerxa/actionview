@@ -1379,6 +1379,7 @@ class IssueController extends Controller
     /**
      * classify issues by parent_id.
      *
+     * @param  array  $issues
      * @return array
      */
     public function classifyIssues($issues)
@@ -1418,6 +1419,7 @@ class IssueController extends Controller
     /**
      * add avatar for issues
      *
+     * @param  array  $issues
      * @return array
      */
     public function addAvatar(&$issues)
@@ -1439,6 +1441,7 @@ class IssueController extends Controller
     /**
      * flat issues from 2d to 1d.
      *
+     * @param  array  $classifiedissues
      * @return array
      */
     public function flatIssues($classified_issues)
@@ -1457,6 +1460,12 @@ class IssueController extends Controller
     /**
      * arrange issues for kanban.
      *
+     * @param  string $project_key
+     * @param  array  $issues
+     * @param  string $from
+     * @param  string $from_board_id
+     * @param  string $board_types
+     * @param  bool   $isUpdRank
      * @return array 
      */
     public function arrangeIssues($project_key, $issues, $from, $from_board_id, $board_types='', $isUpdRank=false)
@@ -1604,6 +1613,13 @@ class IssueController extends Controller
         return $issues;
     }
 
+    /**
+     * sprint filter for issues
+     *
+     * @param  string $project_key
+     * @param  array  $issues
+     * @return array
+     */
     public function sprintFilter($project_key, $issues)
     {
         $active_sprint_issues = [];
@@ -1625,6 +1641,12 @@ class IssueController extends Controller
         return $active_sprint_issues;
     }
 
+    /**
+     * get some options for export 
+     *
+     * @param  string $project_key
+     * @return array
+     */
     public function getOptionsForExport($project_key)
     {
         $types = [];
@@ -1707,6 +1729,14 @@ class IssueController extends Controller
 
     }
 
+    /**
+     * export xls for issue list 
+     *
+     * @param  string $project_key
+     * @param  array $export_fields
+     * @param  array $issues
+     * @return void
+     */
     public function export($project_key, $export_fields, $issues) 
     {
         $options = $this->getOptionsForExport($project_key);
@@ -1843,7 +1873,7 @@ class IssueController extends Controller
             $new_issues[] = $tmp;
         }
 
-        $file_name = 'issue-list';
+        $file_name = $project_key . '-issues';
         Excel::create($file_name, function ($excel) use($headers, $new_issues) {
             $excel->sheet('Sheetname', function ($sheet) use($headers, $new_issues) {
                 $sheet->appendRow($headers);
