@@ -33,8 +33,8 @@ http://www.actionview.cn
 
 # Feature
 
-* User created project supported, which could use either global configuration scheme, or local user defined scheme.   
-支持用户创建项目，项目不仅可引用全局配置方案，也可自定义本地方案。
+* User created project supported, which could use either global configuration scheme, or local user defined scheme, realize the perfect combination of global configuration scheme and local configuration scheme.  
+支持用户创建项目，项目不仅可引用全局配置方案，也可自定义本地方案，实现了全局配置方案和本地配置方案的完美结合。  
 * Every project could use the default system workflow, and could define its own workflow, in which every step could be controlled accurately to make sure right people make right operation at right time.  
 各项目不仅可引用系统默认工作流，同时可自定义自己的工作流，工作流的每一步可进行精细控制，确保正确的人在正确的时间执行正确的操作。  
 * Support Board view in agile development(Scrum and Kanban).  
