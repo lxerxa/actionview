@@ -47,7 +47,7 @@ http://www.actionview.cn
 完备的权限控制模型，支持给用户组授权。  
 * User defined message notification scheme.    
 灵活可定制的消息通知方案。  
-* Could check the activity history for a specified issue, and could view the activity log for the whole project.  
+* Could check the activity history for a specified issue, and could view the activity log for the whole project.  
 不仅可查看某个问题的改动记录，还可浏览整个项目的活动日志。  
 * User adding worklog to an issue supported.  
 支持用户在问题上添加工作日志。  
