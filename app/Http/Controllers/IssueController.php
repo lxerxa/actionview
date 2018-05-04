@@ -1427,6 +1427,10 @@ class IssueController extends Controller
         $cache_avatars = [];
         foreach ($issues as $key => $issue)
         {
+            if (!isset($issue['assignee']) || !isset($issue['assignee']['id']))
+            {
+                continue;
+            }
             //get assignee avatar for kanban
             if (!array_key_exists($issue['assignee']['id'], $cache_avatars))
             {

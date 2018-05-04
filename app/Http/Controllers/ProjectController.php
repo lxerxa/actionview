@@ -564,11 +564,11 @@ class ProjectController extends Controller
         $old_principal = $project->principal;
         $project->fill($updValues)->save();
 
-        if (isset($principal_id))
+        if (isset($principal))
         {
-            if ($old_principal['id'] != $principal_id)
+            if ($old_principal['id'] != $principal)
             {
-                Event::fire(new AddUserToRoleEvent([ $principal_id ], $project->key));
+                Event::fire(new AddUserToRoleEvent([ $principal ], $project->key));
                 Event::fire(new DelUserFromRoleEvent([ $old_principal['id'] ], $project->key));
             }
         }
