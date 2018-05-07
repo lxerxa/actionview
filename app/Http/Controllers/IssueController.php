@@ -255,7 +255,6 @@ class IssueController extends Controller
                     $issues[$key]['parent'] = $parent ? array_only($parent, [ '_id', 'title', 'no', 'type', 'state' ]) : [];
                     $cache_parents[$issue['parent_id']] = $issues[$key]['parent'];
                 }
-                unset($issues[$key]['parent_id']);
             }
             else if (!isset($from))
             {
