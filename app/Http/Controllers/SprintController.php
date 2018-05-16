@@ -12,6 +12,12 @@ use DB;
 
 class SprintController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('privilege:manage_project');
+        parent::__construct();
+    }
+
     /**
      * Display a listing of the resource.
      *

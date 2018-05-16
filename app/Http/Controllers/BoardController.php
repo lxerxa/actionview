@@ -17,6 +17,12 @@ use App\Project\Provider;
 
 class BoardController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('privilege:manage_project', [ 'only' => [ 'store', 'update', 'destroy' ] ]);
+        parent::__construct();
+    }
+
     /**
      * get user accessed board list
      *
