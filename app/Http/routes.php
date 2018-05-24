@@ -167,6 +167,7 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::post('sprint/moveissue', 'SprintController@moveIssue');
     Route::post('sprint/{no}/publish', 'SprintController@publish');
     Route::post('sprint/{no}/complete', 'SprintController@complete');
+    Route::get('sprint/{no}/log', 'SprintController@getLog');
     Route::delete('sprint/{no}', 'SprintController@destroy');
 
     // project module config

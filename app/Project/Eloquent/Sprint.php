@@ -16,6 +16,7 @@ class Sprint extends Model
         'start_time',
         'complete_time',
         'issues',
+        'origin_issues',
         'completed_issues',
         'incompleted_issues'
     );

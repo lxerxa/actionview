@@ -6,15 +6,17 @@ use Illuminate\Http\Request;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Project\Eloquent\Sprint;
+use App\Project\Eloquent\SprintDayLog;
 use App\Project\Eloquent\Board;
 use App\Project\Provider;
+use App\Customization\Eloquent\CalendarSingular;
 use DB;
 
 class SprintController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('privilege:manage_project');
+        $this->middleware('privilege:manage_project', [ 'except' => [ 'getLog' ] ]);
         parent::__construct();
     }
 
@@ -173,6 +175,12 @@ class SprintController extends Controller
         else
         {
             throw new \UnexpectedValueException('the sprint complete time cannot be empty.', -11710);
+        }
+
+        $updValues['origin_issues'] = [];
+        if (isset($sprint->issues))
+        {
+            $updValues['origin_issues'] = $sprint->issues;
         }
 
         $sprint->fill($updValues)->save();
@@ -352,5 +360,125 @@ class SprintController extends Controller
         $new_sprints = array_diff($sprints, [ $sprint_no ]);
 
         DB::collection('issue_' . $project_key)->where('no', $issue_no)->update(['sprints' => $new_sprints]);
+    }
+
+    /**
+     * get sprint log.
+     *
+     * @param  string  $project_key
+     * @param  string  $sprint_no
+     * @return \Illuminate\Http\Response
+     */
+    public function getLog(Request $request, $project_key, $sprint_no)
+    {
+        //$kanban_id = $request->input('kanban_id');
+        //if (!$kanban_id)
+        //{
+        //    throw new \UnexpectedValueException('the deleted sprint cannot be empty', -11714);
+        //}
+        $kanban_id = '5aa5e7831d41c8561532141c';
+
+        $sprint = Sprint::where('project_key', $project_key)
+            ->where('no', intval($sprint_no))
+            ->first();
+        //if (!$sprint)
+        //{
+        //    throw new \UnexpectedValueException('the deleted sprint cannot be empty', -11714);
+        //}
+
+        $origin_issue_count = 0;
+        if (isset($sprint->origin_issues))
+        {
+            $origin_issue_count = count($sprint->origin_issues); 
+        }
+
+        $workingDays = $this->getWorkingDay($sprint->start_time, $sprint->complete_time); 
+        $workingDayNum = 0;
+        foreach ($workingDays as $val)
+        {
+            $workingDayNum += $val;
+        }
+
+        // issue count guideline start
+        $issue_count_guideline = [];
+        $issue_count_guideline[] = [ 'day' => '', 'value' => $origin_issue_count ];
+        $tmp_issue_count = $origin_issue_count;
+        foreach ($workingDays as $day => $flag)
+        {
+            if ($flag === 0)
+            {
+                $tmp_issue_count = $tmp_issue_count - round($origin_issue_count / $workingDayNum, 2);
+            }
+            $issue_count_guideline[] = [ 'day' => substr($day, 5), 'value' => $tmp_issue_count, 'notWorking' => ($flag + 1) % 2 ];
+        }
+        // issue count guideline end 
+
+        // issue count remaining start
+        $last_column_states = [];
+        $board = Board::find($kanban_id);
+        if ($board && isset($board->columns))
+        {
+            $board_columns = $board->columns;
+            $last_column = array_pop($board_columns) ?: [];
+            if ($last_column && isset($last_column['states']) && $last_column['states'])
+            {
+                $last_column_states = $last_column['states'];
+            }
+        }
+
+        $sprint_day_log = SprintDayLog::where('project_key', $project_key)
+            ->where('no', $sprint_no)
+            ->orderBy('day', 'desc')
+            ->get();
+
+        $issue_count_remaining = [];
+	$issue_count_remaining[] = [ 'day' => '', 'value' => $origin_issue_count ];
+        foreach($sprint_day_log as $daylog)
+        {
+            $incomplete_num = 0;
+            $issue_state_map = isset($daylog->issue_state_map) ? $daylog->issue_state_map : []; 
+            foreach ($issue_state_map as $state)
+            {
+                if (!in_array($state, $last_column_states))
+                {
+                    $incomplete_num++;
+                } 
+            }
+            $issue_count_remaining[] = [ 'day' => substr($daylog->day, 5), 'value' => $incomplete_num, 'notWorking' => $workingDays[$daylog->day] ? ($workingDays[$daylog->day] + 1) % 2 : 0 ]; 
+        }
+        // issue count remaining start
+
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'issue_count' => [ 'guideline' => $issue_count_guideline ] ] ]);
+    }
+
+    /**
+     * get working day flag.
+     *
+     * @param  int  $start_time
+     * @param  int  $complete_time
+     * @return \Illuminate\Http\Response
+     */
+    public function getWorkingDay($start_time, $end_time)
+    {
+        $days = [];
+        $tmp_time = $start_time;
+        while ($tmp_time < $end_time)
+        {
+            $day = date('Y/m/d', $tmp_time);
+            $days[] = $day;
+
+            $week_flg = intval(date('w', $tmp_time));
+            $workingDays[$day] = ($week_flg === 0 || $week_flg === 6) ? 0 : 1;
+
+            $tmp_time += 24 * 60 * 60;
+        }
+
+        $singulars = CalendarSingular::where([ 'day' => [ '$in' => $days ] ])->get();
+        foreach ($singulars as $singular)
+        {
+            $tmp = $singular->day;
+            $workingDays[$tmp] = $singular->flag;
+        }
+        return $workingDays;
     }
 }
