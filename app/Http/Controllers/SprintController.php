@@ -180,7 +180,7 @@ class SprintController extends Controller
         $updValues['origin_issues'] = [];
         if (isset($sprint->issues))
         {
-            $updValues['origin_issues'] = $this->getOriginIssues($sprint->issues);
+            $updValues['origin_issues'] = $this->getOriginIssues($project_key, $sprint->issues);
         }
 
         $sprint->fill($updValues)->save();
@@ -368,14 +368,14 @@ class SprintController extends Controller
      * @param  array  $issue_nos
      * @return \Illuminate\Http\Response
      */
-    public function getOriginIssues($issue_nos)
+    public function getOriginIssues($project_key, $issue_nos)
     {
         $origin_issues = [];
-        $issues = DB::where([ 'no' => [ '$in' => $issue_nos ] ])->get();
+        $issues = DB::collection('issue_' . $project_key)->where([ 'no' => [ '$in' => $issue_nos ] ])->get();
         foreach ($issues as $issue)
         {
             $origin_issues[] = [ 
-                'no' => $issue->no, 
+                'no' => $issue['no'], 
                 'state' => isset($issue['state']) ? $issue['state'] : '', 
                 'story_points' => isset($issue['story_points']) ? $issue['story_points'] : 0 ];
         }
