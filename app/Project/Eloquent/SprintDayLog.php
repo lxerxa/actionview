@@ -13,7 +13,6 @@ class SprintDayLog extends Model
         'project_key',
         'no',
         'day',
-        'issue_state_map',
-        'issue_leave_estimate_map',
+        'contents'
     );
 }

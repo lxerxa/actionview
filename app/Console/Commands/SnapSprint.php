@@ -38,23 +38,34 @@ class SnapSprint extends Command
 
     public function handle()
     {
-        $active_sprints = Sprint::where('status', 'active')->where('start_time', '<', time())->where('complete_time', '>', time());
+        $active_sprints = Sprint::where('status', 'active')
+            ->where('start_time', '<', time())
+            ->where('complete_time', '>', time());
+            ->get();
+
         foreach ($active_sprints as $sprint)
         {
             $project_key = $sprint->project_key;
 
-            $issue_state_map = [];
-            $issues = isset($sprint->issues) ? $sprint->issues : [];
-            foreach ($issues as $issue_no)
-            {
-                $issue = DB::collection('issue_' . $project_key)->where('no', $issue_no)->first();
-                if ($issue && isset($issue['state'])) 
-                {
-                    $issue_state_map[$issue_no] = $issue['state'];
-                }
+            $conents = [];
+            $issue_nos = isset($sprint->issues) ? $sprint->issues : [];
+            $issues = DB::collection('issue_' . $project_key)->where([ 'no' => [ '$in' => $issue_nos ] ])->get();
+            foreach ($issues as $issue)
+            { 
+                $tmp = [];
+                $tmp['no'] = $issue['no'];
+                $tmp['state'] = isset($issue['state']) ? $issue['state'] : '';
+                $tmp['story_points'] = isset($issue['story_points']) ? $issue['story_points'] : '';
+                $contents[] = $tmp;
             }
 
-            SprintDayLog::create([ 'project_key' => $project_key, 'no' => $sprint->no, 'day' => date('Y/m/d'), 'issue_state_map' => $issue_state_map ]);
+            SprintDayLog::delete->where([ 'project_key' => $project_key, 'no' => $sprint->no, 'day' => date('Y/m/d') ]);
+
+            SprintDayLog::create([ 
+                'project_key' => $project_key, 
+                'no' => $sprint->no, 
+                'day' => date('Y/m/d'), 
+                'contents' => $contents ]);
         }
     }
 }

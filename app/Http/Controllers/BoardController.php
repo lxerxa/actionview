@@ -13,6 +13,7 @@ use App\Project\Eloquent\BoardRankMap;
 use App\Project\Eloquent\AccessBoardLog;
 use App\Project\Eloquent\Sprint;
 use App\Project\Eloquent\Epic;
+use App\Project\Eloquent\Version;
 use App\Project\Provider;
 
 class BoardController extends Controller
@@ -75,7 +76,11 @@ class BoardController extends Controller
             ->orderBy('sn', 'asc')
             ->get(['bgColor', 'name']);
 
-        return Response()->json([ 'ecode' => 0, 'data' => $list, 'options' => [ 'epics' => $epics, 'sprints' => $sprints ] ]);
+        $versions = Version::where('project_key', $project_key)
+            ->orderBy('created_at', 'desc')
+            ->get(['name']);
+
+        return Response()->json([ 'ecode' => 0, 'data' => $list, 'options' => [ 'epics' => $epics, 'sprints' => $sprints, 'versions' => $versions ] ]);
 
 /*
 $example = [ 

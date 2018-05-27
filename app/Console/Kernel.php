@@ -13,7 +13,8 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
-        'App\Console\Commands\SendEmails'
+        'App\Console\Commands\SendEmails',
+        'App\Console\Commands\ImportCalendarSingular'
         // Commands\Inspire::class,
     ];
 

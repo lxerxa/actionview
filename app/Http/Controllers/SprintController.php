@@ -180,7 +180,7 @@ class SprintController extends Controller
         $updValues['origin_issues'] = [];
         if (isset($sprint->issues))
         {
-            $updValues['origin_issues'] = $sprint->issues;
+            $updValues['origin_issues'] = $this->getOriginIssues($sprint->issues);
         }
 
         $sprint->fill($updValues)->save();
@@ -362,6 +362,26 @@ class SprintController extends Controller
         DB::collection('issue_' . $project_key)->where('no', $issue_no)->update(['sprints' => $new_sprints]);
     }
 
+   /**
+     * get sprint log.
+     *
+     * @param  array  $issue_nos
+     * @return \Illuminate\Http\Response
+     */
+    public function getOriginIssues($issue_nos)
+    {
+        $origin_issues = [];
+        $issues = DB::where([ 'no' => [ '$in' => $issue_nos ] ])->get();
+        foreach ($issues as $issue)
+        {
+            $origin_issues[] = [ 
+                'no' => $issue->no, 
+                'state' => isset($issue['state']) ? $issue['state'] : '', 
+                'story_points' => isset($issue['story_points']) ? $issue['story_points'] : 0 ];
+        }
+        return $origin_issues;
+    }
+
     /**
      * get sprint log.
      *
@@ -371,25 +391,32 @@ class SprintController extends Controller
      */
     public function getLog(Request $request, $project_key, $sprint_no)
     {
-        //$kanban_id = $request->input('kanban_id');
-        //if (!$kanban_id)
-        //{
-        //    throw new \UnexpectedValueException('the deleted sprint cannot be empty', -11714);
-        //}
-        $kanban_id = '5aa5e7831d41c8561532141c';
+        $kanban_id = $request->input('kanban_id');
+        if (!$kanban_id)
+        {
+            throw new \UnexpectedValueException('the kanban id cannot be empty', -11714);
+        }
 
         $sprint = Sprint::where('project_key', $project_key)
             ->where('no', intval($sprint_no))
             ->first();
-        //if (!$sprint)
-        //{
-        //    throw new \UnexpectedValueException('the deleted sprint cannot be empty', -11714);
-        //}
+        if (!$sprint)
+        {
+            throw new \UnexpectedValueException('the sprint does not exist or is not in the project.', -11708);
+        }
 
         $origin_issue_count = 0;
         if (isset($sprint->origin_issues))
         {
             $origin_issue_count = count($sprint->origin_issues); 
+        }
+        $origin_story_points = 0;
+        if (isset($sprint->origin_issues))
+        {
+            foreach ($sprint->origin_issues as $val)
+            {
+                $origin_story_points += $val['story_points']; 
+            }
         }
 
         $workingDays = $this->getWorkingDay($sprint->start_time, $sprint->complete_time); 
@@ -399,21 +426,26 @@ class SprintController extends Controller
             $workingDayNum += $val;
         }
 
-        // issue count guideline start
+        // guideline start
         $issue_count_guideline = [];
+        $story_points_guideline = [];
         $issue_count_guideline[] = [ 'day' => '', 'value' => $origin_issue_count ];
+        $story_points_guideline[] = [ 'day' => '', 'value' => $origin_story_points ];
         $tmp_issue_count = $origin_issue_count;
+        $tmp_story_points = $origin_story_points;
         foreach ($workingDays as $day => $flag)
         {
-            if ($flag === 0)
+            if ($flag === 1)
             {
-                $tmp_issue_count = $tmp_issue_count - round($origin_issue_count / $workingDayNum, 2);
+                $tmp_issue_count = max([ round($tmp_issue_count - $origin_issue_count / $workingDayNum, 2), 0 ]);
+                $tmp_story_points = max([ round($tmp_story_points - $origin_story_points / $workingDayNum, 2), 0 ]);
             }
             $issue_count_guideline[] = [ 'day' => substr($day, 5), 'value' => $tmp_issue_count, 'notWorking' => ($flag + 1) % 2 ];
+            $story_points_guideline[] = [ 'day' => substr($day, 5), 'value' => $tmp_story_points, 'notWorking' => ($flag + 1) % 2 ];
         }
-        // issue count guideline end 
+        // guideline end 
 
-        // issue count remaining start
+        // remaining start
         $last_column_states = [];
         $board = Board::find($kanban_id);
         if ($board && isset($board->columns))
@@ -432,23 +464,28 @@ class SprintController extends Controller
             ->get();
 
         $issue_count_remaining = [];
+        $story_points_remaining = [];
 	$issue_count_remaining[] = [ 'day' => '', 'value' => $origin_issue_count ];
+	$story_points_remaining[] = [ 'day' => '', 'value' => $origin_story_points ];
         foreach($sprint_day_log as $daylog)
         {
-            $incomplete_num = 0;
-            $issue_state_map = isset($daylog->issue_state_map) ? $daylog->issue_state_map : []; 
-            foreach ($issue_state_map as $state)
+            $incompleted_issue_num = 0;
+            $incompleted_story_points = 0;
+            $issue_state_map = isset($daylog->contents) ? $daylog->contents : []; 
+            foreach ($contents as $issue)
             {
-                if (!in_array($state, $last_column_states))
+                if (!in_array($issue->state, $last_column_states))
                 {
-                    $incomplete_num++;
+                    $incompleted_issue_num++;
+                    $incompleted_story_points += isset($issue->story_points) ? $issue->story_points : 0;
                 } 
             }
-            $issue_count_remaining[] = [ 'day' => substr($daylog->day, 5), 'value' => $incomplete_num, 'notWorking' => $workingDays[$daylog->day] ? ($workingDays[$daylog->day] + 1) % 2 : 0 ]; 
+            $issue_count_remaining[] = [ 'day' => substr($daylog->day, 5), 'value' => $incompleted_issue_num, 'notWorking' => $workingDays[$daylog->day] ? ($workingDays[$daylog->day] + 1) % 2 : 0 ]; 
+            $story_points_remaining[] = [ 'day' => substr($daylog->day, 5), 'value' => $incompleted_story_points, 'notWorking' => $workingDays[$daylog->day] ? ($workingDays[$daylog->day] + 1) % 2 : 0 ]; 
         }
-        // issue count remaining start
+        // remaining start
 
-        return Response()->json([ 'ecode' => 0, 'data' => [ 'issue_count' => [ 'guideline' => $issue_count_guideline ] ] ]);
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'issue_count' => [ 'guideline' => $issue_count_guideline, 'remaining' => $issue_count_remaining ], 'story_points' => [ 'guideline' => $story_points_guideline, 'remaining' => $story_points_remaining ] ] ]);
     }
 
     /**
@@ -480,5 +517,78 @@ class SprintController extends Controller
             $workingDays[$tmp] = $singular->flag;
         }
         return $workingDays;
+    }
+
+    public function t2m($val, $options) 
+    {
+        $w2d = isset($options['w2d']) ? $options['w2d'] : 5;
+        $d2h = isset($options['d2h']) ? $options['d2h'] : 8;
+
+        $total = 0;
+        $tmp = explode(' ', $val);
+        foreach ($tmp as $v)
+        {
+            $t = substr($v, 0, strlen($v) - 1);
+            $u = substr($v, -1);
+
+            if ($u == 'w' || $u == 'W')
+            {
+                $total += $total + $t * $w2d * $d2h;
+            }
+            else if ($u == 'd' || $u == 'D')
+            {
+                $total += $t * $d2h * 60;
+            }
+            else if ($u == 'h' || $u == 'H')
+            {
+                $total += $t * 60;
+            }
+            else 
+            {
+                $total += $t;
+            }
+        }
+        return $total;
+    }
+
+    public function getRemainingTime($issue_no)
+    {
+        $origin_estimate_time = 0;
+        $issue = DB::where('no', $issue_no)->first();
+        if (isset($issue['original_estimate']))
+        {
+            $origin_estimate_time = $issue['original_estimate'];
+        }
+
+        $leave_estimate_m = $this->t2m($origin_estimate_time);
+        if ($leave_estimate_m <= 0)
+        {
+            return 0;
+        }
+
+        $worklogs = Worklog::Where('project_key', $project_key)
+            ->where('issue_id', $issue_id)
+            ->orderBy('recorded_at', 'asc')
+            ->get();
+
+        foreach ($worklogs as $worklog)
+        {
+            if (!isset($worklog['spend']))
+            {
+                continue;
+            }
+            if (isset($worklog['adjust_type']))
+            {
+                if ($worklog['adjust_type'] == 1)
+                {
+                    $spend_m = $this->t2m($worklog['spend']);
+                    $leave_estimate_m = $leave_estimate_m - $spend_m;
+                }
+                else if ($worklog['adjust_type'] == 3)
+                {
+                    $leave_estimate_m = $this->t2m(isset($worklog['cut']) ? $worklog['cut'] : 0);
+                }
+            }
+        }
     }
 }
