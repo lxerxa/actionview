@@ -391,6 +391,8 @@ class SprintController extends Controller
      */
     public function getLog(Request $request, $project_key, $sprint_no)
     {
+        $sprint_no = intval($sprint_no);
+
         $kanban_id = $request->input('kanban_id');
         if (!$kanban_id)
         {
@@ -398,7 +400,7 @@ class SprintController extends Controller
         }
 
         $sprint = Sprint::where('project_key', $project_key)
-            ->where('no', intval($sprint_no))
+            ->where('no', $sprint_no)
             ->first();
         if (!$sprint)
         {
@@ -471,17 +473,17 @@ class SprintController extends Controller
         {
             $incompleted_issue_num = 0;
             $incompleted_story_points = 0;
-            $issue_state_map = isset($daylog->contents) ? $daylog->contents : []; 
-            foreach ($contents as $issue)
+            $issues = isset($daylog->issues) ? $daylog->issues : []; 
+            foreach ($issues as $issue)
             {
-                if (!in_array($issue->state, $last_column_states))
+                if (!in_array($issue['state'], $last_column_states))
                 {
                     $incompleted_issue_num++;
-                    $incompleted_story_points += isset($issue->story_points) ? $issue->story_points : 0;
+                    $incompleted_story_points += isset($issue['story_points']) ? $issue['story_points'] : 0;
                 } 
             }
-            $issue_count_remaining[] = [ 'day' => substr($daylog->day, 5), 'value' => $incompleted_issue_num, 'notWorking' => $workingDays[$daylog->day] ? ($workingDays[$daylog->day] + 1) % 2 : 0 ]; 
-            $story_points_remaining[] = [ 'day' => substr($daylog->day, 5), 'value' => $incompleted_story_points, 'notWorking' => $workingDays[$daylog->day] ? ($workingDays[$daylog->day] + 1) % 2 : 0 ]; 
+            $issue_count_remaining[] = [ 'day' => substr($daylog->day, 5), 'value' => $incompleted_issue_num, 'notWorking' => isset($workingDays[$daylog->day]) ? ($workingDays[$daylog->day] + 1) % 2 : 0 ]; 
+            $story_points_remaining[] = [ 'day' => substr($daylog->day, 5), 'value' => $incompleted_story_points, 'notWorking' => isset($workingDays[$daylog->day]) ? ($workingDays[$daylog->day] + 1) % 2 : 0 ]; 
         }
         // remaining start
 

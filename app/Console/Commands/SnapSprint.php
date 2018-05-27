@@ -5,7 +5,6 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Project\Eloquent\Sprint;
 use App\Project\Eloquent\SprintDayLog;
-use App\Project\Eloquent\Worklog;
 
 use DB;
 use Exception;
@@ -40,14 +39,14 @@ class SnapSprint extends Command
     {
         $active_sprints = Sprint::where('status', 'active')
             ->where('start_time', '<', time())
-            ->where('complete_time', '>', time());
+            ->where('complete_time', '>', time())
             ->get();
 
         foreach ($active_sprints as $sprint)
         {
             $project_key = $sprint->project_key;
 
-            $conents = [];
+            $contents = [];
             $issue_nos = isset($sprint->issues) ? $sprint->issues : [];
             $issues = DB::collection('issue_' . $project_key)->where([ 'no' => [ '$in' => $issue_nos ] ])->get();
             foreach ($issues as $issue)
@@ -55,17 +54,17 @@ class SnapSprint extends Command
                 $tmp = [];
                 $tmp['no'] = $issue['no'];
                 $tmp['state'] = isset($issue['state']) ? $issue['state'] : '';
-                $tmp['story_points'] = isset($issue['story_points']) ? $issue['story_points'] : '';
+                $tmp['story_points'] = isset($issue['story_points']) ? $issue['story_points'] : 0;
                 $contents[] = $tmp;
             }
 
-            SprintDayLog::delete->where([ 'project_key' => $project_key, 'no' => $sprint->no, 'day' => date('Y/m/d') ]);
+            SprintDayLog::where([ 'project_key' => $project_key, 'no' => $sprint->no, 'day' => date('Y/m/d') ])->delete();
 
             SprintDayLog::create([ 
                 'project_key' => $project_key, 
                 'no' => $sprint->no, 
                 'day' => date('Y/m/d'), 
-                'contents' => $contents ]);
+                'issues' => $contents ]);
         }
     }
 }

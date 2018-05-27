@@ -13,6 +13,6 @@ class SprintDayLog extends Model
         'project_key',
         'no',
         'day',
-        'contents'
+        'issues'
     );
 }
