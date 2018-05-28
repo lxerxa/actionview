@@ -137,19 +137,26 @@ class SprintController extends Controller
         }
         $no = intval($no);
 
-        $active_sprint_exists = Sprint::where('project_key', $project_key)->where('status', 'active')->exists();
+        $active_sprint_exists = Sprint::where('project_key', $project_key)
+            ->where('status', 'active')
+            ->exists();
         if ($active_sprint_exists)
         {
             throw new \UnexpectedValueException('the active sprint has been exists.', -11706);
         }
 
-        $before_waiting_sprint_exists = Sprint::where('project_key', $project_key)->where('status', 'waiting')->where('no', '<', $no)->exists();
+        $before_waiting_sprint_exists = Sprint::where('project_key', $project_key)
+            ->where('status', 'waiting')
+            ->where('no', '<', $no)
+            ->exists();
         if ($before_waiting_sprint_exists)
         {
             throw new \UnexpectedValueException('the more first sprint has been exists.', -11707);
         }
 
-        $sprint = Sprint::where('project_key', $project_key)->where('no', $no)->first();
+        $sprint = Sprint::where('project_key', $project_key)
+            ->where('no', $no)
+            ->first();
         if (!$sprint || $project_key != $sprint->project_key)
         {
             throw new \UnexpectedValueException('the sprint does not exist or is not in the project.', -11708);
@@ -177,11 +184,16 @@ class SprintController extends Controller
             throw new \UnexpectedValueException('the sprint complete time cannot be empty.', -11710);
         }
 
-        $updValues['origin_issues'] = [];
-        if (isset($sprint->issues))
+        $kanban_id = $request->input('kanban_id');
+        if (!isset($kanban_id) || !$kanban_id)
         {
-            $updValues['origin_issues'] = $this->getOriginIssues($project_key, $sprint->issues);
+            throw new \UnexpectedValueException('the kanban id cannot be empty', -11717);
         }
+
+        $new_issues = $this->filterIssues($project_key, isset($sprint->issues) ? $sprint->issues : [], $kanban_id);
+
+        $updValues['issues'] = $new_issues['issues'];
+        $updValues['origin_issues'] = $new_issues['origin_issues'];
 
         $sprint->fill($updValues)->save();
 
@@ -363,10 +375,67 @@ class SprintController extends Controller
     }
 
    /**
-     * get sprint log.
+     * get the last column state of the kanban.
      *
+     * @param  string $kanban_id
+     * @return array 
+     */
+    public function getLastColumnStates($kanban_id)
+    {
+        // remaining start
+        $last_column_states = [];
+        $board = Board::find($kanban_id);
+        if ($board && isset($board->columns))
+        {
+            $board_columns = $board->columns;
+            $last_column = array_pop($board_columns) ?: [];
+            if ($last_column && isset($last_column['states']) && $last_column['states'])
+            {
+                $last_column_states = $last_column['states'];
+            }
+        }
+        return $last_column_states; 
+    }
+
+   /**
+     * get sprint original state.
+     *
+     * @param  string $project_key
      * @param  array  $issue_nos
-     * @return \Illuminate\Http\Response
+     * @param  string $kanban_id
+     * @return array
+     */
+    public function filterIssues($project_key, $issue_nos, $kanban_id)
+    {
+        // get the kanban last column states
+        $last_column_states = $this->getLastColumnStates($kanban_id);
+
+        $new_issue_nos = [];
+        $origin_issues = [];
+
+        $issues = DB::collection('issue_' . $project_key)
+            ->where([ 'no' => [ '$in' => $issue_nos ] ])
+            ->where([ 'state' => [ '$nin' => $last_column_states ] ])
+            ->get();
+        foreach ($issues as $issue)
+        {
+            $new_issue_nos[] = $issue['no'];
+
+            $origin_issues[] = [
+                'no' => $issue['no'],
+                'state' => isset($issue['state']) ? $issue['state'] : '',
+                'story_points' => isset($issue['story_points']) ? $issue['story_points'] : 0 ];
+        }
+
+        return [ 'issues' => $new_issue_nos, 'origin_issues' => $origin_issues ];
+    }
+
+   /**
+     * get sprint original state.
+     *
+     * @param  string $project_key 
+     * @param  array  $issue_nos
+     * @return array 
      */
     public function getOriginIssues($project_key, $issue_nos)
     {
@@ -396,7 +465,7 @@ class SprintController extends Controller
         $kanban_id = $request->input('kanban_id');
         if (!$kanban_id)
         {
-            throw new \UnexpectedValueException('the kanban id cannot be empty', -11714);
+            throw new \UnexpectedValueException('the kanban id cannot be empty', -11717);
         }
 
         $sprint = Sprint::where('project_key', $project_key)
@@ -448,21 +517,11 @@ class SprintController extends Controller
         // guideline end 
 
         // remaining start
-        $last_column_states = [];
-        $board = Board::find($kanban_id);
-        if ($board && isset($board->columns))
-        {
-            $board_columns = $board->columns;
-            $last_column = array_pop($board_columns) ?: [];
-            if ($last_column && isset($last_column['states']) && $last_column['states'])
-            {
-                $last_column_states = $last_column['states'];
-            }
-        }
+        $last_column_states = $this->getLastColumnStates($kanban_id);
 
         $sprint_day_log = SprintDayLog::where('project_key', $project_key)
             ->where('no', $sprint_no)
-            ->orderBy('day', 'desc')
+            ->orderBy('day', 'asc')
             ->get();
 
         $issue_count_remaining = [];
