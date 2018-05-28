@@ -197,12 +197,9 @@ class SprintController extends Controller
 
         $sprint->fill($updValues)->save();
 
-        if (isset($sprint->issues) && $sprint->issues)
+        foreach ($new_issues['issues'] as $issue_no)
         {
-            foreach ($sprint->issues as $issue_no)
-            {
-                $this->pushSprint($project_key, $issue_no, $no);
-            }
+            $this->pushSprint($project_key, $issue_no, $no);
         }
 
         return Response()->json([ 'ecode' => 0, 'data' => $this->getValidSprintList($project_key) ]);
