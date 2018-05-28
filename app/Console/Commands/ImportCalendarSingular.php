@@ -49,7 +49,7 @@ class ImportCalendarSingular extends Command
             $cs = CalendarSingular::where([ 'day' => trim($tmp[0]) ])->first();
             $cs && $cs->delete();
 
-            CalendarSingular::create([ 'day' => trim($tmp[0]), 'flag' => trim($tmp[1]) ]); 
+            CalendarSingular::create([ 'day' => trim($tmp[0]), 'flag' => intval(trim($tmp[1])) ]); 
         }
     }
 }
