@@ -391,10 +391,11 @@ class IssueController extends Controller
         $assignee_id = $request->input('assignee');
         if (!$assignee_id)
         {
-            $module_id = $request->input('module');
-            if ($module_id)
+            $module_ids = $request->input('module');
+            if ($module_ids)
             {
-                $module = Provider::getModuleById($module_id);
+                $module_ids = explode(',', $module_ids);
+                $module = Provider::getModuleById($module_ids[0]);
                 if (isset($module['defaultAssignee']) && $module['defaultAssignee'] === 'modulePrincipal')
                 {
                     $assignee2 = $module['principal'] ?: '';
