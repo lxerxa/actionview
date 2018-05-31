@@ -11,6 +11,7 @@ use App\System\Eloquent\SysSetting;
 use Sentinel;
 
 use Mail;
+use Config;
 
 class SyssettingController extends Controller
 {
@@ -169,14 +170,14 @@ class SyssettingController extends Controller
             throw new \UnexpectedValueException('the mail server config params have error.', -15052);
         }
 
-        config('mail.from', $syssetting['mailserver']['send']['from']);
-        config('mail.host', $syssetting['mailserver']['smtp']['host']);
-        config('mail.port', $syssetting['mailserver']['smtp']['port']);
-        config('mail.encryption', isset($syssetting['mailserver']['smtp']['encryption']) && $syssetting['mailserver']['smtp']['encryption'] ? $syssetting['mailserver']['smtp']['encryption'] : null);
-        config('mail.username', $syssetting['mailserver']['smtp']['username']);
-        config('mail.password', $syssetting['mailserver']['smtp']['password']);
+        Config::set('mail.from', $syssetting['mailserver']['send']['from']);
+        Config::set('mail.host', $syssetting['mailserver']['smtp']['host']);
+        Config::set('mail.port', $syssetting['mailserver']['smtp']['port']);
+        Config::set('mail.encryption', isset($syssetting['mailserver']['smtp']['encryption']) && $syssetting['mailserver']['smtp']['encryption'] ? $syssetting['mailserver']['smtp']['encryption'] : null);
+        Config::set('mail.username', $syssetting['mailserver']['smtp']['username']);
+        Config::set('mail.password', $syssetting['mailserver']['smtp']['password']);
 
-        $prefix = isset($syssetting['mailserver']['send']['prefix']) ? $syssetting['mailserver']['send']['prefix'] : '';
+        $prefix = isset($syssetting['mailserver']['send']['prefix']) ? $syssetting['mailserver']['send']['prefix'] : 'ActionView';
 
         $contents = $request->input('contents') ?: '';
         $data = [ 'contents' => $contents ];
@@ -185,7 +186,7 @@ class SyssettingController extends Controller
 
         try {
             Mail::send('emails.test', $data, function($message) use($to, $subject) {
-                $message->from(config('mail.from'), 'master')
+                $message->from(Config::get('mail.from'), 'master')
                     ->to($to)
                     ->subject($subject);
                 });

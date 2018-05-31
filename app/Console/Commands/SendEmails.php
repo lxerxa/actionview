@@ -19,6 +19,7 @@ use App\System\Eloquent\SysSetting;
 
 use DB;
 use Mail;
+use Config;
 use Exception;
 
 class SendEmails extends Command
@@ -124,12 +125,12 @@ class SendEmails extends Command
             || !isset($syssetting['mailserver']['smtp']['username']) || !$syssetting['mailserver']['smtp']['username']
             || !isset($syssetting['mailserver']['smtp']['password']) || !$syssetting['mailserver']['smtp']['password'])
         {
-            config('mail.from', $syssetting['mailserver']['send']['from']);
-            config('mail.host', $syssetting['mailserver']['smtp']['host']);
-            config('mail.port', $syssetting['mailserver']['smtp']['port']);
-            config('mail.encryption', isset($syssetting['mailserver']['smtp']['encryption']) && $syssetting['mailserver']['smtp']['encryption'] ? $syssetting['mailserver']['smtp']['encryption'] : null);
-            config('mail.username', $syssetting['mailserver']['smtp']['username']);
-            config('mail.password', $syssetting['mailserver']['smtp']['password']);
+            Config::set'mail.from', $syssetting['mailserver']['send']['from']);
+            Config::set('mail.host', $syssetting['mailserver']['smtp']['host']);
+            Config::set('mail.port', $syssetting['mailserver']['smtp']['port']);
+            Config::set('mail.encryption', isset($syssetting['mailserver']['smtp']['encryption']) && $syssetting['mailserver']['smtp']['encryption'] ? $syssetting['mailserver']['smtp']['encryption'] : null);
+            Config::set('mail.username', $syssetting['mailserver']['smtp']['username']);
+            Config::set('mail.password', $syssetting['mailserver']['smtp']['password']);
         }
 
         $http_post = '';
@@ -289,7 +290,7 @@ class SendEmails extends Command
                 $subject = '[' . $mail_prefix . '](' . $project['key'] . '-' . $issue['no'] . ')' . (isset($issue['title']) ? $issue['title'] : '-');
                 try {
                     Mail::send('emails.issue', $new_data, function($message) use($from, $to, $subject) {
-                      $message->from(config('from'), $from)
+                      $message->from(Config::get('from'), $from)
                           ->to($to)
                           ->subject($subject);
                     });
