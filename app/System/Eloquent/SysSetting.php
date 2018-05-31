@@ -10,7 +10,7 @@ class SysSetting extends Model
 
     protected $fillable = array(
         'properties',
-        'smtp',
+        'mailserver',
         'sysroles'
     );
 }

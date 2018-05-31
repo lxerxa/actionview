@@ -48,7 +48,9 @@ class SnapSprint extends Command
 
             $contents = [];
             $issue_nos = isset($sprint->issues) ? $sprint->issues : [];
-            $issues = DB::collection('issue_' . $project_key)->where([ 'no' => [ '$in' => $issue_nos ] ])->get();
+            $issues = DB::collection('issue_' . $project_key)
+                ->where([ 'no' => [ '$in' => $issue_nos ] ])
+                ->get();
             foreach ($issues as $issue)
             { 
                 $tmp = [];

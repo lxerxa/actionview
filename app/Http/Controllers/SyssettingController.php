@@ -10,6 +10,8 @@ use App\Http\Controllers\Controller;
 use App\System\Eloquent\SysSetting;
 use Sentinel;
 
+use Mail;
+
 class SyssettingController extends Controller
 {
     public function __construct()
@@ -26,7 +28,12 @@ class SyssettingController extends Controller
      */
     public function show()
     {
-        return Response()->json([ 'ecode' => 0, 'data' => SysSetting::first() ]);
+        $syssetting = SysSetting::first()->toArray();
+        if (isset($syssetting['mailserver']) && isset($syssetting['mailserver']['smtp']) && isset($syssetting['mailserver']['smtp']['password']))
+        {
+            unset($syssetting['mailserver']['smtp']['password']);
+        }
+        return Response()->json([ 'ecode' => 0, 'data' => $syssetting ]);
     }
 
     /**
@@ -46,10 +53,16 @@ class SyssettingController extends Controller
             $updValues['properties'] = $properties;
         }
 
+        $mailserver = isset($syssetting->mailserver) ? $syssetting->mailserver : [];
         $smtp = $request->input('smtp');
         if (isset($smtp))
         {
-            $updValues['smtp'] = $smtp;
+            $updValues['mailserver'] = array_merge($mailserver, [ 'smtp' => $smtp ]);
+        }
+        $mail_send = $request->input('mail_send');
+        if (isset($mail_send))
+        {
+            $updValues['mailserver'] = array_merge($mailserver, [ 'send' => $mail_send ]);
         }
 
         $sysroles = $request->input('sysroles');
@@ -86,7 +99,7 @@ class SyssettingController extends Controller
      * @param  string  $type
      * @param  array   $added_user_ids
      * @param  array   $deleted_user_ids
-     * @return \Illuminate\Http\Response
+     * @return void 
      */
     public function handleUserPermission($permission, $added_user_ids, $deleted_user_ids)
     {
@@ -111,12 +124,14 @@ class SyssettingController extends Controller
     public function resetPwd(Request $request)
     {
         $pwd = $request->input('send_auth_pwd');
-        if (isset($pwd))
+        if (!isset($pwd) || !$pwd)
         {
-            $syssetting = SysSetting::first();
-            $syssetting->smtp = array_merge($syssetting->smtp, [ 'send_auth_pwd' => $pwd ]);
-            $syssetting->save();
+            throw new \UnexpectedValueException('the name cannot be empty.', -12200);
         }
+
+        $syssetting = SysSetting::first();
+        $syssetting->smtp = array_merge($syssetting->smtp, [ 'send_auth_pwd' => $pwd ]);
+        $syssetting->save();
 
         return Response()->json([ 'ecode' => 0, 'data' => SysSetting::first() ]);
     }
@@ -130,8 +145,54 @@ class SyssettingController extends Controller
     public function sendTestMail(Request $request)
     {
         $to = $request->input('to');
-        $title = $request->input('title');
-        $contents = $request->input('contents');
+        if (!isset($to) || !$to)
+        {
+            throw new \UnexpectedValueException('the mail recipients cannot be empty.', -15050);
+        }
+
+        $subject = $request->input('subject');
+        if (!isset($subject) || !$subject)
+        {
+            throw new \UnexpectedValueException('the mail subject cannot be empty.', -15051);
+        }
+
+        $syssetting = SysSetting::first()->toArray(); 
+        if (!isset($syssetting['mailserver']) || !$syssetting['mailserver']
+            || !isset($syssetting['mailserver']['send']) || !$syssetting['mailserver']['send']
+            || !isset($syssetting['mailserver']['smtp']) || !$syssetting['mailserver']['smtp']
+            || !isset($syssetting['mailserver']['send']['from']) || !$syssetting['mailserver']['send']['from']
+            || !isset($syssetting['mailserver']['smtp']['host']) || !$syssetting['mailserver']['smtp']['host']
+            || !isset($syssetting['mailserver']['smtp']['port']) || !$syssetting['mailserver']['smtp']['port']
+            || !isset($syssetting['mailserver']['smtp']['username']) || !$syssetting['mailserver']['smtp']['username']
+            || !isset($syssetting['mailserver']['smtp']['password']) || !$syssetting['mailserver']['smtp']['password'])
+        {
+            throw new \UnexpectedValueException('the mail server config params have error.', -15052);
+        }
+
+        config('mail.from', $syssetting['mailserver']['send']['from']);
+        config('mail.host', $syssetting['mailserver']['smtp']['host']);
+        config('mail.port', $syssetting['mailserver']['smtp']['port']);
+        config('mail.encryption', isset($syssetting['mailserver']['smtp']['encryption']) && $syssetting['mailserver']['smtp']['encryption'] ? $syssetting['mailserver']['smtp']['encryption'] : null);
+        config('mail.username', $syssetting['mailserver']['smtp']['username']);
+        config('mail.password', $syssetting['mailserver']['smtp']['password']);
+
+        $prefix = isset($syssetting['mailserver']['send']['prefix']) ? $syssetting['mailserver']['send']['prefix'] : '';
+
+        $contents = $request->input('contents') ?: '';
+        $data = [ 'contents' => $contents ];
+
+        $from = $syssetting['mailserver']['send']['from'];
+        $subject = '[' . $prefix . ']' . $subject;
+
+        try {
+            Mail::send('emails.test', $data, function($message) use($from, $to, $subject) {
+                $message->from($from, 'master')
+                    ->to($to)
+                    ->subject($subject);
+                });
+        } catch (Exception $e){
+            throw new Exception('send mail failed.', -15053);
+        }
 
         return Response()->json([ 'ecode' => 0, 'data' => '' ]);
     }
