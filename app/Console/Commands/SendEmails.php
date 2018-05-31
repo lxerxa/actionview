@@ -288,14 +288,11 @@ class SendEmails extends Command
                 $from = $activity['user']['name']; 
                 $to = $to_user['email'];
                 $subject = '[' . $mail_prefix . '](' . $project['key'] . '-' . $issue['no'] . ')' . (isset($issue['title']) ? $issue['title'] : '-');
-                try {
-                    Mail::send('emails.issue', $new_data, function($message) use($from, $to, $subject) {
-                      $message->from(Config::get('from'), $from)
-                          ->to($to)
-                          ->subject($subject);
-                    });
-                } catch (Exception $e){
-                }
+                Mail::send('emails.issue', $new_data, function($message) use($from, $to, $subject) {
+                    $message->from(Config::get('from'), $from)
+                        ->to($to)
+                        ->subject($subject);
+                });
             }
             DB::collection('mq')->where('_id', $val['_id']->__toString())->delete();
         }

@@ -56,6 +56,10 @@ class Handler extends ExceptionHandler
         {
             $ecode = -10005;
         } 
+        else if ($e instanceof \Swift_SwiftException)
+        {
+             $ecode = -15053;
+        }
         else 
         {
             $ecode = $e->getCode() ?: -99999;

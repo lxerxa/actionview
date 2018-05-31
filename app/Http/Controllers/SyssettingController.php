@@ -184,15 +184,11 @@ class SyssettingController extends Controller
 
         $subject = '[' . $prefix . ']' . $subject;
 
-        try {
-            Mail::send('emails.test', $data, function($message) use($to, $subject) {
-                $message->from(Config::get('mail.from'), 'master')
-                    ->to($to)
-                    ->subject($subject);
-                });
-        } catch (Exception $e){
-            throw new Exception('send mail failed.', -15053);
-        }
+        Mail::send('emails.test', $data, function($message) use($to, $subject) {
+            $message->from(Config::get('mail.from'), 'master')
+                ->to($to)
+                ->subject($subject);
+        });
 
         return Response()->json([ 'ecode' => 0, 'data' => '' ]);
     }
