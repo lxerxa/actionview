@@ -125,7 +125,7 @@ class SendEmails extends Command
             || !isset($syssetting['mailserver']['smtp']['username']) || !$syssetting['mailserver']['smtp']['username']
             || !isset($syssetting['mailserver']['smtp']['password']) || !$syssetting['mailserver']['smtp']['password'])
         {
-            Config::set'mail.from', $syssetting['mailserver']['send']['from']);
+            Config::set('mail.from', $syssetting['mailserver']['send']['from']);
             Config::set('mail.host', $syssetting['mailserver']['smtp']['host']);
             Config::set('mail.port', $syssetting['mailserver']['smtp']['port']);
             Config::set('mail.encryption', isset($syssetting['mailserver']['smtp']['encryption']) && $syssetting['mailserver']['smtp']['encryption'] ? $syssetting['mailserver']['smtp']['encryption'] : null);
