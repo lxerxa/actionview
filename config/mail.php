@@ -55,7 +55,8 @@ return [
     |
     */
 
-    'from' => ['address' => 'actionview@126.com', 'name' => 'master@actionview'],
+    //'from' => ['address' => 'actionview@126.com', 'name' => 'master@actionview'],
+    'from' => env('MAIL_ADDRESS', 'master@actionview.cn'),
 
     /*
     |--------------------------------------------------------------------------

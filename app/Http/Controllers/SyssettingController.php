@@ -181,12 +181,11 @@ class SyssettingController extends Controller
         $contents = $request->input('contents') ?: '';
         $data = [ 'contents' => $contents ];
 
-        $from = $syssetting['mailserver']['send']['from'];
         $subject = '[' . $prefix . ']' . $subject;
 
         try {
-            Mail::send('emails.test', $data, function($message) use($from, $to, $subject) {
-                $message->from($from, 'master')
+            Mail::send('emails.test', $data, function($message) use($to, $subject) {
+                $message->from(config('mail.from'), 'master')
                     ->to($to)
                     ->subject($subject);
                 });

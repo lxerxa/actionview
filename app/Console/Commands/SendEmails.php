@@ -15,6 +15,8 @@ use App\Acl\Eloquent\Group;
 
 use Cartalyst\Sentinel\Users\EloquentUser;
 
+use App\System\Eloquent\SysSetting;
+
 use DB;
 use Mail;
 use Exception;
@@ -112,6 +114,36 @@ class SendEmails extends Command
      */
     public function handle()
     {
+        $syssetting = SysSetting::first()->toArray(); 
+        if (!isset($syssetting['mailserver']) || !$syssetting['mailserver']
+            || !isset($syssetting['mailserver']['send']) || !$syssetting['send']
+            || !isset($syssetting['mailserver']['smtp']) || !$syssetting['smtp']
+            || !isset($syssetting['mailserver']['send']['from']) || !$syssetting['mailserver']['send']['from']
+            || !isset($syssetting['mailserver']['smtp']['host']) || !$syssetting['mailserver']['smtp']['host']
+            || !isset($syssetting['mailserver']['smtp']['port']) || !$syssetting['mailserver']['smtp']['port']
+            || !isset($syssetting['mailserver']['smtp']['username']) || !$syssetting['mailserver']['smtp']['username']
+            || !isset($syssetting['mailserver']['smtp']['password']) || !$syssetting['mailserver']['smtp']['password'])
+        {
+            config('mail.from', $syssetting['mailserver']['send']['from']);
+            config('mail.host', $syssetting['mailserver']['smtp']['host']);
+            config('mail.port', $syssetting['mailserver']['smtp']['port']);
+            config('mail.encryption', isset($syssetting['mailserver']['smtp']['encryption']) && $syssetting['mailserver']['smtp']['encryption'] ? $syssetting['mailserver']['smtp']['encryption'] : null);
+            config('mail.username', $syssetting['mailserver']['smtp']['username']);
+            config('mail.password', $syssetting['mailserver']['smtp']['password']);
+        }
+
+        $http_post = '';
+        if (isset($syssetting['properties']) && isset($syssetting['properties']['http_host']))
+        {
+            $http_post = $syssetting['properties']['http_host'];
+        }
+
+        $mail_prefix = 'ActionView';
+        if (isset($syssetting['mailserver']) && isset($syssetting['mailserver']['send']) && isset($syssetting['mailserver']['send']['prefix']))
+        {
+            $mail_prefix = $syssetting['mailserver']['send']['prefix'];
+        }
+ 
         $event_map = $this->getEventMap();
 
         $point = time();
@@ -240,7 +272,7 @@ class SendEmails extends Command
               'event_key' => $activity['event_key'], 
               'user' => $activity['user'], 
               'data' => isset($activity['data']) ? $activity['data'] : [], 
-              'http_host' => env('HTTP_HOST', 'www.actionview.cn'),
+              'http_host' => $http_host,
             ];
 
             $to_users = EloquentUser::find(array_unique($uids)); 
@@ -254,10 +286,10 @@ class SendEmails extends Command
 
                 $from = $activity['user']['name']; 
                 $to = $to_user['email'];
-                $subject = '[ActionView](' . $project['key'] . '-' . $issue['no'] . ')' . (isset($issue['title']) ? $issue['title'] : '-');
+                $subject = '[' . $mail_prefix . '](' . $project['key'] . '-' . $issue['no'] . ')' . (isset($issue['title']) ? $issue['title'] : '-');
                 try {
                     Mail::send('emails.issue', $new_data, function($message) use($from, $to, $subject) {
-                      $message->from(env('MAIL_ADDRESS', 'actionview@126.com'), $from)
+                      $message->from(config('from'), $from)
                           ->to($to)
                           ->subject($subject);
                     });
