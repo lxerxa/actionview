@@ -115,15 +115,16 @@ class SendEmails extends Command
      */
     public function handle()
     {
+
         $syssetting = SysSetting::first()->toArray(); 
-        if (!isset($syssetting['mailserver']) || !$syssetting['mailserver']
-            || !isset($syssetting['mailserver']['send']) || !$syssetting['send']
-            || !isset($syssetting['mailserver']['smtp']) || !$syssetting['smtp']
-            || !isset($syssetting['mailserver']['send']['from']) || !$syssetting['mailserver']['send']['from']
-            || !isset($syssetting['mailserver']['smtp']['host']) || !$syssetting['mailserver']['smtp']['host']
-            || !isset($syssetting['mailserver']['smtp']['port']) || !$syssetting['mailserver']['smtp']['port']
-            || !isset($syssetting['mailserver']['smtp']['username']) || !$syssetting['mailserver']['smtp']['username']
-            || !isset($syssetting['mailserver']['smtp']['password']) || !$syssetting['mailserver']['smtp']['password'])
+        if (isset($syssetting['mailserver'])
+            && isset($syssetting['mailserver']['send'])
+            && isset($syssetting['mailserver']['smtp'])
+            && isset($syssetting['mailserver']['send']['from'])
+            && isset($syssetting['mailserver']['smtp']['host'])
+            && isset($syssetting['mailserver']['smtp']['port'])
+            && isset($syssetting['mailserver']['smtp']['username'])
+            && isset($syssetting['mailserver']['smtp']['password']))
         {
             Config::set('mail.from', $syssetting['mailserver']['send']['from']);
             Config::set('mail.host', $syssetting['mailserver']['smtp']['host']);
@@ -133,10 +134,10 @@ class SendEmails extends Command
             Config::set('mail.password', $syssetting['mailserver']['smtp']['password']);
         }
 
-        $http_post = '';
+        $http_host = '';
         if (isset($syssetting['properties']) && isset($syssetting['properties']['http_host']))
         {
-            $http_post = $syssetting['properties']['http_host'];
+            $http_host = $syssetting['properties']['http_host'];
         }
 
         $mail_prefix = 'ActionView';
@@ -148,6 +149,9 @@ class SendEmails extends Command
         $event_map = $this->getEventMap();
 
         $point = time();
+        // clean up garbage message
+        DB::collection('mq')->where('flag', '>', 0)->where('flag', '<', $point - 24 * 60 * 60)->delete();
+        // mark up the notice message 
         DB::collection('mq')->where('flag', 0)->update([ 'flag' => $point ]);
 
         $data = DB::collection('mq')->where('flag', $point)->orderBy('_id', 'asc')->get();
@@ -289,7 +293,7 @@ class SendEmails extends Command
                 $to = $to_user['email'];
                 $subject = '[' . $mail_prefix . '](' . $project['key'] . '-' . $issue['no'] . ')' . (isset($issue['title']) ? $issue['title'] : '-');
                 Mail::send('emails.issue', $new_data, function($message) use($from, $to, $subject) {
-                    $message->from(Config::get('from'), $from)
+                    $message->from(Config::get('mail.from'), $from)
                         ->to($to)
                         ->subject($subject);
                 });

@@ -148,13 +148,13 @@ class SyssettingController extends Controller
         $to = $request->input('to');
         if (!isset($to) || !$to)
         {
-            throw new \UnexpectedValueException('the mail recipients cannot be empty.', -15050);
+            throw new \UnexpectedValueException('the mail recipients cannot be empty.', -15201);
         }
 
         $subject = $request->input('subject');
         if (!isset($subject) || !$subject)
         {
-            throw new \UnexpectedValueException('the mail subject cannot be empty.', -15051);
+            throw new \UnexpectedValueException('the mail subject cannot be empty.', -15202);
         }
 
         $syssetting = SysSetting::first()->toArray(); 
@@ -167,7 +167,7 @@ class SyssettingController extends Controller
             || !isset($syssetting['mailserver']['smtp']['username']) || !$syssetting['mailserver']['smtp']['username']
             || !isset($syssetting['mailserver']['smtp']['password']) || !$syssetting['mailserver']['smtp']['password'])
         {
-            throw new \UnexpectedValueException('the mail server config params have error.', -15052);
+            throw new \UnexpectedValueException('the mail server config params have error.', -15203);
         }
 
         Config::set('mail.from', $syssetting['mailserver']['send']['from']);
