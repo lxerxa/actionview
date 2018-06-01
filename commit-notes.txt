@@ -23,3 +23,6 @@ cd /var/www/actionview/dbdata
 cp * /var/www/actionview/docker/db/dbdata 
 git add ./
 git commit -m 'dbdata update'
+
+import calendar-singular:
+php artisan calendar-singular:import
