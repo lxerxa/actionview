@@ -30,10 +30,10 @@ class SyssettingController extends Controller
     public function show()
     {
         $syssetting = SysSetting::first()->toArray();
-        if (isset($syssetting['mailserver']) && isset($syssetting['mailserver']['smtp']) && isset($syssetting['mailserver']['smtp']['password']))
-        {
-            unset($syssetting['mailserver']['smtp']['password']);
-        }
+        //if (isset($syssetting['mailserver']) && isset($syssetting['mailserver']['smtp']) && isset($syssetting['mailserver']['smtp']['password']))
+        //{
+        //    unset($syssetting['mailserver']['smtp']['password']);
+        //}
         return Response()->json([ 'ecode' => 0, 'data' => $syssetting ]);
     }
 
