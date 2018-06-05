@@ -141,7 +141,10 @@ class SendEmails extends Command
         }
 
         $mail_prefix = 'ActionView';
-        if (isset($syssetting['mailserver']) && isset($syssetting['mailserver']['send']) && isset($syssetting['mailserver']['send']['prefix']))
+        if (isset($syssetting['mailserver']) 
+            && isset($syssetting['mailserver']['send']) 
+            && isset($syssetting['mailserver']['send']['prefix'])
+            && $syssetting['mailserver']['send']['prefix'])
         {
             $mail_prefix = $syssetting['mailserver']['send']['prefix'];
         }

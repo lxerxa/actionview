@@ -16,7 +16,8 @@ RUN apt-get update && \
         php-mcrypt\
         php-curl\
         php-dom\
-        php-mongodb
+        php-mongodb\
+        cron
 
 RUN a2enmod rewrite
 
@@ -36,6 +37,8 @@ RUN /bin/bash config.sh
 ADD conf/env.ini ./.env 
 
 ADD conf/000-default.conf /etc/apache2/sites-available/000-default.conf 
+
+ADD conf/crontabfile /var/www/actionview/crontabfile 
 
 ADD scripts/run.sh /run.sh
 RUN chmod a+x /run.sh
