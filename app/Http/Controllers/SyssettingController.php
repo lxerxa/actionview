@@ -177,7 +177,7 @@ class SyssettingController extends Controller
         Config::set('mail.username', $syssetting['mailserver']['smtp']['username']);
         Config::set('mail.password', $syssetting['mailserver']['smtp']['password']);
 
-        $prefix = isset($syssetting['mailserver']['send']['prefix']) ? $syssetting['mailserver']['send']['prefix'] : 'ActionView';
+        $prefix = isset($syssetting['mailserver']['send']['prefix']) && $syssetting['mailserver']['send']['prefix'] ? $syssetting['mailserver']['send']['prefix'] : 'ActionView';
 
         $contents = $request->input('contents') ?: '';
         $data = [ 'contents' => $contents ];
