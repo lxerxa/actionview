@@ -24,9 +24,9 @@ class StateController extends Controller
         foreach ($states as $key => $state)
         {
             $workflows = Definition::whereRaw([ 'state_ids' => isset($state['key']) ? $state['key'] : $state['_id'] ])
-                             ->orderBy('project_key', 'asc')
-                             ->get([ 'project_key', 'name' ])
-                             ->toArray();
+                ->orderBy('project_key', 'asc')
+                ->get([ 'project_key', 'name' ])
+                ->toArray();
             $states[$key]['workflows'] = $workflows;
 
             if ($workflows)

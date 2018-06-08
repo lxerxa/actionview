@@ -26,15 +26,15 @@ class FieldController extends Controller
         foreach ($fields as $field)
         {
             $field->screens = Screen::whereRaw([ 'field_ids' => $field->id ])
-                                  ->orderBy('project_key', 'asc')
-                                  ->get(['project_key', 'name'])
-                                  ->toArray();
+                ->orderBy('project_key', 'asc')
+                ->get(['project_key', 'name'])
+                ->toArray();
 
             $field->is_used = !!($field->screens);
 
             $field->screens = array_filter($field->screens, function($item) use($project_key) { 
-                                  return $item['project_key'] === $project_key || $item['project_key'] === '$_sys_$';
-                              });
+                return $item['project_key'] === $project_key || $item['project_key'] === '$_sys_$';
+            });
         }
         $types = Provider::getTypeList($project_key, ['name']);
         return Response()->json(['ecode' => 0, 'data' => $fields, 'options' => [ 'types' => $types ]]);

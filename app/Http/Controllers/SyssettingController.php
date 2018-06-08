@@ -30,10 +30,13 @@ class SyssettingController extends Controller
     public function show()
     {
         $syssetting = SysSetting::first()->toArray();
-        //if (isset($syssetting['mailserver']) && isset($syssetting['mailserver']['smtp']) && isset($syssetting['mailserver']['smtp']['password']))
-        //{
-        //    unset($syssetting['mailserver']['smtp']['password']);
-        //}
+        if (isset($syssetting['mailserver']) 
+            && isset($syssetting['mailserver']['smtp']) 
+            && isset($syssetting['mailserver']['smtp']['password']) 
+            && $syssetting['mailserver']['smtp']['password'])
+        {
+            $syssetting['mailserver']['smtp']['password'] = '******';
+        }
         return Response()->json([ 'ecode' => 0, 'data' => $syssetting ]);
     }
 
@@ -60,6 +63,7 @@ class SyssettingController extends Controller
         {
             $updValues['mailserver'] = array_merge($mailserver, [ 'smtp' => $smtp ]);
         }
+
         $mail_send = $request->input('mail_send');
         if (isset($mail_send))
         {
@@ -91,7 +95,7 @@ class SyssettingController extends Controller
 
         $syssetting->fill($updValues)->save();
 
-        return Response()->json([ 'ecode' => 0, 'data' => SysSetting::first() ]);
+        return $this->show(); 
     }
 
     /**

@@ -25,10 +25,9 @@ class ScreenController extends Controller
         foreach ($screens as $screen)
         {
             $workflows = Definition::whereRaw([ 'screen_ids' => $screen->id ])
-                             ->orderBy('project_key', 'asc')
-                             ->get([ 'project_key', 'name' ])
-                             ->toArray();
-
+                ->orderBy('project_key', 'asc')
+                ->get([ 'project_key', 'name' ])
+                ->toArray();
             $screen->workflows = $workflows;
 
             if ($workflows)
@@ -41,8 +40,8 @@ class ScreenController extends Controller
             }
 
             $screen->workflows = array_filter($workflows, function($item) use($project_key) { 
-                                     return $item['project_key'] === $project_key || $item['project_key'] === '$_sys_$';
-                                 });
+                return $item['project_key'] === $project_key || $item['project_key'] === '$_sys_$';
+            });
         }
 
         $fields = Field::Where([ 'project_key' => [ '$in' => [ $project_key, '$_sys_$' ] ] ])->orderBy('created_at', 'asc')->get(['name', 'key']);
