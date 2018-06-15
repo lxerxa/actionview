@@ -478,6 +478,10 @@ class Provider {
         $users = EloquentUser::find($user_ids);
         foreach ($users as $user)
         {
+            if (isset($user->invalid_flag) && $user->invalid_flag === 1)
+            {
+                continue;
+            }
             $user_list[] = ['id' => $user->id, 'name' => $user->first_name, 'email' => $user->email ];
         }
 
@@ -495,10 +499,14 @@ class Provider {
         $user_ids = Acl::getUserIdsByPermission('assigned_issue', $project_key);
 
         $user_list = [];
-        foreach ($user_ids as $user_id)
+        $users = EloquentUser::find($user_ids); 
+        foreach ($users as $user)
         {
-            $user_info = Sentinel::findById($user_id);
-            $user_info && $user_list[] = ['id' => $user_id, 'name' => $user_info->first_name, 'email' => $user_info->email ];
+            if (isset($user->invalid_flag) && $user->invalid_flag === 1)
+            {
+                continue;
+            }
+            $user_list[] = [ 'id' => $user->id, 'name' => $user->first_name, 'email' => $user->email ];
         }
         return $user_list;
     }

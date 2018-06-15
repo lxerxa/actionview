@@ -40,6 +40,18 @@ class SessionController extends Controller
         }
 
         $user = Sentinel::authenticate([ 'email' => $email, 'password' => $password ]);
+        //if (!$user || $user->invalid_flag === true)
+        //{
+        //    $directories = Directory::all();
+        //    foreach ($directories as $d)
+        //    {
+        //        if ($d->type === 'LDAP')
+        //        {
+        //            $this->authByLdap();
+        //        }
+        //    }
+        //}
+
         if ($user)
         {
             Sentinel::login($user);

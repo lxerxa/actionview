@@ -15,6 +15,7 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         'App\Console\Commands\SendEmails',
         'App\Console\Commands\ImportCalendarSingular',
+        'App\Console\Commands\SyncLdap',
         'App\Console\Commands\SnapSprint'
         // Commands\Inspire::class,
     ];

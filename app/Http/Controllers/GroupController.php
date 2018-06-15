@@ -61,7 +61,7 @@ class GroupController extends Controller
 
         foreach ($groups as $group)
         {
-            $group->users = EloquentUser::find($group->users);
+            $group->users = EloquentUser::find($group->users ?: []);
         }
 
         return Response()->json([ 'ecode' => 0, 'data' => $groups ]);

@@ -9,6 +9,7 @@ use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Events\DelUserEvent;
 use App\Acl\Eloquent\Group;
+use App\Acl\Eloquent\UserDirectory;
 
 use Cartalyst\Sentinel\Users\EloquentUser;
 use Sentinel;
@@ -35,12 +36,12 @@ class UserController extends Controller
         {
             $search_users = EloquentUser::Where('first_name', 'like', '%' . $s .  '%')
                                 ->orWhere('email', 'like', '%' . $s .  '%')
-                                ->get([ 'first_name', 'last_name', 'email' ]);
+                                ->get([ 'first_name', 'last_name', 'email', 'invalid_flag' ]);
 
             $i = 0;
             foreach ($search_users as $key => $user)
             {
-                if (Activation::completed($user) === false || $user->email === 'admin@action.view')
+                if ((isset($user->invalid_flag) && $user->invalid_flag === 1) || Activation::completed($user) === false || $user->email === 'admin@action.view')
                 {
                     continue;
                 }
@@ -88,7 +89,7 @@ class UserController extends Controller
         $page_size = 30;
         $page = $request->input('page') ?: 1;
         $query = $query->skip($page_size * ($page - 1))->take($page_size);
-        $all_users = $query->get([ 'first_name', 'last_name', 'email', 'phone' ]);
+        $all_users = $query->get([ 'first_name', 'last_name', 'email', 'phone', 'invalid_flag' ]);
 
         $users = [];
         foreach ($all_users as $user)
@@ -97,13 +98,14 @@ class UserController extends Controller
             $tmp['id'] = $user->id;
             $tmp['first_name'] = $user->first_name;
             $tmp['email'] = $user->email;
-            $tmp['phone'] = isset($user->phone) ? $user->phone : '';
+            $tmp['phone'] = $user->phone ?: '';
             $tmp['groups'] = array_column(Group::whereRaw([ 'users' => $user->id ])->get([ 'name' ])->toArray() ?: [], 'name');
- 
-            $tmp['status'] = Activation::completed($user) ? 'active' : 'unactivated';
+            $tmp['directory'] = $user->directory ?: 'self';
+            $tmp['status'] = $user->invalid_flag === 1 ? 'invalid' : (Activation::completed($user) ? 'active' : 'unactivated');
+
             $users[] = $tmp;
         }
-        return Response()->json([ 'ecode' => 0, 'data' => $users, 'options' => [ 'total' => $total, 'sizePerPage' => $page_size, 'groups' => Group::all() ] ]); 
+        return Response()->json([ 'ecode' => 0, 'data' => $users, 'options' => [ 'total' => $total, 'sizePerPage' => $page_size, 'groups' => Group::all(), 'directories' => UserDirectory::all() ] ]); 
     }
 
     /**
@@ -276,7 +278,7 @@ class UserController extends Controller
         $email = $request->input('email');
         if (isset($email))
         {
-            if (! $email = trim($email))
+            if (!($email = trim($email)))
             {
                 throw new \UnexpectedValueException('the email can not be empty.', -10101);
             }
@@ -294,14 +296,14 @@ class UserController extends Controller
             throw new \UnexpectedValueException('the user does not exist.', -10106);
         }
 
-        $valid = Sentinel::validForUpdate($user, array_only($request->all(), ['first_name', 'email', 'phone']));
+        $valid = Sentinel::validForUpdate($user, array_only($request->all(), ['first_name', 'email', 'phone', 'invalid_flag']));
         if (!$valid)
         {
             throw new \UnexpectedValueException('updating the user does fails.', -10107);
         }
 
-        $user = Sentinel::update($user, array_only($request->all(), ['first_name', 'email', 'phone']));
-        $user->status = Activation::completed($user) ? 'active' : 'unactivated';
+        $user = Sentinel::update($user, array_only($request->all(), ['first_name', 'email', 'phone', 'invalid_flag']));
+        $user->status = $user->invalid_flag === 1 ? 'invalid' : (Activation::completed($user) ? 'active' : 'unactivated');
 
         return Response()->json([ 'ecode' => 0, 'data' => $user ]);
     }

@@ -4,14 +4,13 @@ namespace App\Acl\Eloquent;
 
 use Jenssegers\Mongodb\Eloquent\Model;
 
-class Group extends Model
+class UserDirectory extends Model
 {
-    protected $table = 'acl_group';
+    protected $table = 'user_directory';
 
     protected $fillable = array(
         'name',
-        'users',
-        'directory',
-        'description'
+        'type',
+        'configs'
     );
 }
