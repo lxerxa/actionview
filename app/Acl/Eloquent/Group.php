@@ -11,7 +11,9 @@ class Group extends Model
     protected $fillable = array(
         'name',
         'users',
+        'description',
         'directory',
-        'description'
+        'ldap_dn',
+        'sync_flag'
     );
 }
