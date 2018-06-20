@@ -54,15 +54,7 @@ class SyncLdap extends Command
             $configs[ $d->id ] = $d->configs;
         }
 
-        $configs = [
-            'cmri' => [
-                'domain_controllers' => [ '10.1.5.179' ],
-                'port'               => 389,
-                'base_dn'            => 'dc=chinamobile,dc=com',
-                'admin_username'     => 'cn=admin,dc=chinamobile,dc=com',
-                'admin_password'     => 'chinamobile',
-            ]
-        ];
+        $configs = [];
         $ad = new Adldap($configs);
 
         foreach ($configs as $key => $config)
