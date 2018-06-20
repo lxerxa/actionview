@@ -9,7 +9,8 @@ use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Events\DelUserEvent;
 use App\Acl\Eloquent\Group;
-use App\Acl\Eloquent\UserDirectory;
+
+use App\ActiveDirectory\Eloquent\Directory;
 
 use Cartalyst\Sentinel\Users\EloquentUser;
 use Sentinel;
@@ -89,7 +90,7 @@ class UserController extends Controller
         $page_size = 30;
         $page = $request->input('page') ?: 1;
         $query = $query->skip($page_size * ($page - 1))->take($page_size);
-        $all_users = $query->get([ 'first_name', 'last_name', 'email', 'phone', 'invalid_flag' ]);
+        $all_users = $query->get([ 'first_name', 'last_name', 'email', 'phone', 'directory', 'invalid_flag' ]);
 
         $users = [];
         foreach ($all_users as $user)
@@ -105,7 +106,7 @@ class UserController extends Controller
 
             $users[] = $tmp;
         }
-        return Response()->json([ 'ecode' => 0, 'data' => $users, 'options' => [ 'total' => $total, 'sizePerPage' => $page_size, 'groups' => Group::all(), 'directories' => UserDirectory::all() ] ]); 
+        return Response()->json([ 'ecode' => 0, 'data' => $users, 'options' => [ 'total' => $total, 'sizePerPage' => $page_size, 'groups' => Group::all(), 'directories' => Directory::all() ] ]); 
     }
 
     /**
@@ -295,6 +296,10 @@ class UserController extends Controller
         {
             throw new \UnexpectedValueException('the user does not exist.', -10106);
         }
+        if (isset($user->diectory) && $user->directory && $user->diectory != 'self')
+        {
+            throw new \UnexpectedValueException('the user come from external directroy.', -10109);
+        }
 
         $valid = Sentinel::validForUpdate($user, array_only($request->all(), ['first_name', 'email', 'phone', 'invalid_flag']));
         if (!$valid)
@@ -321,6 +326,10 @@ class UserController extends Controller
         {
             throw new \UnexpectedValueException('the user does not exist.', -10106);
         }
+        if (isset($user->diectory) && $user->directory && $user->diectory != 'self')
+        {
+            throw new \UnexpectedValueException('the user come from external directroy.', -10109);
+        }
 
         $user->delete();
         Event::fire(new DelUserEvent($id));
@@ -346,12 +355,49 @@ class UserController extends Controller
             $user = Sentinel::findById($id);
             if ($user)
             {
+                if (isset($user->directory) && $user->directory && $user->directory != 'self')
+                {
+                    continue;
+                }
+
                 $user->delete();
                 Event::fire(new DelUserEvent($id));
                 $deleted_ids[] = $id;
             }
         }
         return Response()->json([ 'ecode' => 0, 'data' => [ 'ids' => $deleted_ids ] ]);
+    }
+
+    /**
+     * valid/invalid all selected users.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function InvalidateMultiUsers(Request $request)
+    {
+        $ids = $request->input('ids');
+        if (!isset($ids) || !$ids)
+        {
+            throw new \InvalidArgumentException('the selected users cannot been empty.', -10108);
+        }
+
+        $flag = $request->input('flag') ?: 1;
+
+        $new_ids = [];
+        foreach ($ids as $id)
+        {
+            $user = Sentinel::findById($id);
+            if ($user)
+            {
+                if (isset($user->directory) && $user->directory && $user->directory != 'self')
+                {
+                    continue;
+                }
+                Sentinel::update($user, [ 'invalid_flag' => $flag ]);
+                $new_ids[] = $id;
+            }
+        }
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'ids' => $new_ids ] ]);
     }
 
     /**

@@ -1,16 +1,17 @@
 <?php
 
-namespace App\Acl\Eloquent;
+namespace App\ActiveDirectory\Eloquent;
 
 use Jenssegers\Mongodb\Eloquent\Model;
 
-class UserDirectory extends Model
+class Directory extends Model
 {
-    protected $table = 'user_directory';
+    protected $table = 'active_directory';
 
     protected $fillable = array(
         'name',
         'type',
+        'invalid_flag',
         'configs'
     );
 }

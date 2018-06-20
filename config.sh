@@ -30,5 +30,21 @@ fi
 if [ `grep -c "'avatar'," $eloquentuserfile` -eq 0 ]; then
   sed -i "/fillable/a\        'avatar'," $eloquentuserfile 
 fi
+#add invalid_flag field to fillable
+if [ `grep -c "'invalid_flag'," $eloquentuserfile` -eq 0 ]; then
+  sed -i "/fillable/a\        'invalid_flag'," $eloquentuserfile
+fi
+#add ldap_dn field to fillable
+if [ `grep -c "'ldap_dn'," $eloquentuserfile` -eq 0 ]; then
+  sed -i "/fillable/a\        'ldap_dn'," $eloquentuserfile
+fi
+#add directory field to fillable
+if [ `grep -c "'directory'," $eloquentuserfile` -eq 0 ]; then
+  sed -i "/fillable/a\        'directory'," $eloquentuserfile
+fi
+#add provider field to fillable
+if [ `grep -c "'sync_flag'," $eloquentuserfile` -eq 0 ]; then
+  sed -i "/fillable/a\        'sync_flag'," $eloquentuserfile
+fi
 
 echo "configure complete."

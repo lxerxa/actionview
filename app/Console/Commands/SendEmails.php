@@ -115,6 +115,11 @@ class SendEmails extends Command
      */
     public function handle()
     {
+        $point = time();
+        // clean up garbage message
+        DB::collection('mq')->where('flag', '>', 0)->where('flag', '<', $point - 24 * 60 * 60)->delete();
+        // mark up the notice message 
+        DB::collection('mq')->where('flag', 0)->update([ 'flag' => $point ]);
 
         $syssetting = SysSetting::first()->toArray(); 
         if (isset($syssetting['mailserver'])
@@ -133,6 +138,10 @@ class SendEmails extends Command
             Config::set('mail.username', $syssetting['mailserver']['smtp']['username']);
             Config::set('mail.password', $syssetting['mailserver']['smtp']['password']);
         }
+        else
+        {
+            return;
+        }
 
         $http_host = '';
         if (isset($syssetting['properties']) && isset($syssetting['properties']['http_host']))
@@ -150,12 +159,6 @@ class SendEmails extends Command
         }
  
         $event_map = $this->getEventMap();
-
-        $point = time();
-        // clean up garbage message
-        DB::collection('mq')->where('flag', '>', 0)->where('flag', '<', $point - 24 * 60 * 60)->delete();
-        // mark up the notice message 
-        DB::collection('mq')->where('flag', 0)->update([ 'flag' => $point ]);
 
         $data = DB::collection('mq')->where('flag', $point)->orderBy('_id', 'asc')->get();
         foreach ($data as $val)
@@ -295,11 +298,15 @@ class SendEmails extends Command
                 $from = $activity['user']['name']; 
                 $to = $to_user['email'];
                 $subject = '[' . $mail_prefix . '](' . $project['key'] . '-' . $issue['no'] . ')' . (isset($issue['title']) ? $issue['title'] : '-');
-                Mail::send('emails.issue', $new_data, function($message) use($from, $to, $subject) {
-                    $message->from(Config::get('mail.from'), $from)
-                        ->to($to)
-                        ->subject($subject);
-                });
+                try {
+                    Mail::send('emails.issue', $new_data, function($message) use($from, $to, $subject) {
+                        $message->from(Config::get('mail.from'), $from)
+                            ->to($to)
+                            ->subject($subject);
+                    });
+                } catch (Exception $e) {
+                    continue;
+                } 
             }
             DB::collection('mq')->where('_id', $val['_id']->__toString())->delete();
         }

@@ -13,6 +13,8 @@ use Sentinel;
 use Mail;
 use Config;
 
+use Exception;
+
 class SyssettingController extends Controller
 {
     public function __construct()
@@ -188,11 +190,15 @@ class SyssettingController extends Controller
 
         $subject = '[' . $prefix . ']' . $subject;
 
-        Mail::send('emails.test', $data, function($message) use($to, $subject) {
-            $message->from(Config::get('mail.from'), 'master')
-                ->to($to)
-                ->subject($subject);
-        });
+        try {
+            Mail::send('emails.test', $data, function($message) use($to, $subject) {
+                $message->from(Config::get('mail.from'), 'master')
+                    ->to($to)
+                    ->subject($subject);
+            });
+        } catch (Exception $e){
+            throw new Exception('send mail failed.', -15200);
+        }
 
         return Response()->json([ 'ecode' => 0, 'data' => '' ]);
     }

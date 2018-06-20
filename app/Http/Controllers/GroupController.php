@@ -10,6 +10,8 @@ use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Acl\Eloquent\Group;
 
+use App\ActiveDirectory\Eloquent\Directory;
+
 use Cartalyst\Sentinel\Users\EloquentUser;
 
 class GroupController extends Controller
@@ -57,14 +59,14 @@ class GroupController extends Controller
         $page_size = 30;
         $page = $request->input('page') ?: 1;
         $query = $query->skip($page_size * ($page - 1))->take($page_size);
-        $groups = $query->get([ 'name', 'users' ]);
+        $groups = $query->get([ 'name', 'users', 'directory' ]);
 
         foreach ($groups as $group)
         {
             $group->users = EloquentUser::find($group->users ?: []);
         }
 
-        return Response()->json([ 'ecode' => 0, 'data' => $groups ]);
+        return Response()->json([ 'ecode' => 0, 'data' => $groups, 'options' => [ 'total' => $total, 'sizePerPage' => $page_size, 'directories' => Directory::all() ] ]);
     }
 
     /**
@@ -134,6 +136,11 @@ class GroupController extends Controller
         {
             throw new \UnexpectedValueException('the group does not exist.', -10201);
         }
+        if (isset($group->diectory) && $group->directory && $group->diectory != 'self')
+        {
+            throw new \UnexpectedValueException('the group come from external directroy.', -10203);
+        }
+
         $group->fill($updValues)->save();
 
         return $this->show($id);
@@ -151,6 +158,10 @@ class GroupController extends Controller
         if (!$group)
         {
             throw new \UnexpectedValueException('the group does not exist.', -10201);
+        }
+        if (isset($group->diectory) && $group->directory && $group->diectory != 'self')
+        {
+            throw new \UnexpectedValueException('the group come from external directroy.', -10203);
         }
 
         Group::destroy($id);
@@ -177,6 +188,10 @@ class GroupController extends Controller
             $group = Group::find($id);
             if ($group)
             {
+                if (isset($group->diectory) && $group->directory && $group->diectory != 'self')
+                {
+                    continue;
+                }
                 $group->delete();
                 Event::fire(new DelGroupEvent($id));
                 $deleted_ids[] = $id;

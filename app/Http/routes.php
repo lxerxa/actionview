@@ -44,7 +44,8 @@ Route::group([ 'middleware' => 'can' ], function () {
 
     Route::get('api/user/search', 'UserController@search');
     Route::get('api/user/{id}/renewpwd', 'UserController@renewPwd');
-    Route::post('api/user/batch/delete', 'UserController@delMultiUser');
+    Route::post('api/user/batch/delete', 'UserController@delMultiUsers');
+    Route::post('api/user/batch/invalidate', 'UserController@invalidateMultiUsers');
     Route::post('api/user/fileupload', 'UserController@upload');
     Route::post('api/user/imports', 'UserController@imports');
     Route::resource('api/user', 'UserController');
@@ -52,6 +53,10 @@ Route::group([ 'middleware' => 'can' ], function () {
     Route::get('api/group/search', 'GroupController@search');
     Route::post('api/group/batch/delete', 'GroupController@delMultiGroups');
     Route::resource('api/group', 'GroupController');
+
+    Route::get('api/directory/{id}/test', 'DirectoryController@test');
+    Route::get('api/directory/{id}/sync', 'DirectoryController@sync');
+    Route::resource('api/directory', 'DirectoryController');
 
     Route::get('api/mysetting', 'MysettingController@show');
     Route::post('api/mysetting/account', 'MysettingController@updAccounts');

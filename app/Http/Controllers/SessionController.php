@@ -11,6 +11,10 @@ use App\System\Eloquent\SysSetting;
 use App\Project\Eloquent\AccessProjectLog;
 use App\Project\Eloquent\Project;
 
+use Exception;
+use Cartalyst\Sentinel\Checkpoints\ThrottlingException;
+use Cartalyst\Sentinel\Checkpoints\NotActivatedException;
+
 use Sentinel;
 
 class SessionController extends Controller
@@ -39,7 +43,14 @@ class SessionController extends Controller
             }
         }
 
-        $user = Sentinel::authenticate([ 'email' => $email, 'password' => $password ]);
+        try {
+            $user = Sentinel::authenticate([ 'email' => $email, 'password' => $password ]);
+        } catch (ThrottlingException $e) {
+            // throttle error. 
+            throw new Exception($e->getMessage(), -10004);
+        } catch (NotActivatedException $e) {
+            throw new Exception('the user is not activated.', -10005);
+        }
         //if (!$user || $user->invalid_flag === true)
         //{
         //    $directories = Directory::all();
@@ -54,6 +65,11 @@ class SessionController extends Controller
 
         if ($user)
         {
+            if ($user->invalid_flag == 1)
+            {
+                throw new Exception('the user is disabed.', -10006);
+            }
+
             Sentinel::login($user);
             $latest_access_project = $this->getLatestAccessProject($user->id);
             if ($latest_access_project)
