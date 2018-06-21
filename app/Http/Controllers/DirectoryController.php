@@ -42,19 +42,19 @@ class DirectoryController extends Controller
     {
         if (!($name = $request->input('name')) || !($name = trim($name)))
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -10200);
+            throw new \UnexpectedValueException('the name can not be empty.', -10300);
         }
 
         $configs = [];
         if (!($host = $request->input('host')) || !($host = trim($host)))
         {
-            throw new \UnexpectedValueException('the host can not be empty.', -10200);
+            throw new \UnexpectedValueException('the host can not be empty.', -10301);
         }
         $configs['host'] = $host;
 
         if (!($port = $request->input('port')) || !($port = trim($port)))
         {
-            throw new \UnexpectedValueException('the port can not be empty.', -10200);
+            throw new \UnexpectedValueException('the port can not be empty.', -10302);
         }
         $configs['port'] = intval($port);
 
@@ -62,19 +62,19 @@ class DirectoryController extends Controller
 
         if (!($admin_username = $request->input('admin_username')) || !($admin_username = trim($admin_username)))
         {
-            throw new \UnexpectedValueException('the username can not be empty.', -10200);
+            throw new \UnexpectedValueException('the username can not be empty.', -10303);
         }
         $configs['admin_username'] = $admin_username;
 
         if (!($admin_password = $request->input('admin_password')) || !($admin_password = trim($admin_password)))
         {
-            throw new \UnexpectedValueException('the user password can not be empty.', -10200);
+            throw new \UnexpectedValueException('the user password can not be empty.', -10304);
         }
         $configs['admin_password'] = $admin_password;
 
         if (!($base_dn = $request->input('base_dn')) || !($base_dn = trim($base_dn)))
         {
-            throw new \UnexpectedValueException('the base_dn can not be empty.', -10200);
+            throw new \UnexpectedValueException('the base_dn can not be empty.', -10305);
         }
         $configs['base_dn'] = $base_dn;
 
@@ -83,54 +83,54 @@ class DirectoryController extends Controller
 
         if (!($user_object_class = $request->input('user_object_class')) || !($user_object_class = trim($user_object_class)))
         {
-            throw new \UnexpectedValueException('the user object class can not be empty.', -10200);
+            throw new \UnexpectedValueException('the user object class can not be empty.', -10306);
         }
         $configs['user_object_class'] = $user_object_class;
 
         if (!($user_object_filter = $request->input('user_object_filter')) || !($user_object_filter = trim($user_object_filter)))
         {
-            throw new \UnexpectedValueException('the user object filter can not be empty.', -10200);
+            throw new \UnexpectedValueException('the user object filter can not be empty.', -10307);
         }
         $configs['user_object_filter'] = $user_object_filter;
 
         if (!($user_name_attr = $request->input('user_name_attr')) || !($user_name_attr = trim($user_name_attr)))
         {
-            throw new \UnexpectedValueException('the user name attributte can not be empty.', -10200);
+            throw new \UnexpectedValueException('the user name attributte can not be empty.', -10308);
         }
         $configs['user_name_attr'] = $user_name_attr;
 
         if (!($user_email_attr = $request->input('user_email_attr')) || !($user_email_attr = trim($user_email_attr)))
         {
-            throw new \UnexpectedValueException('the user email attributte can not be empty.', -10200);
+            throw new \UnexpectedValueException('the user email attributte can not be empty.', -10309);
         }
         $configs['user_email_attr'] = $user_email_attr;
 
 
         if (!($group_object_class = $request->input('group_object_class')) || !($group_object_class = trim($group_object_class)))
         {
-            throw new \UnexpectedValueException('the group object class can not be empty.', -10200);
+            throw new \UnexpectedValueException('the group object class can not be empty.', -10310);
         }
         $configs['group_object_class'] = $group_object_class;
 
         if (!($group_object_filter = $request->input('group_object_filter')) || !($group_object_filter = trim($group_object_filter)))
         {
-            throw new \UnexpectedValueException('the group object filter can not be empty.', -10200);
+            throw new \UnexpectedValueException('the group object filter can not be empty.', -10311);
         }
         $configs['group_object_filter'] = $group_object_filter;
 
         if (!($group_name_attr = $request->input('group_name_attr')) || !($group_name_attr = trim($group_name_attr)))
         {
-            throw new \UnexpectedValueException('the group name attributte can not be empty.', -10200);
+            throw new \UnexpectedValueException('the group name attributte can not be empty.', -10312);
         }
         $configs['group_name_attr'] = $group_name_attr;
 
         if (!($group_membership_attr = $request->input('group_membership_attr')) || !($group_membership_attr = trim($group_membership_attr)))
         {
-            throw new \UnexpectedValueException('the group membership attributte can not be empty.', -10200);
+            throw new \UnexpectedValueException('the group membership attributte can not be empty.', -10313);
         }
         $configs['group_membership_attr'] = $group_membership_attr;
 
-        $directory = Directroy::create([ 'name' => $name, 'type' => 'OpenLDAP', 'invalid_flag' => 0, 'configs' => $configs ]);
+        $directory = Directory::create([ 'name' => $name, 'type' => 'OpenLDAP', 'invalid_flag' => 0, 'configs' => $configs ]);
         return Response()->json([ 'ecode' => 0, 'data' => $directory ]);
     }
 
@@ -145,7 +145,7 @@ class DirectoryController extends Controller
         $directory = Directory::find($id);
         if (!$directory)
         {
-            throw new \UnexpectedValueException('the directory does not exist.', -10201);
+            throw new \UnexpectedValueException('the directory does not exist.', -10314);
         }
         return Response()->json([ 'ecode' => 0, 'data' => $directory ]);
     }
@@ -166,7 +166,7 @@ class DirectoryController extends Controller
         {
             if (!($name = trim($name)))
             {
-                throw new \UnexpectedValueException('the name can not be empty.', -10200);
+                throw new \UnexpectedValueException('the name can not be empty.', -10300);
             }
             $updValues['name'] = $name;
         }
@@ -178,7 +178,7 @@ class DirectoryController extends Controller
         {
             if (!($host = trim($host)))
             {
-                throw new \UnexpectedValueException('the host can not be empty.', -10200);
+                throw new \UnexpectedValueException('the host can not be empty.', -10301);
             }
             $configs['host'] = $host;
         }
@@ -188,7 +188,7 @@ class DirectoryController extends Controller
         {
             if (!($port = trim($port)))
             {
-                throw new \UnexpectedValueException('the port can not be empty.', -10200);
+                throw new \UnexpectedValueException('the port can not be empty.', -10302);
             }
             $configs['port'] = intval($port);
         }
@@ -204,7 +204,7 @@ class DirectoryController extends Controller
         {
             if (!($admin_username = trim($admin_username)))
             {
-                throw new \UnexpectedValueException('the username can not be empty.', -10200);
+                throw new \UnexpectedValueException('the username can not be empty.', -10303);
             }
             $configs['admin_username'] = $admin_username;
         }
@@ -214,7 +214,7 @@ class DirectoryController extends Controller
         {
             if (!($admin_password = trim($admin_password)))
             {
-                throw new \UnexpectedValueException('the user password can not be empty.', -10200);
+                throw new \UnexpectedValueException('the user password can not be empty.', -10304);
             }
             $configs['admin_password'] = $admin_password;
         }
@@ -224,7 +224,7 @@ class DirectoryController extends Controller
         {
             if (!($base_dn = trim($base_dn)))
             {
-                throw new \UnexpectedValueException('the base_dn can not be empty.', -10200);
+                throw new \UnexpectedValueException('the base_dn can not be empty.', -10305);
             }
             $configs['base_dn'] = $base_dn;
         }
@@ -246,7 +246,7 @@ class DirectoryController extends Controller
         {
             if (!($user_object_class = trim($user_object_class)))
             {
-                throw new \UnexpectedValueException('the user object class can not be empty.', -10200);
+                throw new \UnexpectedValueException('the user object class can not be empty.', -10306);
             }
             $configs['user_object_class'] = $user_object_class;
         }
@@ -256,7 +256,7 @@ class DirectoryController extends Controller
         {
             if (!($user_object_filter = trim($user_object_filter)))
             {
-                throw new \UnexpectedValueException('the user object filter can not be empty.', -10200);
+                throw new \UnexpectedValueException('the user object filter can not be empty.', -10307);
             }
             $configs['user_object_filter'] = $user_object_filter;
         }
@@ -266,7 +266,7 @@ class DirectoryController extends Controller
         {
             if (!($user_name_attr = trim($user_name_attr)))
             {
-                throw new \UnexpectedValueException('the user name attributte can not be empty.', -10200);
+                throw new \UnexpectedValueException('the user name attributte can not be empty.', -10308);
             }
             $configs['user_name_attr'] = $user_name_attr;
         }
@@ -276,7 +276,7 @@ class DirectoryController extends Controller
         {
             if (!($user_email_attr = trim($user_email_attr)))
             {
-                throw new \UnexpectedValueException('the user email attributte can not be empty.', -10200);
+                throw new \UnexpectedValueException('the user email attributte can not be empty.', -10309);
             }
             $configs['user_email_attr'] = $user_email_attr;
         }
@@ -286,7 +286,7 @@ class DirectoryController extends Controller
         {
             if (!($group_object_class = trim($group_object_class)))
             {
-                throw new \UnexpectedValueException('the group object class can not be empty.', -10200);
+                throw new \UnexpectedValueException('the group object class can not be empty.', -10310);
             }
             $configs['group_object_class'] = $group_object_class;
         }
@@ -296,7 +296,7 @@ class DirectoryController extends Controller
         {
             if (!($group_object_filter = trim($group_object_filter)))
             {
-                throw new \UnexpectedValueException('the group object filter can not be empty.', -10200);
+                throw new \UnexpectedValueException('the group object filter can not be empty.', -10311);
             }
             $configs['group_object_filter'] = $group_object_filter;
         }
@@ -306,7 +306,7 @@ class DirectoryController extends Controller
         {
             if (!($group_name_attr = trim($group_name_attr)))
             {
-                throw new \UnexpectedValueException('the group name attributte can not be empty.', -10200);
+                throw new \UnexpectedValueException('the group name attributte can not be empty.', -10312);
             }
             $configs['group_name_attr'] = $group_name_attr;
         }
@@ -316,7 +316,7 @@ class DirectoryController extends Controller
         {
             if (!($group_membership_attr = trim($group_membership_attr)))
             {
-                throw new \UnexpectedValueException('the group membership attributte can not be empty.', -10200);
+                throw new \UnexpectedValueException('the group membership attributte can not be empty.', -10313);
             }
             $configs['group_membership_attr'] = $group_membership_attr;
         }
@@ -349,7 +349,7 @@ class DirectoryController extends Controller
         $directory = Directory::find($id);
         if (!$directory)
         {
-            throw new \UnexpectedValueException('the directory does not exist.', -10201);
+            throw new \UnexpectedValueException('the directory does not exist.', -10314);
         }
 
         // delete the related groups
@@ -403,7 +403,7 @@ class DirectoryController extends Controller
         $directory = Directory::find($id);
         if (!$directory)
         {
-            throw new \UnexpectedValueException('the directory does not exist.', -10201);
+            throw new \UnexpectedValueException('the directory does not exist.', -10314);
         }
 
         $configs = [

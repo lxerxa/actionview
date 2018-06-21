@@ -12,6 +12,8 @@ use App\Project\Eloquent\Version;
 use App\Project\Provider;
 use App\Customization\Eloquent\Field;
 
+use DB;
+
 class VersionController extends Controller
 {
     public function __construct()
@@ -32,6 +34,13 @@ class VersionController extends Controller
         $version_fields = $this->getVersionFields($project_key);
         foreach ($versions as $version)
         {
+            $unresolved_cnt = DB::collection('issue_' . $project_key)
+                ->where('resolution', 'Unresolved')
+                ->where('del_flg', '<>', 1)
+                ->where('resolve_version', $version->id)
+                ->count();
+
+            $version->unresolved_cnt = $unresolved_cnt;
             $version->is_used = $this->isFieldUsedByIssue($project_key, 'version', $version->toArray(), $version_fields); 
         }
         return Response()->json([ 'ecode' => 0, 'data' => $versions ]);
