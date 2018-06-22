@@ -22,25 +22,89 @@ class LDAP {
     {
 
         $configs = [
-            'cmri' => [
-                'domain_controllers' => [ '10.1.5.179' ],
-                'port'               => 3892,
+            'default' => [
+                'host' => '10.1.5.179',
+                'port'               => 389,
                 'base_dn'            => 'dc=chinamobile,dc=com',
                 'admin_username'     => 'cn=admin,dc=chinamobile,dc=com',
                 'admin_password'     => 'chinamobile',
+                'additional_user_dn'     => 'dc=cmri',
+                'additional_group_dn'     => 'dc=cmri',
+                'user_object_class'     => 'inetorgperson',
+                'user_object_filter'    => '(objectClass=inetOrgPerson)',
+                'group_object_class'     => 'groupOfUniqueNames',
+                'group_object_filter'    => '(objectClass=groupOfUniqueNames)',
+                'group_membership_attr'     => 'uniqueMember',
             ]
         ];
 
-        $ad = new Adldap($configs);
+        $ad = new Adldap(self::filterConnectConfigs($configs));
 
+        $ret = [];
         foreach ($configs as $key => $config)
         {
+            $tmp = [];
             try {
-              $provider = $ad->connect($key);
+                $provider = $ad->connect('default');
             } catch (Exception $e) {
-              echo 'aa';exit;
+                 $ret[$key] =  [ 
+                    'server_connect'   => false, 
+                    'user_count'       => 0, 
+                    'group_count'      => 0, 
+                    'group_membership' => false ];
+                 continue;
             }
+
+            $tmp['server_connect'] = true;
+
+            if (!isset($config['user_object_class']))
+            {
+                $tmp['user_count'] = 0;
+            }
+            else
+            {
+                $users = $provider
+                    ->search()
+                    ->setDn(self::getUserDn($config)
+                    ->rawFilter(isset($config['user_object_filter']) ? $config['user_object_filter'] : ('(objectClass=' . $config['user_object_class'] . ')'))
+                    ->where('objectClass', $config['user_object_class'])
+                    ->get();
+                $tmp['user_count'] = count($users);
+            }
+
+            if (!isset($config['group_object_class']))
+            {
+                $tmp['group_count'] = 0;
+            }
+            else
+            {
+                $groups = $provider
+                    ->search()
+                    ->setDn(self::getGroupDn($config))
+                    ->rawFilter(isset($config['group_object_filter']) ? $config['group_object_filter'] : ('(objectClass=' . $config['group_object_class'] . ')'))
+                    ->where('objectClass', $configs['default']['group_object_class'])
+                    ->get();
+                $tmp['group_count'] = count($groups);
+            }
+
+            if (!isset($config['group_object_class']) || !isset($config['group_membership_attr']))
+            {
+                $tmp['group_memebership'] = false;
+            }
+            else
+            {
+                $group = $provider
+                    ->search()
+                    ->setDn(self::getGroupDn($config))
+                    ->where('objectClass', $config['group_object_class'])
+                    ->first();
+                $ret[$key]['group_membership'] = $group->hasAttribute(strtolower($config['group_membership_attr']));
+            }
+
+            $ret[$key] = $tmp;
         }
+
+        return $ret;
     }
 
     /**
@@ -51,16 +115,25 @@ class LDAP {
      */
     public static function sync($configs)
     {
-        $ad = new Adldap($configs);
+        $ret = [];
+        $ad = new Adldap(self::filterConnectConfigs($configs));
 
         foreach ($configs as $key => $config)
         {
-            $provider = $ad->connect($key);
+            try {
+                $provider = $ad->connect($key);
+            } catch (Exception $e) {
+                $ret[$key] = false;
+                continue;
+            }
             // sync the users
             self::syncUsers($provider, $key, $config);
             // sync the groups
             self::syncGroups($provider, $key, $config);
+
+            $ret[$key] = true;
         }
+        return $ret;
     }
 
     /**
@@ -68,68 +141,93 @@ class LDAP {
      *
      * @return array
      */
-    public static function arrangeConfigs($configs)
+    public static function filterConnectConfigs($configs)
     {
+        $connect_configs = [];
         foreach ($configs as $key => $config)
         {
+            $connect = [];
+            $connect['domain_controllers'] = [ $config['host'] ];
+            $connect['port'] = $config['port'];
+            $connect['admin_username'] = $config['admin_username'];
+            $connect['admin_password'] = $config['admin_password'];
             if (isset($config['encryption']) && $config['encryption'])
             {
                 if ($config['encryption'] == 'ssl')
                 {
-                    $configs[$key]['use_ssl'] = true;
+                    $connect['use_ssl'] = true;
                 }
                 else if ($config['encryption'] == 'tls')
                 {
-                    $configs[$key]['use_tls'] = true;
+                    $connect['use_tls'] = true;
                 }
                 else
                 {
-                    $configs[$key]['use_ssl'] = false;
-                    $configs[$key]['use_tls'] = false; 
+                    $connect['use_ssl'] = false;
+                    $connect['use_tls'] = false; 
                 }
             }
             else
             {
-                $configs[$key]['use_ssl'] = false;
-                $configs[$key]['use_tls'] = false;   
+                $connect['use_ssl'] = false;
+                $connect['use_tls'] = false;   
             }
-
-            // user dn
-            if (isset($config['additional_user_dn']) && $config['additional_user_dn'])
-            {
-                if (strpos($config['additional_user_dn'], $config['base_dn']) !== false)
-                {
-                    $configs[$key]['user_dn'] = $config['additional_user_dn'];
-                }
-                else
-                {
-                    $configs[$key]['user_dn'] = $config['additional_user_dn'] . ',' . $config['base_dn'];
-                }
-            }
-            else
-            {
-                $configs[$key]['user_dn'] = $config['base_dn'];
-            }
-
-            // group dn
-            if (isset($config['additional_group_dn']) && $config['additional_group_dn'])
-            {
-                if (strpos($config['additional_group_dn'], $config['base_dn']) !== false)
-                {
-                    $configs[$key]['group_dn'] = $config['additional_group_dn'];
-                }
-                else
-                {
-                    $configs[$key]['group_dn'] = $config['additional_group_dn'] . ',' . $config['base_dn'];
-                }
-            }
-            else
-            {
-                $configs[$key]['group_dn'] = $config['base_dn'];
-            }
+            $connect_configs[$key] = $connect;
         }
 
-        return $configs;
+        return $connect_configs;
+    }
+
+    /**
+     * get user dn.
+     *
+     * @return string 
+     */
+    public static function getUserDN($config)
+    {
+        $user_dn = '';
+        if (isset($config['additional_user_dn']) && $config['additional_user_dn'])
+        {
+            if (strpos($config['additional_user_dn'], $config['base_dn']) !== false)
+            {
+                $user_dn = $config['additional_user_dn'];
+            }
+            else
+            {
+                $user_dn = $config['additional_user_dn'] . ',' . $config['base_dn'];
+            }
+        }
+        else
+        {
+            $user_dn = $config['base_dn'];
+        }
+        return $user_dn;
+    }
+
+    /**
+     * get group dn.
+     *
+     * @return string 
+     */
+    public static function getGroupDN($config)
+    {
+        $group_dn = '';
+        if (isset($config['additional_group_dn']) && $config['additional_group_dn'])
+        {
+            if (strpos($config['additional_group_dn'], $config['base_dn']) !== false)
+            {
+                $group_dn = $config['additional_group_dn'];
+            }
+            else
+            {
+                $group_dn = $config['additional_group_dn'] . ',' . $config['base_dn'];
+            }
+        }
+        else
+        {
+            $group_dn = $config['base_dn'];
+        }
+        return $group_dn;
     }
 
     /**
@@ -139,19 +237,25 @@ class LDAP {
      */
     public static function syncUsers($provider, $directory, $config)
     {
+        if (!isset($config['user_object_class']))
+        {
+            return false;
+        }
+
         // the user sync
         DB::table('users')->where('directory', $directory)->update([ 'sync_flag' => 1 ]);
 
         $users = $provider
             ->search()
-            ->setDn($config['user_dn'])
+            ->setDn(self::getUserDN($config))
+            ->rawFilter(isset($config['user_object_filter']) ? $config['user_object_filter'] : ('(objectClass=' . $config['user_object_class'] . ')'))
             ->where('objectClass', $config['user_object_class'])
             ->get();
         foreach ($users as $user)
         {
             $dn = $user->getDn();
-            $cn = $user->getFirstAttribute($config['user_name_attr']);
-            $email = $user->getFirstAttribute($config['user_email_attr']);
+            $cn = $user->getFirstAttribute(strtolower($config['user_name_attr']));
+            $email = $user->getFirstAttribute(strtolower($config['user_email_attr']));
 
             $eloquent_user = EloquentUser::where('directory', $directory)
                 ->where('ldap_dn', $dn)
@@ -180,6 +284,8 @@ class LDAP {
             ->where('directory', $directory)
             ->where('sync_flag', 1)
             ->update([ 'sync_flag' => 0, 'invalid_flag' => 1 ]);
+
+        return true;
     }
 
     /**
@@ -189,21 +295,27 @@ class LDAP {
      */
     public static function syncGroups($provider, $directory, $config)
     {
+        if (!isset($config['group_object_class']))
+        {
+            return false;
+        }
+
         $groups = $provider
             ->search()
-            ->setDn($config['group_dn'])
+            ->setDn(self::getGroupDN($config))
+            ->rawFilter(isset($config['group_object_filter']) ? $config['group_object_filter'] : ('(objectClass=' . $config['group_object_class'] . ')'))
             ->where('objectClass', $config['group_object_class'])
             ->get();
 
         foreach ($groups as $group)
         {
             $dn = $group->getDn();
-            $cn = $group->getFirstAttribute($config['group_name_attr']);
-            $members = $group->getAttribute($config['group_membership_attr']);
+            $cn = $group->getFirstAttribute(strtolower($config['group_name_attr']));
+            $members = $group->getAttribute(strtolower($config['group_membership_attr']));
 
             $users = EloquentUser::where('directory', $directory)
                 ->whereIn('ldap_dn', $members)
-                ->get([ 'first_name' ])
+                ->get([ 'name' ])
                 ->toArray();
 
             $user_ids = [];
@@ -223,8 +335,14 @@ class LDAP {
             }
             else
             {
-                Group::create([ 'name' => $cn, 'users' => $user_ids, 'ldap_dn' => $dn, 'directory' => $directory ]);
+                Group::create([ 
+                    'name' => $cn, 
+                    'users' => $user_ids, 
+                    'ldap_dn' => $dn, 
+                    'directory' => $directory ]);
             }
         }
+
+        return true;
     }
 }
