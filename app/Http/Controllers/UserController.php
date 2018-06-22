@@ -84,6 +84,11 @@ class UserController extends Controller
             }
         }
 
+        if ($directory = $request->input('directory'))
+        {
+            $query->where('directory', $directory);
+        }
+
         // get total
         $total = $query->count();
 

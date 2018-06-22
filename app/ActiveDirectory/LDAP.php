@@ -16,28 +16,10 @@ class LDAP {
      * connect ldap server.
      *
      * @var array $config
-     * @return provider
+     * @return array 
      */
     public static function test($configs)
     {
-
-        $configs = [
-            'default' => [
-                'host' => '10.1.5.179',
-                'port'               => 389,
-                'base_dn'            => 'dc=chinamobile,dc=com',
-                'admin_username'     => 'cn=admin,dc=chinamobile,dc=com',
-                'admin_password'     => 'chinamobile',
-                'additional_user_dn'     => 'dc=cmri',
-                'additional_group_dn'     => 'dc=cmri',
-                'user_object_class'     => 'inetorgperson',
-                'user_object_filter'    => '(objectClass=inetOrgPerson)',
-                'group_object_class'     => 'groupOfUniqueNames',
-                'group_object_filter'    => '(objectClass=groupOfUniqueNames)',
-                'group_membership_attr'     => 'uniqueMember',
-            ]
-        ];
-
         $ad = new Adldap(self::filterConnectConfigs($configs));
 
         $ret = [];
@@ -45,14 +27,14 @@ class LDAP {
         {
             $tmp = [];
             try {
-                $provider = $ad->connect('default');
+                $provider = $ad->connect($key);
             } catch (Exception $e) {
-                 $ret[$key] =  [ 
+                $ret[$key] =  [ 
                     'server_connect'   => false, 
                     'user_count'       => 0, 
                     'group_count'      => 0, 
                     'group_membership' => false ];
-                 continue;
+                continue;
             }
 
             $tmp['server_connect'] = true;
@@ -65,7 +47,7 @@ class LDAP {
             {
                 $users = $provider
                     ->search()
-                    ->setDn(self::getUserDn($config)
+                    ->setDn(self::getUserDn($config))
                     ->rawFilter(isset($config['user_object_filter']) ? $config['user_object_filter'] : ('(objectClass=' . $config['user_object_class'] . ')'))
                     ->where('objectClass', $config['user_object_class'])
                     ->get();
@@ -98,7 +80,7 @@ class LDAP {
                     ->setDn(self::getGroupDn($config))
                     ->where('objectClass', $config['group_object_class'])
                     ->first();
-                $ret[$key]['group_membership'] = $group->hasAttribute(strtolower($config['group_membership_attr']));
+                $tmp['group_membership'] = $group->hasAttribute(strtolower($config['group_membership_attr']));
             }
 
             $ret[$key] = $tmp;
@@ -111,7 +93,7 @@ class LDAP {
      * connect ldap server.
      *
      * @var array $config
-     * @return provider 
+     * @return array 
      */
     public static function sync($configs)
     {
@@ -120,19 +102,23 @@ class LDAP {
 
         foreach ($configs as $key => $config)
         {
+            $tmp = [];
             try {
                 $provider = $ad->connect($key);
             } catch (Exception $e) {
-                $ret[$key] = false;
+                $tmp['connect'] = $tmp['user'] = $tmp['group'] = false;
+                $ret[$key] = $tmp;
                 continue;
             }
+            $tmp['connect'] = true;
             // sync the users
-            self::syncUsers($provider, $key, $config);
+            $tmp['user'] = self::syncUsers($provider, $key, $config);
             // sync the groups
-            self::syncGroups($provider, $key, $config);
+            $tmp['group'] = self::syncGroups($provider, $key, $config);
 
-            $ret[$key] = true;
+            $ret[$key] = $tmp;
         }
+
         return $ret;
     }
 
@@ -233,7 +219,7 @@ class LDAP {
     /**
      * sync the users.
      *
-     * @return void
+     * @return bool 
      */
     public static function syncUsers($provider, $directory, $config)
     {
@@ -291,7 +277,7 @@ class LDAP {
     /**
      * sync the groups.
      *
-     * @return void
+     * @return bool 
      */
     public static function syncGroups($provider, $directory, $config)
     {
@@ -344,5 +330,47 @@ class LDAP {
         }
 
         return true;
+    }
+
+    /**
+     * ldap user authenticate.
+     *
+     * @var array $configs
+     * @var string $username
+     * @var string $password
+     * @return object 
+     */
+    public static function attempt($configs, $username, $password)
+    {
+        $pass = false;
+        $user = null;
+
+        $ad = new Adldap(self::filterConnectConfigs($configs));
+
+        foreach ($configs as $key => $config)
+        {
+            try {
+                $provider = $ad->connect($key);
+
+                $user = EloquentUser::where('directory', $key)
+                    ->where('email', $username)
+                    ->first(); 
+
+                if (!$user || !$user->ldap_dn)
+                {
+                    continue;
+                }
+
+                if ($provider->auth()->attempt($user->ldap_dn, $password))
+                {
+                    $pass = true;
+                    break;
+                }
+            } catch (Exception $e) {
+                continue;
+            }
+        }
+
+        return $pass ? $user : null;
     }
 }

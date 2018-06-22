@@ -53,6 +53,12 @@ class GroupController extends Controller
         {
             $query->where('name', 'like', '%' . $name . '%');
         }
+
+        if ($directory = $request->input('directory'))
+        {
+            $query->where('directory', $directory);
+        }
+
         // get total
         $total = $query->count();
 

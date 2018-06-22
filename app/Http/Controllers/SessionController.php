@@ -11,6 +11,9 @@ use App\System\Eloquent\SysSetting;
 use App\Project\Eloquent\AccessProjectLog;
 use App\Project\Eloquent\Project;
 
+use App\ActiveDirectory\Eloquent\Directory;
+use App\ActiveDirectory\LDAP;
+
 use Exception;
 use Cartalyst\Sentinel\Checkpoints\ThrottlingException;
 use Cartalyst\Sentinel\Checkpoints\NotActivatedException;
@@ -51,17 +54,24 @@ class SessionController extends Controller
         } catch (NotActivatedException $e) {
             throw new Exception('the user is not activated.', -10005);
         }
-        //if (!$user || $user->invalid_flag === true)
-        //{
-        //    $directories = Directory::all();
-        //    foreach ($directories as $d)
-        //    {
-        //        if ($d->type === 'LDAP')
-        //        {
-        //            $this->authByLdap();
-        //        }
-        //    }
-        //}
+
+        // ldap authenticate
+        if (!$user)
+        {
+            $configs = [];
+            $directories = Directory::where('type', 'OpenLDAP')
+                ->where('invalide_flag', '<>', 1)
+                ->get();
+            foreach ($directories as $d)
+            {
+                $configs[$d->id] = $d->configs ?: [];
+            }
+
+            if ($configs)
+            {
+                $user = LDAP::attempt($configs, $email, $password);
+            }
+        }
 
         if ($user)
         {

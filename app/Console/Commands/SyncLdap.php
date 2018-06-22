@@ -40,16 +40,17 @@ class SyncLdap extends Command
     {
         $configs = [];
 
-        $directories = UserDirectory::where('type', 'LDAP')
-            ->where('status', 'active')
+        $directories = Directory::where('type', 'OpenLDAP')
             ->where('invalide_flag', '<>', 1)
             ->get();
-
         foreach($directories as $d)
         {
             $configs[ $d->id ] = $d->configs;
         }
 
-        LDAP::sync($configs);
+        if ($configs) 
+        {
+            LDAP::sync($configs);
+        }
     }
 }

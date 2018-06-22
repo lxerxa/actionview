@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 
-use App\Events\DelGroupEvent;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 
@@ -13,6 +12,9 @@ use App\Acl\Eloquent\Group;
 use Cartalyst\Sentinel\Users\EloquentUser;
 use App\ActiveDirectory\Eloquent\Directory;
 use App\ActiveDirectory\LDAP;
+
+use App\Events\DelGroupEvent;
+use App\Events\DelUserEvent;
 
 class DirectoryController extends Controller
 {
@@ -335,6 +337,11 @@ class DirectoryController extends Controller
         $directory = Directory::find($id);
         $directory->fill($updValues)->save();
 
+        //if (isset($invalid_flag))
+        //{
+        //    EloquentUser::where('directory', $id)->update([ 'invalid_flag' => intval($invalid_flag) ]);
+        //}
+
         return $this->show($id);
     }
 
@@ -346,6 +353,8 @@ class DirectoryController extends Controller
      */
     public function destroy($id)
     {
+        set_time_limit(0);
+
         $directory = Directory::find($id);
         if (!$directory)
         {
@@ -377,29 +386,32 @@ class DirectoryController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function test($id) {
-        //$directory = Directory::find($id);
-        //if (!$directory)
-        //{
-        //    throw new \UnexpectedValueException('the directory does not exist.', -10201);
-        //}
+    public function test($id) 
+    {
+        $directory = Directory::find($id);
+        if (!$directory)
+        {
+            throw new \UnexpectedValueException('the directory does not exist.', -10201);
+        }
 
-        //$configs = [
-        //    'default' => $directory->configs
-        //];
+        $configs = [
+            'default' => $directory->configs
+        ];
 
-        //$ret = LDAP::test($configs);
-        $ret = LDAP::test([]);
-        return Response()->json([ 'ecode' => 0, 'data' => $ret ]);
+        $ret = LDAP::test($configs);
+        return Response()->json([ 'ecode' => 0, 'data' => array_pop($ret) ]);
     }
 
     /**
-     * test the ldap.
+     * sync the users and group.
      *
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function sync($id) {
+    public function sync($id) 
+    {
+        set_time_limit(0);
+
         $directory = Directory::find($id);
         if (!$directory)
         {
@@ -407,10 +419,24 @@ class DirectoryController extends Controller
         }
 
         $configs = [
-            'default' => $directory->configs
+            $id => $directory->configs
         ];
 
         $ret = LDAP::sync($configs);
+        $sync_info = array_pop($ret);
+        if (!$sync_info['connect'])
+        {
+            throw new \UnexpectedValueException('the connect server failed.', -10315);
+        }
+        else if (!$sync_info['user'])
+        {
+            throw new \UnexpectedValueException('the user sync failed.', -10316);
+        }
+        else if (!$sync_info['group'])
+        {
+            throw new \UnexpectedValueException('the group sync failed.', -10317);
+        }
+
         return Response()->json([ 'ecode' => 0, 'data' => [ 'id' => $id ] ]);
     }
 }
