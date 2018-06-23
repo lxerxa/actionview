@@ -339,7 +339,7 @@ class DirectoryController extends Controller
 
         if ($configs)
         {
-            $updValues['configs'] = isset($directory) && isset($directory->configs) ? array_merge($directory->configs, $configs) : $configs;
+            $updValues['configs'] = isset($directory->configs) ? array_merge($directory->configs ?: [], $configs) : $configs;
         }
 
         $invalid_flag = $request->input('invalid_flag');
