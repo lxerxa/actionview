@@ -31,7 +31,15 @@ class DirectoryController extends Controller
      */
     public function index(Request $request)
     {
-        return Response()->json([ 'ecode' => 0, 'data' => Directory::all() ]);
+        $directories =  Directory::all()->toArray();
+        foreach($directories as $k => $d)
+        {
+            if (isset($d['configs']) && $d['configs'] && isset($d['configs']['admin_password']))
+            {
+                unset($directories[$k]['configs']['admin_password']);
+            }
+        }
+        return Response()->json([ 'ecode' => 0, 'data' => $directories ]);
     }
 
     /**
@@ -161,6 +169,12 @@ class DirectoryController extends Controller
      */
     public function update(Request $request, $id)
     {
+        $directory = Directory::find($id);
+        if (!$directory)
+        {
+            throw new \UnexpectedValueException('the directory does not exist.', -10314);
+        }
+
         $updValues = [];
 
         $name = $request->input('name');
@@ -325,7 +339,7 @@ class DirectoryController extends Controller
 
         if ($configs)
         {
-            $updValues['configs'] = $configs;
+            $updValues['configs'] = isset($directory) && isset($directory->configs) ? array_merge($directory->configs, $configs) : $configs;
         }
 
         $invalid_flag = $request->input('invalid_flag');
@@ -334,7 +348,6 @@ class DirectoryController extends Controller
             $updValues['invalid_flag'] = intval($invalid_flag);
         }
         
-        $directory = Directory::find($id);
         $directory->fill($updValues)->save();
 
         //if (isset($invalid_flag))

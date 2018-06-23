@@ -63,6 +63,10 @@ class SyssettingController extends Controller
         $smtp = $request->input('smtp');
         if (isset($smtp))
         {
+            if (!isset($smtp['password']) || !$smtp['password'])
+            {
+                $smtp['password'] = $mailserver && isset($mailserver['smtp']) && isset($mailserver['smtp']['password']) ? $mailserver['smtp']['password'] : '';
+            }
             $updValues['mailserver'] = array_merge($mailserver, [ 'smtp' => $smtp ]);
         }
 
