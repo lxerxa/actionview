@@ -32,5 +32,7 @@ class Kernel extends ConsoleKernel
                  ->everyMinute();
         $schedule->command('sprint:snap')
                  ->hourly();
+        $schedule->command('ldap:sync')
+                 ->daily();
     }
 }
