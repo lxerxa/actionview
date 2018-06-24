@@ -16,6 +16,7 @@ RUN apt-get update && \
         php-mcrypt\
         php-curl\
         php-dom\
+        php-ldap\
         php-mongodb\
         cron
 
