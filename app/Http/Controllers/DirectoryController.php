@@ -450,6 +450,6 @@ class DirectoryController extends Controller
             throw new \UnexpectedValueException('the group sync failed.', -10317);
         }
 
-        return Response()->json([ 'ecode' => 0, 'data' => [ 'id' => $id ] ]);
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'user' => $sync_info['user'], 'group' => $sync_info['group'] ] ]);
     }
 }
