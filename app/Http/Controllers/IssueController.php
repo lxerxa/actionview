@@ -94,7 +94,7 @@ class IssueController extends Controller
         $title = $request->input('title');
         if (isset($title) && $title)
         {
-            if (is_int($title + 0))
+            if (is_numeric($title) && strpos($title, '.') === false)
             {
                 $query->where(function ($query) use ($title) {
                     $query->where('no', $title + 0)->orWhere('title', 'like', '%' . $title . '%');
@@ -279,15 +279,19 @@ class IssueController extends Controller
      */
     public function search(Request $request, $project_key)
     {
-        $query = DB::collection('issue_' . $project_key)
-            ->where('del_flg', '<>', 1);
+        $query = DB::collection('issue_' . $project_key)->where('del_flg', '<>', 1);
 
         if ($s = $request->input('s'))
         {
-            $query->where('title', 'like', '%' . $s . '%');
-            if (is_int($s + 0))
+            if (is_numeric($s) && strpos($s, '.') === false)
             {
-                $query->orWhere('no', $s + 0);
+                $query->where(function ($query) use ($s) {
+                    $query->where('no', $s + 0)->orWhere('title', 'like', '%' . $s . '%');
+                });
+            }
+            else
+            {
+                $query->where('title', 'like', '%' . $s . '%');
             }
         }
 
