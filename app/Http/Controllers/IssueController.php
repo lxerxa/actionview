@@ -279,7 +279,8 @@ class IssueController extends Controller
      */
     public function search(Request $request, $project_key)
     {
-        $query = DB::collection('issue_' . $project_key);
+        $query = DB::collection('issue_' . $project_key)
+            ->where('del_flg', '<>', 1);
 
         if ($s = $request->input('s'))
         {
