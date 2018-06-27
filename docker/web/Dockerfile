@@ -28,7 +28,7 @@ RUN git clone https://github.com/lxerxa/actionview.git actionview
 ENV COMPOSER_ALLOW_SUPERUSER 1
 
 WORKDIR actionview
-RUN cp composer.phar /usr/bin && composer install --no-dev
+RUN cp composer.phar /usr/bin/composer && composer install --no-dev
 
 RUN /bin/bash config.sh
 
