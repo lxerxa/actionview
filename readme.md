@@ -29,7 +29,7 @@ http://www.actionview.cn
 # Installation
 
 [Ubuntu Installation](https://github.com/lxerxa/actionview/wiki/Ubuntu-Installation)  
-[CentOs Installation](https://github.com/lxerxa/actionview/wiki/CentOS-Installation)  
+[CentOS Installation](https://github.com/lxerxa/actionview/wiki/CentOS-Installation)  
 [Docker Installation](https://github.com/lxerxa/actionview/wiki/Docker-Installation)  
 
 # Feature
