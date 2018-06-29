@@ -19,11 +19,13 @@ class WorklogController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index($project_key, $issue_id)
+    public function index(Request $request, $project_key, $issue_id)
     {
+        $sort = ($request->input('sort') === 'desc') ? 'desc' : 'asc';
+
         $worklogs = Worklog::Where('project_key', $project_key)
             ->where('issue_id', $issue_id)
-            ->orderBy('recorded_at', 'asc')
+            ->orderBy('recorded_at', $sort)
             ->get();
         return Response()->json(['ecode' => 0, 'data' => $worklogs]);
     }

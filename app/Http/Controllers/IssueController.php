@@ -976,7 +976,7 @@ class IssueController extends Controller
      * @param  string  $id
      * @return \Illuminate\Http\Response
      */
-    public function getHistory($project_key, $id)
+    public function getHistory(Request $request, $project_key, $id)
     {
         $changedRecords = [];
         $records = DB::collection('issue_his_' . $project_key)->where('issue_id', $id)->orderBy('_id', 'asc')->get();
@@ -1073,7 +1073,13 @@ class IssueController extends Controller
             }
         }
 
-        return Response()->json([ 'ecode' => 0, 'data' => array_reverse($changedRecords) ]);
+        $sort = ($request->input('sort') === 'asc') ? 'asc' : 'desc';
+        if ($sort === 'desc')
+        {
+            $changedRecords = array_reverse($changedRecords);
+        }
+
+        return Response()->json([ 'ecode' => 0, 'data' => $changedRecords ]);
     }
 
     /**

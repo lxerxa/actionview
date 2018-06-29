@@ -21,9 +21,15 @@ class CommentsController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index($project_key, $issue_id)
+    public function index(Request $request, $project_key, $issue_id)
     {
-        $comments = DB::collection('comments_' . $project_key)->where('issue_id', $issue_id)->orderBy('created_at', 'desc')->get();
+        $sort = ($request->input('sort') === 'asc') ? 'asc' : 'desc';
+
+        $comments = DB::collection('comments_' . $project_key)
+            ->where('issue_id', $issue_id)
+            ->orderBy('created_at', $sort)
+            ->get();
+
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($comments) ]);
     }
 
