@@ -183,6 +183,10 @@ class SummaryController extends Controller
 
             foreach ($module_ids as $module_id)
             {
+                if (count($module_ids) > 1 && $module_id === '-1')
+                {
+                    continue;
+                }
                 if (!isset($module_unresolved_issues[$module_id][$issue['type']]))
                 {
                     $module_unresolved_issues[$module_id][$issue['type']] = 0;
