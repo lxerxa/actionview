@@ -166,25 +166,38 @@ class SummaryController extends Controller
         $module_unresolved_issues = [];
         foreach ($issues as $issue)
         {
+            $module_ids = [];
             if (!isset($issue['module']) || !$issue['module'])
             {
-                $module_id = '-1';
+                $module_ids = [ '-1' ];
             }
             else
             {
-                $module_id = isset($optModules[$issue['module']]) ? $issue['module'] : '-1';
+                $ms = explode(',', $issue['module']);
+                foreach ($ms as $m)
+                {
+                    $module_ids[] = isset($optModules[$m]) ? $m : '-1';
+                }
+                $module_ids = array_unique($module_ids);
             }
 
-            if (!isset($module_unresolved_issues[$module_id][$issue['type']]))
+            foreach ($module_ids as $module_id)
             {
-                $module_unresolved_issues[$module_id][$issue['type']] = 0;
+                if (count($module_ids) > 1 && $module_id === '-1')
+                {
+                    continue;
+                }
+                if (!isset($module_unresolved_issues[$module_id][$issue['type']]))
+                {
+                    $module_unresolved_issues[$module_id][$issue['type']] = 0;
+                }
+                if (!isset($module_unresolved_issues[$module_id]['total']))
+                {
+                    $module_unresolved_issues[$module_id]['total'] = 0;
+                }
+                $module_unresolved_issues[$module_id][$issue['type']] += 1;
+                $module_unresolved_issues[$module_id]['total'] += 1;
             }
-            if (!isset($module_unresolved_issues[$module_id]['total']))
-            {
-                $module_unresolved_issues[$module_id]['total'] = 0;
-            }
-            $module_unresolved_issues[$module_id][$issue['type']] += 1;
-            $module_unresolved_issues[$module_id]['total'] += 1;
         }
 
         $sorted_module_unresolved_issues = [];
