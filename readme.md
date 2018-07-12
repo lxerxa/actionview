@@ -63,7 +63,9 @@ http://www.actionview.cn
 * Clear code structure, easy for second development.  
 清晰的代码结构，方便进行二次开发。
 
-# [FAQ](https://github.com/lxerxa/actionview/wiki/FAQ)
+# FAQ
+
+[FAQ](https://github.com/lxerxa/actionview/wiki/FAQ)
 
 # RoadMap
 
