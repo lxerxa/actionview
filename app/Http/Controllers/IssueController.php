@@ -170,11 +170,11 @@ class IssueController extends Controller
                     $query->whereRaw([ 'resolve_version' => [ '$exists' => 0 ] ])->orWhere('resolve_version', '');
                 });
             }
-            else if (($from === 'scrum' || $from === 'backlog') && isset($from_kanban_id) && $from_kanban_id)
+            else if (($from === 'active_sprint' || $from === 'backlog') && isset($from_kanban_id) && $from_kanban_id)
             {
                 $active_sprint_issues = [];
-                $active_sprint = Sprint::where('status', 'active')->first();
-                if ($from === 'scrum' && !$active_sprint) 
+                $active_sprint = Sprint::where('project_key', $project_key)->where('status', 'active')->first();
+                if ($from === 'active_sprint' && !$active_sprint) 
                 {
                     Response()->json([ 'ecode' => 0, 'data' => []]);
                 }
@@ -1516,7 +1516,7 @@ class IssueController extends Controller
             
             BoardRankMap::create([ 'board_id' => $from_board_id, 'rank' => $rank ]);
 
-            if ($from === 'scrum')
+            if ($from === 'active_sprint')
             {
                 $issues = $this->sprintFilter($project_key, $issues);
             }
@@ -1619,7 +1619,7 @@ class IssueController extends Controller
             }
         }
 
-        if ($from === 'scrum')
+        if ($from === 'active_sprint')
         {
             $issues = $this->sprintFilter($project_key, $issues);
         }

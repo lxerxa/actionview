@@ -80,7 +80,11 @@ class BoardController extends Controller
             ->orderBy('created_at', 'desc')
             ->get(['name']);
 
-        return Response()->json([ 'ecode' => 0, 'data' => $list, 'options' => [ 'epics' => $epics, 'sprints' => $sprints, 'versions' => $versions ] ]);
+        $completed_sprint_num = Sprint::where('project_key', $project_key)
+            ->where('status', 'completed')
+            ->max('no');
+
+        return Response()->json([ 'ecode' => 0, 'data' => $list, 'options' => [ 'epics' => $epics, 'sprints' => $sprints, 'versions' => $versions, 'completed_sprint_num' => $completed_sprint_num ] ]);
 
 /*
 $example = [ 

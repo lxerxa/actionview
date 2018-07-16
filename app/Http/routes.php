@@ -173,6 +173,7 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::post('sprint/{no}/publish', 'SprintController@publish');
     Route::post('sprint/{no}/complete', 'SprintController@complete');
     Route::get('sprint/{no}/log', 'SprintController@getLog');
+    Route::get('sprint/{no}', 'SprintController@show');
     Route::delete('sprint/{no}', 'SprintController@destroy');
 
     // project module config

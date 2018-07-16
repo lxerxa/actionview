@@ -16,7 +16,7 @@ class SprintController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('privilege:manage_project', [ 'except' => [ 'getLog' ] ]);
+        $this->middleware('privilege:manage_project', [ 'except' => [ 'show', 'getLog' ] ]);
         parent::__construct();
     }
 
@@ -116,9 +116,9 @@ class SprintController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($project_key, $id)
+    public function show($project_key, $no)
     {
-        $sprint = Sprint::find($id);
+        $sprint = Sprint::where('project_key', $project_key)->where('no', intval($no))->first();
         return Response()->json(['ecode' => 0, 'data' => $sprint]);
     }
 
@@ -237,7 +237,7 @@ class SprintController extends Controller
             throw new \UnexpectedValueException('the completed sprint issues have errors.', -11713);
         }
 
-        $incompleted_issues = array_diff($sprint->issues, $completed_issues);
+        $incompleted_issues = array_values(array_diff($sprint->issues, $completed_issues));
 
         $updValues = [ 
             'status' => 'completed', 
