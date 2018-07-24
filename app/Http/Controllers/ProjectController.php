@@ -540,7 +540,7 @@ class ProjectController extends Controller
         }
 
         $description = $request->input('description');
-        if (isset($description) && trim($description))
+        if (isset($description))
         {
             $updValues['description'] = trim($description);
         }
