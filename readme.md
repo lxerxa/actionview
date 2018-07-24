@@ -6,7 +6,7 @@ An issue tracking tool based on php laravel-framework in back-end and reactjs+re
 后端基于php laravel-framework、前端基于reactjs＋redux的类Jira的问题需求跟踪工具。前端代码库：[actionview-fe](https://github.com/lxerxa/actionview-fe)。  
 
 We are using Jira to do the task management and bug tracking, but found that the license fee is to too expensive, and Jira itself is to heavy, in the later phase of a project , maintain the global scheme is too hard, and the web user experience is not good as current popular SPA. That's why the idea of ActionView came up.  
-实际开发过程我们一直在用Jira进行任务管理和Bug跟踪，除了采购License价格不菲外，使用过程中觉得Jira还是有点重、全局方案配置到了后期越来越难维护、页面体验也不像现在流行的SPA那么好，所以有了做ActionView的想法。  
+我们实际开发过程一直在用Jira进行任务管理和Bug跟踪，除了采购License价格不菲外，使用过程中觉得Jira还是有点重、全局方案配置到了后期越来越难维护、页面体验也不像现在流行的SPA那么好，所以有了做ActionView的想法。  
 
 # Demo
 
