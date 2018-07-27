@@ -538,7 +538,8 @@ class IssueController extends Controller
             }
         }
 
-        if (isset($issue['parent_id']) && $issue['parent_id']) {
+        if (isset($issue['parent_id']) && $issue['parent_id']) 
+        {
             $issue['parent'] = DB::collection('issue_' . $project_key)->where('_id', $issue['parent_id'])->first(['no', 'type', 'title', 'state']);
         }
         else
