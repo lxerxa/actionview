@@ -29,7 +29,29 @@ class Acl {
      */
     public static function getRolesByUid($project_key, $user_id)
     {
-        return Roleactor::whereRaw([ 'user_ids' => $user_id, 'project_key' => $project_key ])->get(['role_id']);
+        $role_ids = [];
+
+        $groups = self::getBoundGroups($user_id);
+        foreach ($groups as $group)
+        {
+            $role_actors = Roleactor::whereRaw([ 'group_ids' => $group['id'], 'project_key' => $project_key ])
+                ->get([ 'role_id' ])
+                ->toArray();
+            foreach($role_actors as $actor)
+            {
+                $role_ids[] =  $actor['role_id'];
+            }
+        }
+
+        $role_actors = Roleactor::whereRaw([ 'user_ids' => $user_id, 'project_key' => $project_key ])
+            ->get(['role_id'])
+            ->toArray();
+        foreach($role_actors as $actor)
+        {
+            $role_ids[] =  $actor['role_id'];
+        }
+
+        return array_values(array_unique($role_ids));
     }
 
     /**

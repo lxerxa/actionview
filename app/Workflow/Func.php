@@ -116,7 +116,7 @@ class Func
         $roles = Acl::getRolesByUid($project_key, $caller);
         foreach ($roles as $role)
         {
-            if ($role->id === $param['roleParam'])
+            if ($role === $param['roleParam'])
             {
                 return true;
             }

@@ -22,6 +22,7 @@ use App\System\Eloquent\SysSetting;
 use App\Acl\Acl;
 use Sentinel;
 use DB;
+use Exception;
 
 use MongoDB\BSON\ObjectID;
 use Maatwebsite\Excel\Facades\Excel;
