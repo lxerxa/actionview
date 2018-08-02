@@ -60,7 +60,7 @@ class SessionController extends Controller
         {
             $configs = [];
             $directories = Directory::where('type', 'OpenLDAP')
-                ->where('invalide_flag', '<>', 1)
+                ->where('invalid_flag', '<>', 1)
                 ->get();
             foreach ($directories as $d)
             {
