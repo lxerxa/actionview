@@ -301,18 +301,16 @@ class IssueController extends Controller
         {
             if ($type == 'standard')
             {
-                $query->where(function ($query) 
-                    { 
-                        $query->where('parent_id', '')->orWhereNull('parent_id')->orWhere('parent_id', 'exists', false);
-                    });
+                $query->where(function ($query) { 
+                    $query->where('parent_id', '')->orWhereNull('parent_id')->orWhere('parent_id', 'exists', false);
+                });
    
             }
             if ($type == 'subtask')
             {
-                $query->where(function ($query) 
-                    { 
-                        $query->where('parent_id', 'exists', true)->where('parent_id', '<>', '')->whereNotNull('parent_id');
-                    });
+                $query->where(function ($query) { 
+                    $query->where('parent_id', 'exists', true)->where('parent_id', '<>', '')->whereNotNull('parent_id');
+                });
             }
         }
 
@@ -827,11 +825,16 @@ class IssueController extends Controller
             }
         }
 
+        $updValues = $updValues + array_only($request->all(), $valid_keys);
+        if (!$updValues)
+        {
+            return $this->show($project_key, $id);
+        }
+
         $updValues['modifier'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
         $updValues['updated_at'] = time();
 
-
-        DB::collection($table)->where('_id', $id)->update($updValues + array_only($request->all(), $valid_keys));
+        DB::collection($table)->where('_id', $id)->update($updValues);
 
         // add to histroy table
         $snap_id = Provider::snap2His($project_key, $id, $schema, array_keys(array_only($request->all(), $valid_keys)));
@@ -1094,8 +1097,12 @@ class IssueController extends Controller
      */
     public function doAction(Request $request, $project_key, $id, $workflow_id, $action_id)
     {
-        $entry = new Workflow($workflow_id);
-        $entry->doAction($action_id, [ 'project_key' => $project_key, 'issue_id' => $id, 'caller' => $this->user->id ] + array_only($request->all(), [ 'comments' ]));
+        try {
+          $entry = new Workflow($workflow_id);
+          $entry->doAction($action_id, [ 'project_key' => $project_key, 'issue_id' => $id, 'caller' => $this->user->id ] + array_only($request->all(), [ 'comments' ]));
+        } catch (Exception $e) {
+          throw new Exception('the executed action has error.', -11115);
+        }
         return $this->show($project_key, $id); 
     }
 
