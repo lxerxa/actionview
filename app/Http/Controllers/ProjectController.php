@@ -23,6 +23,7 @@ use Sentinel;
 use DB;
 
 use MongoDB\BSON\ObjectID;
+use MongoDB\Model\CollectionInfo;
 
 class ProjectController extends Controller
 {
@@ -41,28 +42,30 @@ class ProjectController extends Controller
     {
         // get bound groups
         $group_ids = array_column(Acl::getBoundGroups($this->user->id), 'id');
-        // fix me
         $user_projects = UserGroupProject::whereIn('ug_id', array_merge($group_ids, [ $this->user->id ]))
             ->where('link_count', '>', 0)
             ->get(['project_key'])
             ->toArray();
         $pkeys = array_column($user_projects, 'project_key');
 
+        // get latest access projects
         $accessed_projects = AccessProjectLog::where('user_id', $this->user->id)
             ->orderBy('latest_access_time', 'desc')
             ->get(['project_key'])
             ->toArray();
         $accessed_pkeys = array_column($accessed_projects, 'project_key');
 
-        $new_accessed_pkeys = array_intersect($accessed_pkeys, $pkeys);
+        $new_accessed_pkeys = array_unique(array_intersect($accessed_pkeys, $pkeys));
 
         $projects = [];
         foreach ($new_accessed_pkeys as $pkey)
         {
             $project = Project::where('key', $pkey)->first();
-            if ($project->status === 'closed') {
+            if (!$project || $project->status === 'closed') 
+            {
                 continue;
             }
+
             $projects[] = [ 'key' => $project->key, 'name' => $project->name ];
             if (count($projects) >= 5) { break; }
         }
@@ -86,7 +89,7 @@ class ProjectController extends Controller
             ->get(['project_key'])
             ->toArray();
 
-        $pkeys = array_unique(array_column($user_projects, 'project_key'));
+        $pkeys = array_values(array_unique(array_column($user_projects, 'project_key')));
 
         $offset_key = $request->input('offset_key');
         if (isset($offset_key))
@@ -127,8 +130,7 @@ class ProjectController extends Controller
             $query = Project::where('key', $pkey);
             if ($name)
             {
-                $query->where(function ($query) use ($name)
-                {
+                $query->where(function ($query) use ($name) {
                     $query->where('key', 'like', '%' . $name . '%')->orWhere('name', 'like', '%' . $name . '%');
                 });
             }
@@ -207,6 +209,7 @@ class ProjectController extends Controller
           $col->index('priority');
           $col->index('created_at');
           $col->index('updated_at');
+          $col->index('epic');
           $col->index('module');
           $col->index('resolve_version');
           $col->index('no');
@@ -253,6 +256,7 @@ class ProjectController extends Controller
               $col->index('created_at');
               $col->index('updated_at');
               $col->index('module');
+              $col->index('epic');
               $col->index('resolve_version');
               $col->index('no');
               $col->index('assignee.id');
@@ -584,7 +588,38 @@ class ProjectController extends Controller
      */
     public function destroy($id)
     {
+    	$project = Project::find($id);
+        if (!$project)
+        {
+            throw new \UnexpectedValueException('the project does not exist.', -14004);
+        }
+
+        $project_key = $project->key;
+        //$related_cols = [ 'version', 'module', 'board', 'epic', 'sprint', 'sprint_log', 'searcher', 'access_project_log', 'access_board_log', 'user_group_project', 'watch', 'acl_role', 'acl_roleactor', 'acl_role_permissions', 'oswf_definition' ];
+        // delete releted table
+        $collections = DB::listCollections();
+        foreach ($collections as $col)
+        {
+            $col_name = $col->getName();
+            if (strpos($col_name, 'issue_') === 0 ||
+                strpos($col_name, 'activity_') === 0 ||
+                strpos($col_name, 'comments_') === 0 ||
+                $col_name === 'system.indexes')
+            {
+                continue;
+            }
+    
+            DB::collection($col_name)->where('project_key', $project_key)->delete();
+        }
+
+        // delete the collections
+        Schema::drop('issue_' . $project_key);
+        Schema::drop('issue_his_' . $project_key);
+        Schema::drop('activity_' . $project_key);
+        Schema::drop('comments_' . $project_key);
+        // delete from the project table
         Project::destroy($id);
+
         return Response()->json([ 'ecode' => 0, 'data' => [ 'id' => $id ] ]);
     }
 
