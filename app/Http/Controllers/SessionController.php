@@ -37,9 +37,9 @@ class SessionController extends Controller
             throw new \UnexpectedValueException('email or password cannot be empty.', -10003);
         }
 
+        $setting = SysSetting::first();
         if (strpos($email, '@') === false) 
         {
-            $setting = SysSetting::first();
             if ($setting && isset($setting->properties) && isset($setting->properties['login_mail_domain']))
             {
                 $email = $email . '@' . $setting->properties['login_mail_domain']; 
@@ -47,6 +47,11 @@ class SessionController extends Controller
         }
 
         try {
+            if (!($setting && isset($setting->properties) && isset($setting->properties['enable_login_protection']) && $setting->properties['enable_login_protection'] === 1))
+            {
+                Sentinel::removeCheckpoint('throttle');
+            }
+
             $user = Sentinel::authenticate([ 'email' => $email, 'password' => $password ]);
         } catch (ThrottlingException $e) {
             // throttle error. 
