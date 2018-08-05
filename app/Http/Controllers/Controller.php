@@ -190,35 +190,33 @@ class Controller extends BaseController
      */
     public function isFieldUsedByIssue($project_key, $field_key, $field, $ext_info='')
     {
+        if ($field['project_key'] !== $project_key)
+        {
+             return true;
+        }
+
         if ($project_key === '$_sys_$')
         {
             switch($field_key)
             {
                 case 'type':
-                case 'workflow':
+                    return false;
                 case 'state':
                 case 'priority':
                 case 'resolution':
-                    if ($field['project_key'] !== $project_key)
+                    $projects = Project::all();
+                    foreach($projects as $project)
                     {
-                        return true;
-                    }
-                    else
-                    {
-                        $projects = Project::all();
-                        foreach($projects as $project)
+                        $isUsed = DB::collection('issue_' . $project->key)
+                                      ->where($field_key, isset($field['key']) ? $field['key'] : $field['_id'])
+                                      ->where('del_flg', '<>', 1)
+                                      ->exists();
+                        if ($isUsed)
                         {
-                            $isUsed = DB::collection('issue_' . $project->key)
-                                          ->where($field_key, isset($field['key']) ? $field['key'] : $field['_id'])
-                                          ->where('del_flg', '<>', 1)
-                                          ->exists();
-                            if ($isUsed)
-                            {
-                                return true;
-                            }
+                            return true;
                         }
-                        return false;
                     }
+                    return false;
                 default:
                     return true;
             }
@@ -228,49 +226,42 @@ class Controller extends BaseController
             switch($field_key)
             {
                 case 'type':
-                case 'workflow':
                 case 'state':
                 case 'priority':
                 case 'resolution':
-                case 'module':
                 case 'epic':
-                    if ($field['project_key'] !== $project_key)
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        return DB::collection('issue_' . $project_key)
-                                   ->where($field_key, $field['_id'])
-                                   ->where('del_flg', '<>', 1)
-                                   ->exists();
-                    }
+                    return DB::collection('issue_' . $project_key)
+                        ->where($field_key, $field['_id'])
+                        ->where('del_flg', '<>', 1)
+                        ->exists();
+                case 'module':
+                    return DB::collection('issue_' . $project_key)
+                        ->where($field_key, 'like', '%' . $field['_id'] . '%')
+                        ->where('del_flg', '<>', 1)
+                        ->exists();
                 case 'version':
-                    if ($field['project_key'] !== $project_key)
+                    if (!$ext_info)
                     {
-                        return true;
+                        return false;
                     }
-                    else
-                    {
-                        if (!$ext_info)
-                        {
-                            return false;
-                        }
 
-                        $vid = $field['_id'];
-                        return DB::collection('issue_' . $project_key)
-                                   ->where(function ($query) use ($vid, $ext_info) {
-                                       foreach ($ext_info as $key => $vf) {
-                                           if ($vf['type'] === 'SingleVersion') {
-                                               $query->orWhere($vf['key'], $vid);
-                                           } else {
-                                               $query->orWhere($vf['key'], 'like',  "%$vid%");
-                                           }
-                                       }
-                                   })
-                                   ->where('del_flg', '<>', 1)
-                                   ->exists();
-                    }
+                    $vid = $field['_id'];
+                    return DB::collection('issue_' . $project_key)
+                        ->where(function ($query) use ($vid, $ext_info) {
+                            foreach ($ext_info as $key => $vf) 
+                            {
+                                if ($vf['type'] === 'SingleVersion') 
+                                {
+                                    $query->orWhere($vf['key'], $vid);
+                                } 
+                                else 
+                                {
+                                    $query->orWhere($vf['key'], 'like',  "%$vid%");
+                                }
+                            }
+                        })
+                        ->where('del_flg', '<>', 1)
+                        ->exists();
                 default:
                     return true;
             }
