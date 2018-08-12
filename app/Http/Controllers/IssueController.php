@@ -17,6 +17,8 @@ use App\Project\Eloquent\Board;
 use App\Project\Eloquent\Sprint;
 use App\Project\Eloquent\BoardRankMap;
 
+use App\Project\Eloquent\Labels;
+
 use App\Workflow\Workflow;
 use App\System\Eloquent\SysSetting;
 use App\Acl\Acl;
@@ -118,6 +120,19 @@ class IssueController extends Controller
                 }
             });
         }
+
+        $labels = $request->input('labels');
+        if (isset($labels) && $labels)
+        {
+            $query->where(function ($query) use ($labels) {
+                $labels2 = explode(',', $labels);
+                foreach ($labels2 as $label)
+                {
+                    $query->orWhere('labels', $label);
+                }
+            });
+        }
+
 
         $created_at = $request->input('created_at');
         if (isset($created_at) && $created_at)
@@ -459,6 +474,12 @@ class IssueController extends Controller
         // trigger event of issue created
         Event::fire(new IssueEvent($project_key, $id->__toString(), $insValues['reporter'], [ 'event_key' => 'create_issue' ]));
 
+        // create the Labels for project
+        if (isset($insValues['labels']) && $insValues['labels'])
+        {
+            $this->createLabels($project_key, $insValues['labels']);
+        }
+
         return $this->show($project_key, $id->__toString());
     }
 
@@ -633,8 +654,10 @@ class IssueController extends Controller
         $modules = Provider::getModuleList($project_key, ['name']);
         // get project epics
         $epics = Provider::getEpicList($project_key);
+        // get project labels
+        $labels = Provider::getLabelOptions($project_key);
         // get project types
-        $types = Provider::getTypeListExt($project_key, [ 'user' => $users, 'assignee' => $assignees, 'state' => $states, 'resolution' => $resolutions, 'priority' => $priorities, 'version' => $versions, 'module' => $modules, 'epic' => $epics ]);
+        $types = Provider::getTypeListExt($project_key, [ 'user' => $users, 'assignee' => $assignees, 'state' => $states, 'resolution' => $resolutions, 'priority' => $priorities, 'version' => $versions, 'module' => $modules, 'epic' => $epics, 'labels' => $labels ]);
         // get project sprints
         $sprint_nos = [];
         $sprints = Provider::getSprintList($project_key);
@@ -659,6 +682,7 @@ class IssueController extends Controller
                 'resolutions' => $resolutions, 
                 'priorities' => $priorities, 
                 'modules' => $modules, 
+                'labels' => $labels, 
                 'versions' => $versions, 
                 'epics' => $epics,
                 'sprints' => $sprint_nos,
@@ -736,8 +760,80 @@ class IssueController extends Controller
         Event::fire(new IssueEvent($project_key, $id, $updValues['modifier'], [ 'event_key' => 'assign_issue', 'data' => [ 'old_user' => $issue['assignee'], 'new_user' => $assignee ] ]));
 
         return $this->show($project_key, $id);
-     }
+    }
 
+    /**
+     * set issue labels.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  string  $project_key
+     * @param  string  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function setLabels(Request $request, $project_key, $id)
+    {
+        if (!Acl::isAllowed($this->user->id, 'edit_issue', $project_key))
+        {
+            return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
+        }
+
+        $labels = $request->input('labels');
+        if (!isset($labels))
+        {
+            return $this->show($project_key, $id);
+        }
+
+        $table = 'issue_' . $project_key;
+        $issue = DB::collection($table)->find($id);
+        if (!$issue)
+        {
+            throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -11103);
+        }
+
+        $updValues['labels'] = $labels;
+
+        $updValues['modifier'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        $updValues['updated_at'] = time();
+        DB::collection($table)->where('_id', $id)->update($updValues);
+
+        // add to histroy table
+        $snap_id = Provider::snap2His($project_key, $id, null, [ 'labels' ]);
+        // trigger event of issue edited
+        Event::fire(new IssueEvent($project_key, $id, $updValues['modifier'], [ 'event_key' => 'edit_issue', 'snap_id' => $snap_id ]));
+        // create the Labels for project
+        if ($labels)
+        {
+            $this->createLabels($project_key, $labels);
+        }
+
+        return $this->show($project_key, $id);
+    }
+
+    /**
+     * create the new labels for project.
+     *
+     * @param  string  $project_key
+     * @param  array $labels
+     * @return void
+     */
+    public function createLabels($project_key, $labels)
+    {
+        $created_labels = [];
+        $project_labels = Labels::where('project_key', $project_key)
+            ->whereIn('name', $labels)
+            ->get();
+        foreach ($project_labels as $label)
+        {
+            $created_labels[] = $label->name;
+        }
+        // get uncreated labels
+        $new_labels = array_diff($labels, $created_labels);
+        foreach ($new_labels as $label)
+        {
+            Labels::create([ 'project_key' => $project_key, 'name' => $label ]);
+        }
+        return true;
+    }
 
     /**
      * Update the specified resource in storage.
@@ -771,7 +867,7 @@ class IssueController extends Controller
         {
             throw new \UnexpectedValueException('the schema of the type is not existed.', -11101);
         }
-        $valid_keys = array_merge(array_column($schema, 'key'), [ 'type', 'assignee', 'parent_id' ]);
+        $valid_keys = array_merge(array_column($schema, 'key'), [ 'type', 'assignee', 'labels', 'parent_id' ]);
 
         // handle timetracking
         $updValues = [];
@@ -838,9 +934,13 @@ class IssueController extends Controller
 
         // add to histroy table
         $snap_id = Provider::snap2His($project_key, $id, $schema, array_keys(array_only($request->all(), $valid_keys)));
-
         // trigger event of issue edited
         Event::fire(new IssueEvent($project_key, $id, $updValues['modifier'], [ 'event_key' => 'edit_issue', 'snap_id' => $snap_id ]));
+        // create the Labels for project
+        if (isset($updValues['labels']) && $updValues['labels'])
+        {
+            $this->createLabels($project_key, $updValues['labels']);
+        }
 
         return $this->show($project_key, $id); 
     }

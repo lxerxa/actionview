@@ -22,6 +22,7 @@ use App\Project\Eloquent\Version;
 use App\Project\Eloquent\Module;
 use App\Project\Eloquent\Epic;
 use App\Project\Eloquent\Sprint;
+use App\Project\Eloquent\Labels;
 
 use Cartalyst\Sentinel\Users\EloquentUser;
 use Sentinel;
@@ -97,6 +98,28 @@ class Provider {
             $tmp['category'] = isset($state['category']) ? $state['category'] : '';
             $options[] = $tmp;
         }
+        return $options;
+    }
+
+    /**
+     * get state options.
+     *
+     * @param string $project_key
+     * @param array $fields
+     * @return collection
+     */
+    public static function getLabelOptions($project_key)
+    {
+        $options = [];
+
+        $labels = Labels::Where('project_key', $project_key)
+            ->orderBy('_id', 'desc')
+            ->get();
+        foreach ($labels as $label)
+        {
+            $options[] = $label->name;
+        }
+
         return $options;
     }
 
@@ -730,21 +753,14 @@ class Provider {
                     unset($val['optionValues'][$k]['email']);
                 }
             }
-            else if ($val['key'] == 'module')
+            else if ($val['key'] == 'labels')
             {
-                if (!isset($options['module']))
+                $couple_labels = [];
+                foreach ($options['labels'] as $label)
                 {
-                    $options['module'] = self::getModuleList($project_key);
+                    $couple_labels[] = [ 'id' => $label, 'name' => $label ];
                 }
-                $val['optionValues'] = self::pluckFields($options['module'], ['_id', 'name']);
-            }
-            else if ($val['key'] == 'epic')
-            {
-                if (!isset($options['epic']))
-                {
-                    $options['epic'] = self::getEpicList($project_key);
-                }
-                $val['optionValues'] = self::pluckFields($options['epic'], ['_id', 'name', 'bgColor']);
+                $val['optionValues'] = $couple_labels;
             }
             else if (array_key_exists($val['key'], $options))
             {
@@ -927,6 +943,16 @@ class Provider {
                 $epics = self::getEpicList($project_key);
                 $val['optionValues'] = self::pluckFields($epics, ['_id', 'name', 'bgColor']);
             }
+            else if ($val['key'] == 'labels')
+            {
+                $labels = self::getLabelOptions($project_key);
+                $couple_labels = [];
+                foreach ($labels as $label)
+                {
+                    $couple_labels[] = [ 'id' => $label, 'name' => $label ];
+                }
+                $val['optionValues'] = $couple_labels;
+            }
             else if ($val['type'] == 'SingleVersion' || $val['type'] == 'MultiVersion')
             {
                 $versions === null && $versions = self::getVersionList($project_key);
@@ -983,7 +1009,7 @@ class Provider {
             $schema = [];
             if ($change_fields)
             {
-                $out_schema_fields = [ 'type', 'state', 'resolution', 'priority', 'assignee', 'parent_id' ];
+                $out_schema_fields = [ 'type', 'state', 'resolution', 'priority', 'assignee', 'labels', 'parent_id' ];
                 if (array_diff($change_fields, $out_schema_fields))
                 {
                     $schema = self::getSchemaByType($issue['type']);
@@ -1138,6 +1164,21 @@ class Provider {
             else
             {
                 $snap_data['assignee'] = [ 'value' => '', 'name' => '经办人' ];
+            }
+        }
+        // labels
+        if (isset($issue['labels']))
+        {
+            if ($issue['labels'])
+            {
+                if (in_array('labels', $change_fields) || !isset($snap_data['labels']))
+                {
+                    $snap_data['labels'] = [ 'value' => implode(',', $issue['labels']), 'name' => '标签' ];
+                }
+            }
+            else
+            {
+                $snap_data['labels'] = [ 'value' => '', 'name' => '标签' ];
             }
         }
 

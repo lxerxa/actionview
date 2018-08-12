@@ -212,6 +212,7 @@ class ProjectController extends Controller
           $col->index('epic');
           $col->index('module');
           $col->index('resolve_version');
+          $col->index('labels');
           $col->index('no');
           $col->index('parent_id');
           $col->index('assignee.id');
@@ -258,6 +259,7 @@ class ProjectController extends Controller
               $col->index('module');
               $col->index('epic');
               $col->index('resolve_version');
+              $col->index('labels');
               $col->index('no');
               $col->index('assignee.id');
               $col->index('reporter.id');
