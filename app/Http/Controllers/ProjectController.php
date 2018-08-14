@@ -598,6 +598,7 @@ class ProjectController extends Controller
 
         $project_key = $project->key;
         //$related_cols = [ 'version', 'module', 'board', 'epic', 'sprint', 'sprint_log', 'searcher', 'access_project_log', 'access_board_log', 'user_group_project', 'watch', 'acl_role', 'acl_roleactor', 'acl_role_permissions', 'oswf_definition' ];
+        $unrelated_cols = [ 'system.indexes', 'users', 'persistences', 'throttle', 'project' ];
         // delete releted table
         $collections = DB::listCollections();
         foreach ($collections as $col)
@@ -606,7 +607,7 @@ class ProjectController extends Controller
             if (strpos($col_name, 'issue_') === 0 ||
                 strpos($col_name, 'activity_') === 0 ||
                 strpos($col_name, 'comments_') === 0 ||
-                $col_name === 'system.indexes')
+                in_array($col_name, $unrelated_cols))
             {
                 continue;
             }

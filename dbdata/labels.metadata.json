@@ -1,0 +1,1 @@
+{ "indexes" : [ { "v" : 1, "key" : { "_id" : 1 }, "name" : "_id_", "ns" : "actionviewdb.labels" }, { "v" : 1, "key" : { "project_key" : 1 }, "name" : "project_key_1", "ns" : "actionviewdb.labels" } ] }
