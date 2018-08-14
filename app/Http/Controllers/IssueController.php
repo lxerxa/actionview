@@ -455,6 +455,7 @@ class IssueController extends Controller
 
         // get reporter(creator)
         $insValues['reporter'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        $insValues['created_at'] = time();
 
         $table = 'issue_' . $project_key;
         $max_no = DB::collection($table)->count() + 1;
@@ -464,10 +465,11 @@ class IssueController extends Controller
         $workflow = $this->initializeWorkflow($issue_type);
         $insValues = array_merge($insValues, $workflow);
 
-        // created time
-        $insValues['created_at'] = time();
+        // merge all fields
+        $insValues = $insValues + array_only($request->all(), $valid_keys);
 
-        $id = DB::collection($table)->insertGetId($insValues + array_only($request->all(), $valid_keys));
+        // insert into the table
+        $id = DB::collection($table)->insertGetId($insValues);
 
         // add to histroy table
         Provider::snap2His($project_key, $id, $schema);
