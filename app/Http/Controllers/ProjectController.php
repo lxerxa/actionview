@@ -203,26 +203,32 @@ class ProjectController extends Controller
         }
 
         Schema::collection('issue_' . $project->key, function($col) {
-          $col->index('type');
-          $col->index('state');
-          $col->index('resolution');
-          $col->index('priority');
-          $col->index('created_at');
-          $col->index('updated_at');
-          $col->index('epic');
-          $col->index('module');
-          $col->index('resolve_version');
-          $col->index('labels');
-          $col->index('no');
-          $col->index('parent_id');
-          $col->index('assignee.id');
-          $col->index('reporter.id');
+            $col->index('type');
+            $col->index('state');
+            $col->index('resolution');
+            $col->index('priority');
+            $col->index('created_at');
+            $col->index('updated_at');
+            $col->index('epic');
+            $col->index('module');
+            $col->index('resolve_version');
+            $col->index('labels');
+            $col->index('no');
+            $col->index('parent_id');
+            $col->index('assignee.id');
+            $col->index('reporter.id');
         });
         Schema::collection('activity_' . $project->key, function($col) {
-          $col->index('event_key');
+            $col->index('event_key');
         });
         Schema::collection('comments_' . $project->key, function($col) {
-          $col->index('issue_id');
+            $col->index('issue_id');
+        });
+        Schema::collection('issue_his_' . $project->key, function($col) {
+            $col->index('issue_id');
+        });
+        Schema::collection('document_' . $project->key, function($col) {
+            $col->index('parent');
         });
 
         return Response()->json([ 'ecode' => 0, 'data' => $project ]);
@@ -250,25 +256,31 @@ class ProjectController extends Controller
             }
 
             Schema::collection('issue_' . $project->key, function($col) {
-              $col->index('type');
-              $col->index('state');
-              $col->index('resolution');
-              $col->index('priority');
-              $col->index('created_at');
-              $col->index('updated_at');
-              $col->index('module');
-              $col->index('epic');
-              $col->index('resolve_version');
-              $col->index('labels');
-              $col->index('no');
-              $col->index('assignee.id');
-              $col->index('reporter.id');
+                $col->index('type');
+                $col->index('state');
+                $col->index('resolution');
+                $col->index('priority');
+                $col->index('created_at');
+                $col->index('updated_at');
+                $col->index('module');
+                $col->index('epic');
+                $col->index('resolve_version');
+                $col->index('labels');
+                $col->index('no');
+                $col->index('assignee.id');
+                $col->index('reporter.id');
             });
             Schema::collection('activity_' . $project->key, function($col) {
-              $col->index('event_key');
+                $col->index('event_key');
             });
             Schema::collection('comments_' . $project->key, function($col) {
-              $col->index('issue_id');
+                $col->index('issue_id');
+            });
+            Schema::collection('issue_his_' . $project->key, function($col) {
+                $col->index('issue_id');
+            });
+            Schema::collection('document_' . $project->key, function($col) {
+                $col->index('parent');
             });
         }
         return Response()->json([ 'ecode' => 0, 'data' => [ 'ids' => $ids ] ]);
