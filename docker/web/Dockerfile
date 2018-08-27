@@ -17,6 +17,7 @@ RUN apt-get update && \
         php-curl\
         php-dom\
         php-ldap\
+        php-zip\
         php-mongodb\
         cron
 
