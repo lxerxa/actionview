@@ -165,6 +165,14 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::get('file/{id}', [ 'middleware' => 'privilege:download_file', 'uses' => 'FileController@download' ]);
     Route::delete('file/{id}', [ 'middleware' => 'privilege:remove_file', 'uses' => 'FileController@delete' ]);
 
+    Route::post('document/{id}/upload',  [ 'middleware' => 'privilege:upload_file', 'uses' => 'DocumentController@upload' ]);
+    Route::get('document/{id}/download', [ 'middleware' => 'privilege:download_file', 'uses' => 'DocumentController@download' ]);
+    Route::get('document/options', [ 'middleware' => 'privilege:view_project', 'uses' => 'DocumentController@getOptions' ]);
+    Route::get('document/{id}', [ 'middleware' => 'privilege:view_project', 'uses' => 'DocumentController@index' ]);
+    Route::post('document/{id}/directory', [ 'middleware' => 'privilege:manage_project', 'uses' => 'DocumentController@createFolder' ]);
+    Route::put('document/{id}', 'DocumentController@update');
+    Route::delete('document/{id}', 'DocumentController@destroy');
+
     Route::resource('kanban', 'BoardController');
     Route::get('kanban/{id}/access', 'BoardController@recordAccess');
     Route::post('kanban/{id}/rank', 'BoardController@setRank');

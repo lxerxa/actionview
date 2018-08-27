@@ -10,7 +10,8 @@
         "jenssegers/mongodb": "^3.0",
         "cartalyst/sentinel": "^2.0",
         "maatwebsite/excel": "^2.1",
-        "adldap2/adldap2": "^8.1"
+        "adldap2/adldap2": "^8.1",
+        "chumper/zipper": "^1.0"
     },
     "require-dev": {
         "fzaninotto/faker": "~1.4",

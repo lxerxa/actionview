@@ -162,6 +162,8 @@ return [
         Cartalyst\Sentinel\Laravel\SentinelServiceProvider::class,
 
         Maatwebsite\Excel\ExcelServiceProvider::class,
+
+        Chumper\Zipper\ZipperServiceProvider::class,
     ],
 
     /*
@@ -211,6 +213,8 @@ return [
         'Activation' => Cartalyst\Sentinel\Laravel\Facades\Activation::class,
         'Reminder'   => Cartalyst\Sentinel\Laravel\Facades\Reminder::class,
         'Sentinel'   => Cartalyst\Sentinel\Laravel\Facades\Sentinel::class,
+
+        'Zipper' => Chumper\Zipper\Zipper::class,
     ],
 
 ];

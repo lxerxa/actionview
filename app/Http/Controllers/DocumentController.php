@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
+use App\Acl\Acl;
 use DB;
 
 use Zipper;
@@ -25,7 +26,7 @@ class DocumentController extends Controller
             ->distinct('uploader')
             ->get([ 'uploader' ]);
 
-        return Response()->json(['ecode' => 0, 'data' => $uploaders]);
+        return Response()->json(['ecode' => 0, 'data' => [ 'uploader' => $uploaders ]]);
     }
 
     /**
@@ -121,18 +122,19 @@ class DocumentController extends Controller
         $name =  $request->input('name');
         if (!isset($name) || !$name)
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -12400);
+            throw new \UnexpectedValueException('the name can not be empty.', -11900);
         }
         $insValues['name'] = $name;
 
         $isExists = DB::collection('document_' . $project_key)
             ->where('parent', $directory)
             ->where('name', $name)
+            ->where('d', 1)
             ->where('del_flag', '<>', 1)
             ->exists();
         if ($isExists)
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -12400);
+            throw new \UnexpectedValueException('the name cannot be repeated.', -11901);
         }
 
         $insValues['pt'] = $this->getParentTree($project_key, $directory);
@@ -183,7 +185,7 @@ class DocumentController extends Controller
         $name =  $request->input('name');
         if (!isset($name) || !$name)
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -12400);
+            throw new \UnexpectedValueException('the name can not be empty.', -11900);
         }
 
         $old_document = DB::collection('document_' . $project_key)
@@ -191,7 +193,22 @@ class DocumentController extends Controller
             ->first();
         if (!$old_document)
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -12400);
+            throw new \UnexpectedValueException('the object does not exist.', -11902);
+        }
+
+        if ($old_document['d'] === 1)
+        {
+            if (!Acl::isAllowed($this->user->id, 'manage_project', $project_key)) 
+            {
+                return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
+            }
+        }
+        else
+        {
+            if (!Acl::isAllowed($this->user->id, 'upload_file', $project_key) || !Acl::isAllowed($this->user->id, 'download_file', $project_key)) 
+            {
+                return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
+            }
         }
 
         if ($old_document['name'] !== $name)
@@ -201,15 +218,20 @@ class DocumentController extends Controller
                 ->where('name', $name)
                 ->where('del_flag', '<>', 1);
 
-            //if (isset($old_document['d']) && $old_document['d'] === 1)
-            //{
-            //    $query->where('d', 1);
-            //}
+            if (isset($old_document['d']) && $old_document['d'] === 1)
+            {
+                $query->where('d', 1);
+            }
+            else
+            {
+                $query->where('d', '<>', 1);
+            }
+
             $isExists = $query->exists();
 
             if ($isExists)
             {
-                throw new \UnexpectedValueException('the name can not be empty.', -12400);
+                throw new \UnexpectedValueException('the name cannot be repeated.', -11901);
             }
         }
 
@@ -233,7 +255,22 @@ class DocumentController extends Controller
             ->first();
         if (!$document)
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -12400);
+            throw new \UnexpectedValueException('the object does not exist.', -11902);
+        }
+
+        if ($old_document['d'] === 1)
+        {
+            if (!Acl::isAllowed($this->user->id, 'manage_project', $project_key))
+            {
+                return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
+            }
+        }
+        else
+        {
+            if (!Acl::isAllowed($this->user->id, 'remove_file', $project_key))
+            {
+                return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
+            }
         }
 
         DB::collection('document_' . $project_key)->where('_id', $id)->update([ 'del_flag' => 1 ]);
@@ -260,7 +297,7 @@ class DocumentController extends Controller
         $field = array_pop($fields);
         if ($_FILES[$field]['error'] > 0)
         {
-            throw new \UnexpectedValueException('upload file errors.', -15101);
+            throw new \UnexpectedValueException('upload file errors.', -11903);
         }
 
         $basename = md5(microtime() . $_FILES[$field]['name']);
@@ -287,6 +324,7 @@ class DocumentController extends Controller
             $isExists = DB::collection('document_' . $project_key)
                 ->where('parent', $directory)
                 ->where('name', $fname . ($i < 2 ? '' : ('(' . $i . ')')) . $extname)
+                ->where('d', '<>', 1)
                 ->where('del_flag', '<>', 1)
                 ->exists();
             if (!$isExists)
@@ -327,12 +365,12 @@ class DocumentController extends Controller
             ->first();
         if (!$document)
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -12400);
+            throw new \UnexpectedValueException('the object does not exist.', -11902);
         }
 
         if (isset($document['d']) && $document['d'] === 1)
         {
-            $this->downloadFolder($document['name'], $id);
+            $this->downloadFolder($project_key, $document['name'], $id);
         }
         else
         {
@@ -347,15 +385,18 @@ class DocumentController extends Controller
      * @param  String  $directory
      * @return \Illuminate\Http\Response
      */
-    public function downloadFolder($name, $directory)
+    public function downloadFolder($project_key, $name, $directory)
     {
+
         $basepath = '/tmp/' . md5($this->user->id . microtime());
         @mkdir($basepath);
 
-        $this->contructFolder($basepath . '/' . $name, $directory);
+        $this->contructFolder($project_key, $basepath . '/' . $name, $directory);
 
         $filename = $basepath . '/' . $name . '.zip';
+
         Zipper::make($filename)->folder($name)->add($basepath . '/' . $name);
+        Zipper::close();
 
         header("Content-type: application/octet-stream");
         header("Accept-Ranges: bytes");
@@ -371,7 +412,7 @@ class DocumentController extends Controller
      * @param  String  $id
      * @return void
      */
-    public function contructFolder($fullpath, $id)
+    public function contructFolder($project_key, $fullpath, $id)
     {
         @mkdir($fullpath);
 
@@ -383,7 +424,7 @@ class DocumentController extends Controller
         {
             if (isset($doc['d']) && $doc['d'] === 1)
             {
-                $this->contructFolder($fullpath . '/' . $doc['name'], $doc['_id']->__toString());
+                $this->contructFolder($project_key, $fullpath . '/' . $doc['name'], $doc['_id']->__toString());
             }
             else
             {
@@ -391,7 +432,7 @@ class DocumentController extends Controller
                 $filename = $filepath . '/' . $doc['index'];
                 if (file_exists($filename))
                 {
-                    @copy($filepath, $fullpath . '/' . $doc['name']);
+                    @copy($filename, $fullpath . '/' . $doc['name']);
                 }
             }
         }
@@ -410,7 +451,7 @@ class DocumentController extends Controller
         $filename = $filepath . '/' . $index;
         if (!file_exists($filename))
         {
-            throw new \UnexpectedValueException('file does not exist.', -15100);
+            throw new \UnexpectedValueException('file does not exist.', -11904);
         }
 
         header("Content-type: application/octet-stream");
