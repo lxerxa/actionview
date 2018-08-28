@@ -387,7 +387,6 @@ class DocumentController extends Controller
      */
     public function downloadFolder($project_key, $name, $directory)
     {
-
         $basepath = '/tmp/' . md5($this->user->id . microtime());
         @mkdir($basepath);
 
