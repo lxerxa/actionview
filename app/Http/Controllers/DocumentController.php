@@ -196,7 +196,7 @@ class DocumentController extends Controller
             throw new \UnexpectedValueException('the object does not exist.', -11902);
         }
 
-        if ($old_document['d'] === 1)
+        if (isset($old_document['d']) && $old_document['d'] === 1)
         {
             if (!Acl::isAllowed($this->user->id, 'manage_project', $project_key)) 
             {
@@ -258,7 +258,7 @@ class DocumentController extends Controller
             throw new \UnexpectedValueException('the object does not exist.', -11902);
         }
 
-        if ($old_document['d'] === 1)
+        if (isset($document['d']) && $document['d'] === 1)
         {
             if (!Acl::isAllowed($this->user->id, 'manage_project', $project_key))
             {
@@ -401,7 +401,7 @@ class DocumentController extends Controller
         header("Content-type: application/octet-stream");
         header("Accept-Ranges: bytes");
         header("Accept-Length:" . filesize($filename));
-        header("Content-Disposition: attachment; filename=" . basename($filename));
+        header("Content-Disposition: attachment; filename=" . $name . '.zip');
         echo file_get_contents($filename);
     }
 
