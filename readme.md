@@ -54,6 +54,8 @@ http://www.actionview.cn
 支持用户在问题上添加工作日志。  
 * User adding comments to an issue supported.  
 支持用户针对问题发表评论。  
+* Team members may share and find the documents required for work.  
+团队成员可分享和查找工作所需的资料文档。  
 * Synchronization and authentication based on LDAP users supported.  
 支持基于LDAP用户的同步和认证。
 * Developed by using most popular framework both front-end and back-end side, back-end: php/laravel, front-end: ReactJS+Redux.  
