@@ -27,7 +27,7 @@ class WorklogController extends Controller
             ->where('issue_id', $issue_id)
             ->orderBy('recorded_at', $sort)
             ->get();
-        return Response()->json(['ecode' => 0, 'data' => $worklogs]);
+        return Response()->json(['ecode' => 0, 'data' => $worklogs, 'options' => [ 'current_time' => time() ]]);
     }
 
     /**

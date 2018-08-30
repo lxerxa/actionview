@@ -1186,7 +1186,7 @@ class IssueController extends Controller
             $changedRecords = array_reverse($changedRecords);
         }
 
-        return Response()->json([ 'ecode' => 0, 'data' => $changedRecords ]);
+        return Response()->json([ 'ecode' => 0, 'data' => $changedRecords, 'options' => [ 'current_time' => time() ] ]);
     }
 
     /**

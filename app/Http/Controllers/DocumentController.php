@@ -387,6 +387,8 @@ class DocumentController extends Controller
      */
     public function downloadFolder($project_key, $name, $directory)
     {
+        setlocale(LC_ALL, 'zh_CN.UTF-8'); 
+
         $basepath = '/tmp/' . md5($this->user->id . microtime());
         @mkdir($basepath);
 

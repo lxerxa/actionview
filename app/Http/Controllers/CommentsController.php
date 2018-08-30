@@ -30,7 +30,7 @@ class CommentsController extends Controller
             ->orderBy('created_at', $sort)
             ->get();
 
-        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($comments) ]);
+        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($comments), 'options' => [ 'current_time' => time() ] ]);
     }
 
     /**
