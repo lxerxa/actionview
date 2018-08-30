@@ -86,7 +86,7 @@ return [
             'username' => env('DB_USERNAME', 'actionview'),
             'password' => env('DB_PASSWORD', 'secret'),
             'options' => array(
-                'db' => env('DB_DATABASE', 'actionviewdb') // sets the authentication database required by mongo 3
+                'database' => env('DB_DATABASE', 'actionviewdb') // sets the authentication database required by mongo 3
             )
         ],
 
