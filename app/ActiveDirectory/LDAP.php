@@ -80,7 +80,7 @@ class LDAP {
                     ->setDn(self::getGroupDn($config))
                     ->where('objectClass', $config['group_object_class'])
                     ->first();
-                $tmp['group_membership'] = $group->hasAttribute(strtolower($config['group_membership_attr']));
+                $tmp['group_membership'] = $group ? $group->hasAttribute(strtolower($config['group_membership_attr'])) : false;
             }
 
             $ret[$key] = $tmp;
