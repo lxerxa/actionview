@@ -21,6 +21,7 @@ class ConfigController extends Controller
      */
     public function index($project_key)
     {
+        $new_types = [];
         $types = Provider::getTypeList($project_key); 
         foreach ($types as $type)
         {
@@ -30,6 +31,7 @@ class ConfigController extends Controller
             }
             $type->screen = $type->screen;
             $type->workflow = $type->workflow;
+            $new_types[] = $type;
         }
 
         $priorities = Provider::getPriorityList($project_key);
@@ -39,7 +41,7 @@ class ConfigController extends Controller
             $role->permissions = $this->getPermissions($project_key, $role->id);
         }
 
-        return Response()->json([ 'ecode' => 0, 'data' => [ 'types' => $types, 'roles' => $roles, 'priorities' => $priorities ] ]);
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'types' => $new_types, 'roles' => $roles, 'priorities' => $priorities ] ]);
     }
 
     /**
