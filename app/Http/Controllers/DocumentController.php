@@ -404,6 +404,8 @@ class DocumentController extends Controller
         header("Accept-Length:" . filesize($filename));
         header("Content-Disposition: attachment; filename=" . $name . '.zip');
         echo file_get_contents($filename);
+
+        exec('rm -rf ' . $basepath);
     }
 
     /**
