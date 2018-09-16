@@ -26,6 +26,8 @@ Route::get('user/{id}/resetpwd', 'UserController@showResetpwd'); //fix me
 Route::post('user/{id}/resetpwd', 'UserController@doResetpwd'); // fix me
 
 Route::get('api/addadmin/{id}', 'SyssettingController@addAdmin'); // delete me
+// webhook api
+Route::get('api/webhook/{type}/project/{key}', 'WebhookController@exec');
 
 Route::group([ 'middleware' => 'can' ], function () {
     // project route
@@ -154,6 +156,8 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
 
     Route::resource('issue/{id}/comments', 'CommentsController');
     Route::resource('issue/{id}/worklog', 'WorklogController');
+
+    Route::get('issue/{id}/gitcommits', 'WebhookController@index');
 
     Route::post('issue/release', 'IssueController@release');
 
