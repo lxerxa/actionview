@@ -11,6 +11,8 @@ use App\Http\Controllers\Controller;
 use App\WebHook\GitLabPush;
 use App\WebHook\GitHubPush;
 
+use DB;
+
 class WebhookController extends Controller
 {
     /**
@@ -20,7 +22,7 @@ class WebhookController extends Controller
      */
     public function exec($type, $project_key)
     {
-        $payload = file_get_contents('php://input', 'r');
+        $payload = file_get_contents('php://input');
 
         if ($type === 'gitlab')
         {
@@ -32,10 +34,11 @@ class WebhookController extends Controller
             $token = env('GITLAB_WEBHOOK_TOKEN', '');
             if (!$token || $token !== $_SERVER['HTTP_X_GITLAB_TOKEN']) 
             {
-                Response()->json([ 'ecode' => -1, 'emsg': 'token error.' ]);
+                Response()->json([ 'ecode' => -1, 'emsg' => 'token error.' ]);
             }
 
-            $payload = str_replace([ "\r\n", "\r", "\n", "\t" ], [ '<br/>', '<br/>', '<br/>', ' ' ], $payload);
+            $payload = str_replace([ "\r\n", "\r", "\n", "\t" ], [ ' ', ' ', ' ', ' ' ], $payload);
+
             $push = new GitLabPush(json_decode($payload, true));
             $push->insCommits($project_key);
         }
@@ -49,16 +52,16 @@ class WebhookController extends Controller
             $token = env('GITHUB_WEBHOOK_TOKEN', '');
             if (!$token)
             {
-                Response()->json([ 'ecode' => -2, 'emsg': 'token can not empty.' ]);
+                Response()->json([ 'ecode' => -2, 'emsg' => 'token can not empty.' ]);
             }
 
             $signature = hash_hmac('sha1', $payload, $token);
             if ($signature !== $_SERVER['HTTP_X_HUB_SIGNATURE'])
             {
-                Response()->json([ 'ecode' => -1, 'emsg': 'token error.' ]);
+                Response()->json([ 'ecode' => -1, 'emsg' => 'token error.' ]);
             }
 
-            $payload = str_replace([ "\r\n", "\r", "\n", "\t" ], [ '<br/>', '<br/>', '<br/>', ' ' ], $payload);
+            $payload = str_replace([ "\r\n", "\r", "\n", "\t" ], [ ' ', ' ', ' ', ' ' ], $payload);
             $push = new GitHubPush(json_decode($payload, true));
             $push->insCommits($project_key);
         }

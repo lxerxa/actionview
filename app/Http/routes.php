@@ -27,7 +27,7 @@ Route::post('user/{id}/resetpwd', 'UserController@doResetpwd'); // fix me
 
 Route::get('api/addadmin/{id}', 'SyssettingController@addAdmin'); // delete me
 // webhook api
-Route::get('api/webhook/{type}/project/{key}', 'WebhookController@exec');
+Route::post('api/webhook/{type}/project/{key}', 'WebhookController@exec');
 
 Route::group([ 'middleware' => 'can' ], function () {
     // project route

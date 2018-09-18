@@ -87,14 +87,8 @@ class GitPush
      * @param  string  $caller
      * @return void
      */
-    public function execWorkflow($project_key, $issue_no, $action_id, $caller)
+    public function execWorkflow($project_key, $issue, $action_id, $caller)
     {
-        $issue = DB::collection($issue_table)->where('no', $issue_no)->first();
-        if (!$issue)
-        {
-            return;
-        }
-
         $issue_id = $issue['_id']->__toString();
         $entry_id = isset($issue['entry_id']) ? $issue['entry_id'] : '';
         if (!$entry_id)
@@ -135,13 +129,20 @@ class GitPush
             }
             $issue_no = $issue_data['no'];
             $action   = $issue_data['action'];
+
+            $issue = DB::collection($issue_table)->where('no', $issue_no)->where('del_flg', '<>', 1)->first();
+            if (!$issue)
+            {
+                return;
+            }
+
             // insert the commit to issue 
-            DB::collection($table)->insert($new_commit + [ 'issue_no' => $issue_no ]);
+            DB::collection($table)->insert($new_commit + [ 'issue_id' => $issue['_id']->__toString() ]);
             // transimit the issue status
             if ($action > 0 && isset($new_commit['author']['id']) && $new_commit['author']['id'])
             {
                 echo 'aaa';
-                //$this->execWorkflow($project_key, $action, $new_commit['author']['id']);
+                //$this->execWorkflow($project_key, $issue, $action, $new_commit['author']['id']);
             }
         }
         return;
