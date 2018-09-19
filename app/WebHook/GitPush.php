@@ -141,8 +141,7 @@ class GitPush
             // transimit the issue status
             if ($action > 0 && isset($new_commit['author']['id']) && $new_commit['author']['id'])
             {
-                echo 'aaa';
-                //$this->execWorkflow($project_key, $issue, $action, $new_commit['author']['id']);
+                $this->execWorkflow($project_key, $issue, $action, $new_commit['author']['id']);
             }
         }
         return;

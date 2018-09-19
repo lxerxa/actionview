@@ -35,9 +35,8 @@ class WebhookController extends Controller
             if (!$token || $token !== $_SERVER['HTTP_X_GITLAB_TOKEN']) 
             {
                 Response()->json([ 'ecode' => -1, 'emsg' => 'token error.' ]);
+                return;
             }
-
-            $payload = str_replace([ "\r\n", "\r", "\n", "\t" ], [ ' ', ' ', ' ', ' ' ], $payload);
 
             $push = new GitLabPush(json_decode($payload, true));
             $push->insCommits($project_key);
@@ -53,15 +52,16 @@ class WebhookController extends Controller
             if (!$token)
             {
                 Response()->json([ 'ecode' => -2, 'emsg' => 'token can not empty.' ]);
+                return;
             }
 
-            $signature = hash_hmac('sha1', $payload, $token);
+            $signature = 'sha1=' . hash_hmac('sha1', $payload, $token);
             if ($signature !== $_SERVER['HTTP_X_HUB_SIGNATURE'])
             {
                 Response()->json([ 'ecode' => -1, 'emsg' => 'token error.' ]);
+                return;
             }
 
-            $payload = str_replace([ "\r\n", "\r", "\n", "\t" ], [ ' ', ' ', ' ', ' ' ], $payload);
             $push = new GitHubPush(json_decode($payload, true));
             $push->insCommits($project_key);
         }
