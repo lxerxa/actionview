@@ -58,6 +58,8 @@ http://www.actionview.cn
 团队成员可分享和查找工作所需的资料文档。  
 * Synchronization and authentication based on LDAP users supported.  
 支持基于LDAP用户的同步和认证。
+* Integration with GitLab and GitHub through webhook.  
+通过webhook集成GitLab和GitHub.  
 * Developed by using most popular framework both front-end and back-end side, back-end: php/laravel, front-end: ReactJS+Redux.  
 使用当前较流行的前后端技术框架，后端：php/laravel, 前端：ReactJS+Redux.
 * Installation by docker supported.  
