@@ -165,17 +165,34 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::delete('link/{id}', 'LinkController@destroy');
 
     Route::post('file', [ 'middleware' => 'privilege:upload_file', 'uses' => 'FileController@upload' ]);
-    Route::get('file/{id}/thumbnail', [ 'middleware' => 'privilege:view_project', 'uses' => 'FileController@downloadThumbnail' ]);
+    Route::get('file/{id}/thumbnail', 'FileController@downloadThumbnail');
     Route::get('file/{id}', [ 'middleware' => 'privilege:download_file', 'uses' => 'FileController@download' ]);
     Route::delete('file/{id}', [ 'middleware' => 'privilege:remove_file', 'uses' => 'FileController@delete' ]);
 
     Route::post('document/{id}/upload',  [ 'middleware' => 'privilege:upload_file', 'uses' => 'DocumentController@upload' ]);
     Route::get('document/{id}/download', [ 'middleware' => 'privilege:download_file', 'uses' => 'DocumentController@download' ]);
-    Route::get('document/options', [ 'middleware' => 'privilege:view_project', 'uses' => 'DocumentController@getOptions' ]);
-    Route::get('document/{id}', [ 'middleware' => 'privilege:view_project', 'uses' => 'DocumentController@index' ]);
-    Route::post('document/{id}/directory', [ 'middleware' => 'privilege:manage_project', 'uses' => 'DocumentController@createFolder' ]);
+    Route::get('document/options', 'DocumentController@getOptions');
+    Route::get('document/directory/{id}', 'DocumentController@index');
+    Route::get('document/search/path', 'DocumentController@searchPath');
+    Route::post('document/move', 'DocumentController@move');
+    Route::post('document/{id}', [ 'middleware' => 'privilege:manage_project', 'uses' => 'DocumentController@createFolder' ]);
     Route::put('document/{id}', 'DocumentController@update');
     Route::delete('document/{id}', 'DocumentController@destroy');
+
+    Route::post('wiki/{id}/upload',  [ 'middleware' => 'privilege:upload_file', 'uses' => 'WikiController@upload' ]);
+    Route::get('wiki/{id}/download', [ 'middleware' => 'privilege:download_file', 'uses' => 'WikiController@download2' ]);
+    Route::get('wiki/{id}/file/{fid}/download', [ 'middleware' => 'privilege:download_file', 'uses' => 'WikiController@download' ]);
+    Route::delete('wiki/{id}/file/{fid}', [ 'middleware' => 'privilege:remove_file', 'uses' => 'WikiController@remove' ]);
+    Route::get('wiki/directory/{id}', 'WikiController@index');
+    Route::get('wiki/search/path', 'WikiController@searchPath');
+    Route::get('wiki/{id}', 'WikiController@show');
+    Route::post('wiki/move', 'WikiController@move');
+    Route::post('wiki/copy', 'WikiController@copy');
+    Route::post('wiki', 'WikiController@create');
+    Route::put('wiki/{id}', 'WikiController@update');
+    Route::get('wiki/{id}/checkin', 'WikiController@checkin');
+    Route::get('wiki/{id}/checkout', 'WikiController@checkout');
+    Route::delete('wiki/{id}', 'WikiController@destroy');
 
     Route::resource('kanban', 'BoardController');
     Route::get('kanban/{id}/access', 'BoardController@recordAccess');
