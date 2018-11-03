@@ -242,14 +242,17 @@ class WikiController extends Controller
         }
         $insValues['parent'] = $parent;
 
-        $isExists = DB::collection('wiki_' . $project_key)
-            ->where('_id', $parent)
-            ->where('d', 1)
-            ->where('del_flag', '<>', 1)
-            ->exists();
-        if (!$isExists)
+        if ($parent !== '0')
         {
-            throw new \UnexpectedValueException('the parent directory does not exist.', -11951);
+            $isExists = DB::collection('wiki_' . $project_key)
+                ->where('_id', $parent)
+                ->where('d', 1)
+                ->where('del_flag', '<>', 1)
+                ->exists();
+            if (!$isExists)
+            {
+                throw new \UnexpectedValueException('the parent directory does not exist.', -11951);
+            }
         }
 
         $name =  $request->input('name');
@@ -686,13 +689,6 @@ class WikiController extends Controller
         if (isset($document['d']) && $document['d'] === 1)
         {
             if (!Acl::isAllowed($this->user->id, 'manage_project', $project_key))
-            {
-                return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
-            }
-        }
-        else
-        {
-            if (!Acl::isAllowed($this->user->id, 'view_project', $project_key))
             {
                 return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
             }
