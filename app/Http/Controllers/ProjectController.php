@@ -230,6 +230,9 @@ class ProjectController extends Controller
         Schema::collection('document_' . $project->key, function($col) {
             $col->index('parent');
         });
+        Schema::collection('wiki_' . $project->key, function($col) {
+            $col->index('parent');
+        });
 
         return Response()->json([ 'ecode' => 0, 'data' => $project ]);
     }
@@ -280,6 +283,9 @@ class ProjectController extends Controller
                 $col->index('issue_id');
             });
             Schema::collection('document_' . $project->key, function($col) {
+                $col->index('parent');
+            });
+            Schema::collection('wiki_' . $project->key, function($col) {
                 $col->index('parent');
             });
         }
@@ -619,6 +625,8 @@ class ProjectController extends Controller
             if (strpos($col_name, 'issue_') === 0 ||
                 strpos($col_name, 'activity_') === 0 ||
                 strpos($col_name, 'comments_') === 0 ||
+                strpos($col_name, 'document_') === 0 ||
+                strpos($col_name, 'wiki_') === 0 ||
                 in_array($col_name, $unrelated_cols))
             {
                 continue;
@@ -632,6 +640,8 @@ class ProjectController extends Controller
         Schema::drop('issue_his_' . $project_key);
         Schema::drop('activity_' . $project_key);
         Schema::drop('comments_' . $project_key);
+        Schema::drop('document_' . $project_key);
+        Schema::drop('wiki_' . $project_key);
         // delete from the project table
         Project::destroy($id);
 
