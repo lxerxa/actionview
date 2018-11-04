@@ -56,6 +56,8 @@ http://www.actionview.cn
 支持用户针对问题发表评论。  
 * Team members may share and find the documents required for work.  
 团队成员可分享和查找工作所需的资料文档。  
+* Support wiki based on markdown.  
+支持基于markdown语法的wiki。  
 * Synchronization and authentication based on LDAP users supported.  
 支持基于LDAP用户的同步和认证。
 * Integration with GitLab and GitHub through webhook.  
