@@ -613,14 +613,18 @@ class WikiController extends Controller
             throw new \UnexpectedValueException('the copy object does not exist.', -11962);
         }
 
-        $dest_directory = DB::collection('wiki_' . $project_key)
-            ->where('_id', $dest_path)
-            ->where('d', 1)
-            ->where('del_flag', '<>', 1)
-            ->first();
-        if (!$dest_directory)
+        $dest_directory = [];
+        if ($dest_path !== '0')
         {
-            throw new \UnexpectedValueException('the dest directory does not exist.', -11963);
+            $dest_directory = DB::collection('wiki_' . $project_key)
+                ->where('_id', $dest_path)
+                ->where('d', 1)
+                ->where('del_flag', '<>', 1)
+                ->first();
+            if (!$dest_directory)
+            {
+                throw new \UnexpectedValueException('the dest directory does not exist.', -11963);
+            }
         }
 
         $isExists = DB::collection('wiki_' . $project_key)
@@ -637,7 +641,7 @@ class WikiController extends Controller
         $insValues = [];
         $insValues['name'] = $name;
         $insValues['parent'] = $dest_path;
-        $insValues['pt'] = array_merge($dest_directory['pt'], [$dest_path]);
+        $insValues['pt'] = array_merge(isset($dest_directory['pt']) ? $dest_directory['pt'] : [], [$dest_path]);
 
         //$insValues['size']    = $document['size'];
         //$insValues['type']    = $document['type'];
@@ -694,14 +698,18 @@ class WikiController extends Controller
             }
         }
 
-        $dest_directory = DB::collection('wiki_' . $project_key)
-            ->where('_id', $dest_path)
-            ->where('d', 1)
-            ->where('del_flag', '<>', 1)
-            ->first();
-        if (!$dest_directory)
+        $dest_directory = [];
+        if ($dest_path !== '0')
         {
-            throw new \UnexpectedValueException('the dest directory does not exist.', -11967);
+            $dest_directory = DB::collection('wiki_' . $project_key)
+                ->where('_id', $dest_path)
+                ->where('d', 1)
+                ->where('del_flag', '<>', 1)
+                ->first();
+            if (!$dest_directory)
+            {
+                throw new \UnexpectedValueException('the dest directory does not exist.', -11967);
+            }
         }
 
         $isExists = DB::collection('wiki_' . $project_key)
@@ -717,7 +725,7 @@ class WikiController extends Controller
 
         $updValues = [];
         $updValues['parent'] = $dest_path;
-        $updValues['pt'] = array_merge($dest_directory['pt'], [$dest_path]);
+        $updValues['pt'] = array_merge(isset($dest_directory['pt']) ? $dest_directory['pt'] : [], [$dest_path]);
         DB::collection('wiki_' . $project_key)->where('_id', $id)->update($updValues);
 
         if (isset($document['d']) && $document['d'] === 1)

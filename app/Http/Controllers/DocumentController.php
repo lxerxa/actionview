@@ -366,14 +366,18 @@ class DocumentController extends Controller
             }
         }
 
-        $dest_directory = DB::collection('document_' . $project_key)
-            ->where('_id', $dest_path)
-            ->where('d', 1)
-            ->where('del_flag', '<>', 1)
-            ->first();
-        if (!$dest_directory)
+        $dest_directory = [];
+        if ($dest_path !== '0')
         {
-            throw new \UnexpectedValueException('the dest directory does not exist.', -11914);
+            $dest_directory = DB::collection('document_' . $project_key)
+                ->where('_id', $dest_path)
+                ->where('d', 1)
+                ->where('del_flag', '<>', 1)
+                ->first();
+            if (!$dest_directory)
+            {
+                throw new \UnexpectedValueException('the dest directory does not exist.', -11914);
+            }
         }
 
         $isExists = DB::collection('document_' . $project_key)
@@ -389,7 +393,7 @@ class DocumentController extends Controller
 
         $updValues = [];
         $updValues['parent'] = $dest_path;
-        $updValues['pt'] = array_merge($dest_directory['pt'], [$dest_path]);
+        $updValues['pt'] = array_merge(isset($dest_directory['pt']) ? $dest_directory['pt'] : [], [$dest_path]);
         DB::collection('document_' . $project_key)->where('_id', $id)->update($updValues);
 
         if (isset($document['d']) && $document['d'] === 1) 
