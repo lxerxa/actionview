@@ -113,11 +113,14 @@ class WikiController extends Controller
         if ($directory === '0')
         {
             $path[] = [ 'id' => '0', 'name' => 'root' ];
-            foreach ($documents as $doc)
+            if ($mode === 'list')
             {
-                if ((!isset($doc['d']) || $doc['d'] != 1) && strtolower($doc['name']) === 'home')
+                foreach ($documents as $doc)
                 {
-                    $home = $doc;
+                    if ((!isset($doc['d']) || $doc['d'] != 1) && strtolower($doc['name']) === 'home')
+                    {
+                        $home = $doc;
+                    }
                 }
             }
         }
