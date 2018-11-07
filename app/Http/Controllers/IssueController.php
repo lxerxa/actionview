@@ -1675,7 +1675,15 @@ class IssueController extends Controller
             $classified_issues[$no] = array_values($sorted_group_issues);
 
             // prevent the sort confusion 
-            $parentInd = array_search($no, $classified_issues[$no]);
+            $parentInd = 0;
+            foreach ($classified_issues[$no] as $sk => $si)
+            {
+                if ($si['no'] === $no)
+                {
+                    $parentInd = $sk;
+                    break;
+                }
+            }
             if ($parentInd > 0)
             {
                 array_splice($classified_issues[$no], $parentInd, 1);
