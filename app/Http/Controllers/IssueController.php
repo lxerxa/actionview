@@ -1686,8 +1686,8 @@ class IssueController extends Controller
             }
             if ($parentInd > 0)
             {
-                array_splice($classified_issues[$no], $parentInd, 1);
-                array_unshift($classified_issues[$no], $no);
+                $pi = array_splice($classified_issues[$no], $parentInd, 1);
+                array_unshift($classified_issues[$no], array_pop($pi));
             }
         }
 
