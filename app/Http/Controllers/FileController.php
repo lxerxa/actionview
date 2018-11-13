@@ -22,6 +22,8 @@ class FileController extends Controller
      */
     public function upload(Request $request, $project_key)
     {
+        $thumbnail_size = 190;
+
         $fields = array_keys($_FILES); 
         $field = array_pop($fields);
         if ($_FILES[$field]['error'] > 0)
@@ -47,10 +49,10 @@ class FileController extends Controller
             $size = getimagesize($filename);
             $width = $size[0]; $height = $size[1];
             $scale = $width < $height ? $height : $width;
-            $thumbnails_width = floor(190 * $width / $scale);
-            $thumbnails_height = floor(190 * $height / $scale);
+            $thumbnails_width = floor($thumbnail_size * $width / $scale);
+            $thumbnails_height = floor($thumbnail_size * $height / $scale);
             $thumbnails_filename = $filename . '_thumbnails';
-            if ($scale <= 190)
+            if ($scale <= $thumbnail_size)
             {
                 @copy($filename, $thumbnails_filename);
             }
@@ -94,7 +96,7 @@ class FileController extends Controller
             Event::fire(new FileUploadEvent($project_key, $issue_id, $field, $file->id, $data['uploader']));
         }
 
-        return Response()->json([ 'ecode' => 0, 'data' => [ 'field' => $field, 'file' => File::find($file->id) ] ]);
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'field' => $field, 'file' => File::find($file->id), 'filename' => '/api/project/' . $project_key . '/file/' . $file->id ] ]);
     }
 
     /**
