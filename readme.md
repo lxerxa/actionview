@@ -2,7 +2,7 @@
 
 ![](https://img.shields.io/badge/language-php-orange.svg) ![](https://img.shields.io/badge/framework-laravel+reactjs-brightgreen.svg) ![](https://img.shields.io/badge/license-apache2.0-blue.svg)  
 
-[English](https://github.com/lxerxa/actionview/edit/master/readme.md) | [中文](https://github.com/lxerxa/actionview/edit/master/readme-cn.md)
+[English](https://github.com/lxerxa/actionview/blob/master/readme.md) | [中文](https://github.com/lxerxa/actionview/blob/master/readme-cn.md)
 
 An issue tracking tool based on php laravel-framework in back-end and reactjs+redux in front-end, it's similar to Jira. You could find the front-end source code from [actionview-fe](https://github.com/lxerxa/actionview-fe).    
 
