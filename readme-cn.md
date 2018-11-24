@@ -2,7 +2,7 @@
 
 ![](https://img.shields.io/badge/language-php-orange.svg) ![](https://img.shields.io/badge/framework-laravel+reactjs-brightgreen.svg) ![](https://img.shields.io/badge/license-apache2.0-blue.svg)  
 
-[English](https://github.com/lxerxa/actionview/edit/master/readme.md) | [中文](https://github.com/lxerxa/actionview/edit/master/readme-cn.md)
+[English](https://github.com/lxerxa/actionview/blob/master/readme.md) | [中文](https://github.com/lxerxa/actionview/blob/master/readme-cn.md)
 
 一个类Jira的问题需求跟踪工具，前端基于reactjs＋redux、后端基于php laravel-framework。前端代码库：[actionview-fe](https://github.com/lxerxa/actionview-fe)。  
 
