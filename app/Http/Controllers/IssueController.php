@@ -441,11 +441,11 @@ class IssueController extends Controller
         }
         $insValues['assignee'] = $assignee;
 
-        $priority = $request->input('priority'); 
-        if (!isset($priority) || !$priority)
-        {
-            $insValues['priority'] = Provider::getDefaultPriority($project_key);
-        }
+        //$priority = $request->input('priority'); 
+        //if (!isset($priority) || !$priority)
+        //{
+        //    $insValues['priority'] = Provider::getDefaultPriority($project_key);
+        //}
 
         //$resolution = $request->input('resolution'); 
         //if (!isset($resolution))

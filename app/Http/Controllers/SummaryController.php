@@ -134,7 +134,7 @@ class SummaryController extends Controller
             }
             else
             {
-                $priority_id = $optPriorities[$issue['priority']] ? $issue['priority'] : '-1'; 
+                $priority_id = isset($optPriorities[$issue['priority']]) ? $issue['priority'] : '-1'; 
             }
 
             if (!isset($priority_unresolved_issues[$priority_id][$issue['type']]))
