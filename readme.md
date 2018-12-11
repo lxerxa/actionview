@@ -31,7 +31,7 @@ http://www.actionview.cn
 [Ubuntu Installation - Apache](https://github.com/lxerxa/actionview/wiki/Ubuntu-Installation(Apache))  
 [Ubuntu Installation - Nginx](https://github.com/lxerxa/actionview/wiki/Ubuntu-Installation(Nginx))  
 [CentOS Installation - Apache](https://github.com/lxerxa/actionview/wiki/CentOS-Installation(Apache))  
-[CentOS Installation - Nginx](https://github.com/lxerxa/actionview/wiki/CentOS-Installation(Nginx)) 
+[CentOS Installation - Nginx](https://github.com/lxerxa/actionview/wiki/CentOS-Installation(Nginx))  
 [Docker Installation](https://github.com/lxerxa/actionview/wiki/Docker-Installation)  
 
 # Feature
