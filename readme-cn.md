@@ -28,9 +28,11 @@ http://www.actionview.cn
 
 # 安装手册
 
-[Ubuntu 安装](https://github.com/lxerxa/actionview/wiki/Ubuntu-Installation)  
-[CentOS 安装](https://github.com/lxerxa/actionview/wiki/CentOS-Installation)  
-[Docker 安装](https://github.com/lxerxa/actionview/wiki/Docker-Installation)  
+[Ubuntu Installation - Apache](https://github.com/lxerxa/actionview/wiki/Ubuntu-Installation(Apache))  
+[Ubuntu Installation - Nginx](https://github.com/lxerxa/actionview/wiki/Ubuntu-Installation(Nginx))  
+[CentOS Installation - Apache](https://github.com/lxerxa/actionview/wiki/CentOS-Installation(Apache))  
+[CentOS Installation - Nginx](https://github.com/lxerxa/actionview/wiki/CentOS-Installation(Nginx))  
+[Docker Installation](https://github.com/lxerxa/actionview/wiki/Docker-Installation)  
 
 # Feature
 
