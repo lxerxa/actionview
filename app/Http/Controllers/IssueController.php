@@ -12,6 +12,7 @@ use App\Project\Eloquent\File;
 use App\Project\Eloquent\Watch;
 use App\Project\Eloquent\Searcher;
 use App\Project\Eloquent\Linked;
+use App\Project\Eloquent\Worklog;
 
 use App\Project\Eloquent\Board;
 use App\Project\Eloquent\Sprint;
@@ -604,6 +605,28 @@ class IssueController extends Controller
         {
             $issue['watching'] = true;
         }
+
+        $comments_num = 0;
+        $comments = DB::collection('comments_' . $project_key)
+            ->where('issue_id', $id)
+            ->get();
+        foreach($comments as $comment)
+        {
+            $comments_num += 1;
+            if (isset($comment['reply']))
+            {
+                $comments_num += count($comment['reply']);
+            }
+        }
+        $issue['comments_num'] = $comments_num;
+
+        $issue['gitcommits_num'] = DB::collection('git_commits_' . $project_key)
+            ->where('issue_id', $id)
+            ->count();
+
+        $issue['worklogs_num'] = Worklog::Where('project_key', $project_key)
+            ->where('issue_id', $id)
+            ->count();
 
         return Response()->json(['ecode' => 0, 'data' => parent::arrange($issue)]);
     }
