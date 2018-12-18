@@ -492,7 +492,7 @@ class Provider {
             $groups = Group::find($group_ids);
             foreach($groups as $group)
             {
-                $user_ids = array_merge($user_ids, $group->users);
+                $user_ids = array_merge($user_ids, isset($group->users) && $group->users ? $group->users : []);
             }
         }
         $user_ids = array_unique($user_ids);
