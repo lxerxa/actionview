@@ -476,12 +476,12 @@ class SendEmails extends Command
         }
 
         $data = [
-          'project' => $project,
-          'issue' => $issue,
-          'event_key' => $activity['event_key'],
-          'user' => $activity['user'],
-          'data' => isset($activity['data']) ? $activity['data'] : [],
-          'http_host' => $this->http_host,
+            'project' => $project,
+            'issue' => $issue,
+            'event_key' => $activity['event_key'],
+            'user' => $activity['user'],
+            'data' => isset($activity['data']) ? $activity['data'] : [],
+            'http_host' => $this->http_host,
         ];
 
         $to_users = EloquentUser::find(array_unique($uids));
