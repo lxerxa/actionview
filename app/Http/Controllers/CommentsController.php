@@ -115,8 +115,8 @@ class CommentsController extends Controller
             if ($operation == 'addReply') 
             {
                 $reply_id = md5(microtime() . $this->user->id); 
-                array_push($comments['reply'], array_only($request->all(), [ 'contents', 'atWho', 'to' ]) + [ 'id' => $reply_id , 'creator' => $user, 'created_at' => time() ]);
-                $changedComments = array_only($request->all(), [ 'contents', 'atWho', 'to' ]);
+                array_push($comments['reply'], array_only($request->all(), [ 'contents', 'atWho' ]) + [ 'id' => $reply_id , 'creator' => $user, 'created_at' => time() ]);
+                $changedComments = array_only($request->all(), [ 'contents', 'atWho' ]) + [ 'to' => $comments['creator'] ];
             } 
             else if ($operation == 'editReply')
             {
@@ -134,7 +134,7 @@ class CommentsController extends Controller
                     }
                
                     $comments['reply'][$index] = array_merge($comments['reply'][$index], [ 'updated_at' => time(), 'edited_flag' => 1 ] + array_only($request->all(), [ 'contents', 'atWho' ]));
-                    $changedComments = array_only($comments['reply'][$index], [ 'contents', 'atWho', 'to' ]);
+                    $changedComments = array_only($comments['reply'][$index], [ 'contents', 'atWho' ]) + [ 'to' => $comments['creator'] ];
                 }
                 else
                 {
@@ -156,7 +156,7 @@ class CommentsController extends Controller
                         return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
                     }
 
-                    $changedComments = array_only($comments['reply'][$index], [ 'contents', 'atWho', 'to' ]);
+                    $changedComments = array_only($comments['reply'][$index], [ 'contents', 'atWho' ]) + [ 'to' => $comments['creator'] ];
                     array_splice($comments['reply'], $index, 1);
                 }
                 else

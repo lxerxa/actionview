@@ -2,6 +2,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
@@ -9,6 +10,7 @@ use App\Project\Eloquent\Sprint;
 use App\Project\Eloquent\SprintDayLog;
 use App\Project\Eloquent\Board;
 use App\Project\Provider;
+use App\Events\SprintEvent;
 use App\Customization\Eloquent\CalendarSingular;
 use DB;
 
@@ -202,6 +204,10 @@ class SprintController extends Controller
             $this->pushSprint($project_key, $issue_no, $no);
         }
 
+        $isSendMsg = $request->input('isSendMsg') && true;
+        $user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        Event::fire(new SprintEvent($project_key, $user, [ 'event_key' => 'start_sprint', 'isSendMsg' => $isSendMsg, 'data' => [ 'sprint_no' => $no ] ]));
+
         return Response()->json([ 'ecode' => 0, 'data' => $this->getValidSprintList($project_key) ]);
     }
 
@@ -257,6 +263,10 @@ class SprintController extends Controller
                 $next_sprint->fill([ 'issues' => $issues ])->save();
             }
         }
+
+        $isSendMsg = $request->input('isSendMsg') && true;
+        $user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        Event::fire(new SprintEvent($project_key, $user, [ 'event_key' => 'complete_sprint', 'isSendMsg' => $isSendMsg, 'data' => [ 'sprint_no' => $no ] ]));
 
         return Response()->json([ 'ecode' => 0, 'data' => $this->getValidSprintList($project_key) ]);
     }

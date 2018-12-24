@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use App\Events\IssueEvent;
+use App\Events\VersionEvent;
 
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
@@ -39,7 +40,6 @@ class IssueController extends Controller
      */
     public function index(Request $request, $project_key)
     {
-
         $where = array_only($request->all(), [ 'type', 'assignee', 'reporter', 'state', 'resolution', 'priority', 'resolve_version', 'epic' ]) ?: [];
         foreach ($where as $key => $val)
         {
@@ -1493,6 +1493,9 @@ class IssueController extends Controller
             // trigger event of issue moved
             Event::fire(new IssueEvent($project_key, $id, $user, [ 'event_key' => 'edit_issue', 'snap_id' => $snap_id ] ));
         }
+
+        $isSendMsg = $request->input('isSendMsg') && true;
+        Event::fire(new VersionEvent($project_key, $user, [ 'event_key' => 'release_version', 'isSendMsg' => $isSendMsg, 'data' => [ 'released_issues' => $ids, 'resolve_version' => $version ] ]));
 
         return Response()->json([ 'ecode' => 0, 'data' => [ 'ids' => $ids ] ]);
     }

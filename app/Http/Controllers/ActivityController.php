@@ -36,6 +36,8 @@ class ActivityController extends Controller
             $query = $query->where('_id', '<', $offset_id);
         }
 
+        $query->whereRaw([ 'issue_id' => [ '$exists' => 1 ] ]);
+
         $query->orderBy('_id', 'desc');
 
         $limit = $request->input('limit');

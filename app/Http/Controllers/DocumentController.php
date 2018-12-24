@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
+use App\Events\DocumentEvent;
 use App\Acl\Acl;
 use DB;
 

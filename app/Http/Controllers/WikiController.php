@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
+use App\Events\WikiEvent;
 use App\Acl\Acl;
 use DB;
 use Zipper;
@@ -223,6 +225,9 @@ class WikiController extends Controller
         $insValues['creator'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
         $insValues['created_at'] = time();
         $id = DB::collection('wiki_' . $project_key)->insertGetId($insValues);
+
+        $isSendMsg = $request->input('isSendMsg') && true;
+        Event::fire(new WikiEvent($project_key, $insValues['creator'], [ 'event_key' => 'create_wiki', 'isSendMsg' => $isSendMsg, 'data' => [ 'wiki_id' => $id->__toString() ] ]));
 
         return $this->show($request, $project_key, $id);
     }
@@ -551,6 +556,9 @@ class WikiController extends Controller
             // record versions 
             $this->recordVersion($project_key, $old_document);
 
+            $isSendMsg = $request->input('isSendMsg') && true;
+            Event::fire(new WikiEvent($project_key, $updValues['editor'], [ 'event_key' => 'edit_wiki', 'isSendMsg' => $isSendMsg, 'data' => [ 'wiki_id' => $id ] ]));
+
             return $this->show($request, $project_key, $id);
         }
         else
@@ -785,6 +793,9 @@ class WikiController extends Controller
         {
             DB::collection('wiki_' . $project_key)->whereRaw([ 'pt' => $id ])->update([ 'del_flag' => 1 ]);
         }
+
+        $user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        Event::fire(new WikiEvent($project_key, $user, [ 'event_key' => 'delete_wiki', 'wiki_id' => $id ]));
 
         return Response()->json(['ecode' => 0, 'data' => [ 'id' => $id ]]);
     }
