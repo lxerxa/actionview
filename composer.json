@@ -42,11 +42,11 @@
         ],
         "post-install-cmd": [
             "Illuminate\\Foundation\\ComposerScripts::postInstall",
-            "php artisan optimize"
+            "composer dump-autoload --no-dev --optimize"
         ],
         "post-update-cmd": [
             "Illuminate\\Foundation\\ComposerScripts::postUpdate",
-            "php artisan optimize"
+            "composer dump-autoload --no-dev --optimize"
         ]
     },
     "config": {
