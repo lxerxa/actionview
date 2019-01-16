@@ -42,7 +42,7 @@ class CommentsController extends Controller
     public function store(Request $request, $project_key, $issue_id)
     {
         $contents = $request->input('contents');
-        if (!$contents || trim($contents) == '')
+        if (!$contents)
         {
             throw new \UnexpectedValueException('the contents can not be empty.', -11200);
         }
@@ -90,7 +90,7 @@ class CommentsController extends Controller
         $contents = $request->input('contents');
         if (isset($contents))
         {
-            if (!$contents || trim($contents) == '')
+            if (!$contents)
             {
                 throw new \UnexpectedValueException('the contents can not be empty.', -11200);
             }

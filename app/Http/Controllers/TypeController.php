@@ -43,13 +43,13 @@ class TypeController extends Controller
     public function store(Request $request, $project_key)
     {
         $name = $request->input('name');
-        if (!$name || trim($name) == '')
+        if (!$name)
         {
             throw new \UnexpectedValueException('the name can not be empty.', -12000);
         }
 
         $abb = $request->input('abb');
-        if (!$abb || trim($abb) == '')
+        if (!$abb)
         {
             throw new \UnexpectedValueException('the abb can not be empty.', -12002);
         }
@@ -119,7 +119,7 @@ class TypeController extends Controller
         $name = $request->input('name');
         if (isset($name))
         {
-            if (!$name || trim($name) == '')
+            if (!$name)
             {
                 throw new \UnexpectedValueException('the name can not be empty.', -12000);
             }
@@ -128,7 +128,7 @@ class TypeController extends Controller
         $abb = $request->input('abb');
         if (isset($abb))
         {
-            if (!$abb || trim($abb) == '')
+            if (!$abb)
             {
                 throw new \UnexpectedValueException('the abb can not be empty.', -12001);
             }

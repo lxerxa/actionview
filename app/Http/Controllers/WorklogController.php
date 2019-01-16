@@ -45,7 +45,7 @@ class WorklogController extends Controller
         $values = [];
 
         $spend = $request->input('spend');
-        if (!$spend || trim($spend) == '')
+        if (!$spend)
         {
             throw new \UnexpectedValueException('the spend-time can not be empty.', -11300);
         }
@@ -72,7 +72,7 @@ class WorklogController extends Controller
         if ($adjust_type == '3')
         {
             $leave_estimate = $request->input('leave_estimate');
-            if (!$leave_estimate || trim($leave_estimate) == '')
+            if (!$leave_estimate)
             {
                 throw new \UnexpectedValueException('the leave-estimate-time can not be empty.', -11304);
             }
@@ -87,7 +87,7 @@ class WorklogController extends Controller
         if ($adjust_type == '4')
         {
             $cut = $request->input('cut');
-            if (!$cut || trim($cut) == '')
+            if (!$cut)
             {
                 throw new \UnexpectedValueException('the cut-time can not be empty.', -11306);
             }
@@ -156,7 +156,7 @@ class WorklogController extends Controller
         $spend = $request->input('spend');
         if (isset($spend))
         {
-            if (!$spend || trim($spend) == '')
+            if (!$spend)
             {
                 throw new \UnexpectedValueException('the spend-time can not be empty.', -11300);
             }
@@ -189,7 +189,7 @@ class WorklogController extends Controller
             if ($adjust_type == '3')
             {
                 $leave_estimate = $request->input('leave_estimate');
-                if (!$leave_estimate || trim($leave_estimate) == '')
+                if (!$leave_estimate)
                 {
                     throw new \UnexpectedValueException('the leave-estimate-time can not be empty.', -11304);
                 }
@@ -202,7 +202,7 @@ class WorklogController extends Controller
             else if ($adjust_type == '4')
             {
                 $cut = $request->input('cut');
-                if (!$cut || trim($cut) == '')
+                if (!$cut)
                 {
                     throw new \UnexpectedValueException('the cut-time can not be empty.', -11306);
                 }

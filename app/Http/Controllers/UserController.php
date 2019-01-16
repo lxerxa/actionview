@@ -122,12 +122,12 @@ class UserController extends Controller
      */
     public function register(Request $request)
     {
-        if (!($first_name = $request->input('first_name')) || !($first_name = trim($first_name)))
+        if (!($first_name = $request->input('first_name')))
         {
             throw new \UnexpectedValueException('the name can not be empty.', -10100);
         }
 
-        if (!($email = $request->input('email')) || !($email = trim($email)))
+        if (!($email = $request->input('email')))
         {
             throw new \UnexpectedValueException('the email can not be empty.', -10101);
         }
@@ -154,12 +154,12 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        if (!($first_name = $request->input('first_name')) || !($first_name = trim($first_name)))
+        if (!($first_name = $request->input('first_name')))
         {
             throw new \UnexpectedValueException('the name can not be empty.', -10100);
         }
 
-        if (!($email = $request->input('email')) || !($email = trim($email)))
+        if (!($email = $request->input('email')))
         {
             throw new \UnexpectedValueException('the email can not be empty.', -10101);
         }
@@ -169,7 +169,7 @@ class UserController extends Controller
             throw new \InvalidArgumentException('email has already existed.', -10102);
         }
 
-        $phone = $request->input('phone') ? trim($request->input('phone')) : '';
+        $phone = $request->input('phone') ? $request->input('phone') : '';
 
         $user = Sentinel::register([ 'first_name' => $first_name, 'email' => $email, 'password' => 'actionview', 'phone' => $phone ], true);
         $user->status = Activation::completed($user) ? 'active' : 'unactivated';
@@ -275,7 +275,7 @@ class UserController extends Controller
         $first_name = $request->input('first_name');
         if (isset($first_name))
         {
-            if (!$first_name = trim($first_name))
+            if (!$first_name)
             {
                 throw new \UnexpectedValueException('the name can not be empty.', -10100);
             }
@@ -284,7 +284,7 @@ class UserController extends Controller
         $email = $request->input('email');
         if (isset($email))
         {
-            if (!($email = trim($email)))
+            if (!$email)
             {
                 throw new \UnexpectedValueException('the email can not be empty.', -10101);
             }

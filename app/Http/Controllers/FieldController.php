@@ -49,13 +49,13 @@ class FieldController extends Controller
     public function store(Request $request, $project_key)
     {
         $name = $request->input('name');
-        if (!$name || trim($name) == '')
+        if (!$name)
         {
             throw new \UnexpectedValueException('the name cannot be empty.', -12200);
         }
 
         $key = $request->input('key');
-        if (!$key || trim($key) == '')
+        if (!$key)
         {
             throw new \InvalidArgumentException('field key cannot be empty.', -12201);
         }
@@ -131,7 +131,7 @@ class FieldController extends Controller
         $name = $request->input('name');
         if (isset($name))
         {
-            if (!$name || trim($name) == '')
+            if (!$name)
             {
                 throw new \UnexpectedValueException('the name can not be empty.', -12200);
             }

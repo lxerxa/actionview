@@ -119,10 +119,6 @@ class ProjectController extends Controller
         }
 
         $name = $request->input('name');
-        if (isset($name) && $name)
-        {
-            $name = trim($name);
-        }
 
         $projects = [];
         foreach ($pkeys as $pkey)
@@ -344,9 +340,8 @@ class ProjectController extends Controller
         }
 
         $name = $request->input('name');
-        if (isset($name) && trim($name))
+        if (isset($name) && $name)
         {
-            $name = trim($name);
             $query->where(function ($query) use ($name) {
                 $query->where('key', 'like', '%' . $name . '%')->orWhere('name', 'like', '%' . $name . '%');
             });
@@ -387,14 +382,14 @@ class ProjectController extends Controller
         $insValues = [];
 
         $name = $request->input('name');
-        if (!$name || trim($name) == '')
+        if (!$name)
         {
             throw new \UnexpectedValueException('the name can not be empty.', -14000);
         }
-        $insValues['name'] = trim($name);
+        $insValues['name'] = $name;
 
         $key = $request->input('key');
-        if (!$key || trim($key) == '')
+        if (!$key)
         {
             throw new \InvalidArgumentException('project key cannot be empty.', -14001);
         }
@@ -402,7 +397,7 @@ class ProjectController extends Controller
         {
             throw new \InvalidArgumentException('project key has been taken.', -14002);
         }
-        $insValues['key'] = trim($key);
+        $insValues['key'] = $key;
 
         $principal = $request->input('principal');
         if (!isset($principal) || !$principal)
@@ -420,9 +415,9 @@ class ProjectController extends Controller
         }
 
         $description = $request->input('description');
-        if (isset($description) && trim($description))
+        if (isset($description) && $description)
         {
-            $insValues['description'] = trim($description);
+            $insValues['description'] = $description;
         }
 
         $insValues['category'] = 1;
@@ -540,11 +535,11 @@ class ProjectController extends Controller
         $name = $request->input('name');
         if (isset($name))
         {
-            if (!$name || trim($name) == '')
+            if (!$name)
             {
                 throw new \UnexpectedValueException('the name can not be empty.', -14000);
             }
-            $updValues['name'] = trim($name);
+            $updValues['name'] = $name;
         }
         // check is user is available
         $principal = $request->input('principal');
@@ -566,7 +561,7 @@ class ProjectController extends Controller
         $description = $request->input('description');
         if (isset($description))
         {
-            $updValues['description'] = trim($description);
+            $updValues['description'] = $description;
         }
 
         $status = $request->input('status');

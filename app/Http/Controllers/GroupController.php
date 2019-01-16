@@ -84,7 +84,7 @@ class GroupController extends Controller
     public function store(Request $request)
     {
         $name = $request->input('name');
-        if (!$name || trim($name) == '')
+        if (!$name)
         {
             throw new \UnexpectedValueException('the name can not be empty.', -10200);
         }
@@ -124,7 +124,7 @@ class GroupController extends Controller
         $name = $request->input('name');
         if (isset($name))
         {
-            if (!$name || trim($name) == '')
+            if (!$name)
             {
                 throw new \UnexpectedValueException('the name can not be empty.', -10201);
             }
