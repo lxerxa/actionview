@@ -14,6 +14,7 @@ use App\Project\Eloquent\Watch;
 use App\Project\Eloquent\Searcher;
 use App\Project\Eloquent\Linked;
 use App\Project\Eloquent\Worklog;
+use App\Project\Eloquent\Version;
 
 use App\Project\Eloquent\Board;
 use App\Project\Eloquent\Sprint;
@@ -1033,7 +1034,7 @@ class IssueController extends Controller
     public function addSearcher(Request $request, $project_key)
     {
         $name = $request->input('name');
-        if (!$name || trim($name) == '')
+        if (!$name)
         {
             throw new \UnexpectedValueException('the name can not be empty.', -11105);
         }
@@ -1301,7 +1302,7 @@ class IssueController extends Controller
     public function copy(Request $request, $project_key)
     {
         $title = $request->input('title');
-        if (!$title || trim($title) == '')
+        if (!$title)
         {
             throw new \UnexpectedValueException('the issue title cannot be empty.', -11108);
         }
@@ -1478,16 +1479,29 @@ class IssueController extends Controller
             throw new \UnexpectedValueException('the released issues cannot be empty.', -11132);
         }
 
-        $version = $request->input('version');
-        if (!$version)
+        $name = $request->input('name');
+        if (!$name)
         {
-            throw new \UnexpectedValueException('the resolved version must be assigned.', -11131);
+            throw new \UnexpectedValueException('the released version cannot be empty.', -11131);
+        }
+
+        $isExisted = Version::where('project_key', $project_key)
+            ->where('name', $name)
+            ->exists();
+        if ($isExisted)
+        {
+            throw new \UnexpectedValueException('the released version has been existed.', -11133);
         }
 
         $user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        $version = Version::create([ 'project_key' => $project_key, 'user' => $user, 'status' => 'released' ] + $request->all());
+
+        // trigger event of version released
+        Event::fire(new VersionEvent($project_key, $user, [ 'event_key' => 'release_version', 'data' => $version->toArray() ]));
+
         foreach ($ids as $id)
         {
-            DB::collection('issue_' . $project_key)->where('_id', $id)->update([ 'resolve_version' => $version ]);
+            DB::collection('issue_' . $project_key)->where('_id', $id)->update([ 'resolve_version' => $version->id ]);
             // add to histroy table
             $snap_id = Provider::snap2His($project_key, $id, null, [ 'resolve_version' ]);
             // trigger event of issue moved
@@ -1495,7 +1509,7 @@ class IssueController extends Controller
         }
 
         $isSendMsg = $request->input('isSendMsg') && true;
-        Event::fire(new VersionEvent($project_key, $user, [ 'event_key' => 'release_version', 'isSendMsg' => $isSendMsg, 'data' => [ 'released_issues' => $ids, 'resolve_version' => $version ] ]));
+        Event::fire(new VersionEvent($project_key, $user, [ 'event_key' => 'create_release_version', 'isSendMsg' => $isSendMsg, 'data' => [ 'released_issues' => $ids, 'release_version' => $version->id ] ]));
 
         return Response()->json([ 'ecode' => 0, 'data' => [ 'ids' => $ids ] ]);
     }
