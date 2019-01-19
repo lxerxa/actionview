@@ -411,6 +411,13 @@ class VersionController extends Controller
             {
                 throw new \UnexpectedValueException('the swap version cannot be empty.', -11513);
             } 
+
+            $sversion = Version::find($swap_version);
+            if (!$sversion || $sversion->project_key != $project_key)
+            {
+                throw new \UnexpectedValueException('the swap version does not exist or is not in the project.', -11514);
+            }
+
             $this->updIssueVersion($project_key, $id, $swap_version);
         }
         else if ($operate_flg === '2') 

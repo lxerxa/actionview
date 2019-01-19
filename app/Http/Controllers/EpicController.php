@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 
+use App\Events\IssueEvent;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Customization\Eloquent\State;
@@ -112,6 +114,8 @@ class EpicController extends Controller
     public function show($project_key, $id)
     {
         $epic = Epic::find($id);
+        $epic->is_used = $this->isFieldUsedByIssue($project_key, 'epic', $epic->toArray());
+
         return Response()->json(['ecode' => 0, 'data' => $epic]);
     }
 
@@ -159,30 +163,6 @@ class EpicController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($project_key, $id)
-    {
-        $epic = Epic::find($id);
-        if (!$epic || $project_key != $epic->project_key)
-        {
-            throw new \UnexpectedValueException('the epic does not exist or is not in the project.', -11803);
-        }
-
-        $isUsed = $this->isFieldUsedByIssue($project_key, 'epic', $epic->toArray()); 
-        if ($isUsed)
-        {
-            throw new \UnexpectedValueException('the epic has been used in issue.', -11804);
-        }
-
-        Epic::destroy($id);
-        return Response()->json(['ecode' => 0, 'data' => [ 'id' => $id ]]);
-    }
-
-    /**
      * update sort or defaultValue etc..
      *
      * @param  \Illuminate\Http\Request  $request
@@ -208,5 +188,101 @@ class EpicController extends Controller
         }
 
         return Response()->json(['ecode' => 0, 'data' => [ 'sequence' => $sequence_epics ]]);
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function delete(Request $request, $project_key, $id)
+    {
+        $epic = Epic::find($id);
+        if (!$epic || $project_key != $epic->project_key)
+        {
+            throw new \UnexpectedValueException('the epic does not exist or is not in the project.', -11803);
+        }
+
+        $operate_flg = $request->input('operate_flg');
+        if (!isset($operate_flg) || $operate_flg === '0')
+        {
+            $is_used = $this->isFieldUsedByIssue($project_key, 'epic', $epic->toArray());
+            if ($is_used)
+            {
+                throw new \UnexpectedValueException('the epic has been used by some issues.', -11804);
+            }
+        }
+        else if ($operate_flg === '1')
+        {
+            $swap_epic = $request->input('swap_epic');
+            if (!isset($swap_epic) || !$swap_epic)
+            {
+                throw new \UnexpectedValueException('the swap epic cannot be empty.', -11806);
+            }
+
+            $sepic = Epic::find($swap_epic);
+            if (!$sepic || $project_key != $sepic->project_key)
+            {
+                throw new \UnexpectedValueException('the swap epic does not exist or is not in the project.', -11807);
+            }
+
+            $this->updIssueEpic($project_key, $id, $swap_epic);
+        }
+        else if ($operate_flg === '2')
+        {
+            $this->updIssueEpic($project_key, $id, '');
+        }
+        else
+        {
+            throw new \UnexpectedValueException('the operation has error.', -11805);
+        }
+
+        Epic::destroy($id);
+
+        return Response()->json(['ecode' => 0, 'data' => [ 'id' => $id ]]);
+
+        //if ($operate_flg === '1')
+        //{
+        //    return $this->show($project_key, $request->input('swap_epic'));
+        //}
+        //else
+        //{
+        //    return Response()->json(['ecode' => 0, 'data' => [ 'id' => $id ]]);
+        //}
+    }
+
+    /**
+     * update the issues epic
+     *
+     * @param  array $issues
+     * @param  string $source
+     * @param  string $dest
+     * @return \Illuminate\Http\Response
+     */
+    public function updIssueEpic($project_key, $source, $dest)
+    {
+        $issues = DB::collection('issue_' . $project_key)
+            ->where('epic', $source)
+            ->where('del_flg', '<>', 1)
+            ->get();
+
+        foreach ($issues as $issue)
+        {
+            $updValues = [];
+            $updValues['epic'] = $dest;
+
+            $updValues['modifier'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+            $updValues['updated_at'] = time();
+
+            $issue_id = $issue['_id']->__toString();
+
+            DB::collection('issue_' . $project_key)->where('_id', $issue_id)->update($updValues);
+            // add to histroy table
+            $snap_id = Provider::snap2His($project_key, $issue_id, [], [ 'epic' ]);
+            // trigger event of issue edited
+            Event::fire(new IssueEvent($project_key, $issue_id, $updValues['modifier'], [ 'event_key' => 'edit_issue', 'snap_id' => $snap_id ]));
+        }
     }
 }

@@ -119,9 +119,13 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     // project activity
     Route::get('activity', 'ActivityController@index');
     // project module config
+    Route::post('module/{id}/delete', 'ModuleController@delete');
     Route::resource('module', 'ModuleController');
     Route::post('module/batch', 'ModuleController@handle');
     // project version config
+    Route::post('version/merge', 'VersionController@merge');
+    Route::post('version/{id}/release', 'VersionController@release');
+    Route::post('version/{id}/delete', 'VersionController@delete');
     Route::resource('version', 'VersionController');
     // project team
     Route::get('team', 'RoleController@index');
@@ -207,6 +211,7 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::delete('sprint/{no}', 'SprintController@destroy');
 
     // project module config
+    Route::post('epic/{id}/delete', 'EpicController@delete');
     Route::resource('epic', 'EpicController');
     Route::post('epic/batch', 'EpicController@handle');
 });

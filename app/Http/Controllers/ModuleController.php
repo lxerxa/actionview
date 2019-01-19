@@ -4,11 +4,13 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
-//use App\Events\ModuleEvent;
 
+//use App\Events\ModuleEvent;
+use App\Events\IssueEvent;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 
+use DB;
 use Sentinel;
 use App\Project\Provider;
 use App\Project\Eloquent\Module;
@@ -46,7 +48,7 @@ class ModuleController extends Controller
     public function store(Request $request, $project_key)
     {
         $name = $request->input('name');
-        if (!$name || trim($name) == '')
+        if (!$name)
         {
             throw new \UnexpectedValueException('the name can not be empty.', -11400);
         }
@@ -86,6 +88,8 @@ class ModuleController extends Controller
     public function show($project_key, $id)
     {
         $module = Module::find($id);
+        $module->is_used = $this->isFieldUsedByIssue($project_key, 'module', $module->toArray());
+
         return Response()->json(['ecode' => 0, 'data' => $module]);
     }
 
@@ -107,7 +111,7 @@ class ModuleController extends Controller
         $name = $request->input('name');
         if (isset($name))
         {
-            if (!$name || trim($name) == '')
+            if (!$name)
             {
                 throw new \UnexpectedValueException('the name can not be empty.', -11400);
             }
@@ -140,10 +144,11 @@ class ModuleController extends Controller
     /**
      * Remove the specified resource from storage.
      *
+     * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($project_key, $id)
+    public function delete(Request $request, $project_key, $id)
     {
         $module = Module::find($id);
         if (!$module || $project_key != $module->project_key)
@@ -151,10 +156,38 @@ class ModuleController extends Controller
             throw new \UnexpectedValueException('the module does not exist or is not in the project.', -11402);
         }
 
-        $isUsed = $this->isFieldUsedByIssue($project_key, 'module', $module->toArray());
-        if ($isUsed)
+        $operate_flg = $request->input('operate_flg');
+        if (!isset($operate_flg) || $operate_flg === '0')
         {
-            throw new \UnexpectedValueException('the module has been used in issue.', -11403);
+            $is_used = $this->isFieldUsedByIssue($project_key, 'module', $module->toArray());
+            if ($is_used)
+            {
+                throw new \UnexpectedValueException('the module has been used by some issues.', -11403);
+            }
+        }
+        else if ($operate_flg === '1')
+        {
+            $swap_module = $request->input('swap_module');
+            if (!isset($swap_module) || !$swap_module)
+            {
+                throw new \UnexpectedValueException('the swap module cannot be empty.', -11405);
+            }
+
+            $smodule = Module::find($swap_module);
+            if (!$smodule || $project_key != $smodule->project_key)
+            {
+                throw new \UnexpectedValueException('the swap module does not exist or is not in the project.', -11406);
+            }
+
+            $this->updIssueModule($project_key, $id, $swap_module);
+        }
+        else if ($operate_flg === '2')
+        {
+            $this->updIssueModule($project_key, $id, '');
+        }
+        else
+        {
+            throw new \UnexpectedValueException('the operation has error.', -11404);
         }
 
         Module::destroy($id);
@@ -163,7 +196,54 @@ class ModuleController extends Controller
         //$cur_user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
         //Event::fire(new ModuleEvent($project_key, $cur_user, [ 'event_key' => 'del_module', 'data' => $module->name ]));
 
-        return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
+        if ($operate_flg === '1')
+        {
+            return $this->show($project_key, $request->input('swap_module'));
+        }
+        else
+        {
+            return Response()->json(['ecode' => 0, 'data' => [ 'id' => $id ]]);
+        }
+    }
+
+    /**
+     * update the issues module
+     *
+     * @param  array $issues
+     * @param  string $source
+     * @param  string $dest
+     * @return \Illuminate\Http\Response
+     */
+    public function updIssueModule($project_key, $source, $dest)
+    {
+        $issues = DB::collection('issue_' . $project_key)
+            ->where('module', 'like', '%' . $source . '%')
+            ->where('del_flg', '<>', 1)
+            ->get();
+
+        foreach ($issues as $issue)
+        {
+            $updValues = [];
+            if (isset($issue['module']) && strpos($issue['module'], $source) !== false)
+            {
+                $tmp = str_replace($source, $dest, $issue['module']);
+                $updValues['module'] = implode(',', array_filter(array_unique(explode(',', $tmp))));
+            }
+
+            if ($updValues)
+            {
+                $updValues['modifier'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+                $updValues['updated_at'] = time();
+
+                $issue_id = $issue['_id']->__toString();
+
+                DB::collection('issue_' . $project_key)->where('_id', $issue_id)->update($updValues);
+                // add to histroy table
+                $snap_id = Provider::snap2His($project_key, $issue_id, [], [ 'module' ]);
+                // trigger event of issue edited
+                Event::fire(new IssueEvent($project_key, $issue_id, $updValues['modifier'], [ 'event_key' => 'edit_issue', 'snap_id' => $snap_id ]));
+            }
+        }
     }
 
     /**
