@@ -79,7 +79,7 @@
             <td>
           </tr>
           <tr colspan=2>
-            <td class='cell-title'><b>问题列表：</b></td>
+            <td class='cell-title'><b>发布解决问题列表：</b></td>
           </tr>
           @foreach ($released_issues as $key => $issue)
             <tr>
