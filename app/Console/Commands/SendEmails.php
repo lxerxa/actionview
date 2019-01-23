@@ -421,7 +421,10 @@ class SendEmails extends Command
             }
             else if ('assignee' === $notification)
             {
-                $uids[] = $issue['assignee']['id'];
+                if (isset($issue['assignee']) && isset($issue['assignee']['id']))
+                {
+                    $uids[] = $issue['assignee']['id'];
+                }
             }
             else if ('watchers' === $notification)
             {
@@ -438,7 +441,7 @@ class SendEmails extends Command
             else if ('module_principal' === $notification && isset($issue['module']))
             {
                 $module = Module::find($issue['module']);
-                if ($module)
+                if ($module && isset($module->principal) && isset($module->principal['id']))
                 {
                     $uids[] = $module->principal['id'];
                 }
@@ -456,13 +459,16 @@ class SendEmails extends Command
                 }
                 else if ($notification['key'] === 'single_user_field' && isset($notification['value']))
                 {
-                    $key = $notification['value']['id'];
-                    $uids[] = $issue[$key]['id'];
+                    $key = $notification['value'];
+                    if (isset($issue[$key]) && isset($issue[$key]['id']))
+                    {
+                        $uids[] = $issue[$key]['id'];
+                    }
                 }
                 else if ($notification['key'] === 'multi_user_field' && isset($notification['value']))
                 {
-                    $key = $notification['value']['id'];
-                    if ($issue[$key])
+                    $key = $notification['value'];
+                    if (isset($issue[$key]) && $issue[$key])
                     {
                         foreach ($issue[$key] as $v)
                         {
@@ -484,6 +490,10 @@ class SendEmails extends Command
             {
                 $priority = Priority::where('_id', $issue['priority'])->orWhere('key', $issue['priority'])->first();
                 $issue['priority'] = $priority ? $priority->name : '-';
+            }
+            else
+            {
+                $issue['priority'] = '-';
             }
         }
 
@@ -513,7 +523,7 @@ class SendEmails extends Command
             'http_host' => $this->http_host,
         ];
 
-        $to_users = EloquentUser::find(array_unique($uids));
+        $to_users = EloquentUser::find(array_values(array_unique(array_filter($uids))));
         foreach ($to_users as $to_user)
         {
             $new_data = $data;
