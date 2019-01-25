@@ -1,20 +1,45 @@
 version: '2'
 
 services:
-  actinviewweb:
+  web:
     image: lxerxa/actionview:latest
-    restart: unless-stopped
+    restart: always
     volumes:
       - ./data/uploads:/var/www/actionview/storage/app
-    ports:
-      - 8080:80
+    expose:
+      - 80
     depends_on:
-      - actionviewdb
+      - db
     links:
-      - actionviewdb:db 
+      - db:db
+    command: /bin/bash /scripts/run.sh
 
-  actionviewdb:
+  cron:
+    image: lxerxa/actionview:latest
+    restart: always
+    volumes_from:
+      - web
+    depends_on:
+      - db
+    links:
+      - db:db 
+    command: /bin/bash /scripts/cronrun.sh
+
+  nginx:
+    restart: always
+    image: lxerxa/actionviewnginx:latest
+    depends_on:
+      - web
+    ports:
+      - 8000:80
+    links:
+      - web:web
+
+  db:
     image: lxerxa/actionviewdb:latest
-    restart: unless-stopped
+    restart: always
+    expose:
+      - 27017
     volumes:
       - ./data/db:/data 
+    command: /bin/bash /scripts/run.sh
