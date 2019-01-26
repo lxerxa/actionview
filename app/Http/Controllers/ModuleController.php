@@ -124,8 +124,15 @@ class ModuleController extends Controller
         $principal_id = $request->input('principal');
         if (isset($principal_id))
         {
-            $user_info = Sentinel::findById($principal_id);
-            $principal = [ 'id' => $principal_id, 'name' => $user_info->first_name ];
+            if ($principal_id)
+            {
+                $user_info = Sentinel::findById($principal_id);
+                $principal = [ 'id' => $principal_id, 'name' => $user_info->first_name ];
+            }
+            else
+            {
+                $principal = [];
+            }
         }
         else
         {
