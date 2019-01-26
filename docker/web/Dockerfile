@@ -24,7 +24,7 @@ RUN apt-get update && \
 RUN a2enmod rewrite
 
 WORKDIR /var/www/
-RUN git clone https://gitee.com/actionview/av.git actionview
+RUN git clone https://github.com/lxerxa/actionview.git actionview
 
 ENV COMPOSER_ALLOW_SUPERUSER 1
 
