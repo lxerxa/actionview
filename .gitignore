@@ -3,4 +3,5 @@
 /public/storage
 Homestead.yaml
 Homestead.json
+docker/data
 .env
