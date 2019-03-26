@@ -54,6 +54,7 @@ class WorklogController extends Controller
             throw new \UnexpectedValueException('the format of spend-time is incorrect.', -11301);
         }
         $values['spend'] = $this->ttHandle($spend);
+        $values['spend_m'] = $this->ttHandleInM($spend);
 
         $started_at = $request->input('started_at');
         if (!$started_at)
@@ -165,6 +166,7 @@ class WorklogController extends Controller
                 throw new \UnexpectedValueException('the format of spend-time is incorrect.', -11301);
             }
             $values['spend'] = $this->ttHandle($spend);
+            $values['spend_m'] = $this->ttHandleInM($spend);
         }
 
         $started_at = $request->input('started_at');

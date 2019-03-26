@@ -16,6 +16,7 @@ class Worklog extends Model
         'recorded_at',
         'started_at',
         'spend',
+        'spend_m',
         'adjust_type',
         'leave_estimate',
         'cut',

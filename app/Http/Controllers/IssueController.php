@@ -41,31 +41,7 @@ class IssueController extends Controller
      */
     public function index(Request $request, $project_key)
     {
-        $where = array_only($request->all(), [ 'type', 'assignee', 'reporter', 'state', 'resolution', 'priority', 'resolve_version', 'epic' ]) ?: [];
-        foreach ($where as $key => $val)
-        {
-            if ($key === 'assignee' || $key === 'reporter')
-            {
-                $users = explode(',', $val);
-                if (in_array('me', $users))
-                {
-                    array_push($users, $this->user->id); 
-                }
-
-                $where[ $key . '.' . 'id' ] = [ '$in' => $users ];
-                unset($where[$key]);
-            }
-            else
-            {
-                $where[$key] = [ '$in' => explode(',', $val) ];
-            }
-        }
-
-        $sprint = $request->input('sprint');
-        if (isset($sprint) && $sprint)
-        {
-            $where['sprints'] = intval($sprint);
-        }
+        $query = $this->getIssueQueryBuilder($project_key, $request->all());
 
         $watched_issues = Watch::where('project_key', $project_key)
             ->where('user.id', $this->user->id)
@@ -82,100 +58,7 @@ class IssueController extends Controller
                 $watchedIds[] = new ObjectID($id);
             }
             $where['_id'] = [ '$in' => $watchedIds ]; 
-        }
-
-        $query = DB::collection('issue_' . $project_key);
-        if ($where)
-        {
             $query = $query->whereRaw($where);
-        }
-
-        $no = $request->input('no');
-        if (isset($no) && $no)
-        {
-            $query->where('no', intval($no));
-        }
-
-        $title = $request->input('title');
-        if (isset($title) && $title)
-        {
-            if (is_numeric($title) && strpos($title, '.') === false)
-            {
-                $query->where(function ($query) use ($title) {
-                    $query->where('no', $title + 0)->orWhere('title', 'like', '%' . $title . '%');
-                });
-            }
-            else
-            {
-                $query->where('title', 'like', '%' . $title . '%');
-            }
-        }
-
-        $module = $request->input('module');
-        if (isset($module) && $module)
-        {
-            $query->where(function ($query) use ($module) {
-                $modules = explode(',', $module);
-                foreach ($modules as $m)
-                {
-                    $query->orWhere('module', 'like', '%' . $m . '%');
-                }
-            });
-        }
-
-        $labels = $request->input('labels');
-        if (isset($labels) && $labels)
-        {
-            $query->where(function ($query) use ($labels) {
-                $labels2 = explode(',', $labels);
-                foreach ($labels2 as $label)
-                {
-                    $query->orWhere('labels', $label);
-                }
-            });
-        }
-
-
-        $created_at = $request->input('created_at');
-        if (isset($created_at) && $created_at)
-        {
-            if ($created_at == '1w')
-            {
-                $query->where('created_at', '>=', strtotime(date('Ymd', strtotime('-1 week'))));
-            }
-            else if ($created_at == '2w')
-            {
-                $query->where('created_at', '>=', strtotime(date('Ymd', strtotime('-2 weeks'))));
-            }
-            else if ($created_at == '1m')
-            {
-                $query->where('created_at', '>=', strtotime(date('Ymd', strtotime('-1 month'))));
-            }
-            else if ($created_at == '-1m')
-            {
-                $query->where('created_at', '<', strtotime(date('Ymd', strtotime('-1 month'))));
-            }
-        }
-
-        $updated_at = $request->input('updated_at');
-        if (isset($updated_at) && $updated_at)
-        {
-            if ($updated_at == '1w')
-            {
-                $query->where('updated_at', '>=', strtotime(date('Ymd', strtotime('-1 week'))));
-            }
-            else if ($updated_at == '2w')
-            {
-                $query->where('updated_at', '>=', strtotime(date('Ymd', strtotime('-2 weeks'))));
-            }
-            else if ($updated_at == '1m')
-            {
-                $query->where('updated_at', '>=', strtotime(date('Ymd', strtotime('-1 month'))));
-            }
-            else if ($updated_at == '-1m')
-            {
-                $query->where('updated_at', '<', strtotime(date('Ymd', strtotime('-1 month'))));
-            }
         }
 
         $from = $request->input('from');
@@ -218,8 +101,6 @@ class IssueController extends Controller
                 });
             }
         }
-
-        $query->where('del_flg', '<>', 1);
 
         // get total num
         $total = $query->count();
@@ -1887,7 +1768,11 @@ class IssueController extends Controller
         $fields['state'] = [ 'name' => '状态', 'type' => 'Select' ];
         $fields['created_at'] = [ 'name' => '创建时间', 'type' => 'DateTimePicker' ];
         $fields['updated_at'] = [ 'name' => '更新时间', 'type' => 'DateTimePicker' ];
+        $fields['resolved_at'] = [ 'name' => '解决时间', 'type' => 'DateTimePicker' ];
+        $fields['closed_at'] = [ 'name' => '关闭时间', 'type' => 'DateTimePicker' ];
         $fields['reporter'] = [ 'name' => '报告者', 'type' => '' ];
+        $fields['resolver'] = [ 'name' => '解决者', 'type' => '' ];
+        $fields['closer'] = [ 'name' => '关闭者', 'type' => '' ];
         $fields['sprints'] = [ 'name' => 'Sprint', 'type' => '' ];
 
         return [
@@ -2041,7 +1926,7 @@ class IssueController extends Controller
                 }
                 else
                 {
-                    $tmp[] = $issue[$fk];
+                    $tmp[] = (string)$issue[$fk];
                 }
             }
             $new_issues[] = $tmp;

@@ -273,5 +273,21 @@ class Func
         $caller = [ 'id' => $user_info->id, 'name' => $user_info->first_name, 'email' => $user_info->email ];
 
         Event::fire(new IssueEvent($project_key, $issue_id, $caller, [ 'event_key' => $param['eventParam'], 'snap_id' => self::$snap_id ]));
+
+        $updValues = [];
+        if ($param['eventParam'] === 'resolve_issue')
+        {
+            $updValues['resolved_at'] = time();
+            $updValues['resolver'] = $caller;
+        }
+        else if ($param['eventParam'] === 'close_issue')
+        {
+            $updValues['closed_at'] = time();
+            $updValues['closer'] = $caller;
+        }
+        if ($updValues)
+        {
+            DB::collection('issue_' . $project_key)->where('_id', $issue_id)->update($updValues);
+        }
     }
 }

@@ -127,6 +127,8 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::post('version/{id}/release', 'VersionController@release');
     Route::post('version/{id}/delete', 'VersionController@delete');
     Route::resource('version', 'VersionController');
+    // project report worklog 
+    Route::get('report/worklog', 'ReportController@getWorklogs');
     // project team
     Route::get('team', 'RoleController@index');
     // preview the workflow chart 
