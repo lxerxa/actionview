@@ -41,7 +41,8 @@ class IssueController extends Controller
      */
     public function index(Request $request, $project_key)
     {
-        $query = $this->getIssueQueryBuilder($project_key, $request->all());
+        $where = $this->getIssueFilter($request->all());
+        $query = DB::collection('issue_' . $project_key)->whereRaw($where); 
 
         $watched_issues = Watch::where('project_key', $project_key)
             ->where('user.id', $this->user->id)

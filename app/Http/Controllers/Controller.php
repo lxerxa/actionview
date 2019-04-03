@@ -334,7 +334,7 @@ class Controller extends BaseController
         }
     }
 
-    public function getIssueQueryBuilder($project_key, $queryOptions)
+    public function getIssueFilter($queryOptions)
     {
         $where = array_only($queryOptions, [ 
             'type', 
@@ -348,6 +348,7 @@ class Controller extends BaseController
             'resolve_version', 
             'epic' ]);
 
+        $and = []; 
         foreach ($where as $key => $val)
         {
             if (in_array($key, [ 'assignee', 'reporter', 'resolver', 'closer' ]))
@@ -358,31 +359,24 @@ class Controller extends BaseController
                     array_push($users, $this->user->id);
                 }
 
-                $where[ $key . '.' . 'id' ] = [ '$in' => $users ];
-                unset($where[$key]);
+                $and[] = [ $key . '.' . 'id' => [ '$in' => $users ] ];
             }
             else
             {
-                $where[$key] = [ '$in' => explode(',', $val) ];
+                $and[] = [ $key => [ '$in' => explode(',', $val) ] ];
             }
         }
 
         $sprint = isset($queryOptions['sprint']) ? $queryOptions['sprint'] : '';
         if ($sprint)
         {
-            $where['sprints'] = intval($sprint);
-        }
-
-        $query = DB::collection('issue_' . $project_key);
-        if ($where)
-        {
-            $query = $query->whereRaw($where);
+            $and[] = [ 'sprints' => intval($sprint) ];
         }
 
         $no = isset($queryOptions['no']) ? $queryOptions['no'] : '';
         if ($no)
         {
-            $query->where('no', intval($no));
+            $and[] = [ 'no' => intval($no) ];
         }
 
         $title = isset($queryOptions['title']) ? $queryOptions['title'] : '';
@@ -390,51 +384,55 @@ class Controller extends BaseController
         {
             if (is_numeric($title) && strpos($title, '.') === false)
             {
-                $query->where(function ($query) use ($title) {
-                    $query->where('no', $title + 0)->orWhere('title', 'like', '%' . $title . '%');
-                });
+                $and[] = [ '$or' => [ [ 'no' => $title + 0 ], [ 'title'  => [ '$regex' => $title ] ] ] ];
             }
             else
             {
-                $query->where('title', 'like', '%' . $title . '%');
+                $and[] = [ 'title' => [ '$regex' => $title ] ];
             }
         }
 
         $effect_versions = isset($queryOptions['effect_versions']) ? $queryOptions['effect_versions'] : '';
         if ($effect_versions)
         {
-            $query->where(function ($query) use ($effect_versions) {
-                $versions = explode(',', $effect_versions);
-                foreach ($versions as $ver)
-                {
-                    $query->orWhere('effect_versions', 'like', '%' . $ver . '%');
-                }
-            });
+            $or = [];
+            $versions = explode(',', $effect_versions);
+            foreach ($version as $ver)
+            {
+                $or[] = [ 'effect_versions' => [ '$regex' => $ver ] ];
+            }
+            $and[] = [ '$or' => $or ];
         }
 
         $module = isset($queryOptions['module']) ? $queryOptions['module'] : '';
         if ($module)
         {
-            $query->where(function ($query) use ($module) {
-                $modules = explode(',', $module);
-                foreach ($modules as $m)
-                {
-                    $query->orWhere('module', 'like', '%' . $m . '%');
-                }
-            });
+            $or = [];
+            $modules = explode(',', $module);
+            foreach ($modules as $m)
+            {
+                $or[] = [ 'module' => [ '$regex' => $m ] ];
+            }
+            $and[] = [ '$or' => $or ];
         }
 
         $labels = isset($queryOptions['labels']) ? $queryOptions['labels'] : '';
         if (isset($labels) && $labels)
         {
-            $query->where(function ($query) use ($labels) {
-                $labels2 = explode(',', $labels);
-                foreach ($labels2 as $label)
-                {
-                    $query->orWhere('labels', $label);
-                }
-            });
+            $or = [];
+            $labels = explode(',', $labels);
+            foreach ($labels as $label)
+            {
+                $or[] = [ 'labels' => $label ];
+            }
+            $and[] = [ '$or' => $or ];
         }
+
+        //$query = DB::collection('issue_' . $project_key);
+        //if ($and)
+        //{
+        //    $query = $query->whereRaw([ '$and' => $and ]);
+        //}
 
         $timeConds = [ 'created_at', 'updated_at', 'resolved_at', 'closed_at' ];
         foreach ($timeConds as $cond)
@@ -449,11 +447,11 @@ class Controller extends BaseController
                 $sections = explode('~', $queryOptions[$cond]);
                 if ($sections[0])
                 {
-                    $query->where($cond, '>=', strtotime($sections[0]));
+                    $and[] = [ $cond => [ '$gte' => strtotime($sections[0]) ] ];
                 }
                 if ($sections[1])
                 {
-                    $query->where($cond, '<=', strtotime($sections[1] . ' 23:59:59'));
+                    $and[] = [ $cond => [ '$lte' => strtotime($sections[0] . ' 23:59:59') ] ];
                 }
             }
             else
@@ -464,13 +462,20 @@ class Controller extends BaseController
                 {
                     $direct = substr($queryOptions[$cond], 0, 1);
                     $val = abs(substr($queryOptions[$cond], 0, -1));
-
-                    $query->where($cond, $direct === '-' ? '<' : '>=', strtotime(date('Ymd', strtotime('-' . $val . ' ' . $unitMap[$unit]))));
+                    if ($direct === '-')
+                    {
+                        $and[] = [ $cond => [ '$lt' => strtotime(date('Ymd', strtotime('-' . $val . ' ' . $unitMap[$unit]))) ] ];
+                    }
+                    else
+                    {
+                        $and[] = [ $cond => [ '$gte' => strtotime(date('Ymd', strtotime('-' . $val . ' ' . $unitMap[$unit]))) ] ];
+                    }
                 }
             }
         }
-        $query->where('del_flg', '<>', 1);
 
-        return $query;
+        $and[] = [ 'del_flg' => [ '$ne' => 1 ] ];
+
+        return [ '$and' => $and ];
     }
 }

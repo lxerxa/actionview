@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use App\Project\Eloquent\Worklog;
+use App\Project\Eloquent\ReportFilters;
 
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
@@ -39,21 +40,187 @@ class ReportController extends Controller
         'closed_at'
     ];
 
+    private $default_filters = [
+        'issue' => [
+            [ 'id' => 'all_by_type', 'name' => '全部问题/按类型', 'query' => [ 'row' => 'type', 'column' => 'type' ] ], 
+            [ 'id' => 'unresolved_by_assignee', 'name' => '未解决的/按经办人', 'query' => [ 'row' => 'assignee', 'column' => 'assignee', 'resolution' => 'Unresolved' ] ], 
+            [ 'id' => 'unresolved_by_priority', 'name' => '未解决的/按优先级', 'query' => [ 'row' => 'priority', 'column' => 'priority', 'resolution' => 'Unresolved' ] ], 
+            [ 'id' => 'unresolved_by_module', 'name' => '未解决的/按模块', 'query' => [ 'row' => 'module', 'column' => 'module', 'resolution' => 'Unresolved' ] ] 
+        ], 
+        'worklog' => [] 
+    ];
+
+    private $mode_enum = [ 'issue', 'trend', 'worklog', 'timetrack', 'others' ];
+
     /**
      * Display a listing of the resource.
      *
+     * @param  string $project_key
      * @return \Illuminate\Http\Response
      */
     public function index($project_key)
     {
+        $filters = $this->default_filters;
+
+        $res = ReportFilters::where('project_key', $project_key)
+            ->where('mode', $mode)
+            ->where('user', $this->user->id)
+            ->get();
+        foreach($res as $v)
+        {
+            if (isset($v[filters]))
+            {
+                $filters[$v['mode']] = $v['filters'];
+            }
+        }
+
+        return Response()->json([ 'ecode' => 0, 'data' => $filters ]);
     }
 
     /**
-     * get permissions by project_key and roleid.
+     * get the mode filter.
      *
      * @param  string $project_key
-     * @param  string $role_id
-     * @return array
+     * @param  string $mode
+     * @return \Illuminate\Http\Response
+     */
+    public function getSomeFilters($project_key, $mode)
+    {
+        if (!in_array($mode, $this->mode_enum))
+        {
+            throw new \UnexpectedValueException('the name can not be empty.', -12400);
+        }
+
+        $filters = isset($this->default_filters[$mode]) ? $this->default_filters[$mode] : [] ;
+
+        $res = ReportFilters::where('project_key', $project_key)
+            ->where('mode', $mode)
+            ->where('user', $this->user->id)
+            ->first(); 
+        if ($res)
+        {
+            $filters = isset($res->filters) ? $res->filters : [];
+        }
+
+        return Response()->json([ 'ecode' => 0, 'data' => $filters ]);
+    }
+
+    /**
+     * save the custimized filter.
+     *
+     * @param  string $project_key
+     * @param  string $mode
+     * @return \Illuminate\Http\Response
+     */
+    public function saveFilter(Request $request, $project_key, $mode)
+    {
+        if (!in_array($mode, $this->mode_enum))
+        {
+            throw new \UnexpectedValueException('the name can not be empty.', -12400);
+        }
+
+        $name = $request->input('name');
+        if (!$name)
+        {
+            throw new \UnexpectedValueException('the name can not be empty.', -12400);
+        }
+
+        $query = $request->input('query');
+        if (!isset($query))
+        {
+            throw new \UnexpectedValueException('the name can not be empty.', -12400);
+        }
+        
+        $res = ReportFilters::where('project_key', $project_key)
+            ->where('mode', $mode)
+            ->where('user', $this->user->id)
+            ->first();
+        if ($res)
+        {
+            $filters = isset($res['filters']) ? $res['filters'] : [];
+            array_push($filters, [ 'id' => md5(microtime()), 'name' => $name, 'query' => $query ]);
+            $res->filters = $filters;
+            $res->save();
+        }
+        else
+        {
+            $filters = $this->default_filters[$mode];
+            array_push($filters, [ 'id' => md5(microtime()), 'name' => $name, 'query' => $query ]);
+            ReportFilters::create([ 'project_key' => $project_key, 'mode' => $mode, 'user' => $this->user->id, 'filters' => $filters ]); 
+        }
+
+        return $this->getSomeFilters($project_key, $mode);
+    }
+
+    /**
+     * reset the mode filters.
+     *
+     * @param  string $project_key
+     * @param  string $mode
+     * @return \Illuminate\Http\Response
+     */
+    public function resetSomeFilters(Request $request, $project_key, $mode)
+    {
+        if (!in_array($mode, $this->mode_enum))
+        {
+            throw new \UnexpectedValueException('the name can not be empty.', -12400);
+        }
+
+        ReportFilters::where('project_key', $project_key)
+            ->where('mode', $mode)
+            ->where('user', $this->user->id)
+            ->delete();
+        return $this->getSomeFilters($project_key, $mode);
+    }
+
+    /**
+     * edit the mode filters.
+     *
+     * @param  string $project_key
+     * @param  string $mode
+     * @return \Illuminate\Http\Response
+     */
+    public function editSomeFilters(Request $request, $project_key, $mode)
+    {
+        if (!in_array($mode, $this->mode_enum))
+        {
+            throw new \UnexpectedValueException('the name can not be empty.', -12400);
+        }
+
+        $sequence = $request->input('sequence');
+        if (isset($sequence))
+        {
+            $res = ReportFilters::where('project_key', $project_key)
+                ->where('mode', $mode)
+                ->where('user', $this->user->id)
+                ->first();
+
+            $old_filters = isset($res->filters) ? $res->filters : [];
+
+            $new_filters = [];
+            foreach ($squence as $id)
+            {
+                foreach ($old_fiters as $filter)
+                {
+                    if ($filter->id === $id)
+                    {
+                        $new_filters[] = $filter;
+                        break;
+                    }
+                }
+            }
+            $res->filters = $new_filters;
+            $res->save();
+        }
+
+        return $this->getSomeFilters($project_key, $mode);
+    }
+
+    /**
+     * get worklog report by project_key.
+     *
+     * @param  string $project_key
+     * @return \Illuminate\Http\Response
      */
     public function getWorklogs(Request $request, $project_key)
     {
@@ -63,7 +230,8 @@ class ReportController extends Controller
         {
             $issue_ids = [];
 
-            $query = $this->getIssueQueryBuilder($project_key, $request->all());
+            $where = $this->getIssueFilter($request->all());
+            $query = DB::collection('issue_' . $project_key)->whereRaw($where);
             $issues = $query->get([ '_id' ]);
             foreach ($issues as $issue)
             {
