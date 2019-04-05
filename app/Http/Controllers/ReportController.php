@@ -47,7 +47,10 @@ class ReportController extends Controller
             [ 'id' => 'unresolved_by_priority', 'name' => '未解决的/按优先级', 'query' => [ 'row' => 'priority', 'column' => 'priority', 'resolution' => 'Unresolved' ] ], 
             [ 'id' => 'unresolved_by_module', 'name' => '未解决的/按模块', 'query' => [ 'row' => 'module', 'column' => 'module', 'resolution' => 'Unresolved' ] ] 
         ], 
-        'worklog' => [] 
+        'worklog' => [
+            [ 'id' => 'all', 'name' => '全部填报', 'query' => [] ], 
+            [ 'id' => 'in_one_month', 'name' => '过去一个月的', 'query' => [ 'recorded_at' => '1m' ] ], 
+        ] 
     ];
 
     private $mode_enum = [ 'issue', 'trend', 'worklog', 'timetrack', 'others' ];
@@ -63,12 +66,11 @@ class ReportController extends Controller
         $filters = $this->default_filters;
 
         $res = ReportFilters::where('project_key', $project_key)
-            ->where('mode', $mode)
             ->where('user', $this->user->id)
             ->get();
         foreach($res as $v)
         {
-            if (isset($v[filters]))
+            if (isset($v['filters']))
             {
                 $filters[$v['mode']] = $v['filters'];
             }
@@ -190,58 +192,69 @@ class ReportController extends Controller
         $sequence = $request->input('sequence');
         if (isset($sequence))
         {
+            $old_filters = $this->default_filters[$mode]; 
+
             $res = ReportFilters::where('project_key', $project_key)
                 ->where('mode', $mode)
                 ->where('user', $this->user->id)
                 ->first();
-
-            $old_filters = isset($res->filters) ? $res->filters : [];
-
-            $new_filters = [];
-            foreach ($squence as $id)
+            if ($res)
             {
-                foreach ($old_fiters as $filter)
+                $old_filters = isset($res->filters) ? $res->filters : [];
+            }
+            
+            $new_filters = [];
+            foreach ($sequence as $id)
+            {
+                foreach ($old_filters as $filter)
                 {
-                    if ($filter->id === $id)
+                    if ($filter['id'] === $id)
                     {
                         $new_filters[] = $filter;
                         break;
                     }
                 }
             }
-            $res->filters = $new_filters;
-            $res->save();
+
+            if ($res)
+            {
+                $res->filters = $new_filters;
+                $res->save();
+            }
+            else
+            {
+                ReportFilters::create([ 'project_key' => $project_key, 'mode' => $mode, 'user' => $this->user->id, 'filters' => $new_filters ]); 
+            }
         }
 
         return $this->getSomeFilters($project_key, $mode);
     }
 
     /**
-     * get worklog report by project_key.
+     * get worklog report pipeline.
      *
      * @param  string $project_key
      * @return \Illuminate\Http\Response
      */
-    public function getWorklogs(Request $request, $project_key)
+    public function getWorklogWhere($project_key, $options)
     {
-        $pipeline = [];
+        $where = [];
 
-        if (array_only($request->all(), $this->issue_query_options))
+        if (array_only($options, $this->issue_query_options))
         {
             $issue_ids = [];
 
-            $where = $this->getIssueFilter($request->all());
-            $query = DB::collection('issue_' . $project_key)->whereRaw($where);
+            $query = DB::collection('issue_' . $project_key)->whereRaw($this->getIssueFilter($options));
             $issues = $query->get([ '_id' ]);
             foreach ($issues as $issue)
             {
                 $issue_ids[] = $issue['_id']->__toString();
             }
-            $pipeline[] = [ '$match' => [ 'issue_id' => [ '$in' => $issue_ids ] ] ]; 
+            $where['issue_id'] = [ '$in' => $issue_ids ];
         }
 
-        $recorded_at = $request->input('recorded_at');
-        if (isset($recorded_at) && $recorded_at)
+        $recorded_at = isset($options['recorded_at']) ? $options['recorded_at'] : '';
+        if ($recorded_at)
         {
             if (strpos($recorded_at, '~') !== false)
             {
@@ -257,7 +270,7 @@ class ReportController extends Controller
                 }
                 if ($cond)
                 {
-                    $pipeline[] = [ '$match' => [ 'recorded_at' => $cond ] ];
+                    $where['recorded_at'] = $cond;
                 }
             }
             else
@@ -281,14 +294,20 @@ class ReportController extends Controller
                     }
                     if ($cond)
                     {
-                        $pipeline[] = [ '$match' => [ 'recorded_at' => $cond ] ];
+                        $where['recorded_at'] = $cond;
                     }
                 }
             }
         }
 
-        $sprint_no = $request->input('sprint');
-        if (isset($sprint_no) && $sprint_no)
+        $recorder = isset($options['recorder']) ? $options['recorder'] : '';
+        if ($recorder)
+        {
+            $where['recorder.id'] = $recorder;
+        }
+
+        $sprint_no = isset($options['sprint']) ? $options['sprint'] : '';
+        if ($sprint_no)
         {
             $sprint = Sprint::where('project_key', $project_key)->where('no', intval($sprint_no))->first();
 
@@ -296,8 +315,67 @@ class ReportController extends Controller
             $cond['$gte'] = strtotime(date('Ymd', $sprint->start_time));
             $cond['$lte'] = strtotime(date('Ymd', $sprint->complete_time) . ' 23:59:59');
 
-            $pipeline[] = [ '$match' => [ 'recorded_at' => $cond ] ];
+            $where['recorded_at'] = $cond;
         }
+
+        $where['project_key'] = $project_key;
+
+        return $where;
+    }
+
+    /**
+     * get worklog detail report by memeber.
+     *
+     * @param  string $project_key
+     * @return \Illuminate\Http\Response
+     */
+    public function getWorklogList(Request $request, $project_key)
+    {
+        $pipeline = [];
+
+        $where = $this->getWorklogWhere($project_key, $request->all());
+        $pipeline[] = [ '$match' => $where ];
+
+        $pipeline[] = [ '$group' => [ '_id' => '$issue_id', 'value' => [ '$sum' => '$spend_m' ] ] ];
+
+        $ret = DB::collection('worklog')->raw(function($col) use($pipeline) {
+            return $col->aggregate($pipeline);
+        });
+
+        $new_results = [];
+        $results = iterator_to_array($ret);
+        foreach ($results as $k => $r)
+        {
+            $tmp = [];
+            $tmp['total_value'] = $r['value'];
+            $issue = DB::collection('issue_' . $project_key)
+                ->where('_id', $r['_id'])
+                ->first();
+            $tmp['no']      = $issue['no'];
+            $tmp['title']   = $issue['title'];
+            $tmp['state']   = $issue['state'];
+            $tmp['type']    = $issue['type'];
+            $new_results[]  = $tmp;
+ 
+        }
+
+        usort($new_results, function ($a, $b) { return $a['no'] <= $b['no']; });
+
+        return Response()->json([ 'ecode' => 0, 'data' => $new_results ]);
+    }
+
+    /**
+     * get worklog report by project_key.
+     *
+     * @param  string $project_key
+     * @return \Illuminate\Http\Response
+     */
+    public function getWorklogs(Request $request, $project_key)
+    {
+        $pipeline = [];
+
+        $where = $this->getWorklogWhere($project_key, $request->all());
+        $pipeline[] = [ '$match' => $where ];
 
         $pipeline[] = [ '$group' => [ '_id' => '$recorder.id', 'value' => [ '$sum' => '$spend_m' ] ] ]; 
 
