@@ -127,10 +127,15 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::post('version/{id}/release', 'VersionController@release');
     Route::post('version/{id}/delete', 'VersionController@delete');
     Route::resource('version', 'VersionController');
-    // project report worklog 
+    // project report 
+    Route::get('report/index', 'ReportController@index');
+    Route::get('report/trend', 'ReportController@getTrends');
     Route::get('report/worklog', 'ReportController@getWorklogs');
-    Route::get('report/filter/reset', 'ReportController@resetFilter');
-    Route::post('report/filter', 'ReportController@saveFilter');
+    Route::get('report/worklog/list', 'ReportController@getWorklogList');
+    Route::get('report/worklog/issue/{issue_id}', 'ReportController@getWorklogDetail');
+    Route::get('report/{mode}/filters/reset', 'ReportController@resetSomeFilters');
+    Route::post('report/{mode}/filters', 'ReportController@editSomeFilters');
+    Route::post('report/{mode}/filter', 'ReportController@saveFilter');
     // project team
     Route::get('team', 'RoleController@index');
     // preview the workflow chart 

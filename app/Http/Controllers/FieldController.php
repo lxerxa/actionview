@@ -15,6 +15,61 @@ use App\Project\Provider;
 
 class FieldController extends Controller
 {
+    private $special_fields = [
+      'id', 
+      'type', 
+      'state', 
+      'reporter', 
+      'modifier', 
+      'created_at', 
+      'updated_at', 
+      'resolved_at', 
+      'closed_at', 
+      'regression_times', 
+      'stat_time',
+      'is_accu',
+      'interval',
+      'no', 
+      'schema', 
+      'parent_id', 
+      'parents', 
+      'links', 
+      'subtasks', 
+      'entry_id', 
+      'definition_id', 
+      'page', 
+      'orderBy', 
+      'from', 
+      'from_kanban_id', 
+      'comments_num', 
+      'worklogs_num', 
+      'gitcommits_num', 
+      'export_fields', 
+      'sprint', 
+      'sprints', 
+      'filter', 
+      'limit'
+    ];
+
+    private $all_types = [
+      'Tags', 
+      'Number', 
+      'Text', 
+      'TextArea', 
+      'Select', 
+      'MultiSelect', 
+      'RadioGroup', 
+      'CheckboxGroup', 
+      'DatePicker', 
+      'DateTimePicker', 
+      'TimeTracking', 
+      'File', 
+      'SingleVersion', 
+      'MultiVersion', 
+      'SingleUser', 
+      'MultiUser', 
+      'Url'
+    ];
     /**
      * Display a listing of the resource.
      *
@@ -59,7 +114,7 @@ class FieldController extends Controller
         {
             throw new \InvalidArgumentException('field key cannot be empty.', -12201);
         }
-        if (in_array($key, [ 'id', 'type', 'state', 'reporter', 'modifier', 'created_at', 'updated_at', 'no', 'schema', 'parent_id', 'parents', 'links', 'subtasks', 'entry_id', 'definition_id', 'page', 'orderBy', 'from', 'from_kanban_id', 'comments_num', 'worklogs_num', 'gitcommits_num', 'export_fields', 'sprint', 'sprints', 'filter', 'limit' ]))
+        if (in_array($key, $this->special_fields))
         {
             throw new \InvalidArgumentException('field key has been used by system.', -12202);
         }
@@ -74,8 +129,7 @@ class FieldController extends Controller
             throw new \UnexpectedValueException('the type cannot be empty.', -12204);
         }
 
-        $allTypes = [ 'Tags', 'Number', 'Text', 'TextArea', 'Select', 'MultiSelect', 'RadioGroup', 'CheckboxGroup', 'DatePicker', 'DateTimePicker', 'TimeTracking', 'File', 'SingleVersion', 'MultiVersion', 'SingleUser', 'MultiUser', 'Url' ];
-        if (!in_array($type, $allTypes))
+        if (!in_array($type, $this->all_types))
         {
             throw new \UnexpectedValueException('the type is incorrect type.', -12205);
         }

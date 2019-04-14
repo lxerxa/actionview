@@ -434,12 +434,12 @@ class Controller extends BaseController
         //    $query = $query->whereRaw([ '$and' => $and ]);
         //}
 
-        $timeConds = [ 'created_at', 'updated_at', 'resolved_at', 'closed_at' ];
+        $timeConds = [ 'created_at', 'updated_at', 'resolved_at', 'closed_at', 'expect_complete_time' ];
         foreach ($timeConds as $cond)
         {
             if (!isset($queryOptions[$cond]) || !$queryOptions[$cond])
             {
-                break;
+                continue;
             }
 
             if (strpos($queryOptions[$cond], '~') !== false)
@@ -451,7 +451,7 @@ class Controller extends BaseController
                 }
                 if ($sections[1])
                 {
-                    $and[] = [ $cond => [ '$lte' => strtotime($sections[0] . ' 23:59:59') ] ];
+                    $and[] = [ $cond => [ '$lte' => strtotime($sections[1] . ' 23:59:59') ] ];
                 }
             }
             else
