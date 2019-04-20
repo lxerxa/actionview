@@ -9,6 +9,7 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Auth\Access\AuthorizesResources;
 
 use App\Project\Eloquent\Project;
+use App\Project\Eloquent\Watch;
 use App\System\Eloquent\SysSetting;
 use Sentinel;
 use DB;
@@ -334,9 +335,9 @@ class Controller extends BaseController
         }
     }
 
-    public function getIssueFilter($queryOptions)
+    public function getIssueQueryWhere($project_key, $query)
     {
-        $where = array_only($queryOptions, [ 
+        $where = array_only($query, [ 
             'type', 
             'assignee', 
             'reporter', 
@@ -367,19 +368,37 @@ class Controller extends BaseController
             }
         }
 
-        $sprint = isset($queryOptions['sprint']) ? $queryOptions['sprint'] : '';
+        if (isset($query['watcher']) && $query['watcher'])
+        {
+            $watcher = $query['watcher'] === 'me' ? $this->user->id : $query['watcher'];
+
+            $watched_issues = Watch::where('project_key', $project_key)
+                ->where('user.id', $watcher)
+                ->get()
+                ->toArray();
+            $watched_issue_ids = array_column($watched_issues, 'issue_id');
+
+            $watchedIds = [];
+            foreach ($watched_issue_ids as $id)
+            {
+                $watchedIds[] = new ObjectID($id);
+            }
+            $and[] = [ '_id' => [ '$in' => $watchedIds ] ];
+        }
+
+        $sprint = isset($query['sprint']) ? $query['sprint'] : '';
         if ($sprint)
         {
             $and[] = [ 'sprints' => intval($sprint) ];
         }
 
-        $no = isset($queryOptions['no']) ? $queryOptions['no'] : '';
+        $no = isset($query['no']) ? $query['no'] : '';
         if ($no)
         {
             $and[] = [ 'no' => intval($no) ];
         }
 
-        $title = isset($queryOptions['title']) ? $queryOptions['title'] : '';
+        $title = isset($query['title']) ? $query['title'] : '';
         if ($title)
         {
             if (is_numeric($title) && strpos($title, '.') === false)
@@ -392,7 +411,7 @@ class Controller extends BaseController
             }
         }
 
-        $effect_versions = isset($queryOptions['effect_versions']) ? $queryOptions['effect_versions'] : '';
+        $effect_versions = isset($query['effect_versions']) ? $query['effect_versions'] : '';
         if ($effect_versions)
         {
             $or = [];
@@ -404,7 +423,7 @@ class Controller extends BaseController
             $and[] = [ '$or' => $or ];
         }
 
-        $module = isset($queryOptions['module']) ? $queryOptions['module'] : '';
+        $module = isset($query['module']) ? $query['module'] : '';
         if ($module)
         {
             $or = [];
@@ -416,7 +435,7 @@ class Controller extends BaseController
             $and[] = [ '$or' => $or ];
         }
 
-        $labels = isset($queryOptions['labels']) ? $queryOptions['labels'] : '';
+        $labels = isset($query['labels']) ? $query['labels'] : '';
         if (isset($labels) && $labels)
         {
             $or = [];
@@ -437,14 +456,14 @@ class Controller extends BaseController
         $timeConds = [ 'created_at', 'updated_at', 'resolved_at', 'closed_at', 'expect_complete_time' ];
         foreach ($timeConds as $cond)
         {
-            if (!isset($queryOptions[$cond]) || !$queryOptions[$cond])
+            if (!isset($query[$cond]) || !$query[$cond])
             {
                 continue;
             }
 
-            if (strpos($queryOptions[$cond], '~') !== false)
+            if (strpos($query[$cond], '~') !== false)
             {
-                $sections = explode('~', $queryOptions[$cond]);
+                $sections = explode('~', $query[$cond]);
                 if ($sections[0])
                 {
                     $and[] = [ $cond => [ '$gte' => strtotime($sections[0]) ] ];
@@ -457,11 +476,11 @@ class Controller extends BaseController
             else
             {
                 $unitMap = [ 'w' => 'week', 'm' => 'month', 'y' => 'year' ];
-                $unit = substr($queryOptions[$cond], -1);
+                $unit = substr($query[$cond], -1);
                 if (in_array($unit, [ 'w', 'm', 'y' ]))
                 {
-                    $direct = substr($queryOptions[$cond], 0, 1);
-                    $val = abs(substr($queryOptions[$cond], 0, -1));
+                    $direct = substr($query[$cond], 0, 1);
+                    $val = abs(substr($query[$cond], 0, -1));
                     if ($direct === '-')
                     {
                         $and[] = [ $cond => [ '$lt' => strtotime(date('Ymd', strtotime('-' . $val . ' ' . $unitMap[$unit]))) ] ];

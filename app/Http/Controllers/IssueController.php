@@ -11,7 +11,7 @@ use App\Http\Controllers\Controller;
 use App\Project\Provider;
 use App\Project\Eloquent\File;
 use App\Project\Eloquent\Watch;
-use App\Project\Eloquent\Searcher;
+use App\Project\Eloquent\IssueFilters;
 use App\Project\Eloquent\Linked;
 use App\Project\Eloquent\Worklog;
 use App\Project\Eloquent\Version;
@@ -41,26 +41,8 @@ class IssueController extends Controller
      */
     public function index(Request $request, $project_key)
     {
-        $where = $this->getIssueFilter($request->all());
+        $where = $this->getIssueQueryWhere($project_key, $request->all());
         $query = DB::collection('issue_' . $project_key)->whereRaw($where); 
-
-        $watched_issues = Watch::where('project_key', $project_key)
-            ->where('user.id', $this->user->id)
-            ->get()
-            ->toArray();
-        $watched_issue_ids = array_column($watched_issues, 'issue_id');
-
-        $watcher = $request->input('watcher');
-        if (isset($watcher) && $watcher === 'me')
-        {
-            $watchedIds = [];
-            foreach ($watched_issue_ids as $id)
-            {
-                $watchedIds[] = new ObjectID($id);
-            }
-            $where['_id'] = [ '$in' => $watchedIds ]; 
-            $query = $query->whereRaw($where);
-        }
 
         $from = $request->input('from');
         $from_kanban_id = $request->input('from_kanban_id');
@@ -131,6 +113,16 @@ class IssueController extends Controller
             $export_fields = $request->input('export_fields');
             $this->export($project_key, isset($export_fields) ? explode(',', $export_fields) : [], $issues);
             exit();
+        }
+
+        $watched_issue_ids = [];
+        if (!isset($from) || !$from)
+        {
+            $watched_issues = Watch::where('project_key', $project_key)
+                ->where('user.id', $this->user->id)
+                ->get()
+                ->toArray();
+            $watched_issue_ids = array_column($watched_issues, 'issue_id');
         }
 
         $cache_parents = [];
@@ -347,7 +339,7 @@ class IssueController extends Controller
 
         // workflow initialize 
         $workflow = $this->initializeWorkflow($issue_type);
-        $insValues = array_merge($insValues, $workflow);
+        $insValues = $insValues + $workflow;
 
         // merge all fields
         $insValues = $insValues + array_only($request->all(), $valid_keys);
@@ -576,7 +568,7 @@ class IssueController extends Controller
         // get defined fields
         $fields = Provider::getFieldList($project_key, ['key', 'name', 'type']);
         // get defined searchers
-        $searchers = $this->getSearchers($project_key, ['name', 'query']);
+        $filters = Provider::getIssueFilters($project_key, $this->user->id);
         // get timetrack options
         $timetrack = $this->getTimeTrackSetting();
 
@@ -594,7 +586,7 @@ class IssueController extends Controller
                 'versions' => $versions, 
                 'epics' => $epics,
                 'sprints' => $sprint_nos,
-                'searchers' => $searchers, 
+                'filters' => $filters, 
                 'timetrack' => $timetrack, 
                 'fields' => $fields 
             ]) 
@@ -893,27 +885,23 @@ class IssueController extends Controller
     }
 
     /**
-     * Display a listing of the resource.
+     * get the project filters.
      *
-     * @param  string  $project_key
-     * @return array 
+     * @param  string $project_key
+     * @return array
      */
-    public function getSearchers($project_key, $fields=[])
+    public function getFilters($project_key)
     {
-        $searchers = Searcher::whereRaw([ 'user' => $this->user->id, 'project_key' => $project_key ])
-            ->orderBy('sn', 'asc')
-            ->get($fields);
-        return $searchers ?: [];
+        return Response()->json([ 'ecode' => 0, 'data' => Provider::getIssueFilters($project_key, $this->user->id) ]);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * save the custimized filter.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  string  $project_key
+     * @param  string $project_key
      * @return \Illuminate\Http\Response
      */
-    public function addSearcher(Request $request, $project_key)
+    public function saveFilter(Request $request, $project_key)
     {
         $name = $request->input('name');
         if (!$name)
@@ -921,65 +909,104 @@ class IssueController extends Controller
             throw new \UnexpectedValueException('the name can not be empty.', -11105);
         }
 
-        if (Searcher::whereRaw([ 'name' => $name, 'user' => $this->user->id, 'project_key' => $project_key ])->exists())
+        if (IssueFilters::whereRaw([ 'name' => $name, 'user' => $this->user->id, 'project_key' => $project_key ])->exists())
         {
-            throw new \UnexpectedValueException('searcher name cannot be repeated', -11106);
+            throw new \UnexpectedValueException('filter name cannot be repeated', -11106);
         }
 
-        $searcher = Searcher::create([ 'project_key' => $project_key, 'user' => $this->user->id, 'sn' => time() ] + $request->all());
-        return Response()->json([ 'ecode' => 0, 'data' => $searcher ]);
+        $query = $request->input('query') ?: [];
+        
+        $res = IssueFilters::where('project_key', $project_key)
+            ->where('user', $this->user->id)
+            ->first();
+        if ($res)
+        {
+            $filters = isset($res['filters']) ? $res['filters'] : [];
+            foreach($filters as $filter)
+            {
+                if (isset($filter['name']) && $filter['name'] === $name)
+                {
+                    throw new \UnexpectedValueException('filter name cannot be repeated', -11106);
+                }
+            }
+            array_push($filters, [ 'id' => md5(microtime()), 'name' => $name, 'query' => $query ]);
+            $res->filters = $filters;
+            $res->save();
+        }
+        else
+        {
+            $filters = Provider::getDefaultIssueFilters();
+            foreach($filters as $filter)
+            {
+                if (isset($filter['name']) && $filter['name'] === $name)
+                {
+                    throw new \UnexpectedValueException('filter name cannot be repeated', -11106);
+                }
+            }
+            array_push($filters, [ 'id' => md5(microtime()), 'name' => $name, 'query' => $query ]);
+            IssueFilters::create([ 'project_key' => $project_key, 'user' => $this->user->id, 'filters' => $filters ]); 
+        }
+        return $this->getFilters($project_key);
     }
 
     /**
-     * update sort or delete searcher etc..
+     * reset the issue filters.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  string  $project_key
-     * @return void
+     * @param  string $project_key
+     * @return \Illuminate\Http\Response
      */
-    public function handleSearcher(Request $request, $project_key)
+    public function resetFilters(Request $request, $project_key)
     {
-        $table = 'searcher';
-        // set searcher sort.
+        IssueFilters::where('project_key', $project_key)
+            ->where('user', $this->user->id)
+            ->delete();
+
+        return $this->getFilters($project_key);
+    }
+
+    /**
+     * edit the mode filters.
+     *
+     * @param  string $project_key
+     * @return \Illuminate\Http\Response
+     */
+    public function editFilters(Request $request, $project_key)
+    {
         $sequence = $request->input('sequence');
         if (isset($sequence))
         {
-            // update flag
-            DB::collection($table)->where('user', $this->user->id)->where('project_key', $project_key)->update([ 'flag' => 1 ]);
-
-            $i = 1;
-            foreach ($sequence as $searcher_id)
+            $old_filters = Provider::getDefaultIssueFilters();
+            $res = IssueFilters::where('project_key', $project_key)
+                ->where('user', $this->user->id)
+                ->first();
+            if ($res)
             {
-                $searcher = [];
-                $searcher['sn'] = $i++;
-                $searcher['flag'] = 2;
-                DB::collection($table)->where('_id', $searcher_id)->update($searcher);
+                $old_filters = isset($res->filters) ? $res->filters : [];
             }
-
-            // delete seachers
-            DB::collection($table)->where('user', $this->user->id)->where('project_key', $project_key)->where('flag', 1)->delete();
+            
+            $new_filters = [];
+            foreach ($sequence as $id)
+            {
+                foreach ($old_filters as $filter)
+                {
+                    if ($filter['id'] === $id)
+                    {
+                        $new_filters[] = $filter;
+                        break;
+                    }
+                }
+            }
+            if ($res)
+            {
+                $res->filters = $new_filters;
+                $res->save();
+            }
+            else
+            {
+                IssueFilters::create([ 'project_key' => $project_key, 'user' => $this->user->id, 'filters' => $new_filters ]); 
+            }
         }
-
-        return Response()->json([ 'ecode' => 0, 'data' => $this->getSearchers($project_key) ]);
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function delSearcher($project_key, $id)
-    {
-        $searcher = Searcher::find($id);
-        if (!$searcher || $searcher->project_key != $project_key)
-        {
-            throw new \UnexpectedValueException('the searcher does not exist or is not in the project.', -11107);
-        }
-
-        Searcher::destroy($id);
-
-        return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
+        return $this->getFilters($project_key);
     }
 
     /**

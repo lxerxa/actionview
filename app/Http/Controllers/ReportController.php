@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Event;
 use App\Project\Eloquent\Project;
 use App\Project\Eloquent\Worklog;
 use App\Project\Eloquent\ReportFilters;
+use App\Customization\Eloquent\CalendarSingular;
 
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
@@ -255,7 +256,7 @@ class ReportController extends Controller
         {
             $issue_ids = [];
 
-            $query = DB::collection('issue_' . $project_key)->whereRaw($this->getIssueFilter($options));
+            $query = DB::collection('issue_' . $project_key)->whereRaw($this->getIssueQueryWhere($project_key, $options));
             $issues = $query->get([ '_id' ]);
             foreach ($issues as $issue)
             {
@@ -468,6 +469,7 @@ class ReportController extends Controller
         }
 
         $i = 0;
+        $days = [];
         while($t >= $start_stat_time && $i < 100)
         {
             $tmp = [ 'new' => 0, 'resolved' => 0, 'closed' => 0 ];
@@ -487,10 +489,24 @@ class ReportController extends Controller
             else
             {
                 $tmp['category'] = date('Y/m/d', $t);
+
+                $days[] = $tmp['category'];
+                $week_flg = intval(date('w', $t));
+                $tmp['notWorking'] = ($week_flg === 0 || $week_flg === 6) ? 1 : 0;
+
                 $t = mktime(0, 0, 0, $m, $d - 1, $y);
             }
             $results[$tmp['category']] = $tmp;
             $i++;
+        }
+
+        if ($days)
+        {
+            $singulars = CalendarSingular::where([ 'day' => [ '$in' => $days ] ])->get();
+            foreach ($singulars as $singular)
+            {
+                $results[$singular->day]['notWorking'] = ($singular->flag + 1) % 2;
+            }
         }
 
         return array_reverse($results);
@@ -522,7 +538,7 @@ class ReportController extends Controller
     	$start_stat_time = strtotime($project->created_at);
     	$end_stat_time = time();
 
-    	$where = $this->getIssueFilter($request->all());
+    	$where = $this->getIssueQueryWhere($project_key, $request->all());
 
         $stat_time = $request->input('stat_time');
         if (isset($stat_time) && $stat_time)

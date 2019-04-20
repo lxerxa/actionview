@@ -23,6 +23,7 @@ use App\Project\Eloquent\Module;
 use App\Project\Eloquent\Epic;
 use App\Project\Eloquent\Sprint;
 use App\Project\Eloquent\Labels;
+use App\Project\Eloquent\IssueFilters;
 
 use Cartalyst\Sentinel\Users\EloquentUser;
 use Sentinel;
@@ -41,6 +42,49 @@ class Provider {
     {
         $project = Project::where('key', $project_key)->first()->toArray();
         return $project && isset($project['principal']) ? $project['principal'] : [];
+    }
+
+    /**
+     * get the project default filters.
+     *
+     * @return array
+     */
+    public static function getDefaultIssueFilters()
+    {
+        return [
+            [ 'id' => 'all', 'name' => '全部问题', 'query' => [] ],
+            [ 'id' => 'unresolved', 'name' => '未解决的', 'query' => [ 'resolution' => 'Unresolved' ] ],
+            [ 'id' => 'assigned_to_me', 'name' => '分配给我的', 'query' => [ 'assignee' => 'me', 'resolution' => 'Unresolved' ] ],
+            [ 'id' => 'watched', 'name' => '我关注的', 'query' => [ 'watcher' => 'me' ] ],
+            [ 'id' => 'reported', 'name' => '我报告的', 'query' => [ 'reporter' => 'me' ] ],
+            [ 'id' => 'recent_created', 'name' => '最近增加的', 'query' => [ 'created_at' => '2w' ] ],
+            [ 'id' => 'recent_updated', 'name' => '最近更新的', 'query' => [ 'updated_at' => '2w' ] ],
+            [ 'id' => 'recent_resolved', 'name' => '最近解决的', 'query' => [ 'resolved_at' => '2w' ] ],
+            [ 'id' => 'recent_closed', 'name' => '最近关闭的', 'query' => [ 'closed_at' => '2w' ] ],
+        ];
+    }
+
+    /**
+     * get the project filters.
+     *
+     * @param  string $project_key
+     * @param  string $user_id
+     * @return array
+     */
+    public static function getIssueFilters($project_key, $user_id)
+    {
+        // default issue filters
+        $filters = self::getDefaultIssueFilters();
+
+        $res = IssueFilters::where('project_key', $project_key)
+            ->where('user', $user_id)
+            ->first(); 
+        if ($res)
+        {
+            $filters = isset($res->filters) ? $res->filters : [];
+        }
+
+        return $filters;
     }
 
     /**

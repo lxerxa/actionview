@@ -141,11 +141,13 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     // preview the workflow chart 
     Route::get('workflow/{id}/preview', 'WorkflowController@preview');
 
-    Route::get('issue/searcher', 'IssueController@getSearchers');
-    Route::post('issue/searcher', 'IssueController@addSearcher');
-    Route::post('issue/searcher/batch', 'IssueController@handleSearcher');
     Route::get('issue/options', 'IssueController@getOptions');
     Route::get('issue/search', 'IssueController@search');
+
+    Route::post('issue/filter', 'IssueController@saveFilter');
+    Route::get('issue/filters', 'IssueController@getFilters');
+    Route::get('issue/filters/reset', 'IssueController@resetFilters');
+    Route::post('issue/filters', 'IssueController@editFilters');
 
     Route::get('issue/{id}', 'IssueController@show');
     Route::get('issue', 'IssueController@index');

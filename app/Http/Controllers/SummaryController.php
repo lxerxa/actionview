@@ -15,12 +15,113 @@ use App\Project\Provider;
 class SummaryController extends Controller
 {
     /**
+     * get the top four filters info.
+     *
+     * @param  string $project_key
+     * @return array
+     */
+    public function getTopFourFilters($project_key)
+    {
+        $filters = Provider::getIssueFilters($project_key, $this->user->id);
+        $filters = array_slice($filters, 0, 4);
+        foreach ($filters as $key => $filter)
+        {
+            $query = [];
+            if (isset($filter['query']) && $filter['query'])
+            {
+                $query = $filter['query'];
+            }
+
+            $where = $this->getIssueQueryWhere($project_key, $query);
+            $count = DB::collection('issue_' . $project_key)
+                ->where($where)
+                ->count();
+
+            $filters[$key]['count'] = $count;
+        }
+
+        return $filters;
+    }
+
+    /**
+     * get the past two week trend data.
+     *
+     * @param  string $project_key
+     * @return \Illuminate\Http\Response
+     */
+    public function getPulseData($project_key)
+    {
+        // initialize the results
+        $trend = [];
+
+        // initialize the pulse data
+        $t = strtotime('-2 week');
+        while($t < time())
+        {
+            $ymd = date('Y/m/d', $t);
+            $trend[$ymd] = [ 'new' => 0, 'resolved' => 0, 'closed' => 0 ];
+            $t += 24 * 3600;
+        }
+
+        $issues = DB::collection('issue_' . $project_key)
+            ->where(function ($query) {
+                $twoWeeksAgo = strtotime(date('Ymd', strtotime('-2 week')));
+                $query->where('created_at', '>=', $twoWeeksAgo)
+                    ->orWhere('resolved_at', '>=', $twoWeeksAgo)
+                    ->orWhere('closed_at', '>=', $twoWeeksAgo);
+            })
+            ->where('del_flg', '<>', 1)
+            ->get([ 'created_at', 'resolved_at', 'closed_at' ]);
+
+        foreach ($issues as $issue)
+        {
+            if (isset($issue['created_at']) && $issue['created_at'])
+            {
+                $created_date = date('Y/m/d', $issue['created_at']);
+                if (isset($trend[$created_date]))
+                {
+                    $trend[$created_date]['new'] += 1;
+                }
+            }
+
+            if (isset($issue['resolved_at']) && $issue['resolved_at'])
+            {
+                $resolved_date = date('Y/m/d', $issue['resolved_at']);
+                if (isset($trend[$resolved_date]))
+                {
+                    $trend[$resolved_date]['resolved'] += 1;
+                }
+            }
+            if (isset($issue['closed_at']) && $issue['closed_at'])
+            {
+                $closed_date = date('Y/m/d', $issue['closed_at']);
+                if (isset($trend[$closed_date]))
+                {
+                    $trend[$closed_date]['closed'] += 1;
+                }
+            }
+        }
+
+        $new_trend = [];
+        foreach ($trend as $key => $val)
+        {
+            $new_trend[] = [ 'day' => $key ] + $val;
+        }
+        return $new_trend;
+    }
+
+    /**
      * Display a listing of the resource.
      *
      * @return \Illuminate\Http\Response
      */
     public function index($project_key)
     {
+        // the top four filters
+        $filters = $this->getTopFourFilters($project_key);
+        // the two weeks issuepulse
+        $trend = $this->getPulseData($project_key);
+
         $types = Provider::getTypeList($project_key); 
         
         $optPriorities = [];
@@ -217,6 +318,8 @@ class SummaryController extends Controller
         return Response()->json([ 
             'ecode' => 0, 
             'data' => [ 
+                'filters' => $filters,
+                'trend' => $trend,
                 'new_issues' => $new_issues, 
                 'closed_issues' => $closed_issues, 
                 'assignee_unresolved_issues' => $assignee_unresolved_issues, 
@@ -227,7 +330,7 @@ class SummaryController extends Controller
                 'users' => $users, 
                 'priorities' => $optPriorities, 
                 'modules' => $optModules, 
-                'weekAgo' => date('m/d', strtotime('-1 week')) 
+                'twoWeeksAgo' => date('m/d', strtotime('-2 week')) 
             ] 
         ]);
     }
