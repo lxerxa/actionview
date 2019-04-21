@@ -56,7 +56,7 @@ class SummaryController extends Controller
 
         // initialize the pulse data
         $t = strtotime('-2 week');
-        while($t < time())
+        while($t <= time())
         {
             $ymd = date('Y/m/d', $t);
             $trend[$ymd] = [ 'new' => 0, 'resolved' => 0, 'closed' => 0 ];

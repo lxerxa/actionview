@@ -611,7 +611,7 @@ class ReportController extends Controller
 
         foreach ($issues as $issue)
         {
-            if (isset($issue['created_at']) && $issue['created_at'])
+            if (isset($issue['created_at']) && $issue['created_at'] && $issue['created_at'] >= $start_stat_time)
             {
                 $created_date = $this->convDate($interval, $issue['created_at']);; 
                 if ($is_accu)
@@ -629,7 +629,7 @@ class ReportController extends Controller
                     $results[$created_date]['new'] += 1;
                 }
             }
-            if (isset($issue['resolved_at']) && $issue['resolved_at'])
+            if (isset($issue['resolved_at']) && $issue['resolved_at'] && $issue['resolved_at'] >= $start_stat_time)
             {
                 $resolved_date = $this->convDate($interval, $issue['resolved_at']);
                 if ($is_accu)
@@ -647,7 +647,7 @@ class ReportController extends Controller
                     $results[$resolved_date]['resolved'] += 1;
                 }
             }
-            if (isset($issue['closed_at']) && $issue['closed_at'])
+            if (isset($issue['closed_at']) && $issue['closed_at'] && $issue['closed_at'] >= $start_stat_time)
             {
                 $closed_date = $this->convDate($interval, $issue['closed_at']);
                 if ($is_accu)
@@ -667,7 +667,11 @@ class ReportController extends Controller
             }
         }
 
-        return Response()->json([ 'ecode' => 0, 'data' => array_values($results) ]);
+        return Response()->json([ 
+            'ecode' => 0, 
+            'data' => array_values($results), 
+            'options' => [ 'trend_start_stat_date' => date('Y/m/d', $start_stat_time), 'trend_end_stat_date' => date('Y/m/d', $end_stat_time) ] 
+        ]);
     }
 
     /**
