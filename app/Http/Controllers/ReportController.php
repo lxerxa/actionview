@@ -611,7 +611,7 @@ class ReportController extends Controller
 
         foreach ($issues as $issue)
         {
-            if (isset($issue['created_at']) && $issue['created_at'] && $issue['created_at'] >= $start_stat_time)
+            if (isset($issue['created_at']) && $issue['created_at'])
             {
                 $created_date = $this->convDate($interval, $issue['created_at']);; 
                 if ($is_accu)
@@ -624,12 +624,12 @@ class ReportController extends Controller
                         }
                     }
                 }
-                else if (isset($results[$created_date]))
+                else if (isset($results[$created_date]) && $issue['created_at'] >= $start_stat_time)
                 {
                     $results[$created_date]['new'] += 1;
                 }
             }
-            if (isset($issue['resolved_at']) && $issue['resolved_at'] && $issue['resolved_at'] >= $start_stat_time)
+            if (isset($issue['resolved_at']) && $issue['resolved_at'])
             {
                 $resolved_date = $this->convDate($interval, $issue['resolved_at']);
                 if ($is_accu)
@@ -642,12 +642,12 @@ class ReportController extends Controller
                         }
                     }
                 }
-                else if (isset($results[$resolved_date]))
+                else if (isset($results[$resolved_date]) && $issue['resolved_at'] >= $start_stat_time)
                 {
                     $results[$resolved_date]['resolved'] += 1;
                 }
             }
-            if (isset($issue['closed_at']) && $issue['closed_at'] && $issue['closed_at'] >= $start_stat_time)
+            if (isset($issue['closed_at']) && $issue['closed_at'])
             {
                 $closed_date = $this->convDate($interval, $issue['closed_at']);
                 if ($is_accu)
@@ -660,7 +660,7 @@ class ReportController extends Controller
                         }
                     }
                 }
-                else if (isset($results[$closed_date]))
+                else if (isset($results[$closed_date]) && $issue['closed_at'] >= $start_stat_time)
                 {
                     $results[$closed_date]['closed'] += 1;
                 }
