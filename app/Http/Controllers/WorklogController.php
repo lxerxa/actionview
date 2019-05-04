@@ -83,6 +83,7 @@ class WorklogController extends Controller
                 throw new \UnexpectedValueException('the format of leave-estimate-time is incorrect.', -11305);
             }
             $values['leave_estimate'] = $this->ttHandle($leave_estimate);
+            $values['leave_estimate_m'] = $this->ttHandleInM($values['leave_estimate']);
         }
 
         if ($adjust_type == '4')
@@ -98,6 +99,7 @@ class WorklogController extends Controller
                 throw new \UnexpectedValueException('the format of cut-time is incorrect.', -11307);
             }
             $values['cut'] = $this->ttHandle($cut);
+            $values['cut_m'] = $this->ttHandleInM($values['cut']);
         }
 
         $comments = $request->input('comments');
@@ -200,6 +202,7 @@ class WorklogController extends Controller
                     throw new \UnexpectedValueException('the format of leave-estimate-time is incorrect.', -11305);
                 }
                 $values['leave_estimate'] = $this->ttHandle($leave_estimate);
+                $values['leave_estimate_m'] = $this->ttHandleInM($values['leave_estimate']);
             } 
             else if ($adjust_type == '4')
             {
@@ -214,6 +217,7 @@ class WorklogController extends Controller
                     throw new \UnexpectedValueException('the format of cut-time is incorrect.', -11307);
                 }
                 $values['cut'] = $this->ttHandle($cut);
+                $values['cut_m'] = $this->ttHandleInM($values['cut']);
             }
         }
 
