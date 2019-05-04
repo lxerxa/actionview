@@ -54,6 +54,10 @@ class ReportController extends Controller
             [ 'id' => 'in_one_month', 'name' => '过去一个月的', 'query' => [ 'recorded_at' => '1m' ] ], 
             [ 'id' => 'in_two_weeks', 'name' => '过去两周的', 'query' => [ 'recorded_at' => '2w' ] ], 
         ], 
+        'timetracks' => [
+            [ 'id' => 'all', 'name' => '全部问题', 'query' => [] ], 
+            [ 'id' => 'unresolved', 'name' => '未解决的', 'query' => [ 'resolution' => 'Unresolved' ] ], 
+        ], 
         'trend' => [
             [ 'id' => 'day_in_one_month', 'name' => '问题每日变化趋势', 'query' => [ 'stat_time' => '1m' ] ], 
             [ 'id' => 'week_in_two_months', 'name' => '问题每周变化趋势', 'query' => [ 'stat_time' => '2m', 'interval' => 'week' ] ], 
@@ -439,6 +443,71 @@ class ReportController extends Controller
         }
 
         return Response()->json([ 'ecode' => 0, 'data' => $new_results ]);
+    }
+
+     /* get timetracks report by project_key.
+     *
+     * @param  string $project_key
+     * @return \Illuminate\Http\Response
+     */
+    public function getTimetracks(Request $request, $project_key)
+    {
+        $where = $this->getIssueQueryWhere($project_key, $request->all());
+
+        $query = DB::collection('issue_' . $project_key)->whereRaw($where);
+        $issues = $query->take(1000)->get();
+
+        $new_issues = [];
+        foreach($issues as $issue)
+        {
+            $issue_id = $issue['_id']->__toString();
+
+            $tmp['id']        = $issue_id;
+            $tmp['no']        = $issue['no'];
+            $tmp['title']     = $issue['title'];
+            $tmp['state']     = $issue['state'];
+            $tmp['type']      = $issue['type'];
+            $tmp['origin']    = isset($issue['original_estimate']) ? $issue['original_estimate'] : '';
+            $tmp['origin_m']  = isset($issue['original_estimatei_m']) ? $issue['original_estimatei_m'] : $this->ttHandleInM($tmp['origin']);
+
+            $spend_m = 0;
+            $left_m = $tmp['origin_m'];
+            $worklogs = Worklog::Where('project_key', $project_key)
+                ->where('issue_id', $issue_id)
+                ->orderBy('recorded_at', 'asc')
+                ->get();
+            foreach($worklogs as $log)
+            {
+                $spend_m += (isset($log['spend_m']) ? $log['spend_m'] : $this->ttHandleInM($log['spend']));
+                if ($log['adjust_type'] == '1')
+                {
+                    $spend = isset($log['spend']) ? $log['spend'] : '';
+                    $spend_m = isset($log['spend_m']) ? $log['spend_m'] : $this->ttHandleInM($spend);
+                    $left_m = $left_m === '' ? '' : $left_m - $spend_m;
+                }
+                else if ($log['adjust_type'] == '3')
+                {
+                    $leave_estimate = isset($log['leave_estimate']) ? $log['leave_estimate'] : '';
+                    $leave_estimate_m = isset($log['leave_estimate_m']) ? $log['leave_estimate_m'] : $this->ttHandleInM($leave_estimate);
+                    $left_m = $leave_estimate_m;
+                }
+                else if ($log['adjust_type'] == '4')
+                {
+                    $cut = isset($log['cut']) ? $log['cut'] : '';
+                    $cut_m = isset($log['cut_m']) ? $log['cut_m'] : $this->ttHandleInM($cut);
+                    $left_m = $left_m === '' ? '' : $left_m - $cut_m;
+                }
+            }
+            $tmp['spend_m'] = $spend_m;
+            $tmp['spend'] = $this->ttHandle($spend_m . 'm');
+
+            $tmp['left_m'] = $left_m === '' ? '' : max([ $left_m, 0 ]);
+            $tmp['left'] = $left_m === '' ? '' : $this->ttHandle(max([ $left_m, 0]) . 'm');
+
+            $new_issues[] = $tmp;
+        }
+
+        return Response()->json([ 'ecode' => 0, 'data' => $new_issues ]);
     }
 
     /**
