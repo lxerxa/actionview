@@ -171,7 +171,7 @@ class VersionController extends Controller
             throw new \UnexpectedValueException('the status value cannot be empty.', -11506);
         }
 
-        $version->fill(['status' => $status])->save();
+        $version->fill(['status' => $status, 'released_time' => time()])->save();
 
         $operate_flg = $request->input('operate_flg');
         if (isset($operate_flg) && $operate_flg === '1')

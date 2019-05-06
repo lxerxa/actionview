@@ -1403,7 +1403,7 @@ class IssueController extends Controller
         }
 
         $user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
-        $version = Version::create([ 'project_key' => $project_key, 'user' => $user, 'status' => 'released' ] + $request->all());
+        $version = Version::create([ 'project_key' => $project_key, 'user' => $user, 'status' => 'released', 'released_time' => time() ] + $request->all());
 
         // trigger event of version released
         Event::fire(new VersionEvent($project_key, $user, [ 'event_key' => 'release_version', 'data' => $version->toArray() ]));

@@ -185,7 +185,7 @@ class Controller extends BaseController
             }
 
             $lastChr = substr($ttValue, -1);
-            $ttNum   = substr($ttValue, 0, -1) === '' ? 1 : substr($ttValue, 0, -1);
+            $ttNum   = substr($ttValue, 0, -1) === '' ? 1 : abs(substr($ttValue, 0, -1));
 
             if ($lastChr == 'w')
             {
@@ -247,7 +247,7 @@ class Controller extends BaseController
             $newTT[] = '0m';
         }
 
-        return implode(' ', $newTT);
+        return (substr($ttString, 0, 1) == '-' ? '-' : '') . implode(' ', $newTT);
     }
 
     /**

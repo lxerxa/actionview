@@ -15,6 +15,7 @@ class Sprint extends Model
         'status',
         'start_time',
         'complete_time',
+        'real_complete_time',
         'issues',
         'origin_issues',
         'completed_issues',

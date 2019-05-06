@@ -29,6 +29,7 @@ class FieldController extends Controller
       'stat_time',
       'is_accu',
       'interval',
+      'original_estimate_m',
       'no', 
       'schema', 
       'parent_id', 

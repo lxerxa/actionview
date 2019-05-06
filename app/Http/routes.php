@@ -133,6 +133,8 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::get('report/worklog', 'ReportController@getWorklogs');
     Route::get('report/worklog/list', 'ReportController@getWorklogList');
     Route::get('report/worklog/issue/{issue_id}', 'ReportController@getWorklogDetail');
+    Route::get('report/timetracks', 'ReportController@getTimetracks');
+    Route::get('report/timetracks/issue/{issue_id}', 'ReportController@getTimetracksDetail');
     Route::get('report/{mode}/filters/reset', 'ReportController@resetSomeFilters');
     Route::post('report/{mode}/filters', 'ReportController@editSomeFilters');
     Route::post('report/{mode}/filter', 'ReportController@saveFilter');

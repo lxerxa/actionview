@@ -16,6 +16,7 @@ use Sentinel;
 use DB;
 use App\Project\Provider;
 use App\Project\Eloquent\Sprint;
+use App\Project\Eloquent\Version;
 
 class ReportController extends Controller
 {
@@ -52,11 +53,18 @@ class ReportController extends Controller
         'worklog' => [
             [ 'id' => 'all', 'name' => '全部填报', 'query' => [] ], 
             [ 'id' => 'in_one_month', 'name' => '过去一个月的', 'query' => [ 'recorded_at' => '1m' ] ], 
-            [ 'id' => 'in_two_weeks', 'name' => '过去两周的', 'query' => [ 'recorded_at' => '2w' ] ], 
+            [ 'id' => 'active_sprint', 'name' => '当前活动Sprint', 'query' => [] ], 
+            [ 'id' => 'latest_completed_sprint', 'name' => '最近已完成Sprint', 'query' => [] ], 
+            [ 'id' => 'will_release_version', 'name' => '最近要发布版本', 'query' => [] ], 
+            [ 'id' => 'latest_released_version', 'name' => '最近已发布版本', 'query' => [] ], 
         ], 
         'timetracks' => [
             [ 'id' => 'all', 'name' => '全部问题', 'query' => [] ], 
             [ 'id' => 'unresolved', 'name' => '未解决的', 'query' => [ 'resolution' => 'Unresolved' ] ], 
+            [ 'id' => 'active_sprint', 'name' => '当前活动Sprint', 'query' => [] ], 
+            [ 'id' => 'latest_completed_sprint', 'name' => '最近已完成Sprint', 'query' => [] ], 
+            [ 'id' => 'will_release_version', 'name' => '最近要发布版本', 'query' => [] ], 
+            [ 'id' => 'latest_released_version', 'name' => '最近已发布版本', 'query' => [] ], 
         ], 
         'trend' => [
             [ 'id' => 'day_in_one_month', 'name' => '问题每日变化趋势', 'query' => [ 'stat_time' => '1m' ] ], 
@@ -64,7 +72,7 @@ class ReportController extends Controller
         ]
     ];
 
-    private $mode_enum = [ 'issue', 'trend', 'worklog', 'timetrack', 'others' ];
+    private $mode_enum = [ 'issue', 'trend', 'worklog', 'timetracks', 'others' ];
 
     /**
      * Display a listing of the resource.
@@ -87,7 +95,85 @@ class ReportController extends Controller
             }
         }
 
+        foreach($filters as $mode => $some_filters)
+        {
+            $filters[$mode] = $this->convFilters($project_key, $some_filters);
+        }
+
         return Response()->json([ 'ecode' => 0, 'data' => $filters ]);
+    }
+
+    /**
+     * convert the filters.
+     *
+     * @param  array $filters
+     * @return \Illuminate\Http\Response
+     */
+    public function convFilters($project_key, $filters)
+    {
+        foreach($filters as $key => $filter)
+        {
+            if ($filter['id'] === 'active_sprint')
+            {
+                $sprint = Sprint::where('project_key', $project_key)
+                    ->where('status', 'active')
+                    ->first();
+                if ($sprint)
+                {
+                    $filters[$key]['query'] = [ 'sprint' => $sprint->no ];
+                }
+                else
+                {
+                    unset($filters[$key]);
+                }
+            }
+            else if ($filter['id'] === 'latest_completed_sprint')
+            {
+                $sprint = Sprint::where('project_key', $project_key)
+                    ->where('status', 'completed')
+                    ->orderBy('no', 'desc')
+                    ->first();
+                if ($sprint)
+                {
+                    $filters[$key]['query'] = [ 'sprint' => $sprint->no ];
+                }
+                else
+                {
+                    unset($filters[$key]);
+                }
+            }
+            else if ($filter['id'] === 'will_release_version')
+            {
+                $version = Version::where('project_key', $project_key)
+                    ->where('status', 'unreleased')
+                    ->orderBy('name', 'asc')
+                    ->first();
+                if ($version)
+                {
+                    $filters[$key]['query'] = [ 'resolve_version' => $version->id ];
+                }
+                else
+                {
+                    unset($filters[$key]);
+                }
+            }
+            else if ($filter['id'] === 'latest_released_version')
+            {
+                $version = Version::where('project_key', $project_key)
+                    ->where('status', 'released')
+                    ->orderBy('name', 'desc')
+                    ->first();
+                if ($version)
+                {
+                    $filters[$key]['query'] = [ 'resolve_version' => $version->id ];
+                }
+                else
+                {
+                    unset($filters[$key]);
+                }
+            }
+        }
+        return array_values($filters);
     }
 
     /**
@@ -104,7 +190,7 @@ class ReportController extends Controller
             throw new \UnexpectedValueException('the name can not be empty.', -12400);
         }
 
-        $filters = isset($this->default_filters[$mode]) ? $this->default_filters[$mode] : [] ;
+        $filters = isset($this->default_filters[$mode]) ? $this->default_filters[$mode] : []; 
 
         $res = ReportFilters::where('project_key', $project_key)
             ->where('mode', $mode)
@@ -329,7 +415,10 @@ class ReportController extends Controller
 
             $cond = [];
             $cond['$gte'] = strtotime(date('Ymd', $sprint->start_time));
-            $cond['$lte'] = strtotime(date('Ymd', $sprint->complete_time) . ' 23:59:59');
+            if (isset($sprint->real_complete_time) && $sprint->real_complete_time > 0)
+            {
+                $cond['$lte'] = strtotime(date('Ymd', $sprint->complete_time) . ' 23:59:59');
+            }
 
             $where['recorded_at'] = $cond;
         }
@@ -445,6 +534,31 @@ class ReportController extends Controller
         return Response()->json([ 'ecode' => 0, 'data' => $new_results ]);
     }
 
+    /**
+     * get worklog detail report by issue.
+     *
+     * @param  string $project_key
+     * @param  string $issue_id
+     * @return \Illuminate\Http\Response
+     */
+    public function getTimetracksDetail(Request $request, $project_key, $issue_id)
+    {
+        $worklogs = Worklog::Where('project_key', $project_key)
+            ->where('issue_id', $issue_id)
+            ->orderBy('recorded_at', 'desc')
+            ->get();
+
+        foreach($worklogs as $worklog)
+        {
+            if (!isset($worklog->spend_m) || !$worklog->spend_m)
+            {
+                $worklog->spend_m = $this->ttHandleInM($worklog->spend ?: '');
+            }
+        }
+
+        return Response()->json(['ecode' => 0, 'data' => $worklogs ]);
+    }
+
      /* get timetracks report by project_key.
      *
      * @param  string $project_key
@@ -454,8 +568,14 @@ class ReportController extends Controller
     {
         $where = $this->getIssueQueryWhere($project_key, $request->all());
 
+        $scale = $request->input('scale');
+        if ($scale === 'only')
+        {
+            $where['$and'][] = [ 'original_estimate' => [ '$exists' => 1, '$ne' => '' ] ];
+        }
+
         $query = DB::collection('issue_' . $project_key)->whereRaw($where);
-        $issues = $query->take(1000)->get();
+        $issues = $query->orderBy('no', 'desc')->take(1000)->get();
 
         $new_issues = [];
         foreach($issues as $issue)
