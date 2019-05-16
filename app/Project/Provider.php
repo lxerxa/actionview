@@ -603,11 +603,11 @@ class Provider {
      */
     public static function getModuleList($project_key, $fields=[])
     {
-        $versions = Module::where([ 'project_key' => $project_key ])
+        $modules = Module::where([ 'project_key' => $project_key ])
             ->orderBy('sn', 'asc')
             ->get($fields);
 
-        return $versions;
+        return $modules;
     }
 
     /**

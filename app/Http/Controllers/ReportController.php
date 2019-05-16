@@ -417,7 +417,7 @@ class ReportController extends Controller
             $cond['$gte'] = strtotime(date('Ymd', $sprint->start_time));
             if (isset($sprint->real_complete_time) && $sprint->real_complete_time > 0)
             {
-                $cond['$lte'] = strtotime(date('Ymd', $sprint->complete_time) . ' 23:59:59');
+                $cond['$lte'] = strtotime(date('Ymd', $sprint->real_complete_time) . ' 23:59:59');
             }
 
             $where['recorded_at'] = $cond;
@@ -885,5 +885,341 @@ class ReportController extends Controller
         {
             return date('Y/m/d', $at); 
         }
+    }
+
+    public function arrangeRegressionData($data, $dimension)
+    {
+        if (!$dimension)
+        {
+            return $data;
+        }
+
+        $results = [];
+        if (in_array($dimension, ['reporter', 'resolver', 'closer']))
+        {
+            foreach ($data as $value)
+            {
+                $tmp = [];
+                $tmp['ones'] = $value['ones'];
+                $tmp['gt_ones'] = $value['gt_ones'];
+                $tmp['cateory'] = $value['name'];
+                $results[] = $tmp;
+            }
+        }
+        else if (in_array($dimension, ['type', 'priority', 'module', 'resolve_version', 'epic']))
+        {
+            if ($dimension === 'module')
+            {
+                $modules = Provider::getModuleList($project_key, ['name']);
+
+                foreach ($modules as $m)
+                {
+                    foreach ($data as $key => $val)
+                    {
+                        if ($key === $m->id)
+                        {
+                            $val['cateory'] = $m->name;
+                            $results[$m->id] = $val;
+                            break;
+                        }
+                    }
+                }
+            }
+            else if ($dimension === 'resolve_version')
+            {
+                $versions = Provider::getVersionList($project_key, ['name']);
+
+                foreach ($versions as $v)
+                {
+                    foreach ($data as $key => $val)
+                    {
+                        if ($key === $v->id)
+                        {
+                            $val['cateory'] = $v->name;
+                            $results[$key] = $val;
+                            break;
+                        }
+                    }
+                }
+            }
+            else if ($dimension === 'type')
+            {
+                $types = Provider::getTypeList($project_key, ['name']);
+
+                foreach ($types as $v)
+                {
+                    foreach ($data as $key => $val)
+                    {
+                        if ($key === $v->id)
+                        {
+                            $val['cateory'] = $v->name;
+                            $results[$key] = $val;
+                            break;
+                        }
+                    }
+                }                
+            }
+            else if ($dimension === 'priority')
+            {
+                $priorities = Provider::getPriorityList($project_key, ['name']);
+
+                foreach ($priorities as $v)
+                {
+                    foreach ($data as $key => $val)
+                    {
+                        if ($key === $v['id'])
+                        {
+                            $val['cateory'] = $v['name'];
+                            $results[$key] = $val;
+                            break;
+                        }
+                    }
+                }
+            }
+            else if ($dimension === 'epic')
+            {
+                $epics = Provider::getEpicList($project_key, ['name']);
+
+                foreach ($epics as $v)
+                {
+                    foreach ($data as $key => $val)
+                    {
+                        if ($key === $v['id'])
+                        {
+                            $val['cateory'] = $v['name'];
+                            $results[$key] = $val;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            $others = [ 'ones' => [], 'gt_ones' => [], 'cateory' => 'others' ];
+            foreach ($data as $key => $val) 
+            {
+                if (!isset($results[$key]))
+                {
+                    $others['ones'] = array_unique(array_merge($others['ones'], $val['ones']));
+                    $others['gt_ones'] = array_unique(array_merge($others['gt_ones'], $val['gt_ones']));
+                }
+            }
+
+            if ($others['ones'] && $others['gt_ones'])
+            {
+                $results['others'] = $others;
+            }
+        }
+        else if ($dimension === 'sprint')
+        {
+            foreach ($data as $key => $val) 
+            {
+                $tmp = [];
+                $tmp['ones'] = $value['ones'];
+                $tmp['gt_ones'] = $value['gt_ones'];
+                $tmp['cateory'] = 'Sprint ' . $key;
+                $results[] = $tmp;
+            }           
+        }
+        else if ($dimension === 'labels')
+        {
+            foreach ($data as $key => $val) 
+            {
+                $tmp = [];
+                $tmp['ones'] = $value['ones'];
+                $tmp['gt_ones'] = $value['gt_ones'];
+                $tmp['cateory'] = $key;
+                $results[] = $tmp;
+            }             
+        }
+
+        return array_values($results);
+    }
+
+    /* get resolution regression report by project_key.
+     *
+     * @param  string $project_key
+     * @return \Illuminate\Http\Response
+     */
+    public function getRegressions(Request $request, $project_key)
+    {
+        $where = $this->getIssueQueryWhere($project_key, $request->all());
+
+        $his_resolvers = $request->input('his_resolvers') ? explode(',', $request->input('his_resolvers')) : [];
+        $or = [];
+        foreach ($his_resolvers as $resolver)
+        {
+            $or[] = [ 'his_resolvers' => $resolver ];
+        }
+        if ($or)
+        {
+            $where['$and'][] = [ '$or' => $or ];
+        }
+
+        $where['$and'][] = [ 'regression_times' => [ '$exists' => 1 ] ];
+
+        $sprint_start_time = $sprint_complete_time = 0;
+        $sprint_no = $request->input('sprint') ?: '';
+        if ($sprint_no)
+        {
+            $sprint = Sprint::where('project_key', $project_key)->where('no', intval($sprint_no))->first();
+
+            $sprint_start_time = strtotime(date('Ymd', $sprint->start_time));
+            if (isset($sprint->real_complete_time) && $sprint->real_complete_time > 0)
+            {
+                $sprint_complete_time = $sprint->real_complete_time;
+            }
+        }
+
+        $dimension = $request->input('stat_dimension') ?: '';
+        if ($dimension)
+        {
+            $results = [];
+        }
+        else
+        {
+            $results = [ 'ones' => [], 'gt_ones' => [] ];
+        }
+
+        $results = [];
+        $query = DB::collection('issue_' . $project_key)->whereRaw($where);
+        $issues = $query->orderBy('no', 'desc')->take(1000)->get();
+        foreach($issues as $issue)
+        {
+            $no = $issue['no'];
+            $regression_times = $issue['regression_times'];
+            $resolved_logs = isset($issue['resolved_logs']) ? $issue['resolved_logs'] : [];
+
+            if ($sprint_start_time > 0)
+            {
+                $tmp_log = [];
+                foreach($resolved_logs as $rl)
+                {
+                    if ($rl['at'] > $sprint_start_time && ($sprint_complete_time <= 0 || $rl['at'] < $sprint_complete_time))
+                    {
+                        if ($his_resolvers && !in_array($rl['user']['id'], $his_resolvers))
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            $tmp_log[] = $rl;
+                        }
+                    }
+                }
+                if (!$tmp_log)
+                {
+                    continue;
+                }
+
+                $resolved_logs = $tmp_log;
+                $regression_times = count($tmp_log);
+            }
+
+            if ($dimension == 'resolver')
+            {
+                $log_cnt = count($resolved_logs);
+                $tmp_uids = [];
+                foreach ($resolved_logs as $key => $log) 
+                {
+                    if (in_array($log['user']['id'], $tmp_uids))
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        $tmp_uids[] = $log['user']['id'];
+                    }
+                    
+                    if (!isset($results[$log['uid']]))
+                    {
+                        $results[$log['uid']] = [ 'ones' => [], 'gt_ones' => [], 'name' => isset($log['user']['name']) ? $log['user']['name'] : '' ];
+                    }
+                    if ($regression_times > 1)
+                    {
+                        if ($key == $log_cnt - 1)
+                        {
+                            $results[$log['uid']]['ones'][] = $no;
+                        }
+                        else
+                        {
+                            $results[$log['uid']]['gt_ones'][] = $no;
+                        }
+                    }
+                    else
+                    {
+                        $results[$log['uid']]['ones'][] = $no;
+                    }
+                }
+            }
+            else if ($dimension)
+            {
+                $dimension_values = $issue[$dimension];
+                if ($dimension_values && is_array($dimension_values))
+                {
+                    if (isset($dimension_values['id']))
+                    {
+                        if (!isset($results[$dimension_values['id']]))
+                        {
+                            $results[$dimension_values['id']] = [ 'ones' => [], 'gt_ones' => [], 'name' => isset($dimension_values['name']) ? $dimension_values['name'] : '' ];
+                        }
+                        if ($regression_times > 1)
+                        {
+                            $results[$dimension_values['id']]['gt_ones'][] = $no;
+                        }
+                        else
+                        {
+                            $results[$dimension_values['id']]['ones'][] = $no;
+                        }
+                    }
+                    else
+                    {
+                        foreach($dimension_values as $val)
+                        {
+                            if (!isset($results[$val]))
+                            {
+                                $results[$val] = [ 'ones' => [], 'gt_ones' => [] ];
+                            }
+
+                            if ($regression_times > 1)
+                            {
+                                $results[$val]['gt_ones'][] = $no;
+                            }
+                            else
+                            {
+                                $results[$val]['ones'][] = $no;
+                            }
+                        }                        
+                    }
+                }
+                else if ($dimension_values)
+                {
+                    if (!isset($results[$dimension_values]))
+                    {
+                        $results[$dimension_values] = [ 'ones' => [], 'gt_ones' => [] ];
+                    }
+
+                    if ($regression_times > 1)
+                    {
+                        $results[$dimension_values]['gt_ones'][] = $no;
+                    }
+                    else
+                    {
+                        $results[$dimension_values]['ones'][] = $no;
+                    }
+                }
+            }
+            else
+            {
+                if ($regression_times > 1)
+                {
+                    $results['gt_ones'][] = $no;
+                }
+                else
+                {
+                    $results['ones'][] = $no;
+                }
+            }
+        }
+        return Response()->json([ 'ecode' => 0, 'data' => $this->arrangeRegressionData($results, $dimension) ]);
     }
 }
