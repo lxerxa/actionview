@@ -66,6 +66,11 @@ class ReportController extends Controller
             [ 'id' => 'will_release_version', 'name' => '最近要发布版本', 'query' => [] ], 
             [ 'id' => 'latest_released_version', 'name' => '最近已发布版本', 'query' => [] ], 
         ], 
+        'regressions' => [
+            [ 'id' => 'all', 'name' => '已解决问题', 'query' => [] ], 
+            [ 'id' => 'active_sprint', 'name' => '当前活动Sprint', 'query' => [] ], 
+            [ 'id' => 'latest_completed_sprint', 'name' => '最近已完成Sprint', 'query' => [] ], 
+        ],
         'trend' => [
             [ 'id' => 'day_in_one_month', 'name' => '问题每日变化趋势', 'query' => [ 'stat_time' => '1m' ] ], 
             [ 'id' => 'week_in_two_months', 'name' => '问题每周变化趋势', 'query' => [ 'stat_time' => '2m', 'interval' => 'week' ] ], 
@@ -887,7 +892,7 @@ class ReportController extends Controller
         }
     }
 
-    public function arrangeRegressionData($data, $dimension)
+    public function arrangeRegressionData($data, $project_key, $dimension)
     {
         if (!$dimension)
         {
@@ -902,7 +907,7 @@ class ReportController extends Controller
                 $tmp = [];
                 $tmp['ones'] = $value['ones'];
                 $tmp['gt_ones'] = $value['gt_ones'];
-                $tmp['cateory'] = $value['name'];
+                $tmp['category'] = $value['name'];
                 $results[] = $tmp;
             }
         }
@@ -911,14 +916,13 @@ class ReportController extends Controller
             if ($dimension === 'module')
             {
                 $modules = Provider::getModuleList($project_key, ['name']);
-
                 foreach ($modules as $m)
                 {
                     foreach ($data as $key => $val)
                     {
                         if ($key === $m->id)
                         {
-                            $val['cateory'] = $m->name;
+                            $val['category'] = $m->name;
                             $results[$m->id] = $val;
                             break;
                         }
@@ -928,14 +932,13 @@ class ReportController extends Controller
             else if ($dimension === 'resolve_version')
             {
                 $versions = Provider::getVersionList($project_key, ['name']);
-
                 foreach ($versions as $v)
                 {
                     foreach ($data as $key => $val)
                     {
                         if ($key === $v->id)
                         {
-                            $val['cateory'] = $v->name;
+                            $val['category'] = $v->name;
                             $results[$key] = $val;
                             break;
                         }
@@ -945,14 +948,13 @@ class ReportController extends Controller
             else if ($dimension === 'type')
             {
                 $types = Provider::getTypeList($project_key, ['name']);
-
                 foreach ($types as $v)
                 {
                     foreach ($data as $key => $val)
                     {
                         if ($key === $v->id)
                         {
-                            $val['cateory'] = $v->name;
+                            $val['category'] = $v->name;
                             $results[$key] = $val;
                             break;
                         }
@@ -961,15 +963,14 @@ class ReportController extends Controller
             }
             else if ($dimension === 'priority')
             {
-                $priorities = Provider::getPriorityList($project_key, ['name']);
-
+                $priorities = Provider::getPriorityOptions($project_key, ['name']);
                 foreach ($priorities as $v)
                 {
                     foreach ($data as $key => $val)
                     {
-                        if ($key === $v['id'])
+                        if ($key === $v['_id'])
                         {
-                            $val['cateory'] = $v['name'];
+                            $val['category'] = $v['name'];
                             $results[$key] = $val;
                             break;
                         }
@@ -979,14 +980,13 @@ class ReportController extends Controller
             else if ($dimension === 'epic')
             {
                 $epics = Provider::getEpicList($project_key, ['name']);
-
                 foreach ($epics as $v)
                 {
                     foreach ($data as $key => $val)
                     {
-                        if ($key === $v['id'])
+                        if ($key === $v['_id'])
                         {
-                            $val['cateory'] = $v['name'];
+                            $val['category'] = $v['name'];
                             $results[$key] = $val;
                             break;
                         }
@@ -994,20 +994,20 @@ class ReportController extends Controller
                 }
             }
 
-            $others = [ 'ones' => [], 'gt_ones' => [], 'cateory' => 'others' ];
-            foreach ($data as $key => $val) 
-            {
-                if (!isset($results[$key]))
-                {
-                    $others['ones'] = array_unique(array_merge($others['ones'], $val['ones']));
-                    $others['gt_ones'] = array_unique(array_merge($others['gt_ones'], $val['gt_ones']));
-                }
-            }
+            //$others = [ 'ones' => [], 'gt_ones' => [], 'category' => 'others' ];
+            //foreach ($data as $key => $val) 
+            //{
+            //    if (!isset($results[$key]))
+            //    {
+            //        $others['ones'] = array_unique(array_merge($others['ones'], $val['ones']));
+            //        $others['gt_ones'] = array_unique(array_merge($others['gt_ones'], $val['gt_ones']));
+            //    }
+            //}
 
-            if ($others['ones'] && $others['gt_ones'])
-            {
-                $results['others'] = $others;
-            }
+            //if ($others['ones'] && $others['gt_ones'])
+            //{
+            //    $results['others'] = $others;
+            //}
         }
         else if ($dimension === 'sprint')
         {
@@ -1016,7 +1016,7 @@ class ReportController extends Controller
                 $tmp = [];
                 $tmp['ones'] = $value['ones'];
                 $tmp['gt_ones'] = $value['gt_ones'];
-                $tmp['cateory'] = 'Sprint ' . $key;
+                $tmp['category'] = 'Sprint ' . $key;
                 $results[] = $tmp;
             }           
         }
@@ -1027,7 +1027,7 @@ class ReportController extends Controller
                 $tmp = [];
                 $tmp['ones'] = $value['ones'];
                 $tmp['gt_ones'] = $value['gt_ones'];
-                $tmp['cateory'] = $key;
+                $tmp['category'] = $key;
                 $results[] = $tmp;
             }             
         }
@@ -1153,7 +1153,7 @@ class ReportController extends Controller
             }
             else if ($dimension)
             {
-                $dimension_values = $issue[$dimension];
+                $dimension_values = isset($issue[$dimension]) ? $issue[$dimension] : '';
                 if ($dimension_values && is_array($dimension_values))
                 {
                     if (isset($dimension_values['id']))
@@ -1210,16 +1210,20 @@ class ReportController extends Controller
             }
             else
             {
+                if (!isset($results[0]))
+                {
+                    $results[0] = [ 'ones' => [], 'gt_ones' => [] ];
+                }
                 if ($regression_times > 1)
                 {
-                    $results['gt_ones'][] = $no;
+                    $results[0]['gt_ones'][] = $no;
                 }
                 else
                 {
-                    $results['ones'][] = $no;
+                    $results[0]['ones'][] = $no;
                 }
             }
         }
-        return Response()->json([ 'ecode' => 0, 'data' => $this->arrangeRegressionData($results, $dimension) ]);
+        return Response()->json([ 'ecode' => 0, 'data' => $this->arrangeRegressionData($results, $project_key, $dimension) ]);
     }
 }

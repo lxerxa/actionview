@@ -279,6 +279,34 @@ class Func
         {
             $updValues['resolved_at'] = time();
             $updValues['resolver'] = $caller;
+
+            $issue = DB::collection('issue_' . $project_key)->where('_id', $issue_id)->first();
+            if (isset($issue['regression_times']) && $issue['regression_times'])
+            {
+                $updValues['regression_times'] = $issue['regression_times'] + 1;
+            }
+            else
+            {
+                $updValues['regression_times'] = 1;
+            }
+            
+            $logs = [];
+            if (isset($issue['resolved_logs']) && $issue['resolved_logs'])
+            {
+                $logs = $issue['resolved_logs'];
+            }
+            $log = [];
+            $log['user'] = $caller;
+            $log['at'] = time();
+            $logs[] = $log;
+            $updValues['resolved_logs'] = $logs;
+
+            $his_resolvers = [];
+            foreach($logs as $v)
+            {
+                $his_resolvers[] = $v['user']['id'];
+            }
+            $updValues['his_resolvers'] = array_unique($his_resolvers);
         }
         else if ($param['eventParam'] === 'close_issue')
         {

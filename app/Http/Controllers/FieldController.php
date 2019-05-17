@@ -26,9 +26,8 @@ class FieldController extends Controller
       'resolved_at', 
       'closed_at', 
       'regression_times', 
-      'stat_time',
-      'is_accu',
-      'interval',
+      'his_resolvers',
+      'resolved_logs',
       'original_estimate_m',
       'no', 
       'schema', 
@@ -38,19 +37,12 @@ class FieldController extends Controller
       'subtasks', 
       'entry_id', 
       'definition_id', 
-      'page', 
-      'orderBy', 
-      'from', 
-      'from_kanban_id', 
       'comments_num', 
       'worklogs_num', 
       'gitcommits_num', 
-      'export_fields', 
       'sprint', 
       'sprints', 
-      'filter', 
-      'limit'
-    ];
+      'filter' ];
 
     private $all_types = [
       'Tags', 

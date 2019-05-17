@@ -398,6 +398,12 @@ class Controller extends BaseController
             $and[] = [ 'no' => intval($no) ];
         }
 
+        $nos = isset($query['nos']) ? $query['nos'] : '';
+        if ($nos)
+        {
+            $and[] = [ 'no' => [ '$in' => array_map(function($v) { return intval($v); }, explode(',', $nos)) ] ];
+        }
+
         $title = isset($query['title']) ? $query['title'] : '';
         if ($title)
         {
