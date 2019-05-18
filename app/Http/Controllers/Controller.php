@@ -398,18 +398,25 @@ class Controller extends BaseController
             $and[] = [ 'no' => intval($no) ];
         }
 
-        $nos = isset($query['nos']) ? $query['nos'] : '';
-        if ($nos)
-        {
-            $and[] = [ 'no' => [ '$in' => array_map(function($v) { return intval($v); }, explode(',', $nos)) ] ];
-        }
-
         $title = isset($query['title']) ? $query['title'] : '';
         if ($title)
         {
             if (is_numeric($title) && strpos($title, '.') === false)
             {
                 $and[] = [ '$or' => [ [ 'no' => $title + 0 ], [ 'title'  => [ '$regex' => $title ] ] ] ];
+            }
+            else if (strpos($title, ',') !== false)
+            {
+                $nos = explode(',', $title);
+                $new_nos = [];
+                foreach ($nos as $no)
+                {
+                    if ($no && is_numeric($no))
+                    {
+                        $new_nos[] = $no + 0;
+                    }
+                }
+                $and[] = [ '$or' => [ [ 'no' => [ '$in' => $new_nos ] ], [ 'title'  => [ '$regex' => $title ] ] ] ];
             }
             else
             {
