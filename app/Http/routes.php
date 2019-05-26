@@ -136,6 +136,7 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::get('report/timetracks', 'ReportController@getTimetracks');
     Route::get('report/timetracks/issue/{issue_id}', 'ReportController@getTimetracksDetail');
     Route::get('report/regressions', 'ReportController@getRegressions');
+    Route::get('report/issues', 'ReportController@getIssues');
     Route::get('report/{mode}/filters/reset', 'ReportController@resetSomeFilters');
     Route::post('report/{mode}/filters', 'ReportController@editSomeFilters');
     Route::post('report/{mode}/filter', 'ReportController@saveFilter');

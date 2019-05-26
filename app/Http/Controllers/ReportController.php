@@ -44,11 +44,11 @@ class ReportController extends Controller
     ];
 
     private $default_filters = [
-        'issue' => [
-            [ 'id' => 'all_by_type', 'name' => '全部问题/按类型', 'query' => [ 'row' => 'type', 'column' => 'type' ] ], 
-            [ 'id' => 'unresolved_by_assignee', 'name' => '未解决的/按经办人', 'query' => [ 'row' => 'assignee', 'column' => 'assignee', 'resolution' => 'Unresolved' ] ], 
-            [ 'id' => 'unresolved_by_priority', 'name' => '未解决的/按优先级', 'query' => [ 'row' => 'priority', 'column' => 'priority', 'resolution' => 'Unresolved' ] ], 
-            [ 'id' => 'unresolved_by_module', 'name' => '未解决的/按模块', 'query' => [ 'row' => 'module', 'column' => 'module', 'resolution' => 'Unresolved' ] ] 
+        'issues' => [
+            [ 'id' => 'all_by_type', 'name' => '全部问题/按类型', 'query' => [ 'stat_x' => 'type', 'stat_y' => 'type' ] ], 
+            [ 'id' => 'unresolved_by_assignee', 'name' => '未解决的/按经办人', 'query' => [ 'stat_x' => 'assignee', 'stat_y' => 'assignee', 'resolution' => 'Unresolved' ] ], 
+            [ 'id' => 'unresolved_by_priority', 'name' => '未解决的/按优先级', 'query' => [ 'stat_x' => 'priority', 'stat_y' => 'priority', 'resolution' => 'Unresolved' ] ], 
+            [ 'id' => 'unresolved_by_module', 'name' => '未解决的/按模块', 'query' => [ 'stat_x' => 'module', 'stat_y' => 'module', 'resolution' => 'Unresolved' ] ] 
         ], 
         'worklog' => [
             [ 'id' => 'all', 'name' => '全部填报', 'query' => [] ], 
@@ -1225,5 +1225,209 @@ class ReportController extends Controller
             }
         }
         return Response()->json([ 'ecode' => 0, 'data' => $this->arrangeRegressionData($results, $project_key, $dimension) ]);
+    }
+
+    /* init the X,Y data by dimension.
+     *
+     * @param  string $project_key
+     * @param  string $dimension
+     * @return array 
+     */
+    public function initXYData($project_key, $dimension)
+    {
+        $results = [];
+
+        switch ($dimension) {
+
+            case 'type':
+                $types = Provider::getTypeList($project_key, ['name']);
+                foreach ($types as $key => $value) {
+                    $results[$value->id] = [ 'name' => $value->name, 'nos' => [] ];
+                }
+                break;
+
+            case 'priority':
+                $priorities = Provider::getPriorityOptions($project_key, ['name']);
+                foreach ($priorities as $key => $value) {
+                    $results[$value['_id']] = [ 'name' => $value['name'], 'nos' => [] ];
+                }
+                break;
+
+            case 'module':
+                $modules = Provider::getModuleList($project_key, ['name']);
+                foreach ($modules as $key => $value) {
+                    $results[$value->id] = [ 'name' => $value->name, 'nos' => [] ];
+                }
+                break;
+
+            case 'resolve_version':
+                $versions = Provider::getVersionList($project_key, ['name']);
+                foreach ($versions as $key => $value) {
+                    $results[$value->id] = [ 'name' => $value->name, 'nos' => [] ];
+                }
+                $results = array_reverse($results);
+                break;
+
+            case 'epic':
+                 $epics = Provider::getEpicList($project_key, ['name']);
+                foreach ($epics as $key => $value) {
+                    $results[$value['_id']] = [ 'name' => $value['name'], 'nos' => [] ];
+                }
+                break; 
+
+            case 'sprint':
+                $sprints = Sprint::where('project_key', $project_key)
+                    ->whereIn('status', [ 'active', 'completed' ])
+                    ->orderBy('no', 'asc')
+                    ->get();
+                foreach($sprints as $s)
+                {
+                    $results[$s->no] = [ 'name' => 'Sprint' . $s->no, 'nos' => [] ];
+                }
+                break;
+
+            default:
+                # code...
+                break;
+        }
+
+        return $results;
+    }
+
+    /* get the issues by X,Y dimensions.
+     *
+     * @param  string $project_key
+     * @param  string $dimension
+     * @return \Illuminate\Http\Response
+     */
+    public function getIssues(Request $request, $project_key)
+    {
+        $no_schema_fields = [ 'reporter', 'resolver', 'closer', 'labels' ];
+
+        $X = $request->input('stat_x') ?: '';
+        if (!$X)
+        {
+            throw new \UnexpectedValueException('the name can not be empty.', -12400);
+        }
+
+        $Y = $request->input('stat_y') ?: '';
+
+        $XYData = [];
+        $YAxis = [];
+        if ($X === $Y || !$Y)
+        {
+            $XYData[$X] = $this->initXYData($project_key, $X);
+        }
+        else
+        {
+            $XYData[$X] = $this->initXYData($project_key, $X);
+            $XYData[$Y] = $this->initXYData($project_key, $Y);
+        }
+
+        $where = $this->getIssueQueryWhere($project_key, $request->all());
+        $query = DB::collection('issue_' . $project_key)->whereRaw($where);
+        $issues = $query->orderBy('no', 'desc')->take(10000)->get();
+
+        foreach($issues as $issue)
+        {
+            foreach ($XYData as $k => $dv)
+            {
+                if (!isset($issue[$k]) || !$issue[$k])
+                {
+                    continue;
+                }
+
+                $issue_vals = [];
+                if (is_string($issue[$k]))
+                {
+                    if (strpos($issue[$k], ',') !== false)
+                    {
+                        $issue_vals = explode(',', $issue[$k]);
+                    }
+                    else
+                    {
+                        $issue_vals = [ $issue[$k] ];
+                    }
+                }
+                else if (is_array($issue[$k]))
+                {
+                    $issue_vals = $issue[$k];
+                    if (isset($issue[$k]['id']))
+                    {
+                        $issue_vals = [ $issue[$k] ];
+                    }
+                }
+
+                foreach ($issue_vals as $issue_val)
+                {
+                    $tmpv = $issue_val;
+                    if (is_array($issue_val) && isset($issue_val['id']))
+                    {
+                        $tmpv = $issue_val['id'];
+                    }
+
+                    if (isset($dv[$tmpv]))
+                    {
+                        $XYData[$k][$tmpv]['nos'][] = $issue['no'];
+                    }
+                    else if (in_array($k, $no_schema_fields))
+                    {
+                        if ($k === $Y && $X !== $Y)
+                        {
+                            $YAxis[$tmpv] = isset($issue[$k]['name']) ? $issue[$k]['name'] : $tmpv;
+                        }
+
+                        $XYData[$k][$tmpv] = [ 'name' => isset($issue[$k]['name']) ? $issue[$k]['name'] : $tmpv, 'nos' => [ $issue['no'] ] ];
+                    }
+                }
+            }
+        }
+
+        $results = [];
+        if ($X === $Y || !$Y)
+        {
+            foreach ($XYData[$X] as $key => $value)
+            {
+                $results[] = [ 'id' => $key, 'name' => $value['name'], 'cnt' => count($value['nos']) ];
+            }
+        }
+        else
+        {
+            foreach ($XYData[$X] as $key => $value)
+            {
+                $results[$key] = [ 'id' => $key, 'name' => $value['name'], 'y' => [] ];
+                $x_cnt = 0;
+
+                if ($YAxis)
+                {
+                    foreach ($YAxis as $yai => $yav) 
+                    {
+                        if (isset($XYData[$Y][$yai]))
+                        {
+                            $y_cnt = count(array_intersect($value['nos'], $XYData[$Y][$yai]['nos']));
+                            $results[$key]['y'][] = [ 'id' => $yai, 'name' => $yav, 'cnt' => $y_cnt ];
+                            $x_cnt += $y_cnt;
+                        }
+                        else
+                        {
+                            $results[$key]['y'][] = [ 'id' => $yai, 'name' => yav, 'cnt' => 0 ];
+                        }
+                    }
+                }
+                else
+                {
+                    foreach ($XYData[$Y] as $key2 => $value2)
+                    {
+                        $y_cnt = count(array_intersect($value['nos'], $value2['nos']));
+
+                        $results[$key]['y'][] = [ 'id' => $key2, 'name' => $value2['name'], 'cnt' => $y_cnt ];
+                        $x_cnt += $y_cnt;
+                    }
+                 }
+                 $results[$key]['cnt'] = $x_cnt;
+            }
+        }
+
+        return Response()->json([ 'ecode' => 0, 'data' =>  array_values($results) ]);
     }
 }
