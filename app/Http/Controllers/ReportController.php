@@ -1009,13 +1009,13 @@ class ReportController extends Controller
             //    $results['others'] = $others;
             //}
         }
-        else if ($dimension === 'sprint')
+        else if ($dimension === 'sprints')
         {
             foreach ($data as $key => $val) 
             {
                 $tmp = [];
-                $tmp['ones'] = $value['ones'];
-                $tmp['gt_ones'] = $value['gt_ones'];
+                $tmp['ones'] = $val['ones'];
+                $tmp['gt_ones'] = $val['gt_ones'];
                 $tmp['category'] = 'Sprint ' . $key;
                 $results[] = $tmp;
             }           
@@ -1025,8 +1025,8 @@ class ReportController extends Controller
             foreach ($data as $key => $val) 
             {
                 $tmp = [];
-                $tmp['ones'] = $value['ones'];
-                $tmp['gt_ones'] = $value['gt_ones'];
+                $tmp['ones'] = $val['ones'];
+                $tmp['gt_ones'] = $val['gt_ones'];
                 $tmp['category'] = $key;
                 $results[] = $tmp;
             }             
@@ -1115,39 +1115,42 @@ class ReportController extends Controller
                 $regression_times = count($tmp_log);
             }
 
+            $dimension = $dimension === 'sprint' ? 'sprints' : $dimension;
+
             if ($dimension == 'resolver')
             {
                 $log_cnt = count($resolved_logs);
                 $tmp_uids = [];
                 foreach ($resolved_logs as $key => $log) 
                 {
-                    if (in_array($log['user']['id'], $tmp_uids))
+                    $uid = $log['user']['id'];
+                    if (in_array($uid, $tmp_uids))
                     {
                         continue;
                     }
                     else
                     {
-                        $tmp_uids[] = $log['user']['id'];
+                        $tmp_uids[] = $uid;
                     }
                     
-                    if (!isset($results[$log['uid']]))
+                    if (!isset($results[$uid]))
                     {
-                        $results[$log['uid']] = [ 'ones' => [], 'gt_ones' => [], 'name' => isset($log['user']['name']) ? $log['user']['name'] : '' ];
+                        $results[$uid] = [ 'ones' => [], 'gt_ones' => [], 'name' => isset($log['user']['name']) ? $log['user']['name'] : '' ];
                     }
                     if ($regression_times > 1)
                     {
                         if ($key == $log_cnt - 1)
                         {
-                            $results[$log['uid']]['ones'][] = $no;
+                            $results[$uid]['ones'][] = $no;
                         }
                         else
                         {
-                            $results[$log['uid']]['gt_ones'][] = $no;
+                            $results[$uid]['gt_ones'][] = $no;
                         }
                     }
                     else
                     {
-                        $results[$log['uid']]['ones'][] = $no;
+                        $results[$uid]['ones'][] = $no;
                     }
                 }
             }
@@ -1275,7 +1278,7 @@ class ReportController extends Controller
                 }
                 break; 
 
-            case 'sprint':
+            case 'sprints':
                 $sprints = Sprint::where('project_key', $project_key)
                     ->whereIn('status', [ 'active', 'completed' ])
                     ->orderBy('no', 'asc')
@@ -1302,15 +1305,18 @@ class ReportController extends Controller
      */
     public function getIssues(Request $request, $project_key)
     {
-        $no_schema_fields = [ 'reporter', 'resolver', 'closer', 'labels' ];
+        $no_schema_fields = [ 'reporter', 'assignee', 'resolver', 'closer', 'labels' ];
 
         $X = $request->input('stat_x') ?: '';
         if (!$X)
         {
             throw new \UnexpectedValueException('the name can not be empty.', -12400);
         }
+        $X = $X === 'sprint' ? 'sprints' : $X;
 
         $Y = $request->input('stat_y') ?: '';
+        $Y = $Y === 'sprint' ? 'sprints' : $Y;
+     
 
         $XYData = [];
         $YAxis = [];
@@ -1330,31 +1336,31 @@ class ReportController extends Controller
 
         foreach($issues as $issue)
         {
-            foreach ($XYData as $k => $dv)
+            foreach ($XYData as $dimension => $z)
             {
-                if (!isset($issue[$k]) || !$issue[$k])
+                if (!isset($issue[$dimension]) || !$issue[$dimension])
                 {
                     continue;
                 }
 
                 $issue_vals = [];
-                if (is_string($issue[$k]))
+                if (is_string($issue[$dimension]))
                 {
-                    if (strpos($issue[$k], ',') !== false)
+                    if (strpos($issue[$dimension], ',') !== false)
                     {
-                        $issue_vals = explode(',', $issue[$k]);
+                        $issue_vals = explode(',', $issue[$dimension]);
                     }
                     else
                     {
-                        $issue_vals = [ $issue[$k] ];
+                        $issue_vals = [ $issue[$dimension] ];
                     }
                 }
-                else if (is_array($issue[$k]))
+                else if (is_array($issue[$dimension]))
                 {
-                    $issue_vals = $issue[$k];
-                    if (isset($issue[$k]['id']))
+                    $issue_vals = $issue[$dimension];
+                    if (isset($issue[$dimension]['id']))
                     {
-                        $issue_vals = [ $issue[$k] ];
+                        $issue_vals = [ $issue[$dimension] ];
                     }
                 }
 
@@ -1366,18 +1372,18 @@ class ReportController extends Controller
                         $tmpv = $issue_val['id'];
                     }
 
-                    if (isset($dv[$tmpv]))
+                    if (isset($z[$tmpv]))
                     {
-                        $XYData[$k][$tmpv]['nos'][] = $issue['no'];
+                        $XYData[$dimension][$tmpv]['nos'][] = $issue['no'];
                     }
-                    else if (in_array($k, $no_schema_fields))
+                    else if (in_array($dimension, $no_schema_fields))
                     {
-                        if ($k === $Y && $X !== $Y)
+                        if ($dimension === $Y && $X !== $Y)
                         {
-                            $YAxis[$tmpv] = isset($issue[$k]['name']) ? $issue[$k]['name'] : $tmpv;
+                            $YAxis[$tmpv] = isset($issue[$dimension]['name']) ? $issue[$dimension]['name'] : $tmpv;
                         }
 
-                        $XYData[$k][$tmpv] = [ 'name' => isset($issue[$k]['name']) ? $issue[$k]['name'] : $tmpv, 'nos' => [ $issue['no'] ] ];
+                        $XYData[$dimension][$tmpv] = [ 'name' => isset($issue[$dimension]['name']) ? $issue[$dimension]['name'] : $tmpv, 'nos' => [ $issue['no'] ] ];
                     }
                 }
             }
