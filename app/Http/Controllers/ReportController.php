@@ -900,7 +900,7 @@ class ReportController extends Controller
         }
 
         $results = [];
-        if (in_array($dimension, ['reporter', 'resolver', 'closer']))
+        if (in_array($dimension, ['reporter', 'assignee', 'resolver', 'closer']))
         {
             foreach ($data as $value)
             {

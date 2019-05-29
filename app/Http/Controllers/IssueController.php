@@ -24,7 +24,6 @@ use App\Project\Eloquent\Labels;
 
 use App\Workflow\Workflow;
 use App\System\Eloquent\SysSetting;
-use App\Acl\Acl;
 use Sentinel;
 use DB;
 use Exception;
@@ -616,7 +615,7 @@ class IssueController extends Controller
         {
             if ($assignee_id === 'me')
             {
-                 if (!Acl::isAllowed($this->user->id, 'assigned_issue', $project_key))
+                 if (!$this->isPermissionAllowed($project_key, 'assigned_issue'))
                  {
                      return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
                  }
@@ -626,7 +625,7 @@ class IssueController extends Controller
             }
             else
             {
-                if (!Acl::isAllowed($this->user->id, 'assign_issue', $project_key))
+                if (!$this->isPermissionAllowed($project_key, 'assign_issue'))
                 {
                     return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
                 }
@@ -672,7 +671,7 @@ class IssueController extends Controller
      */
     public function setLabels(Request $request, $project_key, $id)
     {
-        if (!Acl::isAllowed($this->user->id, 'edit_issue', $project_key))
+        if (!$this->isPermissionAllowed($project_key, 'edit_issue'))
         {
             return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
         }
@@ -745,7 +744,7 @@ class IssueController extends Controller
      */
     public function update(Request $request, $project_key, $id)
     {
-        if (!Acl::isAllowed($this->user->id, 'edit_issue', $project_key) && !Acl::isAllowed($this->user->id, 'exec_workflow', $project_key))
+        if (!$this->isPermissionAllowed($project_key, 'edit_issue') && !$this->isPermissionAllowed($project_key, 'exec_workflow'))
         {
             return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
         }

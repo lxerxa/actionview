@@ -279,14 +279,14 @@ class DocumentController extends Controller
 
         if (isset($old_document['d']) && $old_document['d'] === 1)
         {
-            if (!Acl::isAllowed($this->user->id, 'manage_project', $project_key)) 
+            if (!$this->isPermissionAllowed($project_key, 'manage_project')) 
             {
                 return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
             }
         }
         else
         {
-            if (!Acl::isAllowed($this->user->id, 'upload_file', $project_key) || !Acl::isAllowed($this->user->id, 'download_file', $project_key)) 
+            if (!$this->isPermissionAllowed($project_key, 'upload_file') || !$this->isPermissionAllowed($project_key, 'download_file')) 
             {
                 return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
             }
@@ -354,14 +354,14 @@ class DocumentController extends Controller
 
         if (isset($document['d']) && $document['d'] === 1)
         {
-            if (!Acl::isAllowed($this->user->id, 'manage_project', $project_key))
+            if (!$this->isPermissionAllowed($project_key, 'manage_project'))
             {
                 return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
             }
         }
         else
         {
-            if (!Acl::isAllowed($this->user->id, 'remove_file', $project_key) || !Acl::isAllowed($this->user->id, 'upload_file', $project_key))
+            if (!$this->isPermissionAllowed($project_key, 'remove_file') || !$this->isPermissionAllowed($project_key, 'upload_file'))
             {
                 return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
             }
@@ -439,14 +439,14 @@ class DocumentController extends Controller
 
         if (isset($document['d']) && $document['d'] === 1)
         {
-            if (!Acl::isAllowed($this->user->id, 'manage_project', $project_key))
+            if (!$this->isPermissionAllowed($project_key, 'manage_project'))
             {
                 return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
             }
         }
         else
         {
-            if (!Acl::isAllowed($this->user->id, 'remove_file', $project_key))
+            if (!$this->isPermissionAllowed($project_key, 'remove_file'))
             {
                 return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
             }

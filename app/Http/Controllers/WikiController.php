@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Event;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Events\WikiEvent;
-use App\Acl\Acl;
 use DB;
 use Zipper;
 
@@ -153,7 +152,7 @@ class WikiController extends Controller
         $d =  $request->input('d');
         if (isset($d) && $d == 1)
         {
-            if (!Acl::isAllowed($this->user->id, 'manage_project', $project_key))
+            if (!$this->isPermissionAllowed($project_key, 'manage_project'))
             {
                 return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
             }
@@ -340,7 +339,7 @@ class WikiController extends Controller
             throw new \UnexpectedValueException('the object does not exist.', -11954);
         }
 
-        if (isset($document['checkin']) && isset($document['checkin']['user']) && $document['checkin']['user']['id'] !== $this->user->id)
+        if (isset($document['checkin']) && !((isset($document['checkin']['user']) && $document['checkin']['user']['id'] == $this->user->id) || $this->isPermissionAllowed($project_key, 'manage_project')))
         {
             throw new \UnexpectedValueException('the object cannot been unlocked.', -11956);
         }
@@ -487,7 +486,7 @@ class WikiController extends Controller
 
         if (isset($old_document['d']) && $old_document['d'] === 1)
         {
-            if (!Acl::isAllowed($this->user->id, 'manage_project', $project_key)) 
+            if (!$this->isPermissionAllowed($project_key, 'manage_project')) 
             {
                 return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
             }
@@ -703,7 +702,7 @@ class WikiController extends Controller
 
         if (isset($document['d']) && $document['d'] === 1)
         {
-            if (!Acl::isAllowed($this->user->id, 'manage_project', $project_key))
+            if (!$this->isPermissionAllowed($project_key, 'manage_project'))
             {
                 return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
             }
@@ -781,7 +780,7 @@ class WikiController extends Controller
 
         if (isset($document['d']) && $document['d'] === 1)
         {
-            if (!Acl::isAllowed($this->user->id, 'manage_project', $project_key))
+            if (!$this->isPermissionAllowed($project_key, 'manage_project'))
             {
                 return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
             }

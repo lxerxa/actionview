@@ -11,6 +11,7 @@ use Illuminate\Foundation\Auth\Access\AuthorizesResources;
 use App\Project\Eloquent\Project;
 use App\Project\Eloquent\Watch;
 use App\System\Eloquent\SysSetting;
+use App\Acl\Acl;
 use Sentinel;
 use DB;
 
@@ -43,6 +44,32 @@ class Controller extends BaseController
         }
 
         return $data;
+    }
+
+    /**
+     * if the permission is allowed in the project.
+     *
+     * string $project_key
+     * string $permission
+     * @return bool
+     */
+    public function isPermissionAllowed($project_key, $permission)
+    {
+        $isAllowed = Acl::isAllowed($this->user->id, $permission, $project_key);
+        if (!$isAllowed && in_array($permission, [ 'view_project', 'manage_project' ]))
+        {
+            if ($this->user->email === 'admin@action.view')
+            {
+                return true;
+            }
+
+            $project = Project::where([ 'key' => $project_key ])->first();
+            if ($project && isset($project->principal) && isset($project->principal['id']) && $this->user->id === $project->principal['id'])
+            {
+                return true;
+            }
+        }
+        return $isAllowed;
     }
 
     /**

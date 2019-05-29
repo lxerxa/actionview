@@ -10,7 +10,6 @@ use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Project\Eloquent\Worklog;
 use App\Project\Provider;
-use App\Acl\Acl;
 
 class WorklogController extends Controller
 {
@@ -38,7 +37,7 @@ class WorklogController extends Controller
      */
     public function store(Request $request, $project_key, $issue_id)
     {
-        if (!Acl::isAllowed($this->user->id, 'add_worklog', $project_key)) {
+        if (!$this->isPermissionAllowed($project_key, 'add_worklog')) {
             return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
         }
 
@@ -150,7 +149,7 @@ class WorklogController extends Controller
             throw new \UnexpectedValueException('the worklog does not exist or is not in the issue or is not in the project.', -11309);
         }
 
-        if (!Acl::isAllowed($this->user->id, 'manage_project', $project_key) && $worklog->recorder['id'] !== $this->user->id) 
+        if (!$this->isPermissionAllowed($project_key, 'manage_project') && $worklog->recorder['id'] !== $this->user->id) 
         {
             return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
         }
@@ -250,7 +249,7 @@ class WorklogController extends Controller
             throw new \UnexpectedValueException('the worklog does not exist or is not in the issue or is not in the project.', -11309);
         }
 
-        if (!Acl::isAllowed($this->user->id, 'manage_project', $project_key) && $worklog->recorder['id'] !== $this->user->id) 
+        if (!$this->isPermissionAllowed($project_key, 'manage_project') && $worklog->recorder['id'] !== $this->user->id) 
         {
             return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
         }

@@ -9,7 +9,6 @@ use App\Events\IssueEvent;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 
-use App\Acl\Acl;
 use Sentinel;
 use DB;
 use App\Project\Provider;
@@ -128,7 +127,7 @@ class CommentsController extends Controller
                 $index = $this->array_find([ 'id' => $reply_id ], $comments['reply']); 
                 if ($index !== false) 
                 {
-                    if (!Acl::isAllowed($this->user->id, 'manage_project', $project_key) && $comments['reply'][$index]['creator']['id'] !== $this->user->id) 
+                    if (!$this->isPermissionAllowed($project_key, 'manage_project') && $comments['reply'][$index]['creator']['id'] !== $this->user->id) 
                     {
                         return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
                     }
@@ -151,7 +150,7 @@ class CommentsController extends Controller
                 $index = $this->array_find([ 'id' => $reply_id ], $comments['reply']); 
                 if ($index !== false) 
                 {
-                    if (!Acl::isAllowed($this->user->id, 'manage_project', $project_key) && $comments['reply'][$index]['creator']['id'] !== $this->user->id) 
+                    if (!$this->isPermissionAllowed($project_key, 'manage_project') && $comments['reply'][$index]['creator']['id'] !== $this->user->id) 
                     {
                         return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
                     }
@@ -168,7 +167,7 @@ class CommentsController extends Controller
         }
         else
         {
-            if (!Acl::isAllowed($this->user->id, 'manage_project', $project_key) && $comments['creator']['id'] !== $this->user->id) 
+            if (!$this->isPermissionAllowed($project_key, 'manage_project') && $comments['creator']['id'] !== $this->user->id) 
             {
                 return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
             }
@@ -209,7 +208,7 @@ class CommentsController extends Controller
             throw new \UnexpectedValueException('the comments does not exist or is not in the project.', -11201);
         }
 
-        if (!Acl::isAllowed($this->user->id, 'manage_project', $project_key) && $comments['creator']['id'] !== $this->user->id) 
+        if (!$this->isPermissionAllowed($project_key, 'manage_project') && $comments['creator']['id'] !== $this->user->id) 
         {
             return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
         }
