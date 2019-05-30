@@ -73,7 +73,7 @@ class EpicController extends Controller
             $epic->inestimable = $inestimable_issue_cnt;
         }
             
-        return Response()->json([ 'ecode' => 0, 'data' => $epics ]);
+        return Response()->json([ 'ecode' => 0, 'data' => $epics, 'options' => [ 'completed_states' => $completed_states, 'incompleted_states' => array_diff($all_states, $completed_states) ] ]);
     }
 
     /**
