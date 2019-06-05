@@ -55,16 +55,16 @@ class ReportController extends Controller
             [ 'id' => 'in_one_month', 'name' => '过去一个月的', 'query' => [ 'recorded_at' => '1m' ] ], 
             [ 'id' => 'active_sprint', 'name' => '当前活动Sprint', 'query' => [] ], 
             [ 'id' => 'latest_completed_sprint', 'name' => '最近已完成Sprint', 'query' => [] ], 
-            [ 'id' => 'will_release_version', 'name' => '最近要发布版本', 'query' => [] ], 
-            [ 'id' => 'latest_released_version', 'name' => '最近已发布版本', 'query' => [] ], 
+            //[ 'id' => 'will_release_version', 'name' => '最近要发布版本', 'query' => [] ], 
+            //[ 'id' => 'latest_released_version', 'name' => '最近已发布版本', 'query' => [] ], 
         ], 
         'timetracks' => [
             [ 'id' => 'all', 'name' => '全部问题', 'query' => [] ], 
             [ 'id' => 'unresolved', 'name' => '未解决的', 'query' => [ 'resolution' => 'Unresolved' ] ], 
             [ 'id' => 'active_sprint', 'name' => '当前活动Sprint', 'query' => [] ], 
             [ 'id' => 'latest_completed_sprint', 'name' => '最近已完成Sprint', 'query' => [] ], 
-            [ 'id' => 'will_release_version', 'name' => '最近要发布版本', 'query' => [] ], 
-            [ 'id' => 'latest_released_version', 'name' => '最近已发布版本', 'query' => [] ], 
+            //[ 'id' => 'will_release_version', 'name' => '最近要发布版本', 'query' => [] ], 
+            //[ 'id' => 'latest_released_version', 'name' => '最近已发布版本', 'query' => [] ], 
         ], 
         'regressions' => [
             [ 'id' => 'all', 'name' => '已解决问题', 'query' => [] ], 
@@ -77,7 +77,7 @@ class ReportController extends Controller
         ]
     ];
 
-    private $mode_enum = [ 'issue', 'trend', 'worklog', 'timetracks', 'others' ];
+    private $mode_enum = [ 'issues', 'trend', 'worklog', 'timetracks', 'regressions', 'others' ];
 
     /**
      * Display a listing of the resource.
@@ -192,7 +192,7 @@ class ReportController extends Controller
     {
         if (!in_array($mode, $this->mode_enum))
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -12400);
+            throw new \UnexpectedValueException('the mode value is error.', -11851);
         }
 
         $filters = isset($this->default_filters[$mode]) ? $this->default_filters[$mode] : []; 
@@ -220,19 +220,19 @@ class ReportController extends Controller
     {
         if (!in_array($mode, $this->mode_enum))
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -12400);
+            throw new \UnexpectedValueException('the mode value is error.', -11851);
         }
 
         $name = $request->input('name');
         if (!$name)
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -12400);
+            throw new \UnexpectedValueException('the name can not be empty.', -11852);
         }
 
         $query = $request->input('query');
         if (!isset($query))
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -12400);
+            throw new \UnexpectedValueException('the query can not be empty.', -11853);
         }
         
         $res = ReportFilters::where('project_key', $project_key)
@@ -267,7 +267,7 @@ class ReportController extends Controller
     {
         if (!in_array($mode, $this->mode_enum))
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -12400);
+            throw new \UnexpectedValueException('the mode value is error.', -11851);
         }
 
         ReportFilters::where('project_key', $project_key)
@@ -288,7 +288,7 @@ class ReportController extends Controller
     {
         if (!in_array($mode, $this->mode_enum))
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -12400);
+            throw new \UnexpectedValueException('the mode value is error.', -11851);
         }
 
         $sequence = $request->input('sequence');
@@ -580,7 +580,7 @@ class ReportController extends Controller
         }
 
         $query = DB::collection('issue_' . $project_key)->whereRaw($where);
-        $issues = $query->orderBy('no', 'desc')->take(1000)->get();
+        $issues = $query->orderBy('no', 'desc')->take(10000)->get();
 
         $new_issues = [];
         foreach($issues as $issue)
@@ -718,7 +718,7 @@ class ReportController extends Controller
     	$interval = $request->input('interval') ?: 'day';
     	if (!in_array($interval, [ 'day', 'week', 'month' ]))
     	{
-    	    throw new \UnexpectedValueException('the name can not be empty.', -12400);
+    	    throw new \UnexpectedValueException('the name can not be empty.', -11852);
     	}
 
     	$is_accu = $request->input('is_accu') === '1' ? true : false;
@@ -726,7 +726,7 @@ class ReportController extends Controller
     	$project = Project::where('key', $project_key)->first();
     	if (!$project)
     	{
-    	    throw new \UnexpectedValueException('the name can not be empty.', -12400);
+    	    throw new \UnexpectedValueException('the project is not exists.', -11850);
     	}
 
     	$start_stat_time = strtotime($project->created_at);
@@ -1310,7 +1310,7 @@ class ReportController extends Controller
         $X = $request->input('stat_x') ?: '';
         if (!$X)
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -12400);
+            throw new \UnexpectedValueException('the currentX can not be empty.', -11855);
         }
         $X = $X === 'sprint' ? 'sprints' : $X;
 

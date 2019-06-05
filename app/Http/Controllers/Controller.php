@@ -53,9 +53,11 @@ class Controller extends BaseController
      * string $permission
      * @return bool
      */
-    public function isPermissionAllowed($project_key, $permission)
+    public function isPermissionAllowed($project_key, $permission, $user_id='')
     {
-        $isAllowed = Acl::isAllowed($this->user->id, $permission, $project_key);
+        $uid = isset($user_id) && $user_id ? $user_id : $this->user->id;
+
+        $isAllowed = Acl::isAllowed($uid, $permission, $project_key);
         if (!$isAllowed && in_array($permission, [ 'view_project', 'manage_project' ]))
         {
             if ($this->user->email === 'admin@action.view')
@@ -64,7 +66,7 @@ class Controller extends BaseController
             }
 
             $project = Project::where([ 'key' => $project_key ])->first();
-            if ($project && isset($project->principal) && isset($project->principal['id']) && $this->user->id === $project->principal['id'])
+            if ($project && isset($project->principal) && isset($project->principal['id']) && $uid === $project->principal['id'])
             {
                 return true;
             }

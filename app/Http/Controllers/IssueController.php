@@ -304,6 +304,11 @@ class IssueController extends Controller
         }
         if ($assignee_id)
         {
+            if ($assignee_id != $this->user->id && !$this->isPermissionAllowed($project_key, 'assigned_issue', $assignee_id))
+            {
+                return Response()->json(['ecode' => -11118, 'emsg' => 'the assigned user has not assigned-issue permission.']);
+            }
+
             $user_info = Sentinel::findById($assignee_id);
             if ($user_info)
             {
@@ -322,11 +327,11 @@ class IssueController extends Controller
         //    $insValues['priority'] = Provider::getDefaultPriority($project_key);
         //}
 
-        //$resolution = $request->input('resolution'); 
-        //if (!isset($resolution))
-        //{
-        //    $insValues['resolution'] = 'Unresolved'; 
-        //}
+        $resolution = $request->input('resolution'); 
+        if (!isset($resolution) || !$resolution)
+        {
+            $insValues['resolution'] = 'Unresolved'; 
+        }
 
         // get reporter(creator)
         $insValues['reporter'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
@@ -377,7 +382,7 @@ class IssueController extends Controller
         $initial_state = $wf_entry->getStepMeta($initial_step->step_id, 'state');
 
         $ret['state'] = $initial_state;
-        $ret['resolution'] = 'Unresolved';
+        //$ret['resolution'] = 'Unresolved';
         $ret['entry_id'] = $wf_entry->getEntryId();
         $ret['definition_id'] = $wf_definition->id;
 
@@ -609,38 +614,41 @@ class IssueController extends Controller
             throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -11103);
         }
 
+        if (!$this->isPermissionAllowed($project_key, 'assign_issue'))
+        {
+            return Response()->json(['ecode' => -11116, 'emsg' => 'the current user has not assign-issue permission.']);
+        }
+
         $updValues = []; $assignee = [];
         $assignee_id = $request->input('assignee');
-        if (isset($assignee_id) && $assignee_id)
+        if (!isset($assignee_id) || !$assignee_id)
         {
-            if ($assignee_id === 'me')
-            {
-                 if (!$this->isPermissionAllowed($project_key, 'assigned_issue'))
-                 {
-                     return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
-                 }
+            throw new \UnexpectedValueException('the issue assignee cannot be empty.', -11104);
+        }
 
-                 $assignee = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
-                 $updValues['assignee'] = $assignee;
-            }
-            else
+        if ($assignee_id === 'me')
+        {
+            if (!$this->isPermissionAllowed($project_key, 'assigned_issue'))
             {
-                if (!$this->isPermissionAllowed($project_key, 'assign_issue'))
-                {
-                    return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
-                }
-
-                $user_info = Sentinel::findById($assignee_id);
-                if ($user_info)
-                {
-                    $assignee = [ 'id' => $assignee_id, 'name' => $user_info->first_name, 'email' => $user_info->email ];
-                    $updValues['assignee'] = $assignee;
-                }
+                return Response()->json(['ecode' => -11117, 'emsg' => 'the current user has not assigned-issue permission.']);
             }
+
+            $assignee = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+            $updValues['assignee'] = $assignee;
         }
         else
         {
-            throw new \UnexpectedValueException('the issue assignee cannot be empty.', -11104);
+            if (!$this->isPermissionAllowed($project_key, 'assigned_issue', $assignee_id))
+            {
+                return Response()->json(['ecode' => -11118, 'emsg' => 'the assigned user has not assigned-issue permission.']);
+            }
+
+            $user_info = Sentinel::findById($assignee_id);
+            if ($user_info)
+            {
+                $assignee = [ 'id' => $assignee_id, 'name' => $user_info->first_name, 'email' => $user_info->email ];
+                $updValues['assignee'] = $assignee;
+            }
         }
 
         // issue assignee has no change.
@@ -812,6 +820,11 @@ class IssueController extends Controller
         $assignee_id = $request->input('assignee');
         if ($assignee_id)
         {
+            if ((!isset($issue['assignee']) || (isset($issue['assignee']) && $assignee_id != $issue['assignee']['id'])) && !$this->isPermissionAllowed($project_key, 'assigned_issue', $assignee_id))
+            {
+                return Response()->json(['ecode' => -11118, 'emsg' => 'the assigned user has not assigned-issue permission.']);
+            }
+
             $user_info = Sentinel::findById($assignee_id);
             if ($user_info)
             {
@@ -1179,12 +1192,46 @@ class IssueController extends Controller
      */
     public function resetState(Request $request, $project_key, $id)
     {
-        $issue = DB::collection('issue_' . $project_key)->where('_id', $id)->first();
-
         $updValues = [];
+
+        $assignee_id = $request->input('assignee');
+        if (isset($assignee_id))
+        {
+            if ($assignee_id)
+            {
+                if (!$this->isPermissionAllowed($project_key, 'assigned_issue', $assignee_id))
+                {
+                    return Response()->json(['ecode' => -11118, 'emsg' => 'the assigned user has not assigned-issue permission.']);
+                }
+
+                $user_info = Sentinel::findById($assignee_id);
+                if ($user_info)
+                {
+                    $assignee = [ 'id' => $assignee_id, 'name' => $user_info->first_name, 'email' => $user_info->email ];
+                    $updValues['assignee'] = $assignee;
+                }
+            }
+            else
+            {
+                throw new \UnexpectedValueException('the issue assignee cannot be empty.', -11104);
+            }
+        }
+
+        $resolution = $request->input('resolution');
+        if (isset($resolution) && $resolution)
+        {
+            $updValues['resolution'] = $resolution;
+        }
+
+        $issue = DB::collection('issue_' . $project_key)->where('_id', $id)->first();
+        if (!$issue)
+        {
+            throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -11103);
+        }
+
         // workflow initialize
         $workflow = $this->initializeWorkflow($issue['type']);
-        $updValues = $workflow;
+        $updValues = $updValues + $workflow;
 
         $updValues['modifier'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
         $updValues['updated_at'] = time();

@@ -35,7 +35,7 @@ class StateController extends Controller
             }
             else
             {
-                $states[$key]['is_used'] = $this->isFieldUsedByIssue($project_key, 'state', $state); 
+                $states[$key]['is_used'] = isset($state['key']) && $state['key'] == 'Open' ? true : $this->isFieldUsedByIssue($project_key, 'state', $state); 
             }
 
             $states[$key]['workflows'] = array_filter($workflows, function($item) use($project_key) { 
@@ -142,7 +142,7 @@ class StateController extends Controller
             throw new \UnexpectedValueException('the state does not exist or is not in the project.', -12402);
         }
 
-        $isUsed = $this->isFieldUsedByIssue($project_key, 'state', $state->toArray()); 
+        $isUsed = isset($state->key) && $state->key == 'Open' ? true : $this->isFieldUsedByIssue($project_key, 'state', $state->toArray()); 
         if ($isUsed)
         {
             throw new \UnexpectedValueException('the state has been used in issue.', -12403);
