@@ -12,19 +12,17 @@ We are using Jira to do the task management and bug tracking, but found that the
 
 http://www.actionview.cn  
 
-![image](http://actionview.cn/summary.png)
+![image](http://actionview.cn/images/summary.png)
 
-![image](http://actionview.cn/issues-list.png)
+![image](http://actionview.cn/images/issues.png)
 
-![image](http://actionview.cn/workflow.png)
+![image](http://actionview.cn/images/workflow.png)
 
-![image](http://actionview.cn/kanban-list.png)
+![image](http://actionview.cn/images/kanban.png)
 
-![image](http://actionview.cn/kanban-drag.png)
+![image](http://actionview.cn/images/kanban-drag.png)
 
-![image](http://actionview.cn/kanban-backlog.png)
-
-![image](http://actionview.cn/type.png)
+![image](http://actionview.cn/images/kanban-backlog.png)
 
 # Installation
 
@@ -48,6 +46,7 @@ http://www.actionview.cn
 * User adding comments to an issue supported.  
 * Team members may share and find the documents required for work.  
 * Support wiki based on markdown.  
+* Support statistical reports of various dimensions.  
 * Synchronization and authentication based on LDAP users supported.  
 * Integration with GitLab and GitHub through webhook.  
 * Developed by using most popular framework both front-end and back-end side, back-end: php/laravel, front-end: ReactJS+Redux.  
