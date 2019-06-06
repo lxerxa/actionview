@@ -24,6 +24,8 @@ http://www.actionview.cn
 
 ![image](http://actionview.cn/images/kanban-backlog.png)
 
+![image](http://actionview.cn/images/report.png)
+
 # 安装手册
 
 [Ubuntu Installation - Apache](https://github.com/lxerxa/actionview/wiki/Ubuntu-Installation(Apache))  
