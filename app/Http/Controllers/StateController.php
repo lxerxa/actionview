@@ -35,7 +35,7 @@ class StateController extends Controller
             }
             else
             {
-                $states[$key]['is_used'] = isset($state['key']) && $state['key'] == 'Open' ? true : $this->isFieldUsedByIssue($project_key, 'state', $state); 
+                $states[$key]['is_used'] = isset($state['key']) && $state['key'] ? true : $this->isFieldUsedByIssue($project_key, 'state', $state); 
             }
 
             $states[$key]['workflows'] = array_filter($workflows, function($item) use($project_key) { 
@@ -70,7 +70,7 @@ class StateController extends Controller
             throw new \UnexpectedValueException('state name cannot be repeated', -12401);
         }
 
-        $state = State::create([ 'project_key' => $project_key ] + $request->all());
+        $state = State::create([ 'project_key' => $project_key, 'sn' => time() ] + $request->all());
         return Response()->json(['ecode' => 0, 'data' => $state]);
     }
 
@@ -103,6 +103,11 @@ class StateController extends Controller
         if (!$state || $project_key != $state->project_key)
         {
             throw new \UnexpectedValueException('the state does not exist or is not in the project.', -12402);
+        }
+
+        if (isset($state->key) && $state->key)
+        {
+            throw new \UnexpectedValueException('the state is built in the system.', -12406);
         }
 
         $name = $request->input('name');
@@ -142,7 +147,12 @@ class StateController extends Controller
             throw new \UnexpectedValueException('the state does not exist or is not in the project.', -12402);
         }
 
-        $isUsed = isset($state->key) && $state->key == 'Open' ? true : $this->isFieldUsedByIssue($project_key, 'state', $state->toArray()); 
+        if (isset($state->key) && $state->key)
+        {
+            throw new \UnexpectedValueException('the state is built in the system.', -12406);
+        }
+
+        $isUsed = $this->isFieldUsedByIssue($project_key, 'state', $state->toArray()); 
         if ($isUsed)
         {
             throw new \UnexpectedValueException('the state has been used in issue.', -12403);

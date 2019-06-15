@@ -137,7 +137,7 @@ class Provider {
         foreach ($states as $state)
         {
             $tmp = [];
-            $tmp['_id'] = isset($state['key']) ? $state['key'] : $state['_id'];
+            $tmp['_id'] = isset($state['key']) && $state['key'] ? $state['key'] : $state['_id'];
             $tmp['name'] = isset($state['name']) ? $state['name'] : '';
             $tmp['category'] = isset($state['category']) ? $state['category'] : '';
             $options[] = $tmp;
@@ -233,7 +233,7 @@ class Provider {
             ->Where('default', true)
             ->first();
 
-        $default = $priority && isset($priority->key) ? $priority->key : $priority->id;
+        $default = $priority && isset($priority->key) && $priority->key ? $priority->key : $priority->id;
         return $default; 
     }
 
@@ -301,7 +301,7 @@ class Provider {
         foreach ($priorities as $priority)
         {
             $tmp = [];
-            $tmp['_id'] = isset($priority['key']) ? $priority['key'] : $priority['_id'];
+            $tmp['_id'] = isset($priority['key']) && $priority['key'] ? $priority['key'] : $priority['_id'];
             $tmp['name'] = isset($priority['name']) ? $priority['name'] : '';
             if (isset($priority['default']))
             {
@@ -337,7 +337,7 @@ class Provider {
             ->Where('default', true)
             ->first();
 
-        $default = $resolution && isset($resolution->key) ? $resolution->key : $resolution->id;
+        $default = $resolution && isset($resolution->key) && $resolution->key ? $resolution->key : $resolution->id;
         return $default;
     }
 
@@ -405,7 +405,7 @@ class Provider {
         foreach ($resolutions as $resolution)
         {
             $tmp = [];
-            $tmp['_id'] = isset($resolution['key']) ? $resolution['key'] : $resolution['_id'];
+            $tmp['_id'] = isset($resolution['key']) && $resolution['key'] ? $resolution['key'] : $resolution['_id'];
             $tmp['name'] = isset($resolution['name']) ? $resolution['name'] : '';
             if (isset($resolution['default']))
             {

@@ -25,7 +25,7 @@ class PriorityController extends Controller
         $priorities = Provider::getPriorityList($project_key);
         foreach ($priorities as $key => $priority)
         {
-            $priorities[$key]['is_used'] = $this->isFieldUsedByIssue($project_key, 'priority', $priority); 
+            $priorities[$key]['is_used'] = isset($priority['key']) && $priority['key'] ? true : $this->isFieldUsedByIssue($project_key, 'priority', $priority); 
         }
         return Response()->json(['ecode' => 0, 'data' => $priorities]);
     }
@@ -86,6 +86,11 @@ class PriorityController extends Controller
             throw new \UnexpectedValueException('the priority does not exist or is not in the project.', -12602);
         }
 
+        if (isset($priority->key) && $priority->key)
+        {
+            throw new \UnexpectedValueException('the priority is built in the system.', -12604);
+        }
+
         $name = $request->input('name');
         if (isset($name))
         {
@@ -117,6 +122,11 @@ class PriorityController extends Controller
         if (!$priority || $project_key != $priority->project_key)
         {
             throw new \UnexpectedValueException('the priority does not exist or is not in the project.', -12602);
+        }
+
+        if (isset($priority->key) && $priority->key)
+        {
+            throw new \UnexpectedValueException('the priority is built in the system.', -12604);
         }
 
         $isUsed = $this->isFieldUsedByIssue($project_key, 'priority', $priority->toArray()); 
