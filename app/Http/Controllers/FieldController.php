@@ -16,52 +16,72 @@ use App\Project\Provider;
 class FieldController extends Controller
 {
     private $special_fields = [
-      'id', 
-      'type', 
-      'state', 
-      'reporter', 
-      'modifier', 
-      'created_at', 
-      'updated_at', 
-      'resolved_at', 
-      'closed_at', 
-      'regression_times', 
-      'his_resolvers',
-      'resolved_logs',
-      'original_estimate_m',
-      'no', 
-      'schema', 
-      'parent_id', 
-      'parents', 
-      'links', 
-      'subtasks', 
-      'entry_id', 
-      'definition_id', 
-      'comments_num', 
-      'worklogs_num', 
-      'gitcommits_num', 
-      'sprint', 
-      'sprints', 
-      'filter' ];
+        'id', 
+        'type', 
+        'state', 
+        'reporter', 
+        'modifier', 
+        'created_at', 
+        'updated_at', 
+        'resolved_at', 
+        'closed_at', 
+        'regression_times', 
+        'his_resolvers',
+        'resolved_logs',
+        'original_estimate_m',
+        'no', 
+        'schema', 
+        'parent_id', 
+        'parents', 
+        'links', 
+        'subtasks', 
+        'entry_id', 
+        'definition_id', 
+        'comments_num', 
+        'worklogs_num', 
+        'gitcommits_num', 
+        'sprint', 
+        'sprints', 
+        'filter' 
+    ];
+
+    private $sys_fields = [
+        'title',
+        'priority',
+        'resolution',
+        'assignee',
+        'module',
+        'comments',
+        'resolve_version',
+        'effect_versions',
+        'expect_complete_time',
+        'related_users',
+        'descriptions',
+        'epic',
+        'labels',
+        'original_estimate',
+        'story_points',
+        'attachments'
+    ];
 
     private $all_types = [
-      'Tags', 
-      'Number', 
-      'Text', 
-      'TextArea', 
-      'Select', 
-      'MultiSelect', 
-      'RadioGroup', 
-      'CheckboxGroup', 
-      'DatePicker', 
-      'DateTimePicker', 
-      'TimeTracking', 
-      'File', 
-      'SingleVersion', 
-      'MultiVersion', 
-      'SingleUser', 
-      'MultiUser', 
-      'Url'
+        'Tags', 
+        'Number', 
+        'Text', 
+        'TextArea', 
+        'Select', 
+        'MultiSelect', 
+        'RadioGroup', 
+        'CheckboxGroup', 
+        'DatePicker', 
+        'DateTimePicker', 
+        'TimeTracking', 
+        'File', 
+        'SingleVersion', 
+        'MultiVersion', 
+        'SingleUser', 
+        'MultiUser', 
+        'Url'
     ];
     /**
      * Display a listing of the resource.
@@ -189,6 +209,11 @@ class FieldController extends Controller
             throw new \UnexpectedValueException('the field does not exist or is not in the project.', -12206);
         }
 
+        if (in_array($field->key, $this->sys_fields))
+        {
+            throw new \UnexpectedValueException('the field is built in the system.', -12208);
+        }
+
         $optionTypes = [ 'Select', 'MultiSelect', 'RadioGroup', 'CheckboxGroup' ];
         if (in_array($field->type, $optionTypes))
         {
@@ -225,6 +250,11 @@ class FieldController extends Controller
         if (!$field || $project_key != $field->project_key)
         {
             throw new \UnexpectedValueException('the field does not exist or is not in the project.', -12206);
+        }
+
+        if (in_array($field->key, $this->sys_fields))
+        {
+            throw new \UnexpectedValueException('the field is built in the system.', -12208);
         }
 
         $isUsed = Screen::whereRaw([ 'field_ids' => $id ])->exists();
