@@ -12,19 +12,19 @@
 
 http://www.actionview.cn  
 
-![image](http://actionview.cn/summary.png)
+![image](http://actionview.cn/images/summary.png)
 
-![image](http://actionview.cn/issues-list.png)
+![image](http://actionview.cn/images/issues.png)
 
-![image](http://actionview.cn/workflow.png)
+![image](http://actionview.cn/images/workflow.png)
 
-![image](http://actionview.cn/kanban-list.png)
+![image](http://actionview.cn/images/kanban.png)
 
-![image](http://actionview.cn/kanban-drag.png)
+![image](http://actionview.cn/images/kanban-drag.png)
 
-![image](http://actionview.cn/kanban-backlog.png)
+![image](http://actionview.cn/images/kanban-backlog.png)
 
-![image](http://actionview.cn/type.png)
+![image](http://actionview.cn/images/report.png)
 
 # 安装手册
 
@@ -47,8 +47,9 @@ http://www.actionview.cn
 * 支持用户在问题上添加工作日志。  
 * 支持用户针对问题发表评论。  
 * 团队成员可分享和查找工作所需的资料文档。  
-* 支持基于markdown语法的wiki。  
-* 支持基于LDAP用户的同步和认证。
+* 支持基于markdown语法的wiki。 
+* 支持各种维度的统计报表。  
+* 支持基于LDAP用户的同步和认证。  
 * 通过webhook集成GitLab和GitHub.  
 * 使用当前较流行的前后端技术框架，后端：php/laravel, 前端：ReactJS+Redux.
 * 支持Docker安装。  
