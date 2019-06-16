@@ -127,10 +127,12 @@ class FieldController extends Controller
         {
             throw new \InvalidArgumentException('field key cannot be empty.', -12201);
         }
+
         if (in_array($key, $this->special_fields))
         {
             throw new \InvalidArgumentException('field key has been used by system.', -12202);
         }
+
         if (Provider::isFieldKeyExisted($project_key, $key))
         {
             throw new \InvalidArgumentException('field key cannot be repeated.', -12203);
@@ -203,15 +205,11 @@ class FieldController extends Controller
                 throw new \UnexpectedValueException('the name can not be empty.', -12200);
             }
         }
+
         $field = Field::find($id);
         if (!$field || $project_key != $field->project_key)
         {
             throw new \UnexpectedValueException('the field does not exist or is not in the project.', -12206);
-        }
-
-        if (in_array($field->key, $this->sys_fields))
-        {
-            throw new \UnexpectedValueException('the field is built in the system.', -12208);
         }
 
         $optionTypes = [ 'Select', 'MultiSelect', 'RadioGroup', 'CheckboxGroup' ];
