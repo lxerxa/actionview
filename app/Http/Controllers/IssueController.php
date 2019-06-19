@@ -774,7 +774,7 @@ class IssueController extends Controller
         {
             throw new \UnexpectedValueException('the schema of the type is not existed.', -11101);
         }
-        $valid_keys = array_merge(array_column($schema, 'key'), [ 'type', 'assignee', 'labels', 'parent_id' ]);
+        $valid_keys = array_merge(array_column($schema, 'key'), [ 'type', 'assignee', 'labels', 'parent_id', 'resolution', 'priority' ]);
 
         // handle timetracking
         $updValues = [];
