@@ -603,12 +603,11 @@ class ReportController extends Controller
                 ->get();
             foreach($worklogs as $log)
             {
-                $spend_m += (isset($log['spend_m']) ? $log['spend_m'] : $this->ttHandleInM($log['spend']));
+                $this_spend_m = isset($log['spend_m']) ? $log['spend_m'] : $this->ttHandleInM(isset($log['spend']) ? $log['spend'] : ''); 
+                $spend_m += $this_spend_m; 
                 if ($log['adjust_type'] == '1')
                 {
-                    $spend = isset($log['spend']) ? $log['spend'] : '';
-                    $spend_m = isset($log['spend_m']) ? $log['spend_m'] : $this->ttHandleInM($spend);
-                    $left_m = $left_m === '' ? '' : $left_m - $spend_m;
+                    $left_m = $left_m === '' ? '' : $left_m - $this_spend_m;
                 }
                 else if ($log['adjust_type'] == '3')
                 {
