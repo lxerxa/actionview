@@ -10,6 +10,7 @@ use Illuminate\Foundation\Auth\Access\AuthorizesResources;
 
 use App\Project\Eloquent\Project;
 use App\Project\Eloquent\Watch;
+use App\Project\Provider;
 use App\System\Eloquent\SysSetting;
 use App\Acl\Acl;
 use Sentinel;
@@ -332,7 +333,7 @@ class Controller extends BaseController
                         ->exists();
                 case 'module':
                     return DB::collection('issue_' . $project_key)
-                        ->where($field_key, 'like', '%' . $field['_id'] . '%')
+                        ->where($field_key, $field['_id'])
                         ->where('del_flg', '<>', 1)
                         ->exists();
                 case 'version':
@@ -346,14 +347,7 @@ class Controller extends BaseController
                         ->where(function ($query) use ($vid, $ext_info) {
                             foreach ($ext_info as $key => $vf) 
                             {
-                                if ($vf['type'] === 'SingleVersion') 
-                                {
-                                    $query->orWhere($vf['key'], $vid);
-                                } 
-                                else 
-                                {
-                                    $query->orWhere($vf['key'], 'like',  "%$vid%");
-                                }
+                                $query->orWhere($vf['key'], $vid);
                             }
                         })
                         ->where('del_flg', '<>', 1)
@@ -366,34 +360,171 @@ class Controller extends BaseController
 
     public function getIssueQueryWhere($project_key, $query)
     {
-        $where = array_only($query, [ 
-            'type', 
-            'assignee', 
-            'reporter', 
-            'resolver', 
-            'closer', 
-            'state', 
-            'resolution', 
-            'priority', 
-            'resolve_version', 
-            'epic' ]);
+        $special_fields = [
+            [ 'key' => 'type', 'type' => 'Select' ],
+            [ 'key' => 'state', 'type' => 'Select' ],
+            [ 'key' => 'assignee', 'type' => 'SingleUser' ],
+            [ 'key' => 'reporter', 'type' => 'SingleUser' ],
+            [ 'key' => 'resolver', 'type' => 'SingleUser' ],
+            [ 'key' => 'closer', 'type' => 'SingleUser' ],
 
-        $and = []; 
+            [ 'key' => 'created_at', 'type' => 'Duration' ],
+            [ 'key' => 'updated_at', 'type' => 'Duration' ],
+            [ 'key' => 'resolved_at', 'type' => 'Duration' ],
+            [ 'key' => 'closed_at', 'type' => 'Duration' ],
+
+            [ 'key' => 'sprint', 'type' => 'MultiSelect' ],
+        ];
+
+        $fields = Provider::getFieldList($project_key, ['key', 'name', 'type']);
+        // merge into the all valid fields in the project
+        $all_fields = array_merge($fields ? $fields->toArray() : [], $special_fields);
+        // convert into key-type array
+        $key_type_fields = [];
+        foreach ($all_fields as $key => $val) 
+        {
+            $key_type_fields[$val['key']] = $val['type'];
+        }
+        // get the query where value
+        $where = array_only($query, array_column($all_fields, 'key'));
+
+        $and = [];
         foreach ($where as $key => $val)
         {
-            if (in_array($key, [ 'assignee', 'reporter', 'resolver', 'closer' ]))
+            if ($key === 'no')
+            {
+                $and[] = [ 'no' => intval($val) ];
+            }
+            else if ($key === 'title')
+            {
+                if (is_numeric($val) && strpos($val, '.') === false)
+                {
+                    $and[] = [ '$or' => [ [ 'no' => $val + 0 ], [ 'title'  => [ '$regex' => $val ] ] ] ];
+                }
+                else if (strpos($val, ',') !== false)
+                {
+                    $nos = explode(',', $val);
+                    $new_nos = [];
+                    foreach ($nos as $no)
+                    {
+                        if ($no && is_numeric($no))
+                        {
+                            $new_nos[] = $no + 0;
+                        }
+                    }
+                    $and[] = [ '$or' => [ [ 'no' => [ '$in' => $new_nos ] ], [ 'title'  => [ '$regex' => $val ] ] ] ];
+                }
+                else
+                {
+                    $and[] = [ 'title' => [ '$regex' => $val ] ];
+                }
+            }
+            else if ($key_type_fields[$key] === 'SingleUser')
             {
                 $users = explode(',', $val);
                 if (in_array('me', $users))
                 {
                     array_push($users, $this->user->id);
                 }
-
                 $and[] = [ $key . '.' . 'id' => [ '$in' => $users ] ];
             }
-            else
+            else if ($key_type_fields[$key] === 'MultiUser')
+            {
+                $or = [];
+                $vals = explode(',', $val);
+                foreach ($vals as $v)
+                {
+                    $or[] = [ $key . '_ids' => $v ];
+                }
+                $and[] = [ '$or' => $or ];
+            }
+            else if (in_array($key_type_fields[$key], [ 'Select', 'SingleVersion', 'RadioGroup' ]))
             {
                 $and[] = [ $key => [ '$in' => explode(',', $val) ] ];
+            }
+            else if (in_array($key_type_fields[$key], [ 'MultiSelect', 'MultiVersion', 'CheckboxGroup' ]))
+            {
+                $or = [];
+                $vals = explode(',', $val);
+                foreach ($vals as $v)
+                {
+                    if ($key === 'sprint')
+                    {
+                        $or[] = [ 'sprints' => $v + 0 ];
+                    }
+                    else
+                    {
+                        $or[] = [ $key => $v ];
+                    }
+                }
+                $and[] = [ '$or' => $or ];
+            }
+            else if (in_array($key_type_fields[$key], [ 'Duration', 'DatePicker', 'DateTimePicker' ]))
+            {
+                if (strpos($val, '~') !== false)
+                {
+                    $sections = explode('~', $val);
+                    if ($sections[0])
+                    {
+                        $and[] = [ $key => [ '$gte' => strtotime($sections[0]) ] ];
+                    }
+                    if ($sections[1])
+                    {
+                        $and[] = [ $key => [ '$lte' => strtotime($sections[1] . ' 23:59:59') ] ];
+                    }
+                }
+                else
+                {
+                    $unitMap = [ 'w' => 'week', 'm' => 'month', 'y' => 'year' ];
+                    $unit = substr($val, -1);
+                    if (in_array($unit, [ 'w', 'm', 'y' ]))
+                    {
+                        $direct = substr($val, 0, 1);
+                        $val = abs(substr($val, 0, -1));
+                        if ($direct === '-')
+                        {
+                            $and[] = [ $key => [ '$lt' => strtotime(date('Ymd', strtotime('-' . $val . ' ' . $unitMap[$unit]))) ] ];
+                        }
+                        else
+                        {
+                            $and[] = [ $key => [ '$gte' => strtotime(date('Ymd', strtotime('-' . $val . ' ' . $unitMap[$unit]))) ] ];
+                        }
+                    }
+                }
+            }
+            else if (in_array($key_type_fields[$key], [ 'Text', 'TextArea', 'Url' ]))
+            {
+                $and[] = [ $key => [ '$regex' => $val ] ];
+            }
+            else if ($key_type_fields[$key] === 'Number')
+            {
+                if (strpos($val, '~') !== false)
+                {
+                    $sections = explode('~', $val);
+                    if ($sections[0])
+                    {
+                        $and[] = [ $key => [ '$gte' => $sections[0] + 0 ] ];
+                    }
+                    if ($sections[1])
+                    {
+                        $and[] = [ $key => [ '$lte' => $sections[1] + 0 ] ];
+                    }
+                }
+            }
+            else if ($key_type_fields[$key] === 'TimeTracking')
+            {
+                if (strpos($val, '~') !== false)
+                {
+                    $sections = explode('~', $val);
+                    if ($sections[0])
+                    {
+                        $and[] = [ $key . '_m' => [ '$gte' => $this->ttHandleInM($sections[0]) ] ];
+                    }
+                    if ($sections[1])
+                    {
+                        $and[] = [ $key . '_m' => [ '$lte' => $this->ttHandleInM($sections[1]) ] ];
+                    }
+                }
             }
         }
 
@@ -415,128 +546,7 @@ class Controller extends BaseController
             $and[] = [ '_id' => [ '$in' => $watchedIds ] ];
         }
 
-        $sprint = isset($query['sprint']) ? $query['sprint'] : '';
-        if ($sprint)
-        {
-            $and[] = [ 'sprints' => intval($sprint) ];
-        }
-
-        $no = isset($query['no']) ? $query['no'] : '';
-        if ($no)
-        {
-            $and[] = [ 'no' => intval($no) ];
-        }
-
-        $title = isset($query['title']) ? $query['title'] : '';
-        if ($title)
-        {
-            if (is_numeric($title) && strpos($title, '.') === false)
-            {
-                $and[] = [ '$or' => [ [ 'no' => $title + 0 ], [ 'title'  => [ '$regex' => $title ] ] ] ];
-            }
-            else if (strpos($title, ',') !== false)
-            {
-                $nos = explode(',', $title);
-                $new_nos = [];
-                foreach ($nos as $no)
-                {
-                    if ($no && is_numeric($no))
-                    {
-                        $new_nos[] = $no + 0;
-                    }
-                }
-                $and[] = [ '$or' => [ [ 'no' => [ '$in' => $new_nos ] ], [ 'title'  => [ '$regex' => $title ] ] ] ];
-            }
-            else
-            {
-                $and[] = [ 'title' => [ '$regex' => $title ] ];
-            }
-        }
-
-        $effect_versions = isset($query['effect_versions']) ? $query['effect_versions'] : '';
-        if ($effect_versions)
-        {
-            $or = [];
-            $versions = explode(',', $effect_versions);
-            foreach ($version as $ver)
-            {
-                $or[] = [ 'effect_versions' => [ '$regex' => $ver ] ];
-            }
-            $and[] = [ '$or' => $or ];
-        }
-
-        $module = isset($query['module']) ? $query['module'] : '';
-        if ($module)
-        {
-            $or = [];
-            $modules = explode(',', $module);
-            foreach ($modules as $m)
-            {
-                $or[] = [ 'module' => [ '$regex' => $m ] ];
-            }
-            $and[] = [ '$or' => $or ];
-        }
-
-        $labels = isset($query['labels']) ? $query['labels'] : '';
-        if (isset($labels) && $labels)
-        {
-            $or = [];
-            $labels = explode(',', $labels);
-            foreach ($labels as $label)
-            {
-                $or[] = [ 'labels' => $label ];
-            }
-            $and[] = [ '$or' => $or ];
-        }
-
-        //$query = DB::collection('issue_' . $project_key);
-        //if ($and)
-        //{
-        //    $query = $query->whereRaw([ '$and' => $and ]);
-        //}
-
-        $timeConds = [ 'created_at', 'updated_at', 'resolved_at', 'closed_at', 'expect_complete_time' ];
-        foreach ($timeConds as $cond)
-        {
-            if (!isset($query[$cond]) || !$query[$cond])
-            {
-                continue;
-            }
-
-            if (strpos($query[$cond], '~') !== false)
-            {
-                $sections = explode('~', $query[$cond]);
-                if ($sections[0])
-                {
-                    $and[] = [ $cond => [ '$gte' => strtotime($sections[0]) ] ];
-                }
-                if ($sections[1])
-                {
-                    $and[] = [ $cond => [ '$lte' => strtotime($sections[1] . ' 23:59:59') ] ];
-                }
-            }
-            else
-            {
-                $unitMap = [ 'w' => 'week', 'm' => 'month', 'y' => 'year' ];
-                $unit = substr($query[$cond], -1);
-                if (in_array($unit, [ 'w', 'm', 'y' ]))
-                {
-                    $direct = substr($query[$cond], 0, 1);
-                    $val = abs(substr($query[$cond], 0, -1));
-                    if ($direct === '-')
-                    {
-                        $and[] = [ $cond => [ '$lt' => strtotime(date('Ymd', strtotime('-' . $val . ' ' . $unitMap[$unit]))) ] ];
-                    }
-                    else
-                    {
-                        $and[] = [ $cond => [ '$gte' => strtotime(date('Ymd', strtotime('-' . $val . ' ' . $unitMap[$unit]))) ] ];
-                    }
-                }
-            }
-        }
-
         $and[] = [ 'del_flg' => [ '$ne' => 1 ] ];
-
         return [ '$and' => $and ];
     }
 }

@@ -224,17 +224,21 @@ class ModuleController extends Controller
     public function updIssueModule($project_key, $source, $dest)
     {
         $issues = DB::collection('issue_' . $project_key)
-            ->where('module', 'like', '%' . $source . '%')
+            ->where('module', $source)
             ->where('del_flg', '<>', 1)
             ->get();
 
         foreach ($issues as $issue)
         {
             $updValues = [];
-            if (isset($issue['module']) && strpos($issue['module'], $source) !== false)
+
+            if (is_string($issue['module']))
             {
-                $tmp = str_replace($source, $dest, $issue['module']);
-                $updValues['module'] = implode(',', array_filter(array_unique(explode(',', $tmp))));
+                $updValues['module'] = $dest;
+            } 
+            else if (is_array($issue['module']))
+            {
+                $updValues['module'] = array_filter(array_unique(str_replace($source, $dest, $issue['module'])));
             }
 
             if ($updValues)

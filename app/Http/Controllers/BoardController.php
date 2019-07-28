@@ -211,6 +211,12 @@ $example = [
             $updValues['columns'] = $columns;
         }
 
+        $display_fields = $request->input('display_fields');
+        if (isset($display_fields))
+        {
+            $updValues['display_fields'] = $display_fields ?: [];
+        }
+
         //$subtask = $request->input('subtask');
         //if (isset($subtask))
         //{

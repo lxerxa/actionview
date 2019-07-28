@@ -13,6 +13,8 @@ use App\Customization\Eloquent\Field;
 use App\Customization\Eloquent\Screen;
 use App\Project\Provider;
 
+use DB;
+
 class FieldController extends Controller
 {
     private $special_fields = [
@@ -28,7 +30,6 @@ class FieldController extends Controller
         'regression_times', 
         'his_resolvers',
         'resolved_logs',
-        'original_estimate_m',
         'no', 
         'schema', 
         'parent_id', 
@@ -42,7 +43,14 @@ class FieldController extends Controller
         'gitcommits_num', 
         'sprint', 
         'sprints', 
-        'filter' 
+        'filter', 
+        'from',
+        'from_kanban_id',
+        'limit',
+        'page',
+        'orderBy',
+        'stat_x',
+        'stat_y',
     ];
 
     private $sys_fields = [
@@ -144,6 +152,16 @@ class FieldController extends Controller
             throw new \UnexpectedValueException('the type cannot be empty.', -12204);
         }
 
+        if ($type === 'TimeTracking' && Provider::isFieldKeyExisted($project_key, $key . '_m'))
+        {
+            throw new \InvalidArgumentException('field key cannot be repeated.', -12203);
+        }
+
+        if ($type === 'MultiUser' && Provider::isFieldKeyExisted($project_key, $key . '_ids'))
+        {
+            throw new \UnexpectedValueException('the type cannot be empty.', -12204);
+        }
+
         if (!in_array($type, $this->all_types))
         {
             throw new \UnexpectedValueException('the type is incorrect type.', -12205);
@@ -153,6 +171,15 @@ class FieldController extends Controller
         if (in_array($type, $optionTypes))
         {
             $optionValues = $request->input('optionValues') ?: [];
+            foreach ($optionValues as $key => $val)
+            {
+                if (!isset($val['name']) || !$val['name'])
+                {
+                    continue;
+                }
+                $optionValues[$key]['id'] = md5(microtime() . $val['name']);
+            }
+
             $defaultValue = $request->input('defaultValue') ?: '';
             if ($defaultValue)
             {
@@ -212,6 +239,8 @@ class FieldController extends Controller
             throw new \UnexpectedValueException('the field does not exist or is not in the project.', -12206);
         }
 
+        $updValues = [];
+
         $optionTypes = [ 'Select', 'MultiSelect', 'RadioGroup', 'CheckboxGroup' ];
         if (in_array($field->type, $optionTypes))
         {
@@ -219,17 +248,45 @@ class FieldController extends Controller
             $defaultValue = $request->input('defaultValue');
             if (isset($optionValues) || isset($defaultValue))
             {
-                $optionValues = isset($optionValues) ? $optionValues : ($field->optionValues ?: []);
+                if (isset($optionValues))
+                {
+                    if (isset($field->optionValues) && $field->optionValues)
+                    {
+                        $old_option_ids = array_column($field->optionValues, 'id');
+                    }
+                    else
+                    {
+                        $old_option_ids = [];
+                    }
+
+                    foreach ($optionValues as $key => $val)
+                    {
+                        if (!isset($val['name']) || !$val['name'])
+                        {
+                            continue;
+                        }
+
+                        if (!isset($val['id']) || !in_array($val['id'], $old_option_ids))
+                        {
+                            $optionValues[$key]['id'] = md5(microtime() . $val['name']);
+                        }
+                    }
+                }
+                else
+                {
+                    $optionValues = $field->optionValues ?: [];
+                }
+                $updValues['optionValues'] = $optionValues;
+
                 $options = array_column($optionValues, 'id');
                 $defaultValue = isset($defaultValue) ? $defaultValue : ($field->defaultValue ?: '');
                 $defaults = explode(',', $defaultValue);
                 $defaultValue = implode(',', array_intersect($defaults, $options));
-
-                $field->fill([ 'optionValues' => $optionValues, 'defaultValue' => $defaultValue ] + $request->except(['project_key', 'key', 'type']))->save();
+                $updValues['defaultValue'] = $defaultValue;
             }
         }
 
-        $field->fill($request->except(['project_key', 'key', 'type']))->save();
+        $field->fill($updValues + $request->except(['project_key', 'key', 'type']))->save();
 
         Event::fire(new FieldChangeEvent($id));
 
@@ -262,7 +319,8 @@ class FieldController extends Controller
         }
 
         Field::destroy($id);
-        Event::fire(new FieldDeleteEvent($id));
+
+        Event::fire(new FieldDeleteEvent($project_key, $id, $field->key, $field->type));
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }
 }

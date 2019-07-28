@@ -24,6 +24,7 @@ use App\Project\Eloquent\Epic;
 use App\Project\Eloquent\Sprint;
 use App\Project\Eloquent\Labels;
 use App\Project\Eloquent\IssueFilters;
+use App\Project\Eloquent\IssueListColumns;
 
 use Cartalyst\Sentinel\Users\EloquentUser;
 use Sentinel;
@@ -83,8 +84,43 @@ class Provider {
         {
             $filters = isset($res->filters) ? $res->filters : [];
         }
-
         return $filters;
+    }
+
+    /**
+     * get the issue list default columns.
+     *
+     * @return array
+     */
+    public static function getDefaultDisplayColumns()
+    {
+        return [
+            [ 'key' => 'assignee', 'width' => '100' ],
+            [ 'key' => 'priority', 'width' => '70' ],
+            [ 'key' => 'state', 'width' => '100' ],
+            [ 'key' => 'resolution', 'width' => '100' ],
+        ];
+    }
+
+    /**
+     * get the issue list columns.
+     *
+     * @param  string $project_key
+     * @param  string $user_id
+     * @return array
+     */
+    public static function getIssueDisplayColumns($project_key, $user_id)
+    {
+        // default issue filters
+        $columns = self::getDefaultDisplayColumns();
+        $res = IssueListColumns::where('project_key', $project_key)
+            ->where('user', $user_id)
+            ->first(); 
+        if ($res)
+        {
+            $columns = isset($res->columns) ? $res->columns : [];
+        }
+        return $columns;
     }
 
     /**
@@ -702,12 +738,18 @@ class Provider {
      */
     public static function isFieldKeyExisted($project_key, $key)
     {
-        $isExisted = Resolution::Where('project_key', '$_sys_$')
+        $fields = Field::Where('project_key', '$_sys_$')
             ->orWhere('project_key', $project_key)
-            ->Where('key', $key)
-            ->exists();
+            ->get();
+        foreach ($fields as $field)
+        {
+            if ($field->key === $key || ($field->type === 'MutiUser' && $field->key . '_ids' === $key) || ($field->type === 'TimeTracking' && $field->key . '_m' === $key))
+            {
+                return true;
+            }
+        }
 
-        return $isExisted;
+        return false;
     }
 
     /**

@@ -15,9 +15,12 @@ class FieldDeleteEvent extends Event
      *
      * @return void
      */
-    public function __construct($field_id)
+    public function __construct($project_key, $field_id, $field_key, $field_type)
     {
+        $this->project_key = $project_key;
         $this->field_id = $field_id;
+        $this->field_key = $field_key;
+        $this->field_type = $field_type;
     }
 
     /**

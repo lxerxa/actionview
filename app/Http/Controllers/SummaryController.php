@@ -274,7 +274,7 @@ class SummaryController extends Controller
             }
             else
             {
-                $ms = explode(',', $issue['module']);
+                $ms = is_string($issue['module']) ? explode(',', $issue['module']) : $issue['module'];
                 foreach ($ms as $m)
                 {
                     $module_ids[] = isset($optModules[$m]) ? $m : '-1';

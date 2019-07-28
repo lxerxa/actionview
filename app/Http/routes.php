@@ -139,7 +139,7 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::get('report/issues', 'ReportController@getIssues');
     Route::get('report/{mode}/filters/reset', 'ReportController@resetSomeFilters');
     Route::post('report/{mode}/filters', 'ReportController@editSomeFilters');
-    Route::post('report/{mode}/filter', 'ReportController@saveFilter');
+    Route::post('report/{mode}/filter', 'ReportController@saveIssueFilter');
     // project team
     Route::get('team', 'RoleController@index');
     // preview the workflow chart 
@@ -148,10 +148,13 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::get('issue/options', 'IssueController@getOptions');
     Route::get('issue/search', 'IssueController@search');
 
-    Route::post('issue/filter', 'IssueController@saveFilter');
-    Route::get('issue/filters', 'IssueController@getFilters');
-    Route::get('issue/filters/reset', 'IssueController@resetFilters');
+    Route::post('issue/filter', 'IssueController@saveIssueFilter');
+    Route::get('issue/filters', 'IssueController@getIssueFilters');
+    Route::get('issue/filters/reset', 'IssueController@resetIssueFilters');
     Route::post('issue/filters', 'IssueController@editFilters');
+
+    Route::post('issue/columns', 'IssueController@setDisplayColumns');
+    Route::get('issue/columns/reset', 'IssueController@resetDisplayColumns');
 
     Route::get('issue/{id}', 'IssueController@show');
     Route::get('issue', 'IssueController@index');

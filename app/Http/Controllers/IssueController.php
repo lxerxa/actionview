@@ -12,6 +12,7 @@ use App\Project\Provider;
 use App\Project\Eloquent\File;
 use App\Project\Eloquent\Watch;
 use App\Project\Eloquent\IssueFilters;
+use App\Project\Eloquent\IssueListColumns;
 use App\Project\Eloquent\Linked;
 use App\Project\Eloquent\Worklog;
 use App\Project\Eloquent\Version;
@@ -45,15 +46,22 @@ class IssueController extends Controller
 
         $from = $request->input('from');
         $from_kanban_id = $request->input('from_kanban_id');
-        if (isset($from)) 
+        if (isset($from) && in_array($from, [ 'kanban', 'active_sprint', 'backlog' ]) && isset($from_kanban_id) && $from_kanban_id) 
         {
+            $board = Board::find($from_kanban_id);
+            if ($board && isset($board->query) && $board->query)
+            {
+                $global_query = $this->getIssueQueryWhere($project_key, $board->query);
+                $query->whereRaw($global_query);
+            }
+
             if ($from === 'kanban')
             {
                 $query->where(function ($query) {
                     $query->whereRaw([ 'resolve_version' => [ '$exists' => 0 ] ])->orWhere('resolve_version', '');
                 });
             }
-            else if (($from === 'active_sprint' || $from === 'backlog') && isset($from_kanban_id) && $from_kanban_id)
+            else if ($from === 'active_sprint' || $from === 'backlog')
             {
                 $active_sprint_issues = [];
                 $active_sprint = Sprint::where('project_key', $project_key)->where('status', 'active')->first();
@@ -67,7 +75,6 @@ class IssueController extends Controller
                 }
 
                 $last_column_states = [];
-                $board = Board::find($from_kanban_id);
                 if ($board && isset($board->columns))
                 {
                     $board_columns = $board->columns;
@@ -256,6 +263,9 @@ class IssueController extends Controller
                     throw new \UnexpectedValueException('the format of timetracking is incorrect.', -11102);
                 }
                 $insValues[$field['key']] = $this->ttHandle($fieldValue);
+
+                $valid_keys[] = $field['key'] . '_m';
+                $insValues[$field['key'] . '_m'] = $this->ttHandleInM($insValues[$field['key']]);
             }
             else if ($field['type'] == 'SingleUser')
             {
@@ -267,7 +277,8 @@ class IssueController extends Controller
             }
             else if ($field['type'] == 'MultiUser')
             {
-                $user_ids = explode(',', $fieldValue);
+                $user_ids = $fieldValue;
+                $new_user_ids = [];
                 $insValues[$field['key']] = [];
                 foreach ($user_ids as $uid)
                 {
@@ -275,8 +286,12 @@ class IssueController extends Controller
                     if ($user_info)
                     {
                         array_push($insValues[$field['key']], [ 'id' => $uid, 'name' => $user_info->first_name, 'email' => $user_info->email ]);
+                        $new_user_ids[] = $uid;
                     }
                 }
+
+                $valid_keys[] = $field['key'] . '_ids';
+                $insValues[$field['key'] . '_ids'] = $new_user_ids;
             }
         }
 
@@ -288,7 +303,7 @@ class IssueController extends Controller
             $module_ids = $request->input('module');
             if ($module_ids)
             {
-                $module_ids = explode(',', $module_ids);
+                //$module_ids = explode(',', $module_ids);
                 $module = Provider::getModuleById($module_ids[0]);
                 if (isset($module['defaultAssignee']) && $module['defaultAssignee'] === 'modulePrincipal')
                 {
@@ -570,11 +585,15 @@ class IssueController extends Controller
             $sprint_nos[] = strval($sprint['no']);
         }
         // get defined fields
-        $fields = Provider::getFieldList($project_key, ['key', 'name', 'type']);
+        $fields = Provider::getFieldList($project_key);
         // get defined searchers
         $filters = Provider::getIssueFilters($project_key, $this->user->id);
+        // get defined list columns
+        $display_columns = Provider::getIssueDisplayColumns($project_key, $this->user->id);
         // get timetrack options
         $timetrack = $this->getTimeTrackSetting();
+        // get issue link relations
+        $relations = $this->getLinkRelations();
 
         return Response()->json([ 
             'ecode' => 0, 
@@ -591,7 +610,9 @@ class IssueController extends Controller
                 'epics' => $epics,
                 'sprints' => $sprint_nos,
                 'filters' => $filters, 
+                'display_columns' => $display_columns, 
                 'timetrack' => $timetrack, 
+                'relations' => $relations, 
                 'fields' => $fields 
             ]) 
         ]);
@@ -793,6 +814,9 @@ class IssueController extends Controller
                     throw new \UnexpectedValueException('the format of timetracking is incorrect.', -11102);
                 }
                 $updValues[$field['key']] = $this->ttHandle($fieldValue);
+
+                $valid_keys[] = $field['key'] . '_m';
+                $updValues[$field['key'] . '_m'] = $this->ttHandleInM($updValues[$field['key']]);
             }
             else if ($field['type'] == 'SingleUser')
             {
@@ -804,8 +828,9 @@ class IssueController extends Controller
             }
             else if ($field['type'] == 'MultiUser')
             {
-                $user_ids = explode(',', $fieldValue);
+                $user_ids = $fieldValue;
                 $updValues[$field['key']] = [];
+                $new_user_ids = [];
                 foreach ($user_ids as $uid)
                 {
                     $user_info = Sentinel::findById($uid);
@@ -813,7 +838,11 @@ class IssueController extends Controller
                     {
                         array_push($updValues[$field['key']], [ 'id' => $uid, 'name' => $user_info->first_name, 'email' => $user_info->email ]);
                     }
+                    $new_user_ids[] = $uid;
                 }
+
+                $valid_keys[] = $field['key'] . '_ids';
+                $updValues[$field['key'] . '_ids'] = $new_user_ids;
             }
         }
 
@@ -902,7 +931,7 @@ class IssueController extends Controller
      * @param  string $project_key
      * @return array
      */
-    public function getFilters($project_key)
+    public function getIssueFilters($project_key)
     {
         return Response()->json([ 'ecode' => 0, 'data' => Provider::getIssueFilters($project_key, $this->user->id) ]);
     }
@@ -913,7 +942,7 @@ class IssueController extends Controller
      * @param  string $project_key
      * @return \Illuminate\Http\Response
      */
-    public function saveFilter(Request $request, $project_key)
+    public function saveIssueFilter(Request $request, $project_key)
     {
         $name = $request->input('name');
         if (!$name)
@@ -958,7 +987,7 @@ class IssueController extends Controller
             array_push($filters, [ 'id' => md5(microtime()), 'name' => $name, 'query' => $query ]);
             IssueFilters::create([ 'project_key' => $project_key, 'user' => $this->user->id, 'filters' => $filters ]); 
         }
-        return $this->getFilters($project_key);
+        return $this->getIssueFilters($project_key);
     }
 
     /**
@@ -967,13 +996,88 @@ class IssueController extends Controller
      * @param  string $project_key
      * @return \Illuminate\Http\Response
      */
-    public function resetFilters(Request $request, $project_key)
+    public function resetIssueFilters(Request $request, $project_key)
     {
         IssueFilters::where('project_key', $project_key)
             ->where('user', $this->user->id)
             ->delete();
 
-        return $this->getFilters($project_key);
+        return $this->getIssueFilters($project_key);
+    }
+
+    /**
+     * get the default columns.
+     *
+     * @param  string $project_key
+     * @return array
+     */
+    public function getDisplayColumns($project_key)
+    {
+        return Response()->json([ 'ecode' => 0, 'data' => Provider::getIssueDisplayColumns($project_key, $this->user->id) ]);
+    }
+
+    /**
+     * reset the issue list diplay columns.
+     *
+     * @param  string $project_key
+     * @return \Illuminate\Http\Response
+     */
+    public function resetDisplayColumns(Request $request, $project_key)
+    {
+        IssueListColumns::where('project_key', $project_key)
+            ->where('user', $this->user->id)
+            ->delete();
+        return $this->getDisplayColumns($project_key);
+    }
+
+    /**
+     * set the issue list display columns.
+     *
+     * @param  string $project_key
+     * @return \Illuminate\Http\Response
+     */
+    public function setDisplayColumns(Request $request, $project_key)
+    {
+        $fields = Provider::getFieldList($project_key);    
+        $field_keys = [];
+        foreach ($fields as $val) 
+        {
+            $field_keys[] = $val->key;
+        }
+
+        $column_keys = [];
+        $new_columns = [];
+        $columns = $request->input('columns') ?: [];
+        foreach ($columns as $column)
+        {
+            //if (!isset($column['key']) || !isset($column['width']) || !in_array($column['key'], $field_keys))
+            //{
+            //    continue;
+            //}
+
+            if (in_array($column['key'], $column_keys))
+            {
+                continue;
+            }
+            $column_keys[] = $column['key'];
+            $new_columns[] = array_only($column, [ 'key', 'width' ]);
+        }
+
+        $res = IssueListColumns::where('project_key', $project_key)
+            ->where('user', $this->user->id)
+            ->first();
+        if ($res)
+        {
+            $res->columns = $new_columns;
+            $res->column_keys = $column_keys;
+            $res->save();
+        }
+        else
+        {
+            IssueListColumns::create([ 'project_key' => $project_key, 'user' => $this->user->id, 'column_keys' => $column_keys, 'columns' => $new_columns ]); 
+        }
+
+        return $this->getDisplayColumns($project_key);
     }
 
     /**
@@ -1018,7 +1122,22 @@ class IssueController extends Controller
                 IssueFilters::create([ 'project_key' => $project_key, 'user' => $this->user->id, 'filters' => $new_filters ]); 
             }
         }
-        return $this->getFilters($project_key);
+        return $this->getIssueFilters($project_key);
+    }
+
+    /**
+     * reset the issue list columns.
+     *
+     * @param  string $project_key
+     * @return \Illuminate\Http\Response
+     */
+    public function resetColumns(Request $request, $project_key)
+    {
+        IssueListColumns::where('project_key', $project_key)
+            ->where('user', $this->user->id)
+            ->delete();
+
+        return $this->getColumns($project_key);
     }
 
     /**
@@ -1494,6 +1613,22 @@ class IssueController extends Controller
     }
 
     /**
+     * get issue link relations.
+     *
+     * @return array
+     */
+    function getLinkRelations()
+    {
+        $relations = [
+          [ 'id' => 'blocks', 'out' => 'blocks', 'in' => 'is blocked by' ],
+          [ 'id' => 'clones', 'out' => 'clones', 'in' => 'is cloned by' ],
+          [ 'id' => 'duplicates', 'out' => 'duplicates', 'in' => 'is duplicated by' ],
+          [ 'id' => 'relates', 'out' => 'relates to', 'in' => 'relates to' ],
+        ];
+        return $relations;
+    }
+
+    /**
      * classify issues by parent_id.
      *
      * @param  array  $issues
@@ -1834,6 +1969,10 @@ class IssueController extends Controller
             $tmp = [];
             $tmp['name'] = $field->name;
             $tmp['type'] = $field->type;
+            if (isset($field->optionValues))
+            {
+                $tmp['optionValues'] = $field->optionValues;
+            }
             $fields[$field->key] = $tmp;
         }
 
@@ -1905,14 +2044,22 @@ class IssueController extends Controller
                     continue;
                 }
 
-                if ($fk == 'assignee' || $fk == 'reporter')
+                if (in_array($fk, [ 'assignee', 'reporter', 'closer', 'resolver' ]))
                 {
                     $tmp[] = isset($issue[$fk]['name']) ? $issue[$fk]['name'] : '';
                 }
                 else if ($fk == 'module')
                 {
                     $new_modules = [];
-                    $module_ids = explode(',', $issue[$fk]);
+                    $module_ids = [];
+                    if (is_array($issue[$fk]))
+                    {
+                        $module_ids = $issue[$fk];
+                    }
+                    else
+                    {
+                        $module_ids = explode(',', $issue[$fk]);
+                    }
                     foreach ($module_ids as $id)
                     {
                         if (!isset($modules[$id]) || !$modules[$id])
@@ -1947,6 +2094,10 @@ class IssueController extends Controller
                 {
                     $tmp[] = 'Sprint ' . implode(',', $issue[$fk]);
                 }
+                else if ($fk == 'labels')
+                {
+                    $tmp[] = implode(',', $issue[$fk]);
+                }
                 else if (isset($fields[$fk]) && $fields[$fk])
                 {
                     if ($fields[$fk]['type'] == 'DateTimePicker')
@@ -1960,7 +2111,15 @@ class IssueController extends Controller
                     else if ($fields[$fk]['type'] == 'SingleVersion' || $fields[$fk]['type'] == 'MultiVersion')
                     {
                         $new_versions = [];
-                        $version_ids = explode(',', $issue[$fk]);
+                        $version_ids = [];
+                        if (is_array($issue[$fk]))
+                        {
+                            $version_ids = $issue[$fk];
+                        }
+                        else
+                        {
+                            $version_ids = explode(',', $issue[$fk]);
+                        }
                         foreach ($version_ids as $id)
                         {
                             if (isset($versions[$id]) && $versions[$id])
@@ -1988,13 +2147,32 @@ class IssueController extends Controller
                     }
                     else
                     {
-                        if (is_array($issue[$fk]))
+                        if (isset($fields[$fk]['optionValues']) && $fields[$fk]['optionValues'])
                         {
-                            $tmp[] = implode(',', $issue[$fk]);
+                            $tmpOptions = [];
+                            foreach ($fields[$fk]['optionValues'] as $ov)
+                            {
+                                $tmpOptions[$ov['id']] = $ov['name'];
+                            }
+                            $ov_ids = [];
+                            if (is_array($issue[$fk]))
+                            {
+                                $ov_ids = $issue[$fk]; 
+                            }
+                            else
+                            {
+                                $ov_ids = explode(',', $issue[$fk]); 
+                            }
+                            $ov_names = [];
+                            foreach ($ov_ids as $ovid)
+                            {
+                                $ov_names[] = isset($tmpOptions[$ovid]) ? $tmpOptions[$ovid] : ''; 
+                            }
+                            $tmp[] = implode(',', array_filter($ov_names));
                         }
                         else
                         {
-                            $tmp[] = $issue[$fk];
+                            $tmp[] = (string)$issue[$fk];
                         }
                     }
                 }

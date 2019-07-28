@@ -1030,6 +1030,32 @@ class ReportController extends Controller
                 $results[] = $tmp;
             }             
         }
+        else
+        {
+            $fields = Provider::getFieldList($project_key);
+            foreach ($fields as $field)
+            {
+                if ($field->key === $dimension)
+                {
+                    if (isset($field->optionValues) && $field->optionValues)
+                    {
+                        foreach($field->optionValues as $v)
+                        {
+                            foreach ($data as $key => $val)
+                            {
+                                if ($key === $v['id'])
+                                {
+                                    $val['category'] = $v['name'];
+                                    $results[$key] = $val;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+        }
 
         return array_values($results);
     }
@@ -1243,36 +1269,57 @@ class ReportController extends Controller
 
             case 'type':
                 $types = Provider::getTypeList($project_key, ['name']);
-                foreach ($types as $key => $value) {
+                foreach ($types as $key => $value) 
+                {
                     $results[$value->id] = [ 'name' => $value->name, 'nos' => [] ];
                 }
                 break;
 
             case 'priority':
                 $priorities = Provider::getPriorityOptions($project_key, ['name']);
-                foreach ($priorities as $key => $value) {
+                foreach ($priorities as $key => $value) 
+                {
+                    $results[$value['_id']] = [ 'name' => $value['name'], 'nos' => [] ];
+                }
+                break;
+
+            case 'state':
+                $states = Provider::getStateOptions($project_key, ['name']);
+                foreach ($states as $key => $value)
+                {
+                    $results[$value['_id']] = [ 'name' => $value['name'], 'nos' => [] ];
+                }
+                break;
+
+            case 'resolution':
+                $resolutions = Provider::getResolutionOptions($project_key, ['name']);
+                foreach ($resolutions as $key => $value)
+                {
                     $results[$value['_id']] = [ 'name' => $value['name'], 'nos' => [] ];
                 }
                 break;
 
             case 'module':
                 $modules = Provider::getModuleList($project_key, ['name']);
-                foreach ($modules as $key => $value) {
+                foreach ($modules as $key => $value) 
+                {
                     $results[$value->id] = [ 'name' => $value->name, 'nos' => [] ];
                 }
                 break;
 
             case 'resolve_version':
                 $versions = Provider::getVersionList($project_key, ['name']);
-                foreach ($versions as $key => $value) {
+                foreach ($versions as $key => $value) 
+                {
                     $results[$value->id] = [ 'name' => $value->name, 'nos' => [] ];
                 }
                 $results = array_reverse($results);
                 break;
 
             case 'epic':
-                 $epics = Provider::getEpicList($project_key, ['name']);
-                foreach ($epics as $key => $value) {
+                $epics = Provider::getEpicList($project_key, ['name']);
+                foreach ($epics as $key => $value) 
+                {
                     $results[$value['_id']] = [ 'name' => $value['name'], 'nos' => [] ];
                 }
                 break; 
@@ -1289,6 +1336,21 @@ class ReportController extends Controller
                 break;
 
             default:
+                $fields = Provider::getFieldList($project_key);
+                foreach ($fields as $field) 
+                {
+                    if ($field->key === $dimension)
+                    {
+                        if (isset($field->optionValues) && $field->optionValues)
+                        {
+                            foreach($field->optionValues as $val)
+                            {
+                                $results[$val['id']] = [ 'name' => $val['name'], 'nos' => [] ];
+                            }
+                        }
+                        break;
+                    }
+                }
                 # code...
                 break;
         }
@@ -1304,17 +1366,15 @@ class ReportController extends Controller
      */
     public function getIssues(Request $request, $project_key)
     {
-        $no_schema_fields = [ 'reporter', 'assignee', 'resolver', 'closer', 'labels' ];
-
         $X = $request->input('stat_x') ?: '';
         if (!$X)
         {
             throw new \UnexpectedValueException('the currentX can not be empty.', -11855);
         }
-        $X = $X === 'sprint' ? 'sprints' : $X;
+        //$X = $X === 'sprint' ? 'sprints' : $X;
 
         $Y = $request->input('stat_y') ?: '';
-        $Y = $Y === 'sprint' ? 'sprints' : $Y;
+        //$Y = $Y === 'sprint' ? 'sprints' : $Y;
      
 
         $XYData = [];
@@ -1375,7 +1435,7 @@ class ReportController extends Controller
                     {
                         $XYData[$dimension][$tmpv]['nos'][] = $issue['no'];
                     }
-                    else if (in_array($dimension, $no_schema_fields))
+                    else if ((is_array($issue_val) && isset($issue_val['id'])) || $dimension === 'lables')
                     {
                         if ($dimension === $Y && $X !== $Y)
                         {

@@ -14,6 +14,7 @@ class Board extends Model
         'name',
         'type',
         'description',
+        'display_fields',
         'columns',
         'filters',
         'query',

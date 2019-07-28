@@ -4,14 +4,15 @@ namespace App\Project\Eloquent;
 
 use Jenssegers\Mongodb\Eloquent\Model;
 
-class IssueFilters extends Model
+class IssueListColumns extends Model
 {
     //
-    protected $table = 'user_issue_filters';
+    protected $table = 'user_issuelist_columns';
 
     protected $fillable = array(
         'project_key',
         'user',
-        'filters'
+        'column_keys',
+        'columns'
     );
 }

@@ -335,14 +335,7 @@ class VersionController extends Controller
             ->where(function ($query) use ($source, $version_fields) {
                 foreach ($version_fields as $key => $vf)
                 {
-                    if ($vf['type'] === 'SingleVersion')
-                    {
-                        $query->orWhere($vf['key'], $source);
-                    }
-                    else
-                    {
-                        $query->orWhere($vf['key'], 'like',  "%$source%");
-                    }
+                    $query->orWhere($vf['key'], $source);
                 }
             })
             ->where('del_flg', '<>', 1)
@@ -353,10 +346,17 @@ class VersionController extends Controller
             $updValues = [];
             foreach($version_fields as $key => $vf)
             {
-                if (isset($issue[$vf['key']]) && strpos($issue[$vf['key']], $source) !== false)
+                if (!isset($issue[$vf['key']]))
                 {
-                    $tmp = str_replace($source, $dest, $issue[$vf['key']]);
-                    $updValues[$vf['key']] = implode(',', array_filter(array_unique(explode(',', $tmp))));
+                    continue;
+                }
+                if (is_string($issue[$vf['key']]))
+                {
+                    $updValues[$vf['key']] = $dest;
+                }
+                else if (is_array($issue[$vf['key']]))
+                {
+                    $updValues[$vf['key']] = array_filter(array_unique(str_replace($source, $dest, $issue[$vf['key']])));
                 }
             }
 
