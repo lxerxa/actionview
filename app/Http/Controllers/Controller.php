@@ -373,7 +373,7 @@ class Controller extends BaseController
             [ 'key' => 'resolved_at', 'type' => 'Duration' ],
             [ 'key' => 'closed_at', 'type' => 'Duration' ],
 
-            [ 'key' => 'sprint', 'type' => 'MultiSelect' ],
+            [ 'key' => 'sprint', 'type' => 'Select' ],
         ];
 
         $fields = Provider::getFieldList($project_key, ['key', 'name', 'type']);
@@ -419,6 +419,10 @@ class Controller extends BaseController
                     $and[] = [ 'title' => [ '$regex' => $val ] ];
                 }
             }
+            else if ($key === 'sprint')
+            {
+                $and[] = [ 'sprints' => $val + 0 ];
+            }
             else if ($key_type_fields[$key] === 'SingleUser')
             {
                 $users = explode(',', $val);
@@ -448,14 +452,7 @@ class Controller extends BaseController
                 $vals = explode(',', $val);
                 foreach ($vals as $v)
                 {
-                    if ($key === 'sprint')
-                    {
-                        $or[] = [ 'sprints' => $v + 0 ];
-                    }
-                    else
-                    {
-                        $or[] = [ $key => $v ];
-                    }
+                    $or[] = [ $key => $v ];
                 }
                 $and[] = [ '$or' => $or ];
             }

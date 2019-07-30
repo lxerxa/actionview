@@ -20,29 +20,6 @@ use App\Project\Eloquent\Version;
 
 class ReportController extends Controller
 {
-    private $issue_query_options = [
-        'type', 
-        'title',
-        'no',
-        'assignee', 
-        'reporter', 
-        'resolver', 
-        'closer', 
-        'state', 
-        'resolution', 
-        'priority', 
-        'module',
-        'resolve_version', 
-        'effect_versions',
-        'labels',
-        'epic',
-        'sprint',
-        'created_at',
-        'updated_at',
-        'resolved_at',
-        'closed_at'
-    ];
-
     private $default_filters = [
         'issues' => [
             [ 'id' => 'all_by_type', 'name' => '全部问题/按类型', 'query' => [ 'stat_x' => 'type', 'stat_y' => 'type' ] ], 
@@ -347,7 +324,7 @@ class ReportController extends Controller
         {
             $where['issue_id'] = $issue_id;
         }
-        else if (array_only($options, $this->issue_query_options))
+        else
         {
             $issue_ids = [];
 

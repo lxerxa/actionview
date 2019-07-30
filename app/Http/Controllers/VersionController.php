@@ -293,10 +293,10 @@ class VersionController extends Controller
     /**
      * update the issues resolve version
      *
-     * @param  array $issues
+     * @param  string $project_key
      * @param  string $source
      * @param  string $dest
-     * @return \Illuminate\Http\Response
+     * @return void 
      */
     public function updIssueResolveVersion($project_key, $source, $dest)
     {
@@ -323,10 +323,10 @@ class VersionController extends Controller
     /**
      * update the issues version
      *
-     * @param  array $issues
+     * @param  string $project_key
      * @param  string $source
      * @param  string $dest
-     * @return \Illuminate\Http\Response
+     * @return void 
      */
     public function updIssueVersion($project_key, $source, $dest)
     {
@@ -352,11 +352,14 @@ class VersionController extends Controller
                 }
                 if (is_string($issue[$vf['key']]))
                 {
-                    $updValues[$vf['key']] = $dest;
+                    if ($issue[$vf['key']] === $source)
+                    {
+                        $updValues[$vf['key']] = $dest;
+                    }
                 }
                 else if (is_array($issue[$vf['key']]))
                 {
-                    $updValues[$vf['key']] = array_filter(array_unique(str_replace($source, $dest, $issue[$vf['key']])));
+                    $updValues[$vf['key']] = array_values(array_filter(array_unique(str_replace($source, $dest, $issue[$vf['key']]))));
                 }
             }
 

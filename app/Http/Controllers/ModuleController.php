@@ -234,11 +234,14 @@ class ModuleController extends Controller
 
             if (is_string($issue['module']))
             {
-                $updValues['module'] = $dest;
+                if ($issue['module'] === $source)
+                {
+                    $updValues['module'] = $dest;
+                }
             } 
             else if (is_array($issue['module']))
             {
-                $updValues['module'] = array_filter(array_unique(str_replace($source, $dest, $issue['module'])));
+                $updValues['module'] = array_values(array_filter(array_unique(str_replace($source, $dest, $issue['module']))));
             }
 
             if ($updValues)
