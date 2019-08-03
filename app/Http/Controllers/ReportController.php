@@ -1412,7 +1412,7 @@ class ReportController extends Controller
                     {
                         $XYData[$dimension][$tmpv]['nos'][] = $issue['no'];
                     }
-                    else if ((is_array($issue_val) && isset($issue_val['id'])) || $dimension === 'lables')
+                    else if ((is_array($issue_val) && isset($issue_val['id'])) || $dimension === 'labels')
                     {
                         if ($dimension === $Y && $X !== $Y)
                         {
