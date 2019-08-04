@@ -102,7 +102,7 @@ class ReportController extends Controller
                     ->first();
                 if ($sprint)
                 {
-                    $filters[$key]['query'] = [ 'sprint' => $sprint->no ];
+                    $filters[$key]['query'] = [ 'sprints' => $sprint->no ];
                 }
                 else
                 {
@@ -117,7 +117,7 @@ class ReportController extends Controller
                     ->first();
                 if ($sprint)
                 {
-                    $filters[$key]['query'] = [ 'sprint' => $sprint->no ];
+                    $filters[$key]['query'] = [ 'sprints' => $sprint->no ];
                 }
                 else
                 {
@@ -337,12 +337,12 @@ class ReportController extends Controller
             $where['issue_id'] = [ '$in' => $issue_ids ];
         }
 
+        $cond = [];
         $recorded_at = isset($options['recorded_at']) ? $options['recorded_at'] : '';
         if ($recorded_at)
         {
             if (strpos($recorded_at, '~') !== false)
             {
-                $cond = [];
                 $sections = explode('~', $recorded_at);
                 if ($sections[0])
                 {
@@ -367,7 +367,6 @@ class ReportController extends Controller
                     $val = abs(substr($recorded_at, 0, -1));
                     $time_val = strtotime(date('Ymd', strtotime('-' . $val . ' ' . $unitMap[$unit])));
 
-                    $cond = [];
                     if ($direct === '-')
                     {
                         $cond['$lt'] = $time_val;
@@ -390,16 +389,24 @@ class ReportController extends Controller
             $where['recorder.id'] = $recorder;
         }
 
-        $sprint_no = isset($options['sprint']) ? $options['sprint'] : '';
+        $sprint_no = isset($options['sprints']) ? $options['sprints'] : '';
         if ($sprint_no)
         {
             $sprint = Sprint::where('project_key', $project_key)->where('no', intval($sprint_no))->first();
 
-            $cond = [];
-            $cond['$gte'] = strtotime(date('Ymd', $sprint->start_time));
+            $sprint_start_time = strtotime(date('Ymd', $sprint->start_time));
+            if (!isset($cond['$gte']) || $cond['$gte'] < $sprint_start_time)
+            {
+                $cond['$gte'] = $sprint_start_time;
+            }
+
             if (isset($sprint->real_complete_time) && $sprint->real_complete_time > 0)
             {
-                $cond['$lte'] = strtotime(date('Ymd', $sprint->real_complete_time) . ' 23:59:59');
+                $sprint_complet_time = strtotime(date('Ymd', $sprint->real_complete_time) . ' 23:59:59');
+                if (!isset($cond['$lte']) || $cond['$lte'] > $sprint_complet_time)
+                {
+                    $cond['$lte'] = $sprint_complet_time; 
+                }
             }
 
             $where['recorded_at'] = $cond;
@@ -1116,8 +1123,6 @@ class ReportController extends Controller
                 $resolved_logs = $tmp_log;
                 $regression_times = count($tmp_log);
             }
-
-            $dimension = $dimension === 'sprint' ? 'sprints' : $dimension;
 
             if ($dimension == 'resolver')
             {
