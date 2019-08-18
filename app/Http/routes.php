@@ -84,28 +84,35 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::post('type/batch', 'TypeController@handle');
     // project field config
     Route::resource('field', 'FieldController');
+    Route::get('field/{id}/used', 'FieldController@viewUsedInProject');
     // project screen config
     Route::resource('screen', 'ScreenController');
+    Route::get('screen/{id}/used', 'ScreenController@viewUsedInProject');
     // project workflow config
     Route::resource('workflow', 'WorkflowController');
+    Route::get('workflow/{id}/used', 'WorkflowController@viewUsedInProject');
     // project role config
     Route::get('role/{id}/reset', 'RoleController@reset');
     Route::post('role/{id}/permissions', 'RoleController@setPermissions');
     Route::post('role/{id}/actor', 'RoleController@setActor');
     Route::post('role/{id}/groupactor', 'RoleController@setGroupActor');
     Route::resource('role', 'RoleController');
+    Route::get('role/{id}/used', 'RoleController@viewUsedInProject');
     // project event config
     Route::get('events/{event_id}/reset', 'EventsController@reset');
     Route::post('events/{event_id}/notify', 'EventsController@setNotify');
     Route::resource('events', 'EventsController');
     // project priority config
     Route::resource('priority', 'PriorityController');
+    Route::get('priority/{id}/used', 'PriorityController@viewUsedInProject');
     Route::post('priority/batch', 'PriorityController@handle');
     // project state config
     Route::resource('state', 'StateController');
     Route::post('state/batch', 'StateController@handle');
+    Route::get('state/{id}/used', 'StateController@viewUsedInProject');
     // project resolution config
     Route::resource('resolution', 'ResolutionController');
+    Route::get('resolution/{id}/used', 'ResolutionController@viewUsedInProject');
     Route::post('resolution/batch', 'ResolutionController@handle');
     // Route::resource('module', 'ModuleController', [ 'only' => [ 'store', 'update', 'destory' ] ]);
     // Route::resource('version', 'VersionController', [ 'only' => [ 'store', 'update', 'destory' ] ]);
@@ -139,7 +146,7 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::get('report/issues', 'ReportController@getIssues');
     Route::get('report/{mode}/filters/reset', 'ReportController@resetSomeFilters');
     Route::post('report/{mode}/filters', 'ReportController@editSomeFilters');
-    Route::post('report/{mode}/filter', 'ReportController@saveIssueFilter');
+    Route::post('report/{mode}/filter', 'ReportController@saveFilter');
     // project team
     Route::get('team', 'RoleController@index');
     // preview the workflow chart 
@@ -154,7 +161,9 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::post('issue/filters', 'IssueController@editFilters');
 
     Route::post('issue/columns', 'IssueController@setDisplayColumns');
-    Route::get('issue/columns/reset', 'IssueController@resetDisplayColumns');
+    Route::post('issue/columns/reset', 'IssueController@resetDisplayColumns');
+
+    Route::get('issue/imports', 'IssueController@imports');
 
     Route::get('issue/{id}', 'IssueController@show');
     Route::get('issue', 'IssueController@index');

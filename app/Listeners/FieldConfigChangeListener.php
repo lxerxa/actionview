@@ -8,7 +8,8 @@ use App\Events\FieldDeleteEvent;
 
 use App\Customization\Eloquent\Field;
 use App\Customization\Eloquent\Screen;
-use App\Project\Eloquent\IssueListColumns;
+use App\Project\Eloquent\UserIssueListColumns;
+use App\Project\Eloquent\ProjectIssueListColumns;
 use App\Project\Eloquent\Board;
 use App\Project\Eloquent\Project;
 use Illuminate\Queue\InteractsWithQueue;
@@ -177,11 +178,40 @@ class FieldConfigChangeListener
         $res = [];
         if ($project_key === '$_sys_$')
         {
-            $res = IssueListColumns::whereRaw([ 'column_keys' => $field_key ])->get();
+            $res = UserIssueListColumns::whereRaw([ 'column_keys' => $field_key ])->get();
         }
         else
         {
-            $res = IssueListColumns::whereRaw([ 'column_keys' => $field_key, 'project_key' => $project_key ])->get();
+            $res = UserIssueListColumns::whereRaw([ 'column_keys' => $field_key, 'project_key' => $project_key ])->get();
+        }
+        foreach ($res as $value)
+        {
+            $new_columns = [];
+            $column_keys = [];
+            $columns = isset($value->columns) ? $value->columns : [];
+            foreach ($columns as $column)
+            {
+                if ($column['key'] === $field_key)
+                {
+                    continue;
+                }
+
+                $new_columns[] = $column;
+                $column_keys[] = $column['key'];
+            }
+
+            $value->columns = $new_columns;
+            $value->column_keys = $column_keys;
+            $value->save();
+        }
+
+        if ($project_key === '$_sys_$')
+        {
+            $res = ProjectIssueListColumns::whereRaw([ 'column_keys' => $field_key ])->get();
+        }
+        else
+        {
+            $res = ProjectIssueListColumns::whereRaw([ 'column_keys' => $field_key, 'project_key' => $project_key ])->get();
         }
         foreach ($res as $value)
         {

@@ -10,6 +10,7 @@ use App\Events\DelUserFromRoleEvent;
 use App\Events\AddGroupToRoleEvent;
 use App\Events\DelGroupFromRoleEvent;
 
+use App\Project\Eloquent\Project;
 use App\Project\Provider;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
@@ -35,7 +36,11 @@ class RoleController extends Controller
         {
             if ($project_key === '$_sys_$')
             {
-                $roles[$key]['is_used'] = Roleactor::where('role_id', $role['_id'])->exists();
+                $actor = Roleactor::where('role_id', $role['_id'])->first();
+                if ($actor && ($actor->user_ids || $actor->group_ids))
+                {
+                    $roles[$key]['is_used'] = true;
+                }
             }
             else 
             {
@@ -224,9 +229,17 @@ class RoleController extends Controller
 
         if ($project_key === '$_sys_$')
         {
-            if (Roleactor::where('role_id', $role->id)->exists())
+            $actors = Roleactor::where('role_id', $role->id)->get();
+            foreach($actors as $actor)
             {
-                throw new \UnexpectedValueException('the role has been used in some projects.', -12703);
+                if ($actor->user_ids || $actor->group_ids)
+                {
+                    throw new \UnexpectedValueException('the role has been used in some projects.', -12703);
+                }
+            }
+            foreach($actors as $actor)
+            {
+                $actor->delete();
             }
         }
         else
@@ -376,5 +389,35 @@ class RoleController extends Controller
         $role['permissions'] = $rp && isset($rp->permissions) ? $rp->permissions : [];
 
         return Response()->json(['ecode' => 0, 'data' => $role]);
+    }
+
+    /**
+     * view the application in the all projects.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function viewUsedInProject($project_key, $id)
+    {
+        if ($project_key !== '$_sys_$')
+        {
+            return Response()->json(['ecode' => 0, 'data' => [] ]);
+        }
+
+        $res = [];
+        $projects = Project::all();
+        foreach($projects as $project)
+        {
+            $roleactor = Roleactor::where('role_id', $id)
+                ->where('project_key', '<>', '$_sys_$')
+                ->where('project_key', $project->key)
+                ->first();
+
+            if ($roleactor && ($roleactor->user_ids || $roleactor->group_ids))
+            {
+                $res[] = [ 'key' => $project->key, 'name' => $project->name, 'status' => $project->status ];
+            }
+        }
+
+        return Response()->json(['ecode' => 0, 'data' => $res ]);
     }
 }

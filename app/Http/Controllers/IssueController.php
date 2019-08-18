@@ -11,8 +11,9 @@ use App\Http\Controllers\Controller;
 use App\Project\Provider;
 use App\Project\Eloquent\File;
 use App\Project\Eloquent\Watch;
-use App\Project\Eloquent\IssueFilters;
-use App\Project\Eloquent\IssueListColumns;
+use App\Project\Eloquent\UserIssueFilters;
+use App\Project\Eloquent\UserIssueListColumns;
+use App\Project\Eloquent\ProjectIssueListColumns;
 use App\Project\Eloquent\Linked;
 use App\Project\Eloquent\Worklog;
 use App\Project\Eloquent\Version;
@@ -950,14 +951,14 @@ class IssueController extends Controller
             throw new \UnexpectedValueException('the name can not be empty.', -11105);
         }
 
-        if (IssueFilters::whereRaw([ 'name' => $name, 'user' => $this->user->id, 'project_key' => $project_key ])->exists())
+        if (UserIssueFilters::whereRaw([ 'name' => $name, 'user' => $this->user->id, 'project_key' => $project_key ])->exists())
         {
             throw new \UnexpectedValueException('filter name cannot be repeated', -11106);
         }
 
         $query = $request->input('query') ?: [];
         
-        $res = IssueFilters::where('project_key', $project_key)
+        $res = UserIssueFilters::where('project_key', $project_key)
             ->where('user', $this->user->id)
             ->first();
         if ($res)
@@ -985,7 +986,7 @@ class IssueController extends Controller
                 }
             }
             array_push($filters, [ 'id' => md5(microtime()), 'name' => $name, 'query' => $query ]);
-            IssueFilters::create([ 'project_key' => $project_key, 'user' => $this->user->id, 'filters' => $filters ]); 
+            UserIssueFilters::create([ 'project_key' => $project_key, 'user' => $this->user->id, 'filters' => $filters ]); 
         }
         return $this->getIssueFilters($project_key);
     }
@@ -998,7 +999,7 @@ class IssueController extends Controller
      */
     public function resetIssueFilters(Request $request, $project_key)
     {
-        IssueFilters::where('project_key', $project_key)
+        UserIssueFilters::where('project_key', $project_key)
             ->where('user', $this->user->id)
             ->delete();
 
@@ -1024,9 +1025,16 @@ class IssueController extends Controller
      */
     public function resetDisplayColumns(Request $request, $project_key)
     {
-        IssueListColumns::where('project_key', $project_key)
+        UserIssueListColumns::where('project_key', $project_key)
             ->where('user', $this->user->id)
             ->delete();
+
+        $delete_from_project = $request->input('delete_from_project') ?: false;
+        if ($delete_from_project && $this->isPermissionAllowed($project_key, 'manage_project'))
+        {
+            ProjectIssueListColumns::where('project_key', $project_key)->delete();
+        }
+ 
         return $this->getDisplayColumns($project_key);
     }
 
@@ -1038,22 +1046,15 @@ class IssueController extends Controller
      */
     public function setDisplayColumns(Request $request, $project_key)
     {
-        $fields = Provider::getFieldList($project_key);    
-        $field_keys = [];
-        foreach ($fields as $val) 
-        {
-            $field_keys[] = $val->key;
-        }
-
         $column_keys = [];
         $new_columns = [];
         $columns = $request->input('columns') ?: [];
         foreach ($columns as $column)
         {
-            //if (!isset($column['key']) || !isset($column['width']) || !in_array($column['key'], $field_keys))
-            //{
-            //    continue;
-            //}
+            if (!isset($column['key']))
+            {
+                continue;
+            }
 
             if (in_array($column['key'], $column_keys))
             {
@@ -1063,7 +1064,7 @@ class IssueController extends Controller
             $new_columns[] = array_only($column, [ 'key', 'width' ]);
         }
 
-        $res = IssueListColumns::where('project_key', $project_key)
+        $res = UserIssueListColumns::where('project_key', $project_key)
             ->where('user', $this->user->id)
             ->first();
         if ($res)
@@ -1074,7 +1075,23 @@ class IssueController extends Controller
         }
         else
         {
-            IssueListColumns::create([ 'project_key' => $project_key, 'user' => $this->user->id, 'column_keys' => $column_keys, 'columns' => $new_columns ]); 
+            UserIssueListColumns::create([ 'project_key' => $project_key, 'user' => $this->user->id, 'column_keys' => $column_keys, 'columns' => $new_columns ]); 
+        }
+
+        $save_for_project = $request->input('save_for_project') ?: false;
+        if ($save_for_project && $this->isPermissionAllowed($project_key, 'manage_project'))
+        {
+            $res = ProjectIssueListColumns::where('project_key', $project_key)->first();
+            if ($res)
+            {
+                $res->columns = $new_columns;
+                $res->column_keys = $column_keys;
+                $res->save();
+            }
+            else
+            {
+                ProjectIssueListColumns::create([ 'project_key' => $project_key, 'column_keys' => $column_keys, 'columns' => $new_columns ]);
+            }
         }
 
         return $this->getDisplayColumns($project_key);
@@ -1092,7 +1109,7 @@ class IssueController extends Controller
         if (isset($sequence))
         {
             $old_filters = Provider::getDefaultIssueFilters();
-            $res = IssueFilters::where('project_key', $project_key)
+            $res = UserIssueFilters::where('project_key', $project_key)
                 ->where('user', $this->user->id)
                 ->first();
             if ($res)
@@ -1119,7 +1136,7 @@ class IssueController extends Controller
             }
             else
             {
-                IssueFilters::create([ 'project_key' => $project_key, 'user' => $this->user->id, 'filters' => $new_filters ]); 
+                UserIssueFilters::create([ 'project_key' => $project_key, 'user' => $this->user->id, 'filters' => $new_filters ]); 
             }
         }
         return $this->getIssueFilters($project_key);
@@ -1133,7 +1150,7 @@ class IssueController extends Controller
      */
     public function resetColumns(Request $request, $project_key)
     {
-        IssueListColumns::where('project_key', $project_key)
+        UserIssueListColumns::where('project_key', $project_key)
             ->where('user', $this->user->id)
             ->delete();
 
@@ -1999,6 +2016,22 @@ class IssueController extends Controller
           'fields' => $fields,
         ];
 
+    }
+
+    /**
+     * export xls for issue list
+     *
+     * @param  string $project_key
+     * @return void
+     */
+    public function imports($project_key)
+    {
+        Excel::load('/tmp/import-issues.xlsx', function($reader) {
+            $reader = $reader->getSheet(0);
+            $res = $reader->toArray();
+            var_dump($res);
+        });
+        exit;
     }
 
     /**

@@ -10,6 +10,7 @@ use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Customization\Eloquent\Priority;
 use App\Customization\Eloquent\PriorityProperty;
+use App\Project\Eloquent\Project;
 use App\Project\Provider;
 use DB;
 
@@ -271,5 +272,34 @@ class PriorityController extends Controller
         }
 
         return Response()->json(['ecode' => 0, 'data' => [ 'sequence' => $sequence ?: null, 'default' => $default_priority_id ?: null ]]);
+    }
+
+    /**
+     * view the application in the all projects.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function viewUsedInProject($project_key, $id)
+    {
+        if ($project_key !== '$_sys_$')
+        {
+            return Response()->json(['ecode' => 0, 'data' => [] ]);
+        }
+
+        $res = [];
+        $projects = Project::all();
+        foreach($projects as $project)
+        {
+            $count = DB::collection('issue_' . $project->key)
+                ->where('priority', $id)
+                ->where('del_flg', '<>', 1)
+                ->count();
+            if ($count > 0)
+            {
+                $res[] = [ 'key' => $project->key, 'name' => $project->name, 'status' => $project->status, 'issue_count' => $count ];
+            }
+        }
+
+        return Response()->json(['ecode' => 0, 'data' => $res ]);
     }
 }

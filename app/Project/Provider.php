@@ -23,8 +23,9 @@ use App\Project\Eloquent\Module;
 use App\Project\Eloquent\Epic;
 use App\Project\Eloquent\Sprint;
 use App\Project\Eloquent\Labels;
-use App\Project\Eloquent\IssueFilters;
-use App\Project\Eloquent\IssueListColumns;
+use App\Project\Eloquent\UserIssueFilters;
+use App\Project\Eloquent\UserIssueListColumns;
+use App\Project\Eloquent\ProjectIssueListColumns;
 
 use Cartalyst\Sentinel\Users\EloquentUser;
 use Sentinel;
@@ -77,7 +78,7 @@ class Provider {
         // default issue filters
         $filters = self::getDefaultIssueFilters();
 
-        $res = IssueFilters::where('project_key', $project_key)
+        $res = UserIssueFilters::where('project_key', $project_key)
             ->where('user', $user_id)
             ->first(); 
         if ($res)
@@ -92,8 +93,15 @@ class Provider {
      *
      * @return array
      */
-    public static function getDefaultDisplayColumns()
+    public static function getDefaultDisplayColumns($project_key)
     {
+        $res = ProjectIssueListColumns::where('project_key', $project_key)->first(); 
+        if ($res)
+        {
+            $columns = isset($res->columns) ? $res->columns : [];
+            return $columns;
+        }
+
         return [
             [ 'key' => 'assignee', 'width' => '100' ],
             [ 'key' => 'priority', 'width' => '70' ],
@@ -112,8 +120,8 @@ class Provider {
     public static function getIssueDisplayColumns($project_key, $user_id)
     {
         // default issue filters
-        $columns = self::getDefaultDisplayColumns();
-        $res = IssueListColumns::where('project_key', $project_key)
+        $columns = self::getDefaultDisplayColumns($project_key);
+        $res = UserIssueListColumns::where('project_key', $project_key)
             ->where('user', $user_id)
             ->first(); 
         if ($res)

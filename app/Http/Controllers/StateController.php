@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Customization\Eloquent\State;
 use App\Customization\Eloquent\StateProperty;
 use App\Workflow\Eloquent\Definition;
+use App\Project\Eloquent\Project;
 use App\Project\Provider;
 use DB;
 
@@ -242,5 +243,44 @@ class StateController extends Controller
         }
 
         return Response()->json(['ecode' => 0, 'data' => [ 'sequence' => $sequence ]]);
+    }
+
+    /**
+     * view the application in the all projects.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function viewUsedInProject($project_key, $id)
+    {
+        if ($project_key !== '$_sys_$')
+        {
+            return Response()->json(['ecode' => 0, 'data' => [] ]);
+        }
+
+        $res = [];
+        $projects = Project::all();
+        foreach($projects as $project)
+        {
+            $count = DB::collection('issue_' . $project->key)
+                ->where('state', $id)
+                ->where('del_flg', '<>', 1)
+                ->count();
+
+            $workflows = Definition::where('state_ids', $id)
+                ->where('project_key', '<>', '$_sys_$')
+                ->where('project_key', $project->key)
+                ->get([ 'id', 'name' ])
+                ->toArray();
+
+            if ($count > 0 || $workflows)
+            {
+                $tmp = [ 'key' => $project->key, 'name' => $project->name, 'status' => $project->status ];
+                $tmp['issue_count'] = $count > 0 ? $count : 0;
+                $tmp['workflows'] = $workflows ?: [];
+                $res[] = $tmp;
+            }
+        }
+
+        return Response()->json(['ecode' => 0, 'data' => $res ]);
     }
 }

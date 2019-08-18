@@ -10,6 +10,7 @@ use App\Customization\Eloquent\Type;
 use App\Customization\Eloquent\Screen;
 use App\Customization\Eloquent\Field;
 use App\Workflow\Eloquent\Definition;
+use App\Project\Eloquent\Project;
 use App\Project\Provider;
 
 class ScreenController extends Controller
@@ -226,5 +227,45 @@ class ScreenController extends Controller
             $schema[] = $new_field;
         }
         return $schema;
+    }
+
+    /**
+     * view the application in the all projects.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function viewUsedInProject($project_key, $id)
+    {
+        if ($project_key !== '$_sys_$')
+        {
+            return Response()->json(['ecode' => 0, 'data' => [] ]);
+        }
+
+        $res = [];
+        $projects = Project::all();
+        foreach($projects as $project)
+        {
+            $types = Type::where('screen_id', $id)  
+                ->where('project_key', '<>', '$_sys_$')
+                ->where('project_key', $project->key)
+                ->get([ 'id', 'name' ])
+                ->toArray();
+
+            $workflows = Definition::where('screen_ids', $id)
+                ->where('project_key', '<>', '$_sys_$')
+                ->where('project_key', $project->key)
+                ->get([ 'id', 'name' ])
+                ->toArray();
+
+            if ($types || $workflows)
+            {
+                $tmp = [ 'key' => $project->key, 'name' => $project->name, 'status' => $project->status ];
+                $tmp['types'] = $types ?: [];
+                $tmp['workflows'] = $workflows ?: [];
+                $res[] = $tmp;
+            }
+        }
+
+        return Response()->json(['ecode' => 0, 'data' => $res ]);
     }
 }

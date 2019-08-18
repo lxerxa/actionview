@@ -11,6 +11,7 @@ use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Customization\Eloquent\Field;
 use App\Customization\Eloquent\Screen;
+use App\Project\Eloquent\Project;
 use App\Project\Provider;
 
 use DB;
@@ -183,9 +184,16 @@ class FieldController extends Controller
             $defaultValue = $request->input('defaultValue') ?: '';
             if ($defaultValue)
             {
-                $defaults = explode(',', $defaultValue);
+                $defaults = is_array($defaultValue) ? $defaultValue : explode(',', $defaultValue);
                 $options = array_column($optionValues, 'id');
-                $defaultValue = implode(',', array_intersect($defaults, $options));
+                if ('MultiSelect' === $type || 'CheckboxGroup' === $type)
+                {
+                    $defaultValue = array_values(array_intersect($defaults, $options));
+                }
+                else
+                {
+                    $defaultValue = implode(',', array_intersect($defaults, $options));
+                }
             }
             $field = Field::create([ 'project_key' => $project_key, 'optionValues' => $optionValues, 'defaultValue' => $defaultValue ] + $request->all());
         }
@@ -280,8 +288,15 @@ class FieldController extends Controller
 
                 $options = array_column($optionValues, 'id');
                 $defaultValue = isset($defaultValue) ? $defaultValue : ($field->defaultValue ?: '');
-                $defaults = explode(',', $defaultValue);
-                $defaultValue = implode(',', array_intersect($defaults, $options));
+                $defaults = is_array($defaultValue) ? $defaultValue : explode(',', $defaultValue);
+                if ('MultiSelect' === $field->type || 'CheckboxGroup' === $field->type)
+                {
+                    $defaultValue = array_values(array_intersect($defaults, $options));
+                }
+                else
+                {
+                    $defaultValue = implode(',', array_intersect($defaults, $options));
+                }
                 $updValues['defaultValue'] = $defaultValue;
             }
         }
@@ -322,5 +337,36 @@ class FieldController extends Controller
 
         Event::fire(new FieldDeleteEvent($project_key, $id, $field->key, $field->type));
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
+    }
+
+    /**
+     * view the application in the all projects.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function viewUsedInProject($project_key, $id)
+    {
+        if ($project_key !== '$_sys_$')
+        {
+            return Response()->json(['ecode' => 0, 'data' => [] ]);
+        }
+
+        $res = [];
+        $projects = Project::all();
+        foreach($projects as $project)
+        {
+            $screens = Screen::where('field_ids', $id)
+                ->where('project_key', '<>', '$_sys_$')
+                ->where('project_key', $project->key)
+                ->get([ 'id', 'name' ])
+                ->toArray();
+
+            if ($screens)
+            {
+                $res[] = [ 'key' => $project->key, 'name' => $project->name, 'status' => $project->status, 'screens' => $screens ];
+            }
+        }
+
+        return Response()->json(['ecode' => 0, 'data' => $res ]);
     }
 }

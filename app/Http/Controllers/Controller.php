@@ -373,7 +373,7 @@ class Controller extends BaseController
             [ 'key' => 'resolved_at', 'type' => 'Duration' ],
             [ 'key' => 'closed_at', 'type' => 'Duration' ],
 
-            [ 'key' => 'sprint', 'type' => 'Select' ],
+            [ 'key' => 'sprints', 'type' => 'Select' ],
         ];
 
         $fields = Provider::getFieldList($project_key, ['key', 'name', 'type']);
@@ -419,7 +419,7 @@ class Controller extends BaseController
                     $and[] = [ 'title' => [ '$regex' => $val ] ];
                 }
             }
-            else if ($key === 'sprint')
+            else if ($key === 'sprints')
             {
                 $and[] = [ 'sprints' => $val + 0 ];
             }
