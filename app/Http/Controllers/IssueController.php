@@ -26,6 +26,8 @@ use App\Project\Eloquent\Labels;
 
 use App\Workflow\Workflow;
 use App\System\Eloquent\SysSetting;
+use App\Workflow\Eloquent\Definition;
+use Cartalyst\Sentinel\Users\EloquentUser;
 use Sentinel;
 use DB;
 use Exception;
@@ -35,6 +37,8 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class IssueController extends Controller
 {
+    use ExcelTrait, TimeTrackTrait;
+
     /**
      * Display a listing of the resource.
      *
@@ -2024,14 +2028,420 @@ class IssueController extends Controller
      * @param  string $project_key
      * @return void
      */
-    public function imports($project_key)
+    public function imports(Request $request, $project_key)
     {
-        Excel::load('/tmp/import-issues.xlsx', function($reader) {
+        if (!($fid = $request->input('fid')))
+        {
+            throw new \UnexpectedValueException('导入文件ID不能为空。', -11140);
+        }
+
+        $file = config('filesystems.disks.local.root', '/tmp') . '/' . substr($fid, 0, 2) . '/' . $fid;
+        if (!file_exists($file))
+        {
+            throw new \UnexpectedValueException('获取导入文件失败。', -11141);
+        }
+
+        $err_msgs = [];
+        Excel::load($file, function($reader) use($project_key, &$err_msgs) {
             $reader = $reader->getSheet(0);
-            $res = $reader->toArray();
-            var_dump($res);
+            $data = $reader->toArray();
+            if (!$data)
+            {
+                $err_msgs = '文件内容不能为空。';
+                return;
+            }
+
+            $new_fields = [];
+            $fields = Provider::getFieldList($project_key);
+            foreach($fields as $field)
+            {
+                $new_fields[$field->key] = $field->name;
+            }
+            $new_fields['type'] = '类型';
+            $new_fields['state'] = '状态';
+            $new_fields['parent'] = '父级任务';
+            $fields = $new_fields;
+
+            // arrange the excel data
+            $data = $this->arrangeExcel($data, $fields);
+            foreach ($data as $val)
+            {
+                if (!isset($val['title']))
+                {
+                    $err_msgs = '主题列没找到。';
+                    return;
+                }
+                else if (!$val['title'])
+                {
+                    $err_msgs = '主题列不能有空值。';
+                    return;
+                }
+
+                if (!isset($val['type']))
+                {
+                    $err_msgs = '类型列没找到。';
+                    return;
+                }
+                //else if (!$val['type'])
+                //{
+                //    $err_msgs = '类型列不能有空值。';
+                //    return;
+                //}
+            }
+
+            // get the type schema
+            $new_types = [];
+            $types = Provider::getTypeList($project_key);
+            foreach ($types as $type)
+            {
+                $tmp = [];
+                $tmp['id'] = $type->id;
+                $tmp['name'] = $type->name;
+                $tmp['type'] = $type->type;
+                $tmp['workflow'] = Definition::find($type->workflow_id);
+                $tmp['schema'] = Provider::getSchemaByType($type->id);
+                $new_types[$type->name] = $tmp;
+            }
+            $types = $new_types;
+
+            // get the state option
+            $new_states = [];
+            $states = Provider::getStateOptions($project_key);
+            foreach($states as $state)
+            {
+                $new_states[$state['name']] = $state['_id'];
+            }
+            $states = $new_states;
+
+            // initialize the error msg
+            foreach ($data as $val)
+            {
+                $err_msgs[$val['title']] = [];
+            }
+
+            $standard_titles = [];
+            $standard_issues = [];
+            $subtask_issues = [];
+
+            foreach ($data as $value)
+            {
+                $issue = [];
+                $cur_title = $value['title'];
+
+                if (!$value['type'])
+                {
+                    $err_msgs[$cur_title][] = '类型列不能为空。';
+                    continue;
+                }
+                else if (!isset($types[$value['type']]))
+                {
+                    $err_msgs[$cur_title][] = '类型列值匹配失败。';
+                    continue;
+                }
+                else
+                {
+                    $issue['type'] = $types[$value['type']]['id'];
+                }
+
+                if ($types[$value['type']]['type'] === 'subtask' && (!isset($value['parent']) || !$value['parent']))
+                {
+                    $err_msgs[$cur_title][] = '父级任务列不能为空。';
+                    continue;
+                }
+                else
+                {
+                    $issue['parent'] = $value['parent'];
+                }
+
+                if (isset($value['state']) && $value['state'])
+                {
+                    if (!isset($states[$value['state']]) || !$states[$value['state']])
+                    {
+                        $err_msgs[$cur_title][] = '状态列值匹配失败。';
+                    }
+                    else
+                    {
+                        $workflow = $types[$value['type']]['workflow'];
+                        if (in_array($field_value, $workflow['state_ids']))
+                        {
+                            $issue['state'] = $states[$field_value];
+                        }
+                        else
+                        {
+                            $err_msgs[$cur_title][] = '状态列值不在相应流程里。';
+                        }
+                    }
+                }
+
+                $schema = $types[$value['type']]['schema'];
+                foreach ($schema as $field)
+                {
+                    if (isset($field['required']) && $field['required'] && (!isset($value[$field['key']]) || !$value[$field['key']]))
+                    {
+                        $err_msgs[$cur_title][] = $fields[$field['key']] . '列不能为空。';
+                        continue;
+                    }
+
+                    if (isset($value[$field['key']]) && $value[$field['key']])
+                    {
+                        $field_key = $field['key'];
+                        $field_value = $value[$field['key']];
+                    }
+                    else
+                    {
+                        continue;
+                    }
+
+                    if ($field_key === 'state')
+                    {
+                        if (!isset($states[$field_value]) || !$states[$field_value])
+                        {
+                            $err_msgs[$cur_title][] = '状态列值匹配失败。';
+                        }
+                        else
+                        {
+                            $workflow = $types[$value['type']]['workflow'];
+                            if (in_array($field_value, $workflow['state_ids']))
+                            {
+                                $issue['state'] = $states[$field_value];
+                            }
+                            else
+                            {
+                                $err_msgs[$cur_title][] = '状态列值不在相应流程里。';
+                            }
+                        }
+                    }
+                    else if ($field_key === 'Sprint')
+                    {
+                        $sprints = explode(',', $field_value);
+                        $new_sprints = [];
+                        foreach ($sprints as $s)
+                        {
+                            $new_sprints[] = intval($s);
+                        }
+                        $issue['sprints'] = $new_sprints;
+                    }
+                    else if ($field['type'] === 'SingleUser' || $field_key === 'assignee')
+                    {
+                        $tmp_user = EloquentUser::where('first_name', $field_value)->first();
+                        if (!$tmp_user)
+                        {
+                            $err_msgs[$cur_title][] = $fields[$field_key] . '列用户不存在。';
+                            continue;
+                        }
+
+                        $issue[$field_key] = [ 'id' => $tmp_user->id, 'name' => $tmp_user->first_name, 'email' => $tmp_user->email ];
+                    }
+                    else if ($field['type'] === 'MultiUser')
+                    {
+                        $issue[$field_key] = [];
+                        $issue[$field_key + '_ids'] = [];
+                        foreach($field_value as $val)
+                        {
+                            $tmp_user = EloquentUser::where('first_name', $field_value)->first();
+                            if (!$tmp_user)
+                            {
+                                $err_msgs[$cur_title][] = $fields[$field_key] . '列用户不存在。';
+                                continue;
+                            }
+                            $issue[$field_key][] = [ 'id' => $tmp_user->id, 'name' => $tmp_user->first_name, 'email' => $tmp_user->email ];
+                            $issue[$field_key + '_ids'][] = $tmp_user->id;
+                        }
+                    }
+                    else if (in_array($field['type'], [ 'Select', 'RadioGroup', 'SingleVersion' ]))
+                    {
+                        foreach ($field['optionValues'] as $val)
+                        {
+                            if ($val['name'] === $field_value)
+                            {
+                                $issue[$field_key] = $val['id'];
+                                break;
+                            }
+                        }
+                        if (!isset($issue[$field_key]))
+                        {
+                            $err_msgs[$cur_title][] = $fields[$field_key] . '列值匹配失败。';
+                        }
+                    }
+                    else if (in_array($field['type'], [ 'MutiSelect', 'CheckboxGroup', 'MultiVersion' ]))
+                    {
+                        $issue[$field_key] = [];
+                        foreach (explode(',', $field_value) as $val)
+                        {
+                            $val = trim($val);
+                            if (!$val)
+                            {
+                                continue;
+                            }
+
+                            $isMatched = false;
+                            foreach ($field['optionValues'] as $val2)
+                            {
+                                if ($val2['name'] === $val)
+                                {
+                                    $issue[$field_key][] = $val['id'];
+                                    $isMatched = true;
+                                    break;
+                                }
+                            }
+                            if (!$isMatched)
+                            {
+                                $err_msgs[$cur_title][] = $fields[$field_key] . '值匹配失败。';
+                            }
+                        }
+                    }
+                    else if (in_array($field['type'], [ 'DatePicker', 'DatetimePicker' ]))
+                    {
+                        $stamptime = strtotime($field_value);
+                        if ($stamptime === false)
+                        {
+                            $err_msgs[$cur_title][] = $fields[$field_key] . '值匹配失败。';
+                        }
+                        $issue[$field_key] = $stamptime;
+                    }
+                    else if ($field['type'] === 'TimeTracking')
+                    {
+                        if (!$this->ttCheck($field_value))
+                        {
+                            $err_msgs[$cur_title][] = $fields[$field_key] . '格式错误。';
+                        }
+
+                        $issue[$field_key] = $this->ttHandle($field_value);
+                        $issue[$field_key + '_m'] = $this->ttHandleInM($issue[$field_key]);
+                    }
+                    else if ($field['type'] === 'Number')
+                    {
+                        $issue[$field_key] = intval($field_value);
+                    }
+                    else
+                    {
+                        $issue[$field_key] = $field_value;
+                    }
+                }
+
+                if ($types[$value['type']]['type'] === 'subtask')
+                {
+                    $subtask_issues[] = $issue;
+                }
+                else
+                {
+                    $standard_titles[] = $issue['title'];
+                    $standard_issues[] = $issue;
+                }
+            }
+
+            $new_subtask_issues = [];
+            foreach ($standard_titles as $title)
+            {
+                $new_subtask_issues[$title] = [];
+            }
+
+            foreach ($subtask_issues as $issue)
+            {
+                $parent_issues = array_filter($standard_issues, function($v) use ($issue) { return $v === $issue['parent']; });
+                if (count($parent_issues) > 1)
+                {
+                    $err_msgs[$issue['title']][] = '父级任务有多个，定位失败。';
+                    continue;
+                }
+                else if (count($parent_issues) == 1)
+                {
+                    $parent_issue = array_pop($parent_issues);
+                    $new_subtask_issues[$parent_issue['title']][] = $issue;
+                }
+                else
+                {
+                    $parent_issues = DB::table('issue_' + $project_key)->where('title', $issue['parent'])->get();
+                    if (count($parent_issues) > 1)
+                    {
+                        $err_msgs[$issue['title']][] = '父级任务有多个，定位失败。';
+                        continue;
+                    }
+                    else if (count($parent_issues) == 1)
+                    {
+                        $parent_issue = array_pop($parent_issues);
+                        $new_subtask_issues[] = $issue + [ 'parent_id' => $parent_issue['_id']->__toString() ];
+                    }
+                    else
+                    {
+                        $err_msgs[$issue['title']][] = '父级任务不存在。';
+                    }
+                }
+            }
+            $subtask_issues = $new_subtask_issues;
+
+            if ($err_msgs)
+            {
+                return;
+            }
+
+            foreach ($subtask_issues as $issue)
+            {
+                if (isset($issue['parent_id']) && $issue['parent_id'])
+                {
+                    //$this->importIssue($issue);
+                }
+            }
+
+            foreach ($standard_issues as $issue)
+            {
+                //$id = $this->importIssue($issue);
+                foreach ($subtask_issues[$issue['title']] as $sub_issue)
+                {
+                    //$sub_issue['parent_id'] = $id;
+                    //unset($sub_issue['parent']);
+                    //$this->importIssue($sub_issue);
+                }
+            }
         });
+
+        $err_msgs = array_filter($err_msgs);
+        if ($err_msgs)
+        {
+            return Response()->json([ 'ecode' => -11142, 'emsg' => $err_msgs ]);
+        }
         exit;
+    }
+
+    /**
+     * import the issue into the project 
+     *
+     * @param  string $project_key
+     * @param  array $data
+     * @param  array $schema
+     * @return string id 
+     */
+    public function importIssue($project_key, $data, $schema)
+    {
+        $table = 'issue_' . $project_key;
+
+        $insValues = $data;
+        if (!isset($data['resolution']) || !$data['resolution'])
+        {
+            $data['resolution'] = 'Unresolved';
+        }
+
+        $max_no = DB::collection($table)->count() + 1;
+        $insValues['no'] = $max_no;
+
+        // get reporter(creator)
+        $insValues['reporter'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        $insValues['created_at'] = time();
+
+        $id = DB::collection('issue_' + $project_key)->insertGetId($insValues);
+        $id = $id->__toString();
+
+        // add to histroy table
+        Provider::snap2His($project_key, $id, $schema);
+        // trigger event of issue created
+        Event::fire(new IssueEvent($project_key, $id, $insValues['reporter'], [ 'event_key' => 'create_issue' ]));
+
+        if (isset($insValues['labels']) && $insValues['labels'])
+        {
+            $this->createLabels($project_key, $insValues['labels']);
+        }
+
+        return $id;
     }
 
     /**

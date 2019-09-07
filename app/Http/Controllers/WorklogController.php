@@ -13,6 +13,9 @@ use App\Project\Provider;
 
 class WorklogController extends Controller
 {
+
+    use TimeTrackTrait;
+
     /**
      * Display a listing of the resource.
      *

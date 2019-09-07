@@ -74,7 +74,7 @@ Route::group([ 'middleware' => 'can' ], function () {
     Route::post('api/syssetting/sendtestmail', 'SyssettingController@sendTestMail');
 
     Route::get('api/getavatar', 'FileController@getAvatar');
-    Route::get('api/downloadusertpl', 'UserController@downloadUserTpl');
+    Route::post('api/tmpfile', 'FileController@uploadTmpFile');
 });
 
 // project config
@@ -163,7 +163,7 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::post('issue/columns', 'IssueController@setDisplayColumns');
     Route::post('issue/columns/reset', 'IssueController@resetDisplayColumns');
 
-    Route::get('issue/imports', 'IssueController@imports');
+    Route::post('issue/imports', 'IssueController@imports');
 
     Route::get('issue/{id}', 'IssueController@show');
     Route::get('issue', 'IssueController@index');
