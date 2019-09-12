@@ -182,7 +182,7 @@ class Provider {
         {
             $tmp = [];
             $tmp['_id'] = isset($state['key']) && $state['key'] ? $state['key'] : $state['_id'];
-            $tmp['name'] = isset($state['name']) ? $state['name'] : '';
+            $tmp['name'] = isset($state['name']) ? trim($state['name']) : '';
             $tmp['category'] = isset($state['category']) ? $state['category'] : '';
             $options[] = $tmp;
         }
@@ -249,7 +249,7 @@ class Provider {
 
             $tmp = [];
             $tmp['_id'] = isset($event['key']) ? $event['key'] : $event['_id'];
-            $tmp['name'] = isset($event['name']) ? $event['name'] : '';
+            $tmp['name'] = isset($event['name']) ? trim($event['name']) : '';
             $options[] = $tmp;
         }
 
@@ -346,7 +346,7 @@ class Provider {
         {
             $tmp = [];
             $tmp['_id'] = isset($priority['key']) && $priority['key'] ? $priority['key'] : $priority['_id'];
-            $tmp['name'] = isset($priority['name']) ? $priority['name'] : '';
+            $tmp['name'] = isset($priority['name']) ? trim($priority['name']) : '';
             if (isset($priority['default']))
             {
                 $tmp['default'] = $priority['default'];
@@ -450,7 +450,7 @@ class Provider {
         {
             $tmp = [];
             $tmp['_id'] = isset($resolution['key']) && $resolution['key'] ? $resolution['key'] : $resolution['_id'];
-            $tmp['name'] = isset($resolution['name']) ? $resolution['name'] : '';
+            $tmp['name'] = isset($resolution['name']) ? trim($resolution['name']) : '';
             if (isset($resolution['default']))
             {
                 $tmp['default'] = $resolution['default'];

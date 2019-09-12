@@ -53,7 +53,7 @@ trait ExcelTrait
             $header = array_shift($data);
             if (!$header)
             {
-                return 'err';
+                throw new \UnexpectedValueException('表头定位错误。', -11142);
             }
 
             if (is_array($header))
@@ -64,7 +64,7 @@ trait ExcelTrait
                 }
                 if (++$header_index > 5)
                 {
-                    return 'err';
+                    throw new \UnexpectedValueException('表头定位错误。', -11142);
                 }
             }
         }
@@ -83,7 +83,12 @@ trait ExcelTrait
         $field_keys = [];
         foreach($header as $field)
         {
-            $field_keys[] = array_search($field, $fields);
+            $tmp = array_search($field, $fields);
+            if ($tmp === false)
+            {
+                throw new \UnexpectedValueException('表头有不明确列。', -11142);
+            }
+            $field_keys[] = $tmp;
         }
 
         $new_data = [];

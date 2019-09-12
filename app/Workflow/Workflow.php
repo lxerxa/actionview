@@ -830,8 +830,25 @@ class Workflow {
      */
     public static function getStepNum($contents)
     {
-        $screen_ids = [];
         $steps = isset($contents['steps']) && $contents['steps'] ? $contents['steps'] : [];
         return count($steps);
+    }
+
+    /**
+     * fake new workflow step.
+     *
+     * @param array $result_descriptor
+     * @param array $caller
+     * @return void
+     */
+    private function fakeNewCurrentStep($result_descriptor, $caller)
+    {
+        $new_current_step = new CurrentStep;
+        $new_current_step->entry_id = $this->entry->id;
+        $new_current_step->step_id = intval($result_descriptor['step']);
+        $new_current_step->status = isset($result_descriptor['status']) ? $result_descriptor['status'] : '';
+        $new_current_step->start_time = time();
+        $new_current_step->caller = $caller ?: '';
+        $new_current_step->save();
     }
 }

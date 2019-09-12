@@ -204,4 +204,34 @@ class FileController extends Controller
             throw new \UnexpectedValueException('file deletion failed.', -15102);
         }
     }
+
+    /**
+     * Upload temporary file.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function uploadTmpFile(Request $request)
+    {
+        if ($_FILES['file']['error'] > 0)
+        {
+            throw new \UnexpectedValueException('upload file errors.', -15101);
+        }
+
+        $basename = md5(microtime() . $_FILES['file']['name']);
+        $sub_save_path = config('filesystems.disks.local.root', '/tmp') . '/' . substr($basename, 0, 2) . '/';
+        if (!is_dir($sub_save_path))
+        {
+            @mkdir($sub_save_path);
+        }
+        $filename = '/tmp/' . $basename;
+        move_uploaded_file($_FILES['file']['tmp_name'], $filename);
+
+        // move original file
+        @rename($filename, $sub_save_path . $basename);
+        $data['uploader'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        $file = File::create($data);
+
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'fid' => $basename, 'fname' => $_FILES['file']['name'] ] ]);
+    }
 }

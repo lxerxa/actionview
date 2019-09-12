@@ -83,7 +83,14 @@ class WorkflowController extends Controller
     public function preview(Request $request, $project_key, $id)
     {
         $workflow = Definition::find($id);
-        return Response()->json([ 'ecode' => 0, 'data' => $workflow ]);
+        if ($workflow)
+        {
+            return Response()->json([ 'ecode' => 0, 'data' => $workflow ]);
+        }
+        else
+        {
+            throw new \UnexpectedValueException('the workflow does not exist or is not in the project.', -12101);
+        }
     }
 
     /**
