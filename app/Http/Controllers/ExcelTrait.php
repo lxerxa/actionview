@@ -72,12 +72,12 @@ trait ExcelTrait
         // the first row is used for the issue keys
         if (array_search('', $header) !== false)
         {
-            throw new \UnexpectedValueException('表头不能有空值。', -11142);
+            throw new \UnexpectedValueException('表头不能有空值。', -11143);
         }
         // check the header title
         if (count($header) !== count(array_unique($header)))
         {
-            throw new \UnexpectedValueException('表头不能有重复列。', -11142);
+            throw new \UnexpectedValueException('表头不能有重复列。', -11144);
         }
 
         $field_keys = [];
@@ -86,7 +86,7 @@ trait ExcelTrait
             $tmp = array_search($field, $fields);
             if ($tmp === false)
             {
-                throw new \UnexpectedValueException('表头有不明确列。', -11142);
+                throw new \UnexpectedValueException('表头有不明确列。', -11145);
             }
             $field_keys[] = $tmp;
         }

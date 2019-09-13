@@ -2030,6 +2030,8 @@ class IssueController extends Controller
      */
     public function imports(Request $request, $project_key)
     {
+        set_time_limit(0);
+
         if (!($fid = $request->input('fid')))
         {
             throw new \UnexpectedValueException('导入文件ID不能为空。', -11140);
@@ -2062,7 +2064,10 @@ class IssueController extends Controller
             $fields = Provider::getFieldList($project_key);
             foreach($fields as $field)
             {
-                $new_fields[$field->key] = $field->name;
+                if ($field->type !== 'File')
+                { 
+                    $new_fields[$field->key] = $field->name;
+                }
             }
             $new_fields['type'] = '类型';
             $new_fields['state'] = '状态';
@@ -2137,7 +2142,7 @@ class IssueController extends Controller
             // get the state option
             $new_resolutions = [];
             $resolutions = Provider::getResolutionOptions($project_key);
-            foreach($resolutionss as $resolution)
+            foreach($resolutions as $resolution)
             {
                 $new_resolutions[$resolution['name']] = $resolution['_id'];
             }
@@ -2185,7 +2190,7 @@ class IssueController extends Controller
 
                 if (isset($value['priority']) && $value['priority'])
                 {
-                    if (!isset($priorities[$value['priority']]) || !$priorites[$value['priority']])
+                    if (!isset($priorities[$value['priority']]) || !$priorities[$value['priority']])
                     {
                         $err_msgs[$cur_title][] = '优先级列值匹配失败。';
                     }
@@ -2421,7 +2426,7 @@ class IssueController extends Controller
                 $parent_issues = array_filter($standard_issues, function($v) use ($issue) { return $v['title'] === $issue['parent']; });
                 if (count($parent_issues) > 1)
                 {
-                    $fatal_msgs[$issue['title']][] = $err_msgs[$issue['title']][] = '父级任务有多个，定位失败。';
+                    $fatal_err_msgs[$issue['title']][] = $err_msgs[$issue['title']][] = '找到多个父级任务。';
                 }
                 else if (count($parent_issues) == 1)
                 {
@@ -2441,7 +2446,7 @@ class IssueController extends Controller
                         ->get();
                     if (count($parent_issues) > 1)
                     {
-                        $fatal_err_msgs[$issue['title']][] = $err_msgs[$issue['title']][] = '父级任务有多个，定位失败。';
+                        $fatal_err_msgs[$issue['title']][] = $err_msgs[$issue['title']][] = '找到多个父级任务。';
                     }
                     else if (count($parent_issues) == 1)
                     {
@@ -2460,9 +2465,8 @@ class IssueController extends Controller
             }
             $subtask_issues = array_filter($new_subtask_issues);
 
-//var_dump($standard_issues);exit;
-//var_dump($subtask_issues);exit;
-
+            $err_msgs = array_filter($err_msgs);
+            $fatal_err_msgs = array_filter($fatal_err_msgs);
             if ($pattern == '2' && $fatal_err_msgs)
             {
                 return;
@@ -2472,21 +2476,32 @@ class IssueController extends Controller
                 return;
             }
 
+            $new_types = [];
+            foreach($types as $type)
+            {
+                $new_types[$type['id']] = $type;
+            }
+            $types = $new_types;
+
             foreach ($subtask_issues as $issue)
             {
                 if (isset($issue['parent_id']) && $issue['parent_id'])
                 {
-                    //$this->importIssue($project_key, $issue, $types[$issue['type']]['schema'], $types[$issue['type']]['workflow']);
+                    $this->importIssue($project_key, $issue, $types[$issue['type']]['schema'], $types[$issue['type']]['workflow']);
                 }
             }
 
             foreach ($standard_issues as $issue)
             {
-                //$id = $this->importIssue($project_key, $issue, $types[$issue['type']]['schema'], $types[$issue['type']]['workflow']);
+                $id = $this->importIssue($project_key, $issue, $types[$issue['type']]['schema'], $types[$issue['type']]['workflow']);
+                if (!isset($subtask_issues[$issue['title']]) || !$subtask_issues[$issue['title']])
+                {
+                    continue;
+                }
                 foreach ($subtask_issues[$issue['title']] as $sub_issue)
                 {
-                    //$sub_issue['parent_id'] = $id;
-                    //$this->importIssue($sub_issue, $sub_issue, $types[$sub_issue['type']]['schema'], $types[$sub_issue['type']]['workflow']);
+                    $sub_issue['parent_id'] = $id;
+                    $this->importIssue($project_key, $sub_issue, $types[$issue['type']]['schema'], $types[$sub_issue['type']]['workflow']);
                 }
             }
         });
@@ -2504,7 +2519,7 @@ class IssueController extends Controller
 
         if ($emsgs)
         {
-            return Response()->json([ 'ecode' => -11142, 'emsg' => $emsgs ]);
+            return Response()->json([ 'ecode' => -11146, 'emsg' => $emsgs ]);
         }
         else
         {
@@ -2542,13 +2557,13 @@ class IssueController extends Controller
         $insValues['reporter'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
         $insValues['created_at'] = time();
 
-        if (isset($data['state']) && $data['state'] && in_array($state, $workflow->state_ids ?: []))
+        if (isset($data['state']) && $data['state'] && in_array($data['state'], $workflow->state_ids ?: []))
         {
-            $wf = $this->initializeWorkflowForImport($workflow, $issue['state']);
+            $wf = $this->initializeWorkflowForImport($workflow, $data['state']);
             $insValues += $wf;
         }
 
-        $id = DB::collection('issue_' + $project_key)->insertGetId($insValues);
+        $id = DB::collection('issue_' . $project_key)->insertGetId($insValues);
         $id = $id->__toString();
 
         // add to histroy table
@@ -2578,16 +2593,23 @@ class IssueController extends Controller
 
         $wf_contents = $wf_definition->contents ?: [];
         $steps = isset($wf_contents['steps']) && $wf_contents['steps'] ? $wf_contents['steps'] : [];
+
+        $fake_step = [];
         foreach($steps as $step)
         {
-            if ($step['state'] == $state)
+            if (isset($step['state']) && $step['state'] == $state)
             {
+                $fake_step = $step;
                 break;
             }
         }
+        if (!$fake_step)
+        {
+            return [];
+        }
 
-        $caller = [ 'id' => $fieldValue, 'name' => $user_info->first_name, 'email' => $user_info->email ];
-        $wf_entry->fakeNewCurrentStep($step, $caller);
+        $caller = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        $wf_entry->fakeNewCurrentStep($fake_step, $caller);
 
         $ret['entry_id'] = $wf_entry->getEntryId();
         $ret['definition_id'] = $wf_definition->id;

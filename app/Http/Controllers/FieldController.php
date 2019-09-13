@@ -34,7 +34,7 @@ class FieldController extends Controller
         'no', 
         'schema', 
         'parent_id', 
-        'parents', 
+        'parent', 
         'links', 
         'subtasks', 
         'entry_id', 

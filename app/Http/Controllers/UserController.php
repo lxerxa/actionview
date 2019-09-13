@@ -12,12 +12,16 @@ use App\Acl\Eloquent\Group;
 
 use App\ActiveDirectory\Eloquent\Directory;
 
+use Maatwebsite\Excel\Facades\Excel;
 use Cartalyst\Sentinel\Users\EloquentUser;
 use Sentinel;
 use Activation; 
 
+
 class UserController extends Controller
 {
+    use ExcelTrait;
+
     public function __construct()
     {
         $this->middleware('privilege:sys_admin', [ 'except' => [ 'register', 'search', 'downloadUserTpl' ] ]);
@@ -178,36 +182,16 @@ class UserController extends Controller
     }
 
     /**
-     * Upload file.
+     * import the users.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function upload(Request $request)
-    {
-        if ($_FILES['file']['error'] > 0)
-        {
-            throw new \UnexpectedValueException('upload file errors.', -10104);
-        }
-
-        $fid = md5(microtime() . $_FILES['file']['name']);
-        $filename = '/tmp/' . $fid;
-        move_uploaded_file($_FILES['file']['tmp_name'], $filename);
-
-        return Response()->json([ 'ecode' => 0, 'data' => [ 'fid' => $fid ] ]);
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
      * @return \Illuminate\Http\Response
      */
     public function imports(Request $request)
     {
         if (!($fid = $request->input('fid')))
         {
-            throw new \UnexpectedValueException('the user file can not be empty.', -10105);
+            throw new \UnexpectedValueException('the user file ID can not be empty.', -11140);
         }
 
         $pattern = $request->input('pattern');
@@ -216,38 +200,53 @@ class UserController extends Controller
             $pattern = '1';
         }
 
-        $file = fopen("/tmp/$fid", 'r');
-        $str = fread($file, 1024);
-        $encode = mb_detect_encoding($str, [ 'ASCII', 'UTF-8', 'GB2312', 'GBK', 'BIG5' ]);
-        fclose($file);
-
-        $file = fopen("/tmp/$fid", 'r');
-        while ($user = fgetcsv($file))
+        $file = config('filesystems.disks.local.root', '/tmp') . '/' . substr($fid, 0, 2) . '/' . $fid;
+        if (!file_exists($file))
         {
-            if (count($user) < 2 || strpos($user[1], '@') === false)
+            throw new \UnexpectedValueException('the file cannot be found.', -11141);
+        }
+
+        Excel::load($file, function($reader) use($pattern) {
+            $reader = $reader->getSheet(0);
+            $data = $reader->toArray();
+
+            $fields = [ 'first_name' => '姓名', 'email' => '邮箱', 'phone' => '手机' ];
+            $data = $this->arrangeExcel($data, $fields);
+
+            foreach ($data as $value) 
             {
-                continue;
+                if (!isset($value['first_name']) || !$value['first_name'])
+                {
+                    throw new \UnexpectedValueException('there is empty value in the name column', -10110);
+                }
+
+                if (!isset($value['email']) || !$value['email'])
+                {
+                    throw new \UnexpectedValueException('there is empty value in the email column', -10111);
+                }
             }
 
-            $user[0] = mb_convert_encoding($user[0], 'UTF-8', $encode);
-
-            $old_user = Sentinel::findByCredentials([ 'email' => $user[1] ]);
-            if ($old_user)
+            foreach ($data as $value)
             {
-                if ($pattern == '1')
+                $old_user = Sentinel::findByCredentials([ 'email' => $value['email'] ]);
+                if ($old_user)
                 {
-                    continue;
+                    if ($pattern == '1')
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        Sentinel::update($old_user, $value); 
+                    }
+
                 }
                 else
                 {
-                    Sentinel::update($old_user, [ 'first_name' => $user[0], 'email' => $user[1], 'password' => 'actionview', 'phone' => isset($user[2]) ? $user[2] : '' ]); 
+                    Sentinel::register($value, true);
                 }
             }
-            else
-            {
-                Sentinel::register([ 'first_name' => $user[0], 'email' => $user[1], 'password' => 'actionview', 'phone' => isset($user[2]) ? $user[2] : '' ], true);
-            }
-        }
+        });
 
         return Response()->json([ 'ecode' => 0, 'data' => [ 'ok' => true ] ]);
     }
