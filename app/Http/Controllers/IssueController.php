@@ -2073,11 +2073,11 @@ class IssueController extends Controller
             $new_fields['parent'] = '父级任务';
             $new_fields['reporter'] = '报告者';
             $new_fields['created_at'] = '创建时间';
+            $new_fields['updated_at'] = '更新时间';
             $new_fields['resolver'] = '解决者';
             $new_fields['resolved_at'] = '解决时间';
             $new_fields['closer'] = '关闭者';
             $new_fields['closed_at'] = '关闭时间';
-            $new_fields['updated_at'] = '更新时间';
             $fields = $new_fields;
 
             // arrange the excel data
