@@ -26,7 +26,6 @@ use App\Project\Eloquent\Labels;
 
 use App\Workflow\Workflow;
 use App\System\Eloquent\SysSetting;
-//use App\Workflow\Eloquent\Definition;
 use Cartalyst\Sentinel\Users\EloquentUser;
 use Sentinel;
 use DB;
@@ -112,7 +111,7 @@ class IssueController extends Controller
             }
         }
 
-        $query->orderBy('created_at', isset($from) && $from ? 'asc' : 'desc');
+        $query->orderBy('_id', isset($from) && $from ? 'asc' : 'desc');
 
         $page_size = $request->input('limit') ? intval($request->input('limit')) : 50;
         $page = $request->input('page') ?: 1;
@@ -2261,7 +2260,7 @@ class IssueController extends Controller
                         continue;
                     }
 
-                    if (in_array($field_key, [ 'priority', 'resolution' ]))
+                    if (in_array($field_key, [ 'priority', 'resolution', 'assignee' ]))
                     {
                         continue;
                     }
@@ -2467,14 +2466,18 @@ class IssueController extends Controller
 
             $err_msgs = array_filter($err_msgs);
             $fatal_err_msgs = array_filter($fatal_err_msgs);
-            if ($pattern == '2' && $fatal_err_msgs)
+            if ($pattern == '2')
             {
-                return;
+                if ($fatal_err_msgs)
+                {
+                    return;
+                }
             }
             else if ($err_msgs)
             {
                 return;
             }
+
 
             $new_types = [];
             foreach($types as $type)
@@ -2501,7 +2504,7 @@ class IssueController extends Controller
                 foreach ($subtask_issues[$issue['title']] as $sub_issue)
                 {
                     $sub_issue['parent_id'] = $id;
-                    $this->importIssue($project_key, $sub_issue, $types[$issue['type']]['schema'], $types[$sub_issue['type']]['workflow']);
+                    $this->importIssue($project_key, $sub_issue, $types[$sub_issue['type']]['schema'], $types[$sub_issue['type']]['workflow']);
                 }
             }
         });
