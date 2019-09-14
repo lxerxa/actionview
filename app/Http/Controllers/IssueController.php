@@ -2071,6 +2071,13 @@ class IssueController extends Controller
             $new_fields['type'] = '类型';
             $new_fields['state'] = '状态';
             $new_fields['parent'] = '父级任务';
+            $new_fields['reporter'] = '报告者';
+            $new_fields['created_at'] = '创建时间';
+            $new_fields['resolver'] = '解决者';
+            $new_fields['resolved_at'] = '解决时间';
+            $new_fields['closer'] = '关闭者';
+            $new_fields['closed_at'] = '关闭时间';
+            $new_fields['updated_at'] = '更新时间';
             $fields = $new_fields;
 
             // arrange the excel data
@@ -2228,16 +2235,41 @@ class IssueController extends Controller
                     }
                 }
 
-                if (isset($value['assignee']) && $value['assignee'])
+                $user_relate_fields = [ 'assignee' => '经办人', 'reporter' => '报告者', 'resolver' => '解决者', 'closer' => '关闭时间' ];
+                foreach ($user_relate_fields as $uk => $uv)
                 {
-                    $tmp_user = EloquentUser::where('first_name', $value['assignee'])->first();
-                    if (!$tmp_user)
+                    if (isset($value[$uk]) && $value[$uk])
                     {
-                        $err_msgs[$cur_title][] = '经办人列用户不存在。';
+                        $tmp_user = EloquentUser::where('first_name', $value[$uk])->first();
+                        if (!$tmp_user)
+                        {
+                            $err_msgs[$cur_title][] = $uv . '列用户不存在。';
+                        }
+                        else
+                        {
+                            $issue[$uk] = [ 'id' => $tmp_user->id, 'name' => $tmp_user->first_name, 'email' => $tmp_user->email ];
+                            if ($uk == 'resolver')
+                            {
+                                $issue['his_resolvers'] = [ $tmp_user->id ];
+                            }
+                        }
                     }
-                    else
+                }
+
+                $time_relate_fields = [ 'created_at' => '创建时间', 'resolved_at' => '解决时间', 'closed_at' => '关闭时间', 'updated_at' => '更新时间' ];
+                foreach ($time_relate_fields as $tk => $tv)
+                {
+                    if (isset($value[$tk]) && $value[$tk])
                     {
-                        $issue['assignee'] = [ 'id' => $tmp_user->id, 'name' => $tmp_user->first_name, 'email' => $tmp_user->email ];
+                        $stamptime = strtotime($value[$tk]);
+                        if ($stamptime === false)
+                        {
+                            $err_msgs[$cur_title][] = $tv . '列值格式错误。';
+                        }
+                        else
+                        {
+                            $issue[$tk] = $stamptime;
+                        }
                     }
                 }
 
@@ -2391,7 +2423,7 @@ class IssueController extends Controller
                     }
                     else if ($field['type'] === 'Number')
                     {
-                        $issue[$field_key] = intval($field_value);
+                        $issue[$field_key] = floatval($field_value);
                     }
                     else
                     {
@@ -2543,9 +2575,9 @@ class IssueController extends Controller
         $table = 'issue_' . $project_key;
 
         $insValues = $data;
-        if (!isset($data['resolution']) || !$data['resolution'])
+        if (!isset($insValues['resolution']) || !$insValues['resolution'])
         {
-            $data['resolution'] = 'Unresolved';
+            $insValues['resolution'] = 'Unresolved';
         }
 
         $max_no = DB::collection($table)->count() + 1;
@@ -2557,8 +2589,14 @@ class IssueController extends Controller
         }
 
         // get reporter(creator)
-        $insValues['reporter'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
-        $insValues['created_at'] = time();
+        if (!isset($insValues['reporter']) || !$insValues['reporter'])
+        {
+            $insValues['reporter'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        }
+        if (!isset($insValues['created_at']) || !$insValues['created_at'])
+        {
+            $insValues['created_at'] = time();
+        }
 
         if (isset($data['state']) && $data['state'] && in_array($data['state'], $workflow->state_ids ?: []))
         {

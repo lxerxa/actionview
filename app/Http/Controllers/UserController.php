@@ -96,7 +96,9 @@ class UserController extends Controller
         // get total
         $total = $query->count();
 
-        $page_size = 30;
+        $query->orderBy('_id', 'asc');
+
+        $page_size = 50;
         $page = $request->input('page') ?: 1;
         $query = $query->skip($page_size * ($page - 1))->take($page_size);
         $all_users = $query->get([ 'first_name', 'last_name', 'email', 'phone', 'directory', 'invalid_flag' ]);
@@ -210,7 +212,7 @@ class UserController extends Controller
             $reader = $reader->getSheet(0);
             $data = $reader->toArray();
 
-            $fields = [ 'first_name' => '姓名', 'email' => '邮箱', 'phone' => '手机' ];
+            $fields = [ 'first_name' => '姓名', 'email' => '邮箱', 'phone' => '手机号' ];
             $data = $this->arrangeExcel($data, $fields);
 
             foreach ($data as $value) 
@@ -237,13 +239,13 @@ class UserController extends Controller
                     }
                     else
                     {
-                        Sentinel::update($old_user, $value); 
+                        Sentinel::update($old_user, $value + [ 'password' => 'actionview' ]); 
                     }
 
                 }
                 else
                 {
-                    Sentinel::register($value, true);
+                    Sentinel::register($value + [ 'password' => 'actionview' ], true);
                 }
             }
         });
