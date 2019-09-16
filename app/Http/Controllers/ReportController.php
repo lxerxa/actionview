@@ -20,6 +20,8 @@ use App\Project\Eloquent\Version;
 
 class ReportController extends Controller
 {
+    use TimeTrackTrait;
+
     private $default_filters = [
         'issues' => [
             [ 'id' => 'all_by_type', 'name' => '全部问题/按类型', 'query' => [ 'stat_x' => 'type', 'stat_y' => 'type' ] ], 
