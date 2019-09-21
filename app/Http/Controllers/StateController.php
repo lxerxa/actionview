@@ -36,7 +36,7 @@ class StateController extends Controller
             }
             else
             {
-                $states[$key]['is_used'] = isset($state['key']) && $state['key'] ? true : $this->isFieldUsedByIssue($project_key, 'state', $state); 
+                $states[$key]['is_used'] = $this->isFieldUsedByIssue($project_key, 'state', $state); 
             }
 
             $states[$key]['workflows'] = array_filter($workflows, function($item) use($project_key) { 
