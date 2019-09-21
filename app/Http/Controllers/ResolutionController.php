@@ -26,7 +26,7 @@ class ResolutionController extends Controller
         $resolutions = Provider::getResolutionList($project_key);
         foreach ($resolutions as $key => $resolution)
         {
-            $resolutions[$key]['is_used'] = isset($resolution['key']) && $resolution['key'] ? true : $this->isFieldUsedByIssue($project_key, 'resolution', $resolution);
+            $resolutions[$key]['is_used'] = $this->isFieldUsedByIssue($project_key, 'resolution', $resolution);
         }
         return Response()->json(['ecode' => 0, 'data' => $resolutions]);
     }
@@ -125,7 +125,7 @@ class ResolutionController extends Controller
             throw new \UnexpectedValueException('the resolution does not exist or is not in the project.', -12502);
         }
 
-        if (isset($resolution->key) && $resolution->key)
+        if (isset($resolution->key) && in_array($resolution->key, [ 'Unresolved', 'Fixed' ]))
         {
             throw new \UnexpectedValueException('the resolution is built in the system.', -12504);
         }
