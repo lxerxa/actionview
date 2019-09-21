@@ -10,6 +10,7 @@ class Entry extends Model
 
     protected $fillable = array(
         'definition_id', 
+        'creator',
         'state',
         'propertysets' 
     );

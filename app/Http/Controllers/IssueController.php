@@ -167,8 +167,7 @@ class IssueController extends Controller
         if ($issues && isset($from) && $from)
         {
             $filter = $request->input('filter') ?: '';
-            $board_types  = $request->input('type') ?: '';
-            $issues = $this->arrangeIssues($project_key, $issues, $from, $from_kanban_id, $board_types, $filter === 'all');
+            $issues = $this->arrangeIssues($project_key, $issues, $from, $from_kanban_id, $filter === 'all');
         }
 
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($issues), 'options' => [ 'total' => $total, 'sizePerPage' => $page_size ] ]);
@@ -206,8 +205,8 @@ class IssueController extends Controller
                     $query->where('parent_id', '')->orWhereNull('parent_id')->orWhere('parent_id', 'exists', false);
                 });
    
-            }
-            if ($type == 'subtask')
+            } 
+            else if ($type == 'subtask')
             {
                 $query->where(function ($query) { 
                     $query->where('parent_id', 'exists', true)->where('parent_id', '<>', '')->whereNotNull('parent_id');
@@ -395,7 +394,7 @@ class IssueController extends Controller
         // get workflow definition
         $wf_definition = Provider::getWorkflowByType($type);
         // create and start workflow instacne
-        $wf_entry = Workflow::createInstance($wf_definition->id)->start([ 'caller' => $this->user->id ]);
+        $wf_entry = Workflow::createInstance($wf_definition->id, $this->user->id)->start([ 'caller' => $this->user->id ]);
         // get the inital step
         $initial_step = $wf_entry->getCurrentSteps()->first();
         $initial_state = $wf_entry->getStepMeta($initial_step->step_id, 'state');
@@ -1740,28 +1739,19 @@ class IssueController extends Controller
      * @param  array  $issues
      * @param  string $from
      * @param  string $from_board_id
-     * @param  string $board_types
      * @param  bool   $isUpdRank
      * @return array 
      */
-    public function arrangeIssues($project_key, $issues, $from, $from_board_id, $board_types='', $isUpdRank=false)
+    public function arrangeIssues($project_key, $issues, $from, $from_board_id, $isUpdRank=false)
     {
-        $board_issues = [];
-        foreach ($issues as $key => $issue)
+        if ($from === 'his_sprint')
         {
-            // filter subtask type
-            if (isset($issues[$key]['parent']) && $issues[$key]['parent'])
-            {
-                if ($board_types && strpos($board_types, $issues[$key]['parent']['type']) === false)
-                {
-                    continue;
-                }
-            }
-            $board_issues[] = $issue;
+            $this->addAvatar($issues);
+            return $issues;
         }
 
         // classify the issues
-        $classified_issues = $this->classifyIssues($board_issues);
+        $classified_issues = $this->classifyIssues($issues);
 
         // whether the board is ranked
         $rankmap = BoardRankMap::where([ 'board_id' => $from_board_id ])->first();
@@ -1787,7 +1777,7 @@ class IssueController extends Controller
         }
  
         $sub2parent_map = []; 
-        foreach ($board_issues as $issue)
+        foreach ($issues as $issue)
         {
             if (isset($issue['parent']) && $issue['parent'])
             {
@@ -2598,7 +2588,12 @@ class IssueController extends Controller
             $insValues['created_at'] = time();
         }
 
-        if (isset($data['state']) && $data['state'] && in_array($data['state'], $workflow->state_ids ?: []))
+        if (!isset($data['state']) || !$data['state'])
+        {
+            $wf = $this->initializeWorkflow($data['type']);
+            $insValues += $wf;
+        }
+        else if (in_array($data['state'], $workflow->state_ids ?: []))
         {
             $wf = $this->initializeWorkflowForImport($workflow, $data['state']);
             $insValues += $wf;

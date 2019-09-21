@@ -245,6 +245,13 @@ class SprintController extends Controller
 
         $incompleted_issues = array_values(array_diff($sprint->issues, $completed_issues));
 
+        $valid_incompleted_issues = DB::collection('issue_' . $project_key)->whereIn('no', $incompleted_issues)->where('del_flg', '<>', 1)->get([ 'no' ]);
+        if ($valid_incompleted_issues)
+        {
+    	    $valid_incompleted_issues = array_column($valid_incompleted_issues, 'no');
+    	    $incompleted_issues = array_values(array_intersect($incompleted_issues, $valid_incompleted_issues));
+        }
+
         $updValues = [ 
             'status' => 'completed', 
             'real_complete_time' => time(), 

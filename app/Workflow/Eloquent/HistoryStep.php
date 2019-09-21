@@ -13,7 +13,6 @@ class HistoryStep extends Model
         'step_id',
         'previous_id',
         'start_time',
-        'finish_time',
         'action_id',
         'owner',
         'status',

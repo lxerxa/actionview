@@ -90,12 +90,14 @@ class Workflow {
      * create workflow.
      *
      * @param string $definition_id
+     * @param string $caller
      * @return string
      */
-    public static function createInstance($definition_id)
+    public static function createInstance($definition_id, $caller)
     {
         $entry = new Entry;
         $entry->definition_id = $definition_id;
+        $entry->creator = $caller;
         $entry->state = self::OSWF_CREATED;
         $entry->save();
         return new Workflow($entry->id);
@@ -250,15 +252,13 @@ class Workflow {
      * @param string $old_status
      * @return string previous_id 
      */
-    private function moveToHistory($current_step, $old_status)
+    private function moveToHistory($current_step)
     {
         // add to history records
         $history_step = new HistoryStep;
         $history_step->fill($current_step->toArray());
-        $history_step->status = $old_status ?: '';
-        $history_step->caller = isset($this->options['caller']) ? $this->options['caller'] : '';
-        $history_step->finish_time = time();
         $history_step->save();
+
         // delete from current step
         $current_step->delete();
 
@@ -365,7 +365,7 @@ class Workflow {
             }
 
             // move current to history step
-            $prevoius_id = $this->moveToHistory($current_step, $available_result_descriptor['old_status']);
+            $prevoius_id = $this->moveToHistory($current_step);
             foreach ($split_descriptor['list'] as $result_descriptor)
             {
                 $this->createNewCurrentStep($result_descriptor, $action_id, $prevoius_id);
@@ -382,8 +382,8 @@ class Workflow {
             }
 
             // move current to history step
-            $prevoius_id = $this->moveToHistory($current_step, $available_result_descriptor['old_status']);
-            if ($this->passesConditions($join_descriptor['conditions']))
+            $prevoius_id = $this->moveToHistory($current_step);
+            if ($this->isJoinCompleted())
             {
                 // record other previous_ids by propertyset
                 $this->createNewCurrentStep($join_descriptor, $action_id, $prevoius_id);
@@ -392,7 +392,7 @@ class Workflow {
         else
         {
             // move current to history step
-            $prevoius_id = $this->moveToHistory($current_step, $available_result_descriptor['old_status']);
+            $prevoius_id = $this->moveToHistory($current_step);
             // create current step
             $this->createNewCurrentStep($available_result_descriptor, $action_id, $prevoius_id);
         }
@@ -406,6 +406,14 @@ class Workflow {
         {
             $this->executeFunctions($action_descriptor['post_functions']);
         }
+    }
+
+    /**
+     * check if the join is completed 
+     */
+    private function isJoinCompleted()
+    {
+        return !CurrentStep::where('entry_id', $this->entry->id)->exists();
     }
 
     /**
@@ -693,8 +701,12 @@ class Workflow {
             return;
         }
 
-        foreach ($functions as $function) {
-            $this->executeFunction($function);
+        foreach ($functions as $function) 
+        {
+            if (is_array($function) && $function)
+            {
+                $this->executeFunction($function);
+            }
         }
     }
 
@@ -708,7 +720,7 @@ class Workflow {
     {
         $method = explode('@', $function['name']);
         $class = $method[0];
-        $action = $method[1] ?: 'handle';
+        $action = isset($method[1]) && $method[1] ? $method[1] : 'handle';
 
         // check handle function exists
         if (!method_exists($class, $action))
