@@ -15,4 +15,8 @@ class ExternalUsers extends Model
         'status',
         'pwd'
     );
+
+    protected $hidden = [
+        'pwd',
+    ];
 }

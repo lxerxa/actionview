@@ -249,14 +249,17 @@ class Workflow {
      *  move workflow step to history
      *
      * @param App\Workflow\Eloquent\CurrentStep $current_step
-     * @param string $old_status
+     * @param int $action_id
      * @return string previous_id 
      */
-    private function moveToHistory($current_step)
+    private function moveToHistory($current_step, $action_id)
     {
         // add to history records
         $history_step = new HistoryStep;
         $history_step->fill($current_step->toArray());
+        $history_step->action_id = $action_id;
+        $history_step->caller = isset($this->options['caller']) ? $this->options['caller'] : '';
+        $history_step->finish_time = time();
         $history_step->save();
 
         // delete from current step
@@ -269,30 +272,43 @@ class Workflow {
      *  create new workflow step.
      *
      * @param array $result_descriptor
-     * @param string $action_id
+     * @param int $action_id
      * @param string $previous_id
      * @return void
      */
-    private function createNewCurrentStep($result_descriptor, $action_id, $previous_id)
+    private function createNewCurrentStep($result_descriptor, $action_id, $previous_id='')
     {
-        $new_current_step = new CurrentStep;
-        $new_current_step->entry_id = $this->entry->id;
-        $new_current_step->action_id = intval($action_id);
-        $new_current_step->step_id = intval($result_descriptor['step']);
-        $new_current_step->status = isset($result_descriptor['status']) ? $result_descriptor['status'] : '';
-        $new_current_step->start_time = time();
-        $new_current_step->previous_id = $previous_id ?: '';
-        $new_current_step->owners =  isset($result_descriptor['owners']) ? $result_descriptor['owners'] : '';
-        $new_current_step->comments = isset($this->options['comments']) ? $this->options['comments'] : '';
-        $new_current_step->caller = isset($this->options['caller']) ? $this->options['caller'] : '';
-        $new_current_step->save();
-
-        $step_descriptor = $this->getStepDescriptor($result_descriptor['step']);
+        $step_descriptor = [];
+        if (isset($result_descriptor['step']) && $result_descriptor['step'])
+        {
+            $step_descriptor = $this->getStepDescriptor($result_descriptor['step']);
+            if (!$step_descriptor)
+            {
+                throw new StepNotFoundException();
+            }
+        }
+        if (!$step_descriptor)
+        {
+            return;
+        }
         // order to use for workflow post-function
         if (isset($step_descriptor['state']) && $step_descriptor['state'])
         {
             $this->options['state'] = $step_descriptor['state'];
         }
+
+        $new_current_step = new CurrentStep;
+        $new_current_step->entry_id = $this->entry->id;
+        $new_current_step->action_id = $action_id;
+        $new_current_step->step_id = isset($result_descriptor['step']) ? intval($result_descriptor['step']) : 0;
+        $new_current_step->previous_id = $previous_id;
+        $new_current_step->status = isset($result_descriptor['status']) ? $result_descriptor['status'] : 'Finished';
+        $new_current_step->start_time = time();
+        $new_current_step->owners =  isset($this->options['owners']) ? $this->options['owners'] : '';
+        $new_current_step->comments = isset($this->options['comments']) ? $this->options['comments'] : '';
+        $new_current_step->caller = isset($this->options['caller']) ? $this->options['caller'] : '';
+        $new_current_step->save();
+
         // trigger before step
         if (isset($step_descriptor['pre_functions']) && $step_descriptor['pre_functions'])
         {
@@ -304,7 +320,7 @@ class Workflow {
      * transfer workflow step.
      *
      * @param array $current_steps
-     * @param string $action;
+     * @param int $action;
      * @return void
      */
     private function transitionWorkflow($current_steps, $action_id)
@@ -312,6 +328,11 @@ class Workflow {
         foreach ($current_steps as $current_step)
         {
             $step_descriptor = $this->getStepDescriptor($current_step->step_id);
+            if (!$step_descriptor)
+            {
+                throw new StepNotFoundException();
+            }
+
             $action_descriptor = $this->getActionDescriptor(isset($step_descriptor['actions']) ? $step_descriptor['actions'] : [], $action_id);
             if ($action_descriptor)
             {
@@ -327,12 +348,6 @@ class Workflow {
             throw new ActionNotAvailableException();
         }
 
-        // triggers before action
-        if (isset($action_descriptor['pre_functions']) && $action_descriptor['pre_functions'])
-        {
-            $this->executeFunctions($action_descriptor['pre_functions']);
-        }
-
         if (!isset($action_descriptor['results']) || !$action_descriptor['results'])
         {
             throw new ResultNotFoundException();
@@ -344,15 +359,20 @@ class Workflow {
             throw new ResultNotAvailableException();
         }
 
-        // triggers before result
-        if (isset($available_result_descriptor['pre_functions']) && $available_result_descriptor['pre_functions'])
-        {
-            $this->executeFunctions($available_result_descriptor['pre_functions']);
-        }
         // triggers after step
         if (isset($step_descriptor['post_functions']) && $step_descriptor['post_functions'])
         {
             $this->executeFunctions($step_descriptor['post_functions']);
+        }
+        // triggers before action
+        if (isset($action_descriptor['pre_functions']) && $action_descriptor['pre_functions'])
+        {
+            $this->executeFunctions($action_descriptor['pre_functions']);
+        }
+        // triggers before result
+        if (isset($available_result_descriptor['pre_functions']) && $available_result_descriptor['pre_functions'])
+        {
+            $this->executeFunctions($available_result_descriptor['pre_functions']);
         }
         // split workflow
         if (isset($available_result_descriptor['split']) && $available_result_descriptor['split'])
@@ -365,7 +385,7 @@ class Workflow {
             }
 
             // move current to history step
-            $prevoius_id = $this->moveToHistory($current_step);
+            $prevoius_id = $this->moveToHistory($current_step, $action_id);
             foreach ($split_descriptor['list'] as $result_descriptor)
             {
                 $this->createNewCurrentStep($result_descriptor, $action_id, $prevoius_id);
@@ -382,7 +402,7 @@ class Workflow {
             }
 
             // move current to history step
-            $prevoius_id = $this->moveToHistory($current_step);
+            $prevoius_id = $this->moveToHistory($current_step, $action_id);
             if ($this->isJoinCompleted())
             {
                 // record other previous_ids by propertyset
@@ -392,7 +412,7 @@ class Workflow {
         else
         {
             // move current to history step
-            $prevoius_id = $this->moveToHistory($current_step);
+            $prevoius_id = $this->moveToHistory($current_step, $action_id);
             // create current step
             $this->createNewCurrentStep($available_result_descriptor, $action_id, $prevoius_id);
         }
@@ -419,7 +439,6 @@ class Workflow {
     /**
      * execute action 
      *
-     * @param array $wf_config
      * @param string $action_id
      * @param array $options;
      * @return string
@@ -441,7 +460,7 @@ class Workflow {
         // set options
         $this->options = array_merge($this->options, $options);
         // complete workflow step transition
-        $this->transitionWorkflow($current_steps, $action_id);
+        $this->transitionWorkflow($current_steps, intval($action_id));
     }
 
     /**

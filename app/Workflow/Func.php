@@ -254,6 +254,11 @@ class Func
             // snap to history
             $snap_id = Provider::snap2His($project_key, $issue_id, null, array_keys(self::$issue_properties));
 
+            if (!isset($param['eventParam']) || !$param['eventParam'])
+            {
+                Event::fire(new IssueEvent($project_key, $issue_id, $updValues['modifier'], [ 'event_key' => 'normal', 'snap_id' => $snap_id ]));
+            }
+
             self::$snap_id = $snap_id;
         }
     }
@@ -272,7 +277,10 @@ class Func
         $user_info = Sentinel::findById($param['caller']);
         $caller = [ 'id' => $user_info->id, 'name' => $user_info->first_name, 'email' => $user_info->email ];
 
-        Event::fire(new IssueEvent($project_key, $issue_id, $caller, [ 'event_key' => $param['eventParam'], 'snap_id' => self::$snap_id ]));
+        if (isset(self::$snap_id) && self::$snap_id)
+        {
+            Event::fire(new IssueEvent($project_key, $issue_id, $caller, [ 'event_key' => $param['eventParam'], 'snap_id' => self::$snap_id ]));
+        }
 
         $updValues = [];
         if ($param['eventParam'] === 'resolve_issue')
