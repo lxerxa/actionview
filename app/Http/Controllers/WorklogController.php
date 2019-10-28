@@ -152,7 +152,7 @@ class WorklogController extends Controller
             throw new \UnexpectedValueException('the worklog does not exist or is not in the issue or is not in the project.', -11309);
         }
 
-        if (!$this->isPermissionAllowed($project_key, 'manage_project') && $worklog->recorder['id'] !== $this->user->id) 
+        if (!$this->isPermissionAllowed($project_key, 'edit_worklog') && !($worklog->recorder['id'] == $this->user->id && $this->isPermissionAllowed($project_key, 'edit_self_worklog'))) 
         {
             return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
         }
@@ -252,7 +252,7 @@ class WorklogController extends Controller
             throw new \UnexpectedValueException('the worklog does not exist or is not in the issue or is not in the project.', -11309);
         }
 
-        if (!$this->isPermissionAllowed($project_key, 'manage_project') && $worklog->recorder['id'] !== $this->user->id) 
+        if (!$this->isPermissionAllowed($project_key, 'delete_worklog') && !($worklog->recorder['id'] == $this->user->id && $this->isPermissionAllowed($project_key, 'delete_self_worklog'))) 
         {
             return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
         }

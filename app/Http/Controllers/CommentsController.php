@@ -40,6 +40,11 @@ class CommentsController extends Controller
      */
     public function store(Request $request, $project_key, $issue_id)
     {
+        if (!$this->isPermissionAllowed($project_key, 'add_comments')) 
+        {
+            return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
+        }
+
         $contents = $request->input('contents');
         if (!$contents)
         {
@@ -127,7 +132,7 @@ class CommentsController extends Controller
                 $index = $this->array_find([ 'id' => $reply_id ], $comments['reply']); 
                 if ($index !== false) 
                 {
-                    if (!$this->isPermissionAllowed($project_key, 'manage_project') && $comments['reply'][$index]['creator']['id'] !== $this->user->id) 
+                    if (!$this->isPermissionAllowed($project_key, 'edit_comments') && !($comments['reply'][$index]['creator']['id'] == $this->user->id && $this->isPermissionAllowed($project_key, 'edit_self_comments')))
                     {
                         return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
                     }
@@ -150,7 +155,7 @@ class CommentsController extends Controller
                 $index = $this->array_find([ 'id' => $reply_id ], $comments['reply']); 
                 if ($index !== false) 
                 {
-                    if (!$this->isPermissionAllowed($project_key, 'manage_project') && $comments['reply'][$index]['creator']['id'] !== $this->user->id) 
+                    if (!$this->isPermissionAllowed($project_key, 'delete_comments') && !($comments['reply'][$index]['creator']['id'] == $this->user->id && $this->isPermissionAllowed($project_key, 'delete_self_comments')))
                     {
                         return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
                     }
@@ -167,7 +172,7 @@ class CommentsController extends Controller
         }
         else
         {
-            if (!$this->isPermissionAllowed($project_key, 'manage_project') && $comments['creator']['id'] !== $this->user->id) 
+            if (!$this->isPermissionAllowed($project_key, 'edit_comments') && !($comments['creator']['id'] == $this->user->id && $this->isPermissionAllowed($project_key, 'edit_self_comments')))
             {
                 return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
             }
@@ -208,7 +213,7 @@ class CommentsController extends Controller
             throw new \UnexpectedValueException('the comments does not exist or is not in the project.', -11201);
         }
 
-        if (!$this->isPermissionAllowed($project_key, 'manage_project') && $comments['creator']['id'] !== $this->user->id) 
+        if (!$this->isPermissionAllowed($project_key, 'manage_project') && !($comments['creator']['id'] == $this->user->id && $this->isPermissionAllowed($project_key, 'delete_self_comments'))) 
         {
             return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
         }
