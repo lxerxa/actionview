@@ -114,8 +114,11 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::resource('resolution', 'ResolutionController');
     Route::get('resolution/{id}/used', 'ResolutionController@viewUsedInProject');
     Route::post('resolution/batch', 'ResolutionController@handle');
-    // Route::resource('module', 'ModuleController', [ 'only' => [ 'store', 'update', 'destory' ] ]);
-    // Route::resource('version', 'VersionController', [ 'only' => [ 'store', 'update', 'destory' ] ]);
+
+    Route::get('integrations', 'ExternalUsersController@index');
+    Route::post('integrations', 'ExternalUsersController@handle');
+
+    Route::resource('webhooks', 'WebhooksController');
 });
 
 Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can', 'privilege:view_project' ] ], function () {

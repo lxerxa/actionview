@@ -5,7 +5,7 @@ use Illuminate\Http\Request;
 
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
-use App\project\Eloquent\Webhooks;
+use App\Project\Eloquent\Webhooks;
 use App\Project\Eloquent\Project;
 use App\Project\Provider;
 use DB;
@@ -33,17 +33,17 @@ class WebhooksController extends Controller
     {
         $insValues = [];
 
-        if (!($requet_url = $request->input('request_url')))
+        if (!($request_url = $request->input('request_url')))
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -10300);
+            throw new \UnexpectedValueException('the request url can not be empty.', -16010);
         }
         $insValues['request_url'] = $request_url;
 
-        if (!($events = $request->input('events')))
-        {
-            throw new \UnexpectedValueException('the name can not be empty.', -10300);
-        }
-        $insValues['events'] = $events;
+        //if (!($events = $request->input('events')))
+        //{
+        //    throw new \UnexpectedValueException('the name can not be empty.', -10300);
+        //}
+        $insValues['events'] = $request->input('events') ?: [];
 
         if ($token = $request->input('token'))
         {
@@ -55,7 +55,7 @@ class WebhooksController extends Controller
             $insValues['ssl'] = $ssl;
         }
 
-        $webhook = Webhooks::create([ 'project_key' => $project_key, 'status' => 'enabled' ] + insValues);
+        $webhook = Webhooks::create([ 'project_key' => $project_key, 'status' => 'enabled' ] + $insValues);
         return Response()->json(['ecode' => 0, 'data' => $webhook]);
     }
 
@@ -71,7 +71,7 @@ class WebhooksController extends Controller
         $webhook = Webhooks::find($id);
         if (!$webhook || $project_key != $webhook->project_key)
         {
-            throw new \UnexpectedValueException('the state does not exist or is not in the project.', -12402);
+            throw new \UnexpectedValueException('the webhook does not exist or is not in the project.', -16011);
         }
 
         $updValues = [];
@@ -97,13 +97,12 @@ class WebhooksController extends Controller
     public function destroy($project_key, $id)
     {
         $webhook = Webhooks::find($id);
-        if (!$state || $project_key != $webhook->project_key)
+        if (!$webhook || $project_key != $webhook->project_key)
         {
-            throw new \UnexpectedValueException('the state does not exist or is not in the project.', -12402);
+            throw new \UnexpectedValueException('the webhook does not exist or is not in the project.', -16011);
         }
 
         Webhooks::destroy($id);
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }
-
 }

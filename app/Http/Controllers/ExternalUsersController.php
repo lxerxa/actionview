@@ -5,7 +5,7 @@ use Illuminate\Http\Request;
 
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
-use App\project\Eloquent\ExternalUsers;
+use App\Project\Eloquent\ExternalUsers;
 use App\Project\Eloquent\Project;
 use App\Project\Provider;
 use DB;
@@ -60,6 +60,8 @@ class ExternalUsersController extends Controller
             }
             $data['pwd'] = md5($pwd);
         }
+
+        $data['project_key'] = $project_key;
 
         $external_user = ExternalUsers::where('project_key', $project_key)
             ->where('user', $user)
