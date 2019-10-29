@@ -32,7 +32,7 @@ class WebhooksRequestListener
     public function handle(Event $event)
     {
         $event_key = $event->param['event_key'];
-        $project_key = $event->param['project_key'];
+        $project_key = $event->project_key;
 
         $webhooks = Webhooks::where('project_key', $project_key)->where('status', 'enabled')->get();
         foreach ($webhooks as $webhook)
@@ -48,10 +48,8 @@ class WebhooksRequestListener
     public function push2WebhookEvents(Event $event)
     {
         $event_key = $event->param['event_key'];
-        $project_key = $event->param['project_key'];
+        $project_key = $event->project_key;
         $user = $event->user;
-
-        $project = Project::where('key', $project_key)->first()->toArray();
 
         if ($event instanceof IssueEvent)
         {
@@ -61,8 +59,8 @@ class WebhooksRequestListener
             }
 
             $data = DB::collection('issue_' . $project_key)->where('_id', $event->param['issue_id'])->first();
-            $data['project'] = $project;
 
+            $data['project_key'] = $project_key;
             $data['event'] = $event_key;
 
             if ($event_key == 'add_worklog' || $event_key == 'edit_worklog')
@@ -85,7 +83,6 @@ class WebhooksRequestListener
             }
 
             $data = $event->param['data'];
-            $data['project'] = $project;
 
             $data['event'] = $event_key;
 
