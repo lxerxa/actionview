@@ -11,7 +11,8 @@ class WebhookEvents extends Model
     protected $fillable = array(
         'user_id',
         'project_key',
-        'url',
+        'request_url',
+        'token',
         'data',
         'flag'
     );

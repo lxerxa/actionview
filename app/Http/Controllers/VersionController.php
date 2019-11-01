@@ -188,7 +188,7 @@ class VersionController extends Controller
         {
             $isSendMsg = $request->input('isSendMsg') && true;
             $cur_user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
-            Event::fire(new VersionEvent($project_key, $cur_user, [ 'event_key' => 'release_version', 'isSendMsg' => $isSendMsg, 'data' => [ 'release_version' => $id ] ]));
+            Event::fire(new VersionEvent($project_key, $cur_user, [ 'event_key' => 'release_version', 'isSendMsg' => $isSendMsg, 'data' => Version::find($id)->toArray() ]));
         }
 
         return $this->show($project_key, $id);

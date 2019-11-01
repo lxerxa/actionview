@@ -118,6 +118,11 @@ class CommentsController extends Controller
 
             if ($operation == 'addReply') 
             {
+                if (!$this->isPermissionAllowed($project_key, 'add_comments')) 
+                {
+                    return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
+                }
+
                 $reply_id = md5(microtime() . $this->user->id); 
                 array_push($comments['reply'], array_only($request->all(), [ 'contents', 'atWho' ]) + [ 'id' => $reply_id , 'creator' => $user, 'created_at' => time() ]);
                 $changedComments = array_only($request->all(), [ 'contents', 'atWho' ]) + [ 'to' => $comments['creator'] ];

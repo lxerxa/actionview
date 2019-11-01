@@ -53,9 +53,11 @@ class EventServiceProvider extends ServiceProvider
         ],
        'App\Events\IssueEvent' => [
             'App\Listeners\ActivityAddListener',
+            'App\Listeners\WebhooksRequestListener',
         ],
        'App\Events\VersionEvent' => [
             'App\Listeners\ActivityAddListener',
+            'App\Listeners\WebhooksRequestListener',
         ],
        'App\Events\SprintEvent' => [
             'App\Listeners\ActivityAddListener',
@@ -65,6 +67,7 @@ class EventServiceProvider extends ServiceProvider
         ],
        'App\Events\ModuleEvent' => [
             'App\Listeners\ActivityAddListener',
+            //'App\Listeners\WebhooksRequestListener',
         ],
     ];
 

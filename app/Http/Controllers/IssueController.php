@@ -1589,9 +1589,6 @@ class IssueController extends Controller
         $user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
         $version = Version::create([ 'project_key' => $project_key, 'user' => $user, 'status' => 'released', 'released_time' => time() ] + $request->all());
 
-        // trigger event of version released
-        Event::fire(new VersionEvent($project_key, $user, [ 'event_key' => 'release_version', 'data' => $version->toArray() ]));
-
         foreach ($ids as $id)
         {
             DB::collection('issue_' . $project_key)->where('_id', $id)->update([ 'resolve_version' => $version->id ]);
@@ -1602,7 +1599,7 @@ class IssueController extends Controller
         }
 
         $isSendMsg = $request->input('isSendMsg') && true;
-        Event::fire(new VersionEvent($project_key, $user, [ 'event_key' => 'create_release_version', 'isSendMsg' => $isSendMsg, 'data' => [ 'released_issues' => $ids, 'release_version' => $version->id ] ]));
+        Event::fire(new VersionEvent($project_key, $user, [ 'event_key' => 'create_release_version', 'isSendMsg' => $isSendMsg, 'data' => [ 'released_issues' => $ids, 'release_version' => $version->toArray() ] ]));
 
         return Response()->json([ 'ecode' => 0, 'data' => [ 'ids' => $ids ] ]);
     }

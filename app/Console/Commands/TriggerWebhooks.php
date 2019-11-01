@@ -43,18 +43,17 @@ class TriggerWebhooks extends Command
 
         while(true)
         {
-
             WebhookEvents::where('flag', 0)->update([ 'flag' => $timestamp ]);
 
             $events = WebhookEvents::where('flag', $timestamp)->orderBy('_id', 'asc')->get();
-            if (!$events)
+            if ($events->isEmpty())
             {
                 break;
             }
 
             foreach ($events as $event)
             {
-                $this->curlPost($event->url, $event->data);
+                $this->curlPost($event->request_url, [ 'ACTIONVIEW_TOKEN:' . ($event->token ?: '') ], $event->data ?: []);
                 $event->delete();
             }
         }
@@ -65,12 +64,18 @@ class TriggerWebhooks extends Command
      *
      * @var array nodes
      */
-    public static function curlPost($url, $data=[], $await=5)
+    public static function curlPost($url, $header=[], $data=[], $await=5)
     {
         $ch = curl_init();
 
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_HEADER, 0);
+
+        if ($header)
+        {
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+        }
+
         curl_setopt($ch, CURLOPT_HTTPHEADER, [ 'Content-Type: application/json', 'Expect:' ]);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $await);
         curl_setopt($ch, CURLOPT_TIMEOUT, $await);

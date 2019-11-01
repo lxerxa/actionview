@@ -40,12 +40,12 @@ class WebhooksRequestListener
             $events = isset($webhook->events) && $webhook->events ? $webhook->events : [];
             if (in_array($event_key, $events))
             {
-                $this->push2WebhookEvents($event);
+                $this->push2WebhookEvents($event, $webhook->request_url, $webhook->token);
             }
         }
     }
 
-    public function push2WebhookEvents(Event $event)
+    public function push2WebhookEvents(Event $event, $request_url, $token='')
     {
         $event_key = $event->param['event_key'];
         $project_key = $event->project_key;
@@ -53,15 +53,16 @@ class WebhooksRequestListener
 
         if ($event instanceof IssueEvent)
         {
-            if (!isset($event->param['issue_id']))
+            if (!isset($event->issue_id))
             {
                 return;
             }
 
-            $data = DB::collection('issue_' . $project_key)->where('_id', $event->param['issue_id'])->first();
+            $data = DB::collection('issue_' . $project_key)->where('_id', $event->issue_id)->first();
 
             $data['project_key'] = $project_key;
             $data['event'] = $event_key;
+            unset($data['_id']);
 
             if ($event_key == 'add_worklog' || $event_key == 'edit_worklog')
             {
@@ -71,6 +72,8 @@ class WebhooksRequestListener
             WebhookEvents::create([
                 'project_key' => $project_key,
                 'user' => $user,
+                'request_url' => $request_url,
+                'token' => $token,
                 'data' => $data,
                 'flag' => 0
             ]);
@@ -85,10 +88,12 @@ class WebhooksRequestListener
             $data = $event->param['data'];
 
             $data['event'] = $event_key;
+            unset($data['_id']);
 
             WebhookEvents::create([
                 'project_key' => $project_key,
                 'user' => $user,
+                'request_url' => $request_url,
                 'data' => $data,
                 'flag' => 0
             ]);
