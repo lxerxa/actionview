@@ -13,6 +13,7 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
+        'App\Console\Commands\TriggerWebhooks',
         'App\Console\Commands\SendEmails',
         'App\Console\Commands\ImportCalendarSingular',
         'App\Console\Commands\SyncLdap',
@@ -34,5 +35,7 @@ class Kernel extends ConsoleKernel
                  ->hourly();
         $schedule->command('ldap:sync')
                  ->daily();
+        $schedule->command('trigger:webhooks')
+                 ->everyMinute();
     }
 }

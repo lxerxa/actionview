@@ -53,7 +53,8 @@ class TriggerWebhooks extends Command
 
             foreach ($events as $event)
             {
-                $this->curlPost($event->request_url, [ 'ACTIONVIEW_TOKEN:' . ($event->token ?: '') ], $event->data ?: []);
+                $header = [ 'Content-Type: application/json', 'Expect:', 'X-Actionview-Token: ' . ($event->token ?: '') ];
+                $this->curlPost($event->request_url, $header, $event->data ?: []);
                 $event->delete();
             }
         }
@@ -70,13 +71,7 @@ class TriggerWebhooks extends Command
 
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_HEADER, 0);
-
-        if ($header)
-        {
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
-        }
-
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [ 'Content-Type: application/json', 'Expect:' ]);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $await);
         curl_setopt($ch, CURLOPT_TIMEOUT, $await);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);

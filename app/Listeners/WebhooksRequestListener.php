@@ -38,9 +38,9 @@ class WebhooksRequestListener
         foreach ($webhooks as $webhook)
         {
             $events = isset($webhook->events) && $webhook->events ? $webhook->events : [];
-            if (in_array($event_key, $events))
+            if (in_array($event_key, $events) && $webhook->request_url)
             {
-                $this->push2WebhookEvents($event, $webhook->request_url, $webhook->token);
+                $this->push2WebhookEvents($event, $webhook->request_url, $webhook->token ?: '');
             }
         }
     }
