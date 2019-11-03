@@ -132,9 +132,13 @@ class FileController extends Controller
     public function download(Request $request, $project_key, $id)
     {
         $file = File::find($id); 
+        if (!file || $file->del_flg == 1)
+        {
+            throw new \UnexpectedValueException('file does not exist.', -15100);
+        }
+
         $filepath = config('filesystems.disks.local.root', '/tmp') . '/' . substr($file->index, 0, 2);
         $filename = $filepath . '/' . $file->index;
-
         if (!file_exists($filename))
         {
             throw new \UnexpectedValueException('file does not exist.', -15100);
@@ -183,6 +187,17 @@ class FileController extends Controller
      */
     public function delete(Request $request, $project_key, $id)
     {
+        $file = File::find($id);
+        //if (!file || $file->del_flg == 1)
+        //{
+        //    throw new \UnexpectedValueException('file does not exist.', -15100);
+        //}
+
+        if ($file && !$this->isPermissionAllowed($project_key, 'remove_file') && !($this->isPermissionAllowed($project_key, 'remove_self_file') && $file->uploader['id'] == $this->user->id)) 
+        {
+            return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
+        }
+
         $issue_id = $request->input('issue_id');
         $field_key = $request->input('field_key');
         if (isset($issue_id) && $issue_id && isset($field_key) && $field_key)
@@ -192,7 +207,10 @@ class FileController extends Controller
         }
 
         // logically deleted
-        DB::collection('file')->where('_id', $id)->update([ 'del_flg' => 1 ]);
+        if ($file)
+        {
+            $file->fill([ 'del_flg' => 1 ])->save();
+        }
 
         $issue = DB::collection('issue_' . $project_key)->where('_id', $issue_id)->first();
         if (array_search($id, $issue[$field_key]) === false)

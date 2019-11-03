@@ -78,7 +78,7 @@ class ActivityAddListener
     public function addFileActivity($project_key, $issue_id, $user, $file_id, $event_key)
     {
         $file_info = File::find($file_id);
-        if (!$file_info)
+        if (!$file_info || $file->del_flg == 1)
         {
             return;
         }

@@ -69,6 +69,10 @@ class FileChangeListener
             {
                 array_splice($issue[$field_key], $index, 1);
             }
+            else
+            {
+                return;
+            }
         }
 
         $issue['updated_at'] = time();

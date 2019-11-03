@@ -286,7 +286,7 @@ class DocumentController extends Controller
         }
         else
         {
-            if (!$this->isPermissionAllowed($project_key, 'upload_file') || !$this->isPermissionAllowed($project_key, 'download_file')) 
+            if (!$this->isPermissionAllowed($project_key, 'manage_project') && $old_document['uploader']['id'] !== $this->user->id) 
             {
                 return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
             }
@@ -361,7 +361,7 @@ class DocumentController extends Controller
         }
         else
         {
-            if (!$this->isPermissionAllowed($project_key, 'remove_file') || !$this->isPermissionAllowed($project_key, 'upload_file'))
+            if (!$this->isPermissionAllowed($project_key, 'manage_project') && $document['uploader']['id'] !== $this->user->id)
             {
                 return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
             }
@@ -446,7 +446,7 @@ class DocumentController extends Controller
         }
         else
         {
-            if (!$this->isPermissionAllowed($project_key, 'remove_file'))
+            if (!$this->isPermissionAllowed($project_key, 'manage_project') && $document['uploader']['id'] !== $this->user->id)
             {
                 return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
             }

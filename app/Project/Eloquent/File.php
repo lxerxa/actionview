@@ -15,6 +15,7 @@ class File extends Model
         'size',
         'uploader',
         'index',
-        'thumbnails_index'
+        'thumbnails_index',
+        'del_flg'
     );
 }

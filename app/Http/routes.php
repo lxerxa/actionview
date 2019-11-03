@@ -201,10 +201,10 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::post('file', [ 'middleware' => 'privilege:upload_file', 'uses' => 'FileController@upload' ]);
     Route::get('file/{id}/thumbnail', 'FileController@downloadThumbnail');
     Route::get('file/{id}', [ 'middleware' => 'privilege:download_file', 'uses' => 'FileController@download' ]);
-    Route::delete('file/{id}', [ 'middleware' => 'privilege:remove_file', 'uses' => 'FileController@delete' ]);
+    Route::delete('file/{id}', 'FileController@delete');
 
-    Route::post('document/{id}/upload',  [ 'middleware' => 'privilege:upload_file', 'uses' => 'DocumentController@upload' ]);
-    Route::get('document/{id}/download', [ 'middleware' => 'privilege:download_file', 'uses' => 'DocumentController@download' ]);
+    Route::post('document/{id}/upload', 'DocumentController@upload');
+    Route::get('document/{id}/download', 'DocumentController@download');
     Route::get('document/options', 'DocumentController@getOptions');
     Route::get('document/directory/{id}', 'DocumentController@index');
     Route::get('document/search/path', 'DocumentController@searchPath');
