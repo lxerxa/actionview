@@ -132,7 +132,7 @@ class FileController extends Controller
     public function download(Request $request, $project_key, $id)
     {
         $file = File::find($id); 
-        if (!file || $file->del_flg == 1)
+        if (!$file || $file->del_flg == 1)
         {
             throw new \UnexpectedValueException('file does not exist.', -15100);
         }
