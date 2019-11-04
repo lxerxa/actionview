@@ -58,7 +58,7 @@ class ExternalUsersController extends Controller
             {
                 throw new \UnexpectedValueException('the password cannot be empty.', -16003);
             }
-            $data['pwd'] = md5($pwd);
+            $data['pwd'] = $pwd;
         }
 
         $data['project_key'] = $project_key;

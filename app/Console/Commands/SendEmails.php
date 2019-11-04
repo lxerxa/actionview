@@ -281,17 +281,14 @@ class SendEmails extends Command
         }
         else if ($activity['event_key'] == 'release_version')
         {
-            $release_versionid = isset($activity['data']['release_version']) ? $activity['data']['release_version'] : '';
-            if (!$release_versionid)
+            $release_version = isset($activity['data']) ? $activity['data'] : [];
+            if (!$release_version)
             {
                 return;
             }
 
-            $version = Version::find($release_versionid);
-            if (!$version) { return; }
-
             $released_issues = DB::collection('issue_' . $project->key)
-                ->where('resolve_version', $release_versionid)
+                ->where('resolve_version', $release_version['_id'])
                 ->where('resolution', '<>', 'Unresolved')
                 ->where('del_flg', '<>', 1)
                 ->get();
@@ -299,26 +296,23 @@ class SendEmails extends Command
             $data = [
                 'project' => $project,
                 'released_issues' => $released_issues,
-                'resolve_version' => [ 'id' => $version->id, 'name' => $version->name ],
+                'resolve_version' => [ 'id' => $release_version['_id'], 'name' => $release_version['name'] ],
                 'user' => $activity['user'],
                 'http_host' => $this->http_host,
             ];
 
-            $subject = '[' . $this->mail_prefix . '] ' . $project->key . ':  版本-' . $version->name . ' 发布';
+            $subject = '[' . $this->mail_prefix . '] ' . $project->key . ':  版本-' . $release_version['name'] . ' 发布';
 
             $template = 'emails.version_release';
         }
         else if ($activity['event_key'] == 'create_release_version')
         {
             $released_issueids = isset($activity['data']['released_issues']) ? $activity['data']['released_issues'] : [];
-            $release_versionid = isset($activity['data']['release_version']) ? $activity['data']['release_version'] : '';
-            if (!$released_issueids || !$release_versionid)
+            $release_version = isset($activity['data']['release_version']) ? $activity['data']['release_version'] : [];
+            if (!$released_issueids || !$release_version)
             {
                 return;
             }
-
-            $version = Version::find($release_versionid);
-            if (!$version) { return; }
 
             $released_issues = DB::collection('issue_' . $project->key)
                 ->whereIn('_id', $released_issueids)
@@ -328,12 +322,12 @@ class SendEmails extends Command
             $data = [
                 'project' => $project,
                 'released_issues' => $released_issues,
-                'resolve_version' => [ 'id' => $version->id, 'name' => $version->name ],
+                'resolve_version' => [ 'id' => $release_version['_id'], 'name' => $release_version['name'] ],
                 'user' => $activity['user'],
                 'http_host' => $this->http_host,
             ];
 
-            $subject = '[' . $this->mail_prefix . '] ' . $project->key . ':  版本-' . $version->name . ' 发布';
+            $subject = '[' . $this->mail_prefix . '] ' . $project->key . ':  版本-' . $release_version['name'] . ' 发布';
 
             $template = 'emails.version_release';
         }

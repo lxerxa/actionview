@@ -49,7 +49,7 @@ class WebhookController extends Controller
                 return Response()->json([ 'ecode' => -5, 'emsg' => 'the event has error.' ]);
             }
 
-            $token = env('GITLAB_WEBHOOK_TOKEN', '');
+            $token = $external_user->pwd ?: '';
             if (!$token || $token !== $_SERVER['HTTP_X_GITLAB_TOKEN']) 
             {
                 return Response()->json([ 'ecode' => -1, 'emsg' => 'the token has error.' ]);
@@ -65,7 +65,7 @@ class WebhookController extends Controller
                 return Response()->json([ 'ecode' => -5, 'emsg' => 'the event has error.' ]);
             }
 
-            $token = env('GITHUB_WEBHOOK_TOKEN', '');
+            $token = $external_user->pwd ?: '';
             if (!$token)
             {
                 return Response()->json([ 'ecode' => -1, 'emsg' => 'the token can not be empty.' ]);
