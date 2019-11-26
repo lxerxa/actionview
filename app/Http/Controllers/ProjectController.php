@@ -319,6 +319,28 @@ class ProjectController extends Controller
     }
 
     /**
+     * search project by the name or code.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function search(Request $request)
+    {
+        $query = DB::collection('project');
+
+        $s = $request->input('s');
+        if (isset($s) && $s)
+        {
+            $query->where(function ($query) use ($s) {
+                $query->where('key', 'like', '%' . $s . '%')->orWhere('name', 'like', '%' . $s . '%');
+            });
+        }
+
+        $projects = $query->take(10)->get([ 'name', 'key' ]);
+
+        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($projects) ]);
+    }
+
+    /**
      * Display a listing of the resource.
      *
      * @return \Illuminate\Http\Response
