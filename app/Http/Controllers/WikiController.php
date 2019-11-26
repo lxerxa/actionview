@@ -810,6 +810,11 @@ class WikiController extends Controller
      */
     public function upload(Request $request, $project_key, $wid)
     {
+        if (!is_writable(config('filesystems.disks.local.root', '/tmp')))
+        {
+            throw new \UnexpectedValueException('the user has not the writable permission to the directory.', -15103);
+        }
+
         $fields = array_keys($_FILES);
         $field = array_pop($fields);
         if ($_FILES[$field]['error'] > 0)

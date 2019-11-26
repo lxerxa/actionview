@@ -472,6 +472,11 @@ class DocumentController extends Controller
      */
     public function upload(Request $request, $project_key, $directory)
     {
+        if (!is_writable(config('filesystems.disks.local.root', '/tmp')))
+        {
+            throw new \UnexpectedValueException('the user has not the writable permission to the directory.', -15103);
+        }
+
         if ($directory !== '0')
         {
             $isExists = DB::collection('document_' . $project_key)

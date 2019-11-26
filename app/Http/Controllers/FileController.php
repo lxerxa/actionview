@@ -22,6 +22,11 @@ class FileController extends Controller
      */
     public function upload(Request $request, $project_key)
     {
+        if (!is_writable(config('filesystems.disks.local.root', '/tmp')))
+        {
+            throw new \UnexpectedValueException('the user has not the writable permission to the directory.', -15103);
+        }
+
         $thumbnail_size = 190;
 
         $fields = array_keys($_FILES); 
