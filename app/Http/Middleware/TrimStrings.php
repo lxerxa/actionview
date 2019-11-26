@@ -5,7 +5,7 @@ namespace App\Http\Middleware;
 use Illuminate\Http\JsonResponse;
 use Closure;
 
-class BeforeMiddleware 
+class TrimStrings 
 {
     /**
      * Handle an incoming request.

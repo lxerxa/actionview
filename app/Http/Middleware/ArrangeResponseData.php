@@ -7,7 +7,7 @@ use Closure;
 
 use MongoDB\BSON\ObjectID;
 
-class AfterMiddleware 
+class ArrangeResponseData 
 {
     /**
      * Handle an incoming request.

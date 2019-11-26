@@ -14,8 +14,9 @@ class Kernel extends HttpKernel
      * @var array
      */
     protected $middleware = [
-        \App\Http\Middleware\BeforeMiddleware::class,
-        \App\Http\Middleware\AfterMiddleware::class
+        \App\Http\Middleware\TrimStrings::class,
+        \App\Http\Middleware\AccessLogs::class,
+        \App\Http\Middleware\ArrangeResponseData::class
     ];
 
     /**
