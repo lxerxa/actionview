@@ -17,6 +17,10 @@ use Cartalyst\Sentinel\Users\EloquentUser;
 use Sentinel;
 use Activation; 
 
+use App\System\Eloquent\SysSetting;
+use App\System\Eloquent\ResetPwdCode;
+use Mail;
+use Config;
 
 class UserController extends Controller
 {
@@ -24,7 +28,7 @@ class UserController extends Controller
 
     public function __construct()
     {
-        $this->middleware('privilege:sys_admin', [ 'except' => [ 'register', 'search', 'downloadUserTpl' ] ]);
+        $this->middleware('privilege:sys_admin', [ 'except' => [ 'register', 'search', 'show', 'sendMailForResetpwd', 'showResetpwd', 'doResetpwd' ] ]);
         parent::__construct();
     }
 
@@ -428,6 +432,243 @@ class UserController extends Controller
         }
 
         $user = Sentinel::update($user, [ 'password' => 'actionview' ]);
+        return Response()->json([ 'ecode' => 0, 'data' => $user ]);
+    }
+
+    /**
+     * send the reset password link to the mail.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function sendMailForResetpwd(Request $request)
+    {
+        $email = $request->input('email');
+        if (!isset($email) || !$email)
+        {
+            throw new \UnexpectedValueException('the email can not be empty.', -10019);
+        }
+
+        $obscured_email = $sendto_email = $email;
+
+        $last_reset_times = ResetPwdCode::where('requested_at', '>=', time() - 10 * 60)->count();
+        if ($last_reset_times >= 10)
+        {
+            throw new \UnexpectedValueException('sending the email is too often.', -10016);
+        }
+
+        $last_reset_times = ResetPwdCode::where('requested_at', '>=', time() - 10 * 60)->where('email', $email)->count();
+        if ($last_reset_times >= 3)
+        {
+            throw new \UnexpectedValueException('sending the email is too often.', -10016);
+        }
+
+        $user = Sentinel::findByCredentials([ 'email' => $email ]);
+        if (!$user)
+        {
+            throw new \UnexpectedValueException('the user is not exists.', -10010);
+        }
+        else if ($user->invalid_flag === 1)
+        {
+            throw new \UnexpectedValueException('the user has been disabled.', -10011);
+        }
+        else if ($user->directory && $user->directory != 'self')
+        {
+            throw new \UnexpectedValueException('the user is external sync user.', -10012);
+        }
+
+        if ($email === 'admin@action.view')
+        {
+            if (isset($user->bind_email) && $user->bind_email)
+            {
+                $sendto_email = $user->bind_email;
+                $sections = explode('@', $user->bind_email);
+                $sections[0] = substr($sections[0], 0, 1) . '***' . substr($sections[0], -1, 1);
+                $obscured_email = implode('@', $sections);
+            }
+            else
+            {
+                throw new \UnexpectedValueException('the related email is not bound.', -10013);
+            }
+        }
+
+        $data = [];
+        $data['email'] = $email;
+        $rand_code = md5($email . mt_rand() . microtime());
+        $http_type = ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https')) ? 'https://' : 'http://';
+        $data['url'] = $http_type . $_SERVER['HTTP_HOST'] . '/resetpwd?code=' . $rand_code;
+
+        $this->sendMail($sendto_email, $data);
+
+        ResetPwdCode::create([
+            'email' => $email,
+            'code' => $rand_code,
+            'requested_at' => time(),
+            'expired_at' => time() + 24 * 60 * 60,
+        ]);
+
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'sendto_email' => $obscured_email ] ]);
+    }
+
+    /**
+     * send the reset link to the address.
+     *
+     * @param  string $to
+     * @param  array $data
+     * @return \Illuminate\Http\Response
+     */
+    public function sendMail($to, $data)
+    {
+        $syssetting = SysSetting::first()->toArray();
+        if (isset($syssetting['mailserver'])
+            && isset($syssetting['mailserver']['send'])
+            && isset($syssetting['mailserver']['smtp'])
+            && isset($syssetting['mailserver']['send']['from'])
+            && isset($syssetting['mailserver']['smtp']['host'])
+            && isset($syssetting['mailserver']['smtp']['port'])
+            && isset($syssetting['mailserver']['smtp']['username'])
+            && isset($syssetting['mailserver']['smtp']['password']))
+        {
+            Config::set('mail.from', $syssetting['mailserver']['send']['from']);
+            Config::set('mail.host', $syssetting['mailserver']['smtp']['host']);
+            Config::set('mail.port', $syssetting['mailserver']['smtp']['port']);
+            Config::set('mail.encryption', isset($syssetting['mailserver']['smtp']['encryption']) && $syssetting['mailserver']['smtp']['encryption'] ? $syssetting['mailserver']['smtp']['encryption'] : null);
+            Config::set('mail.username', $syssetting['mailserver']['smtp']['username']);
+            Config::set('mail.password', $syssetting['mailserver']['smtp']['password']);
+        }
+        else
+        {
+            throw new \UnexpectedValueException('the smtp server is not configured.', -10014);
+        }
+
+        $mail_prefix = 'ActionView';
+        if (isset($syssetting['mailserver']['send']['prefix'])
+            && $syssetting['mailserver']['send']['prefix'])
+        {
+            $mail_prefix = $syssetting['mailserver']['send']['prefix'];
+        }
+
+        $subject = '[' . $mail_prefix . ']重置密码';
+
+        try {
+            Mail::send('emails.resetpwdlink', $data, function($message) use($to, $subject) {
+                $message->from(Config::get('mail.from'), 'master')
+                    ->to($to)
+                    ->subject($subject);
+            });
+        } catch (Exception $e){
+            throw new Exception('send mail failed.', -15200);
+        }
+    }
+
+    /**
+     * show the reset password link.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function showResetpwd(Request $request)
+    {
+        $code = $request->input('code');
+        if (!isset($code) || !$code)
+        {
+            throw new \UnexpectedValueException('the link is not exists.', -10018);
+        }
+
+        $reset_code = ResetPwdCode::where('code', $code)->first();
+        if (!$reset_code)
+        {
+            throw new \UnexpectedValueException('the link is not exists.', -10018);
+        }
+
+        if ($reset_code->invalid_flag == 1)
+        {
+            throw new \UnexpectedValueException('the link has been invalid.', -10020);
+        }
+        else if ($reset_code->expired_at < time())
+        {
+            throw new \UnexpectedValueException('the link has been expired.', -10017);
+        }
+
+        $email = $reset_code->email;
+        $user = Sentinel::findByCredentials([ 'email' => $email ]);
+        if (!$user)
+        {
+            throw new \UnexpectedValueException('the user is not exists.', -10010);
+        }
+        else if ($user->invalid_flag === 1)
+        {
+            throw new \UnexpectedValueException('the user has been disabled.', -10011);
+        }
+        else if ($user->directory && $user->directory != 'self')
+        {
+            throw new \UnexpectedValueException('the user is external sync user.', -10012);
+        }
+
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'email' => $reset_code['email'] ] ]);
+    }
+
+    /**
+     * reset the password.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function doResetpwd(Request $request)
+    {
+        $code = $request->input('code');
+        if (!isset($code) || !$code)
+        {
+            throw new \UnexpectedValueException('the link is not exists.', -10018);
+        }
+
+        $password = $request->input('password');
+        if (!isset($password) || !$password)
+        {
+            throw new \UnexpectedValueException('the password can not be empty.', -10103);
+        }
+
+        $reset_code = ResetPwdCode::where('code', $code)->first();
+        if (!$reset_code)
+        {
+            throw new \UnexpectedValueException('the link is not exists.', -10018);
+        }
+
+        if ($reset_code->invalid_flag == 1)
+        {
+            throw new \UnexpectedValueException('the link has been invalid.', -10020);
+        }
+        else if ($reset_code->expired_at < time())
+        {
+            throw new \UnexpectedValueException('the link has been expired.', -10017);
+        }
+
+        $email = $reset_code->email;
+        $user = Sentinel::findByCredentials([ 'email' => $email ]);
+        if (!$user)
+        {
+            throw new \UnexpectedValueException('the user is not exsits.', -10010);
+        }
+        else if ($user->invalid_flag === 1)
+        {
+            throw new \UnexpectedValueException('the user has been disabled.', -10011);
+        }
+        else if ($user->directory && $user->directory != 'self')
+        {
+            throw new \UnexpectedValueException('the user is external sync user.', -10012);
+        }
+
+        $valid = Sentinel::validForUpdate($user, [ 'password' => $password ]);
+        if (!$valid)
+        {
+            throw new \UnexpectedValueException('updating the user does fails.', -10107);
+        }
+
+        $user = Sentinel::update($user, [ 'password' => $password ]);
+
+        $reset_code->invalid_flag = 1;
+        $reset_code->save();
+        
         return Response()->json([ 'ecode' => 0, 'data' => $user ]);
     }
 

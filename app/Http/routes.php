@@ -22,8 +22,9 @@ Route::delete('api/session', 'SessionController@destroy');
 
 Route::post('api/user/register', 'UserController@register');
 
-Route::get('user/{id}/resetpwd', 'UserController@showResetpwd'); //fix me
-Route::post('user/{id}/resetpwd', 'UserController@doResetpwd'); // fix me
+Route::post('api/user/resetpwdsendmail', 'UserController@sendMailForResetpwd');
+Route::get('api/user/resetpwd', 'UserController@showResetpwd');
+Route::post('api/user/resetpwd', 'UserController@doResetpwd');
 
 Route::get('api/addadmin/{id}', 'SyssettingController@addAdmin'); // delete me
 // webhook api
@@ -36,6 +37,7 @@ Route::group([ 'middleware' => 'can' ], function () {
     Route::get('api/project', 'ProjectController@index');
     Route::get('api/project/checkkey/{key}', 'ProjectController@checkKey');
     Route::get('api/project/options', 'ProjectController@getOptions');
+    Route::get('api/project/search', 'ProjectController@search');
     Route::get('api/project/{key}', 'ProjectController@show');
     Route::post('api/project', 'ProjectController@store');
     Route::put('api/project/{id}', 'ProjectController@update');
@@ -51,6 +53,8 @@ Route::group([ 'middleware' => 'can' ], function () {
     Route::post('api/user/fileupload', 'UserController@upload');
     Route::post('api/user/imports', 'UserController@imports');
     Route::resource('api/user', 'UserController');
+
+    Route::get('api/logs', 'AccessLogsController@index');
 
     Route::get('api/group/search', 'GroupController@search');
     Route::post('api/group/batch/delete', 'GroupController@delMultiGroups');
@@ -178,7 +182,7 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::get('issue/{id}/history', 'IssueController@getHistory');
     Route::post('issue/{id}/watching', 'IssueController@watch');
 
-    Route::post('issue/{id}/workflow/{workflow_id}/action/{action_id}', [ 'middleware' => 'privilege:exec_workflow', 'uses' => 'IssueController@doAction' ]);
+    Route::post('issue/{id}/workflow/{workflow_id}', [ 'middleware' => 'privilege:exec_workflow', 'uses' => 'IssueController@doAction' ]);
     Route::post('issue/{id}/assign', [ 'uses' => 'IssueController@setAssignee' ]); // this middleware is put into the action
     Route::post('issue/{id}/labels', [ 'uses' => 'IssueController@setLabels' ]); // this middleware is put into the action
     Route::post('issue/{id}/move', [ 'middleware' => 'privilege:move_issue', 'uses' => 'IssueController@move' ]);

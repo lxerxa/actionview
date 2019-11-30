@@ -131,6 +131,7 @@ class MysettingController extends Controller
      */
     public function resetPwd(Request $request)
     {
+        return;
         $password = $request->input('password');
         if (!$password)
         {
@@ -201,6 +202,12 @@ class MysettingController extends Controller
         if (isset($position))
         {
             $user->position = $position;
+        }
+
+        $bind_email = $request->input('bind_email');
+        if (isset($bind_email))
+        {
+            $user->bind_email = $bind_email;
         }
 
         $user = Sentinel::update($user, [ 'id' => $this->user->id ]);
