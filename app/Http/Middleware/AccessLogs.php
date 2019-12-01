@@ -55,7 +55,7 @@ class AccessLogs
     	    'request_url' => $request_url,
     	    'request_user_agent' => $request->header('USER_AGENT'),
     	    'request_method' => $request_method,
-    	    'request_body' => in_array($request_method, [ 'PUT', 'POST' ]) ? array_except($request->all(), [ 'password', 'new_password', 'new_password2', 'token', 'pwd', 'admin_password' ]) : [],
+    	    'request_body' => in_array($request_method, [ 'PUT', 'POST' ]) ? array_except($request->all(), [ 'password', 'new_password', 'token', 'pwd', 'admin_password' ]) : [],
     	    'response_status' => $response->getstatusCode(),
     	]);
 

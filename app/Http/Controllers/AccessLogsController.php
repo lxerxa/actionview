@@ -57,7 +57,7 @@ class AccessLogsController extends Controller
                 }
                 if ($sections[1])
                 {
-                    $query->where('requested_end_at', '<=', strtotime($sections[1] . ' 23:59:59') * 1000);
+                    $query->where('requested_start_at', '<=', strtotime($sections[1] . ' 23:59:59') * 1000);
                 }
             }
         }
