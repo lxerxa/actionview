@@ -1280,11 +1280,17 @@ class IssueController extends Controller
      * @param  string  $action_id
      * @return \Illuminate\Http\Response
      */
-    public function doAction(Request $request, $project_key, $id, $workflow_id, $action_id)
+    public function doAction(Request $request, $project_key, $id, $workflow_id)
     {
+        $action_id = $request->input('action_id');
+        if (!$action_id)
+        {
+            throw new Exception('the executed action has error.', -11115);
+        }
+
         try {
-          $entry = new Workflow($workflow_id);
-          $entry->doAction($action_id, [ 'project_key' => $project_key, 'issue_id' => $id, 'caller' => $this->user->id ] + array_only($request->all(), [ 'comments' ]));
+            $entry = new Workflow($workflow_id);
+            $entry->doAction($action_id, [ 'project_key' => $project_key, 'issue_id' => $id, 'caller' => $this->user->id ] + array_only($request->all(), [ 'comments' ]));
         } catch (Exception $e) {
           throw new Exception('the executed action has error.', -11115);
         }

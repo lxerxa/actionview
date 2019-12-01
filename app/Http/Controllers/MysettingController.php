@@ -131,7 +131,6 @@ class MysettingController extends Controller
      */
     public function resetPwd(Request $request)
     {
-        return;
         $password = $request->input('password');
         if (!$password)
         {
