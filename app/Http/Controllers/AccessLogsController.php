@@ -9,6 +9,7 @@ use App\Http\Requests;
 use App\Http\Controllers\Controller;
 
 use App\System\Eloquent\ApiAccessLogs;
+use Maatwebsite\Excel\Facades\Excel;
 
 class AccessLogsController extends Controller
 {
@@ -19,6 +20,9 @@ class AccessLogsController extends Controller
      */
     public function index(Request $request)
     {
+        ini_set('memory_limit', '-1');
+        ini_set('max_execution_time', '0');
+
         $query = ApiAccessLogs::query();
 
         $uid = $request->input('uid');
@@ -91,12 +95,63 @@ class AccessLogsController extends Controller
         // get total
         $total = $query->count();
         $query->orderBy('_id', 'desc');
-        $page_size = 100;
+        $page_size = $request->input('limit') ? intval($request->input('limit')) : 100;
         $page = $request->input('page') ?: 1;
         $query = $query->skip($page_size * ($page - 1))->take($page_size);
 
         $logs = $query->get();
 
+        $from = $request->input('from');
+        if (isset($from) && $from == 'export')
+        {
+            $this->export($logs);
+            exit();
+        }
+
         return Response()->json([ 'ecode' => 0, 'data' => $logs, 'options' => [ 'total' => $total, 'sizePerPage' => $page_size ] ]);
+    }
+
+    /**
+     * export xls for access logs
+     *
+     * @param  array $issues
+     * @return void
+     */
+    public function export($logs)
+    {
+        $headers = [ 
+            '用户', 
+            '方法', 
+            'Url', 
+            '模块', 
+            '请求开始时间', 
+            '请求结束时间', 
+            '请求时长(毫秒)', 
+            '来源IP', 
+            'User-Agent', 
+            'Body' 
+        ];
+
+        $file_name = 'access-logs';
+        Excel::create($file_name, function ($excel) use($headers, $logs) {
+            $excel->sheet('Sheetname', function ($sheet) use($headers, $logs) {
+                $sheet->appendRow($headers);
+                foreach ($logs as $log)
+                {
+                    $tmp = [];
+                    $tmp[] = $log->user ? $log->user['name'] : '';
+                    $tmp[] = $log->request_method ?: '';
+                    $tmp[] = $log->request_url ?: '';
+                    $tmp[] = $log->module ?: '';
+                    $tmp[] = $log->requested_start_at ? date('Y-m-d h:i:s', intval($log->requested_start_at / 1000)): '';
+                    $tmp[] = $log->requested_end_at ? date('Y-m-d h:i:s', intval($log->requested_end_at / 1000)) : '';
+                    $tmp[] = $log->exec_time ?: '';
+                    $tmp[] = $log->request_source_ip ?: '';
+                    $tmp[] = $log->request_user_agent ?: '';
+                    $tmp[] = $log->request_body ? json_encode($log->request_body) : '';
+                    $sheet->appendRow($tmp);
+                }
+            });
+        })->download('xls');
     }
 }

@@ -366,7 +366,8 @@ class DirectoryController extends Controller
      */
     public function destroy($id)
     {
-        set_time_limit(0);
+        ini_set('memory_limit', '-1');
+        ini_set('max_execution_time', '0');
 
         $directory = Directory::find($id);
         if (!$directory)
@@ -401,6 +402,9 @@ class DirectoryController extends Controller
      */
     public function test($id) 
     {
+        ini_set('memory_limit', '-1');
+        ini_set('max_execution_time', '0');
+
         $directory = Directory::find($id);
         if (!$directory)
         {
@@ -423,7 +427,8 @@ class DirectoryController extends Controller
      */
     public function sync($id) 
     {
-        set_time_limit(0);
+        ini_set('memory_limit', '-1');
+        ini_set('max_execution_time', '0');
 
         $directory = Directory::find($id);
         if (!$directory)
