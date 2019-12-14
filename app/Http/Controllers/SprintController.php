@@ -11,7 +11,7 @@ use App\Project\Eloquent\SprintDayLog;
 use App\Project\Eloquent\Board;
 use App\Project\Provider;
 use App\Events\SprintEvent;
-use App\Customization\Eloquent\CalendarSingular;
+use App\System\Eloquent\CalendarSingular;
 use DB;
 
 class SprintController extends Controller
@@ -585,11 +585,11 @@ class SprintController extends Controller
             $tmp_time += 24 * 60 * 60;
         }
 
-        $singulars = CalendarSingular::where([ 'day' => [ '$in' => $days ] ])->get();
+        $singulars = CalendarSingular::where([ 'date' => [ '$in' => $days ] ])->get();
         foreach ($singulars as $singular)
         {
-            $tmp = $singular->day;
-            $workingDays[$tmp] = $singular->flag;
+            $tmp = $singular->date;
+            $workingDays[$tmp] = $singular->type == 'holiday' ? 0 : 1;
         }
         return $workingDays;
     }

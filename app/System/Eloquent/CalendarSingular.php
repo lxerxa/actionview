@@ -1,16 +1,17 @@
 <?php
 
-namespace App\Customization\Eloquent;
+namespace App\System\Eloquent;
 
 use Jenssegers\Mongodb\Eloquent\Model;
 
 class CalendarSingular extends Model
 {
     //
-    protected $table = 'config_calendar_singular';
+    protected $table = 'calendar_singular';
 
     protected $fillable = array(
-        'day',
-        'flag'
+        'date',
+        'year',
+        'type'
     );
 }

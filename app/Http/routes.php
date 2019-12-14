@@ -25,8 +25,8 @@ Route::post('api/user/register', 'UserController@register');
 Route::post('api/user/resetpwdsendmail', 'UserController@sendMailForResetpwd');
 Route::get('api/user/resetpwd', 'UserController@showResetpwd');
 Route::post('api/user/resetpwd', 'UserController@doResetpwd');
-
-Route::get('api/addadmin/{id}', 'SyssettingController@addAdmin'); // delete me
+// holida api
+Route::get('api/holiday/{year}', 'HolidayController@index');
 // webhook api
 Route::post('api/webhook/{type}/project/{key}', 'WebhookController@exec');
 
@@ -55,6 +55,10 @@ Route::group([ 'middleware' => 'can' ], function () {
     Route::resource('api/user', 'UserController');
 
     Route::get('api/logs', 'AccessLogsController@index');
+
+    Route::get('api/calendar/{year}', 'CalendarController@index');
+    Route::post('api/calendar', 'CalendarController@update');
+    Route::post('api/calendar/sync', 'CalendarController@sync');
 
     Route::get('api/group/search', 'GroupController@search');
     Route::post('api/group/batch/delete', 'GroupController@delMultiGroups');

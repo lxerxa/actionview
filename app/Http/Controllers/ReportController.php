@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Event;
 use App\Project\Eloquent\Project;
 use App\Project\Eloquent\Worklog;
 use App\Project\Eloquent\ReportFilters;
-use App\Customization\Eloquent\CalendarSingular;
+use App\System\Eloquent\CalendarSingular;
 
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
@@ -681,10 +681,10 @@ class ReportController extends Controller
 
         if ($days)
         {
-            $singulars = CalendarSingular::where([ 'day' => [ '$in' => $days ] ])->get();
+            $singulars = CalendarSingular::where([ 'date' => [ '$in' => $days ] ])->get();
             foreach ($singulars as $singular)
             {
-                $results[$singular->day]['notWorking'] = ($singular->flag + 1) % 2;
+                $results[$singular->day]['notWorking'] = $singular->type == 'holiday' ? 1 : 0;
             }
         }
 
