@@ -61,9 +61,11 @@ http://www.actionview.cn
 
 # RoadMap
 
-* 开发移动APP（React Native）。 
-* 开发BI模块。  
-* 支持多语言。    
+* 开发移动APP 
+* Gantt图  
+* 代码托管仓库  
+* 流水线  
+* 支持多语言    
 
 # Contributing
 
