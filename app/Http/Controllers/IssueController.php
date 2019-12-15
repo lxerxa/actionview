@@ -2666,6 +2666,8 @@ class IssueController extends Controller
      */
     public function export($project_key, $export_fields, $issues) 
     {
+        set_time_limit(0);
+
         $options = $this->getOptionsForExport($project_key);
         foreach ($options as $key => $val)
         {

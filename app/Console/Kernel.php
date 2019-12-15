@@ -15,7 +15,6 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         'App\Console\Commands\TriggerWebhooks',
         'App\Console\Commands\SendEmails',
-        'App\Console\Commands\ImportCalendarSingular',
         'App\Console\Commands\SyncLdap',
         'App\Console\Commands\SnapSprint',
         'App\Console\Commands\RemoveLogs',

@@ -8,7 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Project\Eloquent\File;
 use App\Events\FileUploadEvent;
 use App\Events\FileDelEvent;
-
+use App\Utils\File as FileUtil;
 use DB;
 
 class FileController extends Controller
@@ -22,6 +22,8 @@ class FileController extends Controller
      */
     public function upload(Request $request, $project_key)
     {
+        set_time_limit(0);
+
         if (!is_writable(config('filesystems.disks.local.root', '/tmp')))
         {
             throw new \UnexpectedValueException('the user has not the writable permission to the directory.', -15103);
@@ -31,7 +33,7 @@ class FileController extends Controller
 
         $fields = array_keys($_FILES); 
         $field = array_pop($fields);
-        if ($_FILES[$field]['error'] > 0)
+        if (empty($_FILES) || $_FILES[$field]['error'] > 0)
         {
             throw new \UnexpectedValueException('upload file errors.', -15101);
         }
@@ -121,11 +123,7 @@ class FileController extends Controller
             throw new \UnexpectedValueException('file does not exist.', -15100);
         }
 
-        header("Content-type: application/octet-stream");
-        header("Accept-Ranges: bytes");
-        header("Accept-Length:" . filesize($filename));
-        header("Content-Disposition: attachment; filename=" . $file->name);
-        echo file_get_contents($filename);
+        FileUtil::download($filename, $file->name);
     }
 
     /**
@@ -136,6 +134,8 @@ class FileController extends Controller
      */
     public function download(Request $request, $project_key, $id)
     {
+        set_time_limit(0);
+
         $file = File::find($id); 
         if (!$file || $file->del_flg == 1)
         {
@@ -149,11 +149,7 @@ class FileController extends Controller
             throw new \UnexpectedValueException('file does not exist.', -15100);
         }
 
-        header("Content-type: application/octet-stream"); 
-        header("Accept-Ranges: bytes"); 
-        header("Accept-Length:" . filesize($filename));
-        header("Content-Disposition: attachment; filename=" . $file->name);
-        echo file_get_contents($filename);
+        FileUtil::download($filename, $file->name);
     }
 
     /**
@@ -175,11 +171,7 @@ class FileController extends Controller
             throw new \UnexpectedValueException('the avatar file does not exist.', -15100);
         }
 
-        header("Content-type: application/octet-stream");
-        header("Accept-Ranges: bytes");
-        header("Accept-Length:" . filesize($filename));
-        header("Content-Disposition: attachment; filename=" . $filename);
-        echo file_get_contents($filename);
+        FileUtil::download($filename, $filename);
     }
 
     /**
@@ -236,7 +228,9 @@ class FileController extends Controller
      */
     public function uploadTmpFile(Request $request)
     {
-        if ($_FILES['file']['error'] > 0)
+        set_time_limit(0);
+
+        if (empty($_FILES) || $_FILES['file']['error'] > 0)
         {
             throw new \UnexpectedValueException('upload file errors.', -15101);
         }

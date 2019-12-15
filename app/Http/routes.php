@@ -221,10 +221,10 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::put('document/{id}', 'DocumentController@update');
     Route::delete('document/{id}', 'DocumentController@destroy');
 
-    Route::post('wiki/{id}/upload',  [ 'middleware' => 'privilege:upload_file', 'uses' => 'WikiController@upload' ]);
-    Route::get('wiki/{id}/download', [ 'middleware' => 'privilege:download_file', 'uses' => 'WikiController@download2' ]);
-    Route::get('wiki/{id}/file/{fid}/download', [ 'middleware' => 'privilege:download_file', 'uses' => 'WikiController@download' ]);
-    Route::delete('wiki/{id}/file/{fid}', [ 'middleware' => 'privilege:remove_file', 'uses' => 'WikiController@remove' ]);
+    Route::post('wiki/{id}/upload', 'WikiController@upload');
+    Route::get('wiki/{id}/download', 'WikiController@download2');
+    Route::get('wiki/{id}/file/{fid}/download', 'WikiController@download');
+    Route::delete('wiki/{id}/file/{fid}', 'WikiController@remove');
     Route::get('wiki/directory/{id}', 'WikiController@index');
     Route::get('wiki/search/path', 'WikiController@searchPath');
     Route::get('wiki/{id}', 'WikiController@show');

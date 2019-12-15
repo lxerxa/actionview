@@ -119,6 +119,8 @@ class AccessLogsController extends Controller
      */
     public function export($logs)
     {
+        set_time_limit(0);
+
         $headers = [ 
             '用户', 
             '方法', 

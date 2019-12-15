@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Events\DocumentEvent;
 use App\Acl\Acl;
 use DB;
+use App\Utils\File;
 
 use Zipper;
 
@@ -173,7 +174,6 @@ class DocumentController extends Controller
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  string  $project_key
-     * @param  string  $directory
      * @return \Illuminate\Http\Response
      */
     public function createFolder(Request $request, $project_key)
@@ -472,6 +472,8 @@ class DocumentController extends Controller
      */
     public function upload(Request $request, $project_key, $directory)
     {
+        set_time_limit(0);
+
         if (!is_writable(config('filesystems.disks.local.root', '/tmp')))
         {
             throw new \UnexpectedValueException('the user has not the writable permission to the directory.', -15103);
@@ -492,7 +494,7 @@ class DocumentController extends Controller
 
         $fields = array_keys($_FILES);
         $field = array_pop($fields);
-        if ($_FILES[$field]['error'] > 0)
+        if (empty($_FILES) || $_FILES[$field]['error'] > 0)
         {
             throw new \UnexpectedValueException('upload file errors.', -11903);
         }
@@ -557,6 +559,8 @@ class DocumentController extends Controller
      */
     public function download(Request $request, $project_key, $id)
     {
+        set_time_limit(0);
+
         $document = DB::collection('document_' . $project_key)
             ->where('_id', $id)
             ->first();
@@ -596,11 +600,7 @@ class DocumentController extends Controller
         Zipper::make($filename)->folder($name)->add($basepath . '/' . $name);
         Zipper::close();
 
-        header("Content-type: application/octet-stream");
-        header("Accept-Ranges: bytes");
-        header("Accept-Length:" . filesize($filename));
-        header("Content-Disposition: attachment; filename=" . $name . '.zip');
-        echo file_get_contents($filename);
+        File::download($filename, $name . '.zip');
 
         exec('rm -rf ' . $basepath);
     }
@@ -654,10 +654,6 @@ class DocumentController extends Controller
             throw new \UnexpectedValueException('file does not exist.', -11904);
         }
 
-        header("Content-type: application/octet-stream");
-        header("Accept-Ranges: bytes");
-        header("Accept-Length:" . filesize($filename));
-        header("Content-Disposition: attachment; filename=" . $name);
-        echo file_get_contents($filename);
+        File::download($filename, $name);
     }
 }

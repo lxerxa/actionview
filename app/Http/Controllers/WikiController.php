@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Event;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Events\WikiEvent;
+use App\Utils\File;
 use DB;
 use Zipper;
 
@@ -810,6 +811,8 @@ class WikiController extends Controller
      */
     public function upload(Request $request, $project_key, $wid)
     {
+        set_time_limit(0);
+
         if (!is_writable(config('filesystems.disks.local.root', '/tmp')))
         {
             throw new \UnexpectedValueException('the user has not the writable permission to the directory.', -15103);
@@ -817,7 +820,7 @@ class WikiController extends Controller
 
         $fields = array_keys($_FILES);
         $field = array_pop($fields);
-        if ($_FILES[$field]['error'] > 0)
+        if (empty($_FILES) || $_FILES[$field]['error'] > 0)
         {
             throw new \UnexpectedValueException('upload file errors.', -11959);
         }
@@ -908,6 +911,8 @@ class WikiController extends Controller
      */
     public function download2(Request $request, $project_key, $wid)
     {
+        set_time_limit(0);
+
         $document = DB::collection('wiki_' . $project_key)
             ->where('_id', $wid)
             ->where('del_flag', '<>', 1)
@@ -936,6 +941,8 @@ class WikiController extends Controller
      */
     public function download(Request $request, $project_key, $wid, $fid)
     {
+        set_time_limit(0);
+
         $document = DB::collection('wiki_' . $project_key)
             ->where('_id', $wid)
             ->where('del_flag', '<>', 1)
@@ -999,11 +1006,7 @@ class WikiController extends Controller
         Zipper::make($fname)->folder($name)->add($basepath . '/' . $name);
         Zipper::close();
 
-        header("Content-type: application/octet-stream");
-        header("Accept-Ranges: bytes");
-        header("Accept-Length:" . filesize($fname));
-        header("Content-Disposition: attachment; filename=" . $name . '.zip');
-        echo file_get_contents($fname);
+        File::download($fname, $name . '.zip');
 
         exec('rm -rf ' . $basepath);
     }
@@ -1024,10 +1027,6 @@ class WikiController extends Controller
             throw new \UnexpectedValueException('file does not exist.', -11958);
         }
 
-        header("Content-type: application/octet-stream");
-        header("Accept-Ranges: bytes");
-        header("Accept-Length:" . filesize($filename));
-        header("Content-Disposition: attachment; filename=" . $name);
-        echo file_get_contents($filename);
+        File::download($filename, $name);
     }
 }
