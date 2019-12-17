@@ -13,7 +13,6 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
-        'App\Console\Commands\TriggerWebhooks',
         'App\Console\Commands\SendEmails',
         'App\Console\Commands\SyncLdap',
         'App\Console\Commands\SnapSprint',
@@ -35,8 +34,6 @@ class Kernel extends ConsoleKernel
                  ->hourly();
         $schedule->command('ldap:sync')
                  ->daily();
-        $schedule->command('trigger:webhooks')
-                 ->everyMinute();
         $schedule->command('logs:remove')
                  ->daily();
     }

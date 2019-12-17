@@ -10,6 +10,7 @@ use App\Project\Eloquent\Version;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use DB;
+use App\Utils\CurlRequest;
 
 class WebhooksRequestListener 
 {
@@ -69,14 +70,8 @@ class WebhooksRequestListener
                 $data['worklog'] = $event->param['data'];
             }
 
-            WebhookEvents::create([
-                'project_key' => $project_key,
-                'user' => $user,
-                'request_url' => $request_url,
-                'token' => $token,
-                'data' => $data,
-                'flag' => 0
-            ]);
+            $header = [ 'Content-Type: application/json', 'Expect:', 'X-Actionview-Token: ' . ($token ?: '') ];
+            CurlRequest::post($request_url, $header, $data, 1);
         }
         else if ($event instanceof VersionEvent)
         {
@@ -90,13 +85,8 @@ class WebhooksRequestListener
             $data['event'] = $event_key;
             unset($data['_id']);
 
-            WebhookEvents::create([
-                'project_key' => $project_key,
-                'user' => $user,
-                'request_url' => $request_url,
-                'data' => $data,
-                'flag' => 0
-            ]);
+            $header = [ 'Content-Type: application/json', 'Expect:', 'X-Actionview-Token: ' . ($token ?: '') ];
+            CurlRequest::post($request_url, $header, $data, 1);
         }
     }
 }

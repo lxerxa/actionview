@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\System\Eloquent\CalendarSingular;
 
 use App\Utils\Lunar;
+use App\Utils\CurlRequest;
 
 class CalendarController extends Controller
 {
@@ -224,8 +225,8 @@ class CalendarController extends Controller
 
         $url = 'http://www.actionview.cn:8080/api/holiday/' . $year;
 
-        $res = $this->curlGet($url, [ 'Content-Type: application/json', 'Expect:' ]);
-        if ($res['ecode'] != 0)
+        $res = CurlRequest::get($url);
+        if (!isset($res['ecode']) || $res['ecode'] != 0)
         {
             throw new \UnexpectedValueException('failed to request the api.', -16028);
         }
@@ -248,29 +249,5 @@ class CalendarController extends Controller
         }
 
         return Response()->json([ 'ecode' => 0, 'data' => $this->getYearDates($year) ]);
-    }
-
-    /**
-     * The curl request the calendar api.
-     *
-     * @param string $url
-     * @return array
-     */
-    public static function curlGet($url, $header=[], $await=5)
-    {
-        $ch = curl_init();
-
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_HEADER, 0);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $await);
-        curl_setopt($ch, CURLOPT_TIMEOUT, $await);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-
-        $res = curl_exec($ch);
-        curl_close($ch);
-        return json_decode($res, true);
     }
 }
