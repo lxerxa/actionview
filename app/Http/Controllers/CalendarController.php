@@ -49,7 +49,7 @@ class CalendarController extends Controller
 
     	$dates = $this->getYearDates(intval($year));
 
-        return Response()->json([ 'ecode' => 0, 'data' => $dates, 'options' => [ 'year' => date('Y'), 'date' => date('Ymd') ] ]);
+        return Response()->json([ 'ecode' => 0, 'data' => $dates, 'options' => [ 'year' => date('Y'), 'date' => date('Y/m/d') ] ]);
     }
 
     /**
