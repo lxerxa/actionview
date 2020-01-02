@@ -155,6 +155,7 @@ class Controller extends BaseController
     public function getIssueQueryWhere($project_key, $query)
     {
         $special_fields = [
+            [ 'key' => 'no', 'type' => 'Number' ],
             [ 'key' => 'type', 'type' => 'Select' ],
             [ 'key' => 'state', 'type' => 'Select' ],
             [ 'key' => 'assignee', 'type' => 'SingleUser' ],
