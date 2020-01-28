@@ -41,6 +41,7 @@ http://www.actionview.cn
 * User created project supported, which could use either global configuration scheme, or local user defined scheme, realize the perfect combination of global configuration scheme and local configuration scheme.  
 * Every project could use the default system workflow, and could define its own workflow, in which every step could be controlled accurately to make sure right people make right operation at right time.  
 * Support Board view in agile development(Scrum and Kanban).  
+* Support Gantt view.  
 * Configure issue screen simply and easily.  
 * Powerful issue filtering function, could define your own filter.    
 * Complete access control model, support authorizing user group.    
