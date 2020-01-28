@@ -26,6 +26,8 @@ http://www.actionview.cn
 
 ![image](http://actionview.cn/images/report.png)
 
+![image](http://actionview.cn/images/gantt.png)
+
 # 安装手册
 
 [Ubuntu Installation - Apache](https://github.com/lxerxa/actionview/wiki/Ubuntu-Installation(Apache))  
