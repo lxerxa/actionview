@@ -28,9 +28,20 @@ class VersionController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index($project_key)
+    public function index(Request $request, $project_key)
     {
-        $versions = Version::whereRaw([ 'project_key' => $project_key ])->orderBy('created_at', 'desc')->get();
+        $query = Version::where('project_key', $project_key);
+        $total = $query->count();
+
+        $query = $query->orderBy('status', 'asc')
+            ->orderBy('end_time', 'desc')
+            ->orderBy('created_at', 'desc');
+
+        $page_size = $request->input('limit') ? intval($request->input('limit')) : 50;
+        $page = $request->input('page') ?: 1;
+        $query = $query->skip($page_size * ($page - 1))->take($page_size);
+
+        $versions = $query->get();
 
         $version_fields = $this->getVersionFields($project_key);
         foreach ($versions as $version)
@@ -50,7 +61,10 @@ class VersionController extends Controller
 
             $version->is_used = $this->isFieldUsedByIssue($project_key, 'version', $version->toArray(), $version_fields);
         }
-        return Response()->json([ 'ecode' => 0, 'data' => $versions, 'options' => [ 'current_time' => time() ] ]);
+
+        $options = [ 'total' => $total, 'sizePerPage' => $page_size, 'current_time' => time() ];
+
+        return Response()->json([ 'ecode' => 0, 'data' => $versions, 'options' => $options ]);
     }
 
     /**
