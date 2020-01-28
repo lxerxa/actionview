@@ -26,6 +26,7 @@ use App\Project\Eloquent\Labels;
 
 use App\Workflow\Workflow;
 use App\System\Eloquent\SysSetting;
+use App\System\Eloquent\CalendarSingular;
 use Cartalyst\Sentinel\Users\EloquentUser;
 use Sentinel;
 use DB;
@@ -111,9 +112,10 @@ class IssueController extends Controller
             }
         }
 
-        $query->orderBy('_id', isset($from) && $from ? 'asc' : 'desc');
+        $query->orderBy('_id', isset($from) && $from != 'gantt' ? 'asc' : 'desc');
 
         $page_size = $request->input('limit') ? intval($request->input('limit')) : 50;
+        //$page_size = 200;
         $page = $request->input('page') ?: 1;
         $query = $query->skip($page_size * ($page - 1))->take($page_size);
         $issues = $query->get();
@@ -136,8 +138,10 @@ class IssueController extends Controller
         }
 
         $cache_parents = [];
+        $issue_ids = [];
         foreach ($issues as $key => $issue)
         {
+            $issue_ids[] = $issue['_id']->__toString();
             // set issue watching flag
             if (in_array($issue['_id']->__toString(), $watched_issue_ids))
             {
@@ -158,19 +162,50 @@ class IssueController extends Controller
                     $cache_parents[$issue['parent_id']] = $issues[$key]['parent'];
                 }
             }
-            else if (!isset($from))
+
+            if (!isset($from))
             {
                 $issues[$key]['hasSubtasks'] = DB::collection('issue_' . $project_key)->where('parent_id', $issue['_id']->__toString())->exists();
             }
         }
 
-        if ($issues && isset($from) && $from)
+        if ($issues && isset($from) && in_array($from, [ 'kanban', 'active_sprint', 'backlog', 'his_sprint' ]))
         {
             $filter = $request->input('filter') ?: '';
             $issues = $this->arrangeIssues($project_key, $issues, $from, $from_kanban_id, $filter === 'all');
         }
 
-        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($issues), 'options' => [ 'total' => $total, 'sizePerPage' => $page_size ] ]);
+        $options = [ 'total' => $total, 'sizePerPage' => $page_size ];
+
+        if (isset($from) && $from == 'gantt')
+        {
+            foreach ($issues as $key => $issue) 
+            {
+                if (!isset($issue['parent_id']) || !$issue['parent_id'] || in_array($issue['parent_id'], $issue_ids)) 
+                {
+                    continue;
+                }
+                if (isset($issue['parent']) && $issue['parent']) 
+                {
+                    $issues[] = $issue['parent'];
+                    $issue_ids[] = $issue['parent_id'];
+                }
+            }
+
+            $singulars = CalendarSingular::all();
+            $new_singulars = [];
+            foreach ($singulars as $singular)
+            {
+                $tmp = [];
+                $tmp['notWorking'] = $singular->type == 'holiday' ? 1 : 0;
+                $tmp['date'] = $singular->date;
+                $new_singulars[] = $tmp;
+            }
+            $options['singulars'] = $new_singulars;
+            $options['today'] = date('Y/m/d');
+        }
+
+        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($issues), 'options' => $options ]);
     }
 
     /**
@@ -798,7 +833,7 @@ class IssueController extends Controller
         {
             throw new \UnexpectedValueException('the schema of the type is not existed.', -11101);
         }
-        $valid_keys = array_merge(array_column($schema, 'key'), [ 'type', 'assignee', 'labels', 'parent_id', 'resolution', 'priority' ]);
+        $valid_keys = array_merge(array_column($schema, 'key'), [ 'type', 'assignee', 'labels', 'parent_id', 'resolution', 'priority', 'progress', 'expect_start_time', 'expect_compete_time' ]);
 
         // handle timetracking
         $updValues = [];
@@ -1424,12 +1459,41 @@ class IssueController extends Controller
             throw new \UnexpectedValueException('the schema of the type is not existed.', -11101);
         }
 
-        $valid_keys = array_merge(array_column($schema, 'key'), [ 'type', 'parent_id', 'priority', 'assignee' ]);
+        $valid_keys = array_merge(array_column($schema, 'key'), [ 'type', 'parent_id', 'priority', 'resolution', 'assignee' ]);
         $insValues = array_only($src_issue, $valid_keys);
 
         $insValues['title'] = $title;
         // get reporter(creator)
         $insValues['reporter'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+
+        $assignee_id = $request->input('assignee');
+        if (isset($assignee_id))
+        {
+            if ($assignee_id)
+            {
+                if (!$this->isPermissionAllowed($project_key, 'assigned_issue', $assignee_id))
+                {
+                    return Response()->json(['ecode' => -11118, 'emsg' => 'the assigned user has not assigned-issue permission.']);
+                }
+
+                $user_info = Sentinel::findById($assignee_id);
+                if ($user_info)
+                {
+                    $assignee = [ 'id' => $assignee_id, 'name' => $user_info->first_name, 'email' => $user_info->email ];
+                    $insValues['assignee'] = $assignee;
+                }
+            }
+            else
+            {
+                throw new \UnexpectedValueException('the issue assignee cannot be empty.', -11104);
+            }
+        }
+
+        $resolution = $request->input('resolution');
+        if (isset($resolution) && $resolution)
+        {
+            $insValues['resolution'] = $resolution;
+        }
 
         $table = 'issue_' . $project_key;
         $max_no = DB::collection($table)->count() + 1;
@@ -2754,6 +2818,10 @@ class IssueController extends Controller
                 else if ($fk == 'labels')
                 {
                     $tmp[] = implode(',', $issue[$fk]);
+                }
+                else if ($fk == 'progress')
+                {
+                    $tmp[] = $issue[$fk] . '%';
                 }
                 else if (isset($fields[$fk]) && $fields[$fk])
                 {

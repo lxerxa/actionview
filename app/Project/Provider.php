@@ -631,8 +631,10 @@ class Provider {
      */
     public static function getVersionList($project_key, $fields=[])
     {
-        $versions = Version::whereRaw([ 'project_key' => $project_key ])
-            ->orderBy('_id', 'desc')
+        $versions = Version::where([ 'project_key' => $project_key ])
+            ->orderBy('status', 'asc')
+            ->orderBy('end_time', 'desc')
+            ->orderBy('created_at', 'desc')
             ->get($fields);
 
         return $versions;
@@ -1103,7 +1105,7 @@ class Provider {
             $schema = [];
             if ($change_fields)
             {
-                $out_schema_fields = [ 'type', 'state', 'resolution', 'priority', 'assignee', 'labels', 'parent_id' ];
+                $out_schema_fields = [ 'type', 'state', 'resolution', 'priority', 'assignee', 'labels', 'parent_id', 'progress', 'expect_start_time', 'expect_complete_time' ];
                 if (array_diff($change_fields, $out_schema_fields))
                 {
                     $schema = self::getSchemaByType($issue['type']);
@@ -1117,7 +1119,7 @@ class Provider {
 
         foreach ($schema as $field)
         {
-            if ($field['key'] === 'assignee' || ($change_fields && !in_array($field['key'], $change_fields)))
+            if (in_array($field['key'], [ 'assignee', 'progress' ]) || ($change_fields && !in_array($field['key'], $change_fields)))
             {
                 continue;
             }
@@ -1178,8 +1180,7 @@ class Provider {
                 }
                 else if ($field['type'] == 'DatePicker' || $field['type'] == 'DateTimePicker')
                 {
-                    $val['value'] = $issue[$field['key']] ? date($field['type'] == 'DatePicker' ? 'y/m/d' : 'y/m/d H:i:s', $issue[$field['key']]) : $issue[$field['key']];
-                    
+                    $val['value'] = $issue[$field['key']] ? date($field['type'] == 'DatePicker' ? 'Y/m/d' : 'Y/m/d H:i:s', $issue[$field['key']]) : $issue[$field['key']];
                 }
                 else
                 {
@@ -1290,6 +1291,51 @@ class Provider {
             else
             {
                 $snap_data['parent'] = [ 'value' => '', 'name' => '父任务' ];
+            }
+        }
+
+        if (isset($issue['progress']))
+        {
+            if ($issue['progress'] || $issue['progress'] === 0)
+            {
+                if (in_array('progress', $change_fields) || !isset($snap_data['progress']))
+                {
+                    $snap_data['progress'] = [ 'value' => $issue['progress'] . '%', 'name' => '进度' ];
+                }
+            }
+            else
+            {
+                $snap_data['progress'] = [ 'value' => '', 'name' => '进度' ];
+            }
+        }
+
+        if (isset($issue['expect_start_time']))
+        {
+            if ($issue['expect_start_time'])
+            {
+                if (in_array('expect_start_time', $change_fields) || !isset($snap_data['expect_start_time']))
+                {
+                    $snap_data['expect_start_time'] = [ 'value' => date('Y/m/d', $issue['expect_start_time']), 'name' => '期望开始时间' ];
+                }
+            }
+            else
+            {
+                $snap_data['expect_start_time'] = [ 'value' => date('Y/m/d', $issue['expect_start_time']), 'name' => '期望开始时间' ];
+            }
+        }
+
+        if (isset($issue['expect_complete_time']))
+        {
+            if ($issue['expect_complete_time'])
+            {
+                if (in_array('expect_complete_time', $change_fields) || !isset($snap_data['expect_complete_time']))
+                {
+                    $snap_data['expect_complete_time'] = [ 'value' => date('Y/m/d', $issue['expect_complete_time']), 'name' => '期望完成时间' ];
+                }
+            }
+            else
+            {
+                $snap_data['expect_complete_time'] = [ 'value' => '', 'name' => '期望完成时间' ];
             }
         }
 

@@ -64,6 +64,8 @@ class FieldController extends Controller
         'resolve_version',
         'effect_versions',
         'expect_complete_time',
+        'expect_start_time',
+        'progress',
         'related_users',
         'descriptions',
         'epic',
