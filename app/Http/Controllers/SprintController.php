@@ -186,6 +186,12 @@ class SprintController extends Controller
             throw new \UnexpectedValueException('the sprint complete time cannot be empty.', -11710);
         }
 
+        $description = $request->input('description');
+        if (isset($description) && $description)
+        {
+            $updValues['description'] = $description;
+        }
+
         $kanban_id = $request->input('kanban_id');
         if (!isset($kanban_id) || !$kanban_id)
         {
