@@ -34,6 +34,7 @@ class VersionController extends Controller
         $total = $query->count();
 
         $query = $query->orderBy('status', 'asc')
+            ->orderBy('released_time', 'desc')
             ->orderBy('end_time', 'desc')
             ->orderBy('created_at', 'desc');
 

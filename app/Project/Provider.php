@@ -633,6 +633,7 @@ class Provider {
     {
         $versions = Version::where([ 'project_key' => $project_key ])
             ->orderBy('status', 'asc')
+            ->orderBy('released_time', 'desc')
             ->orderBy('end_time', 'desc')
             ->orderBy('created_at', 'desc')
             ->get($fields);
