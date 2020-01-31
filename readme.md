@@ -65,7 +65,6 @@ http://www.actionview.cn
 # RoadMap
 
 * Mobile App development  
-* Gantt chart  
 * Code repository  
 * Pipeline
 * Support multi-language      
