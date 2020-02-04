@@ -64,8 +64,7 @@ http://www.actionview.cn
 
 # RoadMap
 
-* 开发移动APP 
-* Gantt图  
+* 开发移动APP  
 * 代码托管仓库  
 * 流水线  
 * 支持多语言    
