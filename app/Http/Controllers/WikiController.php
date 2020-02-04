@@ -91,6 +91,19 @@ class WikiController extends Controller
             $query = $query->where('name', 'like', '%' . $name . '%');
         }
 
+        $updated_at = $request->input('updated_at');
+        if (isset($updated_at) && $updated_at)
+        {
+            $mode = 'search';
+            $query->where(function ($query) use ($updated_at) {
+                $unitMap = [ 'w' => 'week', 'm' => 'month', 'y' => 'year' ];
+                $unit = substr($updated_at, -1);
+                $val = abs(substr($updated_at, 0, -1));
+                $query->where('created_at', '>=', strtotime(date('Ymd', strtotime('-' . $val . ' ' . $unitMap[$unit]))))
+                    ->orwhere('updated_at', '>=', strtotime(date('Ymd', strtotime('-' . $val . ' ' . $unitMap[$unit]))));
+            });
+        }
+
         if ($directory !== '0')
         {
             $query = $query->where($mode === 'search' ? 'pt' : 'parent', $directory);
@@ -406,7 +419,7 @@ class WikiController extends Controller
     }
 
     /**
-     * Update the specified resource.
+     * get the specified resource.
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  string  $project_key

@@ -114,6 +114,16 @@ class DocumentController extends Controller
             $query = $query->where('name', 'like', '%' . $name . '%');
         }
 
+        $uploaded_at = $request->input('uploaded_at');
+        if (isset($uploaded_at) && $uploaded_at)
+        {
+            $mode = 'search';
+            $unitMap = [ 'w' => 'week', 'm' => 'month', 'y' => 'year' ];
+            $unit = substr($uploaded_at, -1);
+            $val = abs(substr($uploaded_at, 0, -1));
+            $query->where('uploaded_at', '>=', strtotime(date('Ymd', strtotime('-' . $val . ' ' . $unitMap[$unit]))));
+        }
+
         if ($directory !== '0')
         {
             $query = $query->where($mode === 'search' ? 'pt' : 'parent', $directory);
