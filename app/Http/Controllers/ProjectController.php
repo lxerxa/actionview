@@ -377,7 +377,7 @@ class ProjectController extends Controller
         $page_size = 30;
         $page = $request->input('page') ?: 1;
         $query = $query->skip($page_size * ($page - 1))->take($page_size);
-        $projects = $query->get([ 'name', 'key', 'status', 'principal' ]);
+        $projects = $query->get([ 'name', 'key', 'description', 'status', 'principal' ]);
         foreach ($projects as $key => $project)
         {
             $projects[$key]['principal']['nameAndEmail'] = $project['principal']['name'] . '(' . $project['principal']['email'] . ')';
