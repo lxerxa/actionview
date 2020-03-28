@@ -33,7 +33,7 @@ class VersionController extends Controller
         $query = Version::where('project_key', $project_key);
         $total = $query->count();
 
-        $query = $query->orderBy('status', 'asc')
+        $query = $query->orderBy('status', 'desc')
             ->orderBy('released_time', 'desc')
             ->orderBy('end_time', 'desc')
             ->orderBy('created_at', 'desc');
