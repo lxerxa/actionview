@@ -32,21 +32,21 @@ class LinkController extends Controller
         $src = $request->input('src');
         if (!$src)
         {
-            throw new \UnexpectedValueException('the src issue value can not be empty.', -11121);
+            throw new \UnexpectedValueException('the src issue value can not be empty.', -11151);
         }
         $values['src'] = $src;
 
         $relations = ['blocks', 'is blocked by', 'clones', 'is cloned by', 'duplicates', 'is duplicated by', 'relates to'];
         $relation = $request->input('relation');
         if (!$relation || !in_array($relation, $relations)) {
-            throw new \UnexpectedValueException('the relation value has error.', -11123);
+            throw new \UnexpectedValueException('the relation value has error.', -11153);
         }
         $values['relation'] = $relation;
 
         $dest = $request->input('dest');
         if (!$dest)
         {
-            throw new \UnexpectedValueException('the dest issue value can not be empty.', -11122);
+            throw new \UnexpectedValueException('the dest issue value can not be empty.', -11152);
         }
         $values['dest'] = $dest;
 
@@ -55,7 +55,7 @@ class LinkController extends Controller
         $isExists = Linked::whereRaw([ 'src' => $src, 'dest' => $dest ])->exists();
         if ($isExists || Linked::whereRaw([ 'dest' => $src, 'src' => $dest ])->exists())
         {
-            throw new \UnexpectedValueException('the relation of two issues has been exists.', -11124);
+            throw new \UnexpectedValueException('the relation of two issues has been exists.', -11154);
         }
 
         $ret = Linked::create($values);
@@ -87,7 +87,7 @@ class LinkController extends Controller
         $link = Linked::find($id);
         if (!$link)
         {
-            throw new \UnexpectedValueException('the link does not exist or is not in the project.', -11125);
+            throw new \UnexpectedValueException('the link does not exist or is not in the project.', -11155);
         }
 
         Linked::destroy($id);
