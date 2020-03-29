@@ -282,7 +282,11 @@ class IssueController extends Controller
         {
             throw new \UnexpectedValueException('the schema of the type is not existed.', -11101);
         }
-        $valid_keys = array_merge(array_column($schema, 'key'), [ 'type', 'parent_id' ]);
+
+        if (!$this->requiredCheck($schema, $request->all(), 'create'))
+        {
+            throw new \UnexpectedValueException('the required field is empty.', -11121);
+        }
 
         // handle timetracking
         $insValues = [];
@@ -301,9 +305,14 @@ class IssueController extends Controller
                     throw new \UnexpectedValueException('the format of timetracking is incorrect.', -11102);
                 }
                 $insValues[$field['key']] = $this->ttHandle($fieldValue);
-
-                $valid_keys[] = $field['key'] . '_m';
                 $insValues[$field['key'] . '_m'] = $this->ttHandleInM($insValues[$field['key']]);
+            }
+            else if ($field['type'] == 'DatePicker' || $field['type'] == 'DateTimePicker')
+            {
+                if ($this->isTimestamp($fieldValue) === false)
+                {
+                    throw new \UnexpectedValueException('the format of datepicker field is incorrect.', -11122);
+                }
             }
             else if ($field['type'] == 'SingleUser')
             {
@@ -327,8 +336,6 @@ class IssueController extends Controller
                         $new_user_ids[] = $uid;
                     }
                 }
-
-                $valid_keys[] = $field['key'] . '_ids';
                 $insValues[$field['key'] . '_ids'] = $new_user_ids;
             }
         }
@@ -398,6 +405,7 @@ class IssueController extends Controller
         $workflow = $this->initializeWorkflow($issue_type);
         $insValues = $insValues + $workflow;
 
+        $valid_keys = $this->getValidKeysBySchema($schema);
         // merge all fields
         $insValues = $insValues + array_only($request->all(), $valid_keys);
 
@@ -802,6 +810,82 @@ class IssueController extends Controller
     }
 
     /**
+     * check the required field
+     *
+     * @param  array $schema
+     * @param  array $data
+     * @param  string $mode
+     * @return bool
+     */
+    public function requiredCheck($schema, $data, $mode='create')
+    {
+        foreach ($schema as $field)
+        {
+            if (isset($field['required']) && $field['required'])
+            {
+                if ($mode == 'update')
+                {
+                    if (isset($data[$field['key']]) && !$data[$field['key']] && $data[$field['key']] !== 0)
+                    {
+                        return false;
+                    }
+                }
+                else 
+                {
+                    if (!isset($data[$field['key']]) || !$data[$field['key']] && $data[$field['key']] !== 0)
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     * check if the unix stamp
+     *
+     * @param  int $timestamp
+     * @return bool
+     */
+    public function isTimestamp($timestamp) 
+    {
+        if(strtotime(date('Y-m-d H:i:s', $timestamp)) === $timestamp) 
+        {
+            return $timestamp;
+        } 
+        else 
+        {
+            return false;
+        }
+    }
+
+    /**
+     * get valid keys by schema
+     *
+     * @param  array $schema
+     * @return array
+     */
+    public function getValidKeysBySchema($schema=[])
+    {
+        $valid_keys = array_merge(array_column($schema, 'key'), [ 'type', 'assignee', 'labels', 'parent_id', 'resolution', 'priority', 'progress', 'expect_start_time', 'expect_compete_time' ]);
+
+        foreach ($schema as $field)
+        {
+            if ($field['type'] == 'MultiUser')
+            {
+                $valid_keys[] = $field['key'] . '_ids';
+            }
+            else if ($field['type'] == 'TimeTracking')
+            {
+                $valid_keys[] = $field['key'] . '_m';
+            }
+        }
+
+        return $valid_keys;
+    }
+
+    /**
      * Update the specified resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
@@ -833,7 +917,11 @@ class IssueController extends Controller
         {
             throw new \UnexpectedValueException('the schema of the type is not existed.', -11101);
         }
-        $valid_keys = array_merge(array_column($schema, 'key'), [ 'type', 'assignee', 'labels', 'parent_id', 'resolution', 'priority', 'progress', 'expect_start_time', 'expect_compete_time' ]);
+
+        if (!$this->requiredCheck($schema, $request->all(), 'update'))
+        {
+            throw new \UnexpectedValueException('the required field is empty.', -11121);
+        }
 
         // handle timetracking
         $updValues = [];
@@ -849,12 +937,18 @@ class IssueController extends Controller
             {
                 if (!$this->ttCheck($fieldValue))
                 {
-                    throw new \UnexpectedValueException('the format of timetracking is incorrect.', -11102);
+                    throw new \UnexpectedValueException('the format of timetracking field is incorrect.', -11102);
                 }
-                $updValues[$field['key']] = $this->ttHandle($fieldValue);
 
-                $valid_keys[] = $field['key'] . '_m';
+                $updValues[$field['key']] = $this->ttHandle($fieldValue);
                 $updValues[$field['key'] . '_m'] = $this->ttHandleInM($updValues[$field['key']]);
+            }
+            else if ($field['type'] == 'DatePicker' || $field['type'] == 'DateTimePicker')
+            {
+                if ($this->isTimestamp($fieldValue) === false) 
+                {
+                    throw new \UnexpectedValueException('the format of datepicker field is incorrect.', -11122);
+                }
             }
             else if ($field['type'] == 'SingleUser')
             {
@@ -878,8 +972,6 @@ class IssueController extends Controller
                     }
                     $new_user_ids[] = $uid;
                 }
-
-                $valid_keys[] = $field['key'] . '_ids';
                 $updValues[$field['key'] . '_ids'] = $new_user_ids;
             }
         }
@@ -900,6 +992,7 @@ class IssueController extends Controller
             }
         }
 
+        $valid_keys = $this->getValidKeysBySchema($schema);
         $updValues = $updValues + array_only($request->all(), $valid_keys);
         if (!$updValues)
         {
@@ -934,7 +1027,10 @@ class IssueController extends Controller
     public function destroy($project_key, $id)
     {
         $table = 'issue_' . $project_key;
-        $issue = DB::collection($table)->find($id);
+        $issue = DB::collection($table)
+            ->where('_id', $id)
+            ->where('del_flg', '<>', 1)
+            ->first();
         if (!$issue)
         {
             throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -11103);
@@ -944,15 +1040,22 @@ class IssueController extends Controller
         
         $ids = [ $id ];
         // delete all subtasks of this issue
-        $subtasks = DB::collection('issue_' . $project_key)->where('parent_id', $id)->get();
+        $subtasks = DB::collection('issue_' . $project_key)
+            ->where('parent_id', $id)
+            ->where('del_flg', '<>', 1)
+            ->get();
         foreach ($subtasks as $subtask)
         {
             $sub_id = $subtask['_id']->__toString();
             DB::collection($table)->where('_id', $sub_id)->update([ 'del_flg' => 1 ]);
 
+            // delete linked relation
+            DB::collection('linked')->where('src', $sub_id)->orWhere('dest', $sub_id)->delete();
+
             Event::fire(new IssueEvent($project_key, $sub_id, $user, [ 'event_key' => 'del_issue' ]));
             $ids[] = $sub_id;
         }
+
         // delete linked relation
         DB::collection('linked')->where('src', $id)->orWhere('dest', $id)->delete();
         // delete this issue
@@ -1459,7 +1562,7 @@ class IssueController extends Controller
             throw new \UnexpectedValueException('the schema of the type is not existed.', -11101);
         }
 
-        $valid_keys = array_merge(array_column($schema, 'key'), [ 'type', 'parent_id', 'priority', 'resolution', 'assignee' ]);
+        $valid_keys = $this->getValidKeysBySchema($schema);
         $insValues = array_only($src_issue, $valid_keys);
 
         $insValues['title'] = $title;
@@ -1635,7 +1738,8 @@ class IssueController extends Controller
      * @param  string  $project_key
      * @return \Illuminate\Http\Response
      */
-    public function release(Request $request, $project_key) {
+    public function release(Request $request, $project_key) 
+    {
         $ids = $request->input('ids'); 
         if (!$ids)
         {
@@ -2919,5 +3023,239 @@ class IssueController extends Controller
                 }
             });
         })->download('xls');
+    }
+
+    /**
+     * batch handle the issue
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  string $project_key
+     * @return \Illuminate\Http\Response
+     */
+    public function batchHandle(Request $request, $project_key)
+    {
+        $method = $request->input('method');
+        if ($method == 'update')
+        {
+            $data = $request->input('data');
+            if (!$data || !isset($data['ids']) || !$data['ids'] || !is_array($data['ids']) || !isset($data['values']) || !$data['values'] || !is_array($data['values']))
+            {
+                throw new \UnexpectedValueException('the batch params has errors.', -11124);
+            }
+            return $this->batchUpdate($project_key, $data['ids'], $data['values']);
+        }
+        else if ($method == 'delete')
+        {
+            $data = $request->input('data');
+            if (!$data || !isset($data['ids']) || !$data['ids'] || !is_array($data['ids']))
+            {
+                throw new \UnexpectedValueException('the batch params has errors.', -11124);
+            }
+            return $this->batchDelete($project_key, $data['ids']);
+        }
+        else
+        {
+            throw new \UnexpectedValueException('the batch method has errors.', -11125);
+        }
+    }
+
+    /**
+     * batch update the issue
+     *
+     * @param  string $project_key
+     * @param  array $ids
+     * @return \Illuminate\Http\Response
+     */
+    public function batchDelete($project_key, $ids)
+    {
+        if (!$this->isPermissionAllowed($project_key, 'delete_issue'))
+        {
+            return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
+        }
+
+        $user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+
+        $table = 'issue_' . $project_key;
+        foreach ($ids as $id)
+        {
+            $issue = DB::collection($table)
+                ->where('_id', $id)
+                ->where('del_flg', '<>', 1)
+                ->first();
+            if (!$issue)
+            {
+                continue;
+            }
+
+            // delete all subtasks of this issue
+            $subtasks = DB::collection('issue_' . $project_key)
+                ->where('parent_id', $id)
+                ->where('del_flg', '<>', 1)
+                ->get();
+            foreach ($subtasks as $subtask)
+            {
+                $sub_id = $subtask['_id']->__toString();
+                DB::collection($table)->where('_id', $sub_id)->update([ 'del_flg' => 1 ]);
+
+                // delete linked relation
+                DB::collection('linked')->where('src', $sub_id)->orWhere('dest', $sub_id)->delete();
+
+                Event::fire(new IssueEvent($project_key, $sub_id, $user, [ 'event_key' => 'del_issue' ]));
+            }
+
+            // delete linked relation
+            DB::collection('linked')->where('src', $id)->orWhere('dest', $id)->delete();
+
+            // delete this issue
+            DB::collection($table)->where('_id', $id)->update([ 'del_flg' => 1 ]);
+
+            // trigger event of issue deleted 
+            Event::fire(new IssueEvent($project_key, $id, $user, [ 'event_key' => 'del_issue' ]));
+        }
+
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'ids' => $ids ] ]);
+    }
+
+    /**
+     * batch update the issue
+     *
+     * @param  string $project_key
+     * @param  array $ids
+     * @param  array $values
+     * @return \Illuminate\Http\Response
+     */
+    public function batchUpdate($project_key, $ids, $values)
+    {
+        if (!$this->isPermissionAllowed($project_key, 'edit_issue'))
+        {
+            return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
+        }
+
+        $schemas = [];
+
+        $updValues = [];
+        if (isset($values['type']))
+        {
+            if (!$values['type'])
+            {
+                throw new \UnexpectedValueException('the issue type can not be empty.', -11100);
+            }
+        
+            if (!($schemas[$values['type']] = Provider::getSchemaByType($values['type'])))
+            {
+                throw new \UnexpectedValueException('the schema of the type is not existed.', -11101);
+            }
+
+            $updValues['type'] = $values['type'];
+        }
+
+        $new_fields = [];
+        $fields = Provider::getFieldList($project_key);
+        foreach($fields as $field)
+        {
+            $new_fields[$field->key] = $field;
+        }
+        $fields = $new_fields;
+
+        foreach ($values as $key => $val)
+        {
+            if (!isset($fields[$key]) || $fields[$key]->type == 'File')
+            {
+                continue;
+            }
+
+            $field = $fields[$key];
+
+            if ($field->type == 'DateTimePicker' || $field->type == 'DatePicker')
+            {
+                if ($this->isTimestamp($val))
+                {
+                    throw new \UnexpectedValueException('the format of datepicker field is incorrect.', -11122);
+                }
+                $updValues[$key] = $val;
+            }
+            else if ($field->type == 'TimeTracking')
+            {
+                if (!$this->ttCheck($val))
+                {
+                    throw new \UnexpectedValueException('the format of timetracking field is incorrect.', -11102);
+                }
+                $updValues[$key] = $this->ttHandle($val);
+                $updValues[$key . '_m'] = $this->ttHandleInM($updValues[$key]);
+            }
+            else if ($key == 'assignee' || $field->type == 'SingleUser')
+            {
+                $user_info = Sentinel::findById($val);
+                if ($user_info)
+                {
+                    $updValues[$key] = [ 'id' => $val, 'name' => $user_info->first_name, 'email' => $user_info->email ];
+                }
+            }
+            else if ($field->type == 'MultiUser')
+            {
+                $user_ids = $val;
+                $updValues[$key] = [];
+                $new_user_ids = [];
+                foreach ($user_ids as $uid)
+                {
+                    $user_info = Sentinel::findById($uid);
+                    if ($user_info)
+                    {
+                        array_push($updValues[$key], [ 'id' => $uid, 'name' => $user_info->first_name, 'email' => $user_info->email ]);
+                    }
+                    $new_user_ids[] = $uid;
+                }
+                $updValues[$key . '_ids'] = $new_user_ids;
+            }
+            else 
+            {
+                $updValues[$key] = $val;
+            }
+        }
+
+        $updValues['modifier'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        $updValues['updated_at'] = time();
+
+        $table = 'issue_' . $project_key;
+        foreach ($ids as $id)
+        {
+            $issue = DB::collection($table)->find($id);
+            if (!$issue)
+            {
+                continue;
+            }
+
+            $schema = [];
+            $type = isset($values['type']) ? $values['type'] : $issue['type'];
+            if (!isset($schemas[$type]))
+            {
+                if (!($schemas[$type] = $schema = Provider::getSchemaByType($type)))
+                {
+                    continue;
+                }
+            }
+            else 
+            {
+                $schema = $schemas[$type];
+            }
+
+            $valid_keys = $this->getValidKeysBySchema($schema);
+            
+            DB::collection($table)->where('_id', $id)->update(array_only($updValues, $valid_keys));
+
+            // add to histroy table
+            $snap_id = Provider::snap2His($project_key, $id, $schema, array_keys(array_only($values, $valid_keys)));
+
+            // trigger event of issue edited
+            Event::fire(new IssueEvent($project_key, $id, $updValues['modifier'], [ 'event_key' => 'edit_issue', 'snap_id' => $snap_id ]));
+        }
+
+        // create the Labels for project
+        if (isset($updValues['labels']) && $updValues['labels'])
+        {
+            $this->createLabels($project_key, $updValues['labels']);
+        }
+
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'ids' => $ids ] ]); 
     }
 }
