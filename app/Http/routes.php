@@ -176,6 +176,8 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
 
     Route::post('issue/imports', 'IssueController@imports');
 
+    Route::post('issue/batch', 'IssueController@batchHandle');
+
     Route::get('issue/{id}', 'IssueController@show');
     Route::get('issue', 'IssueController@index');
     Route::post('issue', [ 'middleware' => 'privilege:create_issue', 'uses' => 'IssueController@store' ]);
