@@ -3240,7 +3240,11 @@ class IssueController extends Controller
             }
 
             $valid_keys = $this->getValidKeysBySchema($schema);
-            
+            if (!array_only($updValues, $valid_keys))
+            {
+                continue;
+            }
+
             DB::collection($table)->where('_id', $id)->update(array_only($updValues, $valid_keys));
 
             // add to histroy table
