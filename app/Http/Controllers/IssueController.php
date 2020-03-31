@@ -3168,7 +3168,7 @@ class IssueController extends Controller
 
             if ($field->type == 'DateTimePicker' || $field->type == 'DatePicker')
             {
-                if ($this->isTimestamp($val))
+                if ($this->isTimestamp($val) === false)
                 {
                     throw new \UnexpectedValueException('the format of datepicker field is incorrect.', -11122);
                 }
