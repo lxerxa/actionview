@@ -63,12 +63,12 @@ class LabelsController extends Controller
         $name = $request->input('name');
         if (!$name)
         {
-            throw new \UnexpectedValueException('the name can not be empty.', -11800);
+            throw new \UnexpectedValueException('the name can not be empty.', -16100);
         }
 
-        if (Provider::isLabelsExisted($project_key, $name))
+        if (Provider::isLabelExisted($project_key, $name))
         {
-            throw new \UnexpectedValueException('label name cannot be repeated', -11802);
+            throw new \UnexpectedValueException('label name cannot be repeated', -16102);
         }
 
         $label = Labels::create([ 'project_key' => $project_key ] + $request->all());
@@ -89,19 +89,24 @@ class LabelsController extends Controller
         {
             if (!$name)
             {
-                throw new \UnexpectedValueException('the name can not be empty.', -11800);
+                throw new \UnexpectedValueException('the name can not be empty.', -16100);
             }
         }
 
         $label = Labels::find($id);
         if (!$label || $project_key != $label->project_key)
         {
-            throw new \UnexpectedValueException('the label does not exist or is not in the project.', -11803);
+            throw new \UnexpectedValueException('the label does not exist or is not in the project.', -16103);
         }
 
-        if ($label->name !== $name && Provider::isLabelsExisted($project_key, $name))
+        if ($label->name !== $name && Provider::isLabelExisted($project_key, $name))
         {
-            throw new \UnexpectedValueException('label name cannot be repeated', -11802);
+            throw new \UnexpectedValueException('label name cannot be repeated', -16102);
+        }
+
+        if ($label->name !== $name)
+        {
+            $this->updIssueLabels($project_key, $label->name, $name);
         }
 
         $label->fill($request->except(['project_key']))->save();
@@ -121,7 +126,7 @@ class LabelsController extends Controller
         $label = Labels::find($id);
         if (!$label || $project_key != $label->project_key)
         {
-            throw new \UnexpectedValueException('the label does not exist or is not in the project.', -11803);
+            throw new \UnexpectedValueException('the label does not exist or is not in the project.', -16103);
         }
 
         $operate_flg = $request->input('operate_flg');
@@ -130,7 +135,7 @@ class LabelsController extends Controller
             $is_used = $this->isFieldUsedByIssue($project_key, 'labels', $label->toArray());
             if ($is_used)
             {
-                throw new \UnexpectedValueException('the label has been used by some issues.', -11804);
+                throw new \UnexpectedValueException('the label has been used by some issues.', -16104);
             }
         }
         else if ($operate_flg === '1')
@@ -138,13 +143,13 @@ class LabelsController extends Controller
             $swap_label = $request->input('swap_label');
             if (!isset($swap_label) || !$swap_label)
             {
-                throw new \UnexpectedValueException('the swap label cannot be empty.', -11806);
+                throw new \UnexpectedValueException('the swap label cannot be empty.', -16106);
             }
 
             $slabel = Labels::find($swap_label);
             if (!$slabel || $project_key != $slabel->project_key)
             {
-                throw new \UnexpectedValueException('the swap label does not exist or is not in the project.', -11807);
+                throw new \UnexpectedValueException('the swap label does not exist or is not in the project.', -16107);
             }
 
             $this->updIssueLabels($project_key, $label->name, $slabel->name);
@@ -155,7 +160,7 @@ class LabelsController extends Controller
         }
         else
         {
-            throw new \UnexpectedValueException('the operation has error.', -11805);
+            throw new \UnexpectedValueException('the operation has error.', -16105);
         }
 
         Labels::destroy($id);
@@ -206,7 +211,7 @@ class LabelsController extends Controller
                     $newLabels[] = $label;
                 }
             }
-            $updValues['labels'] = array_values(array_unique($newLabels));
+            $updValues['labels'] = array_values(array_unique(array_filter($newLabels)));
 
             $updValues['modifier'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
             $updValues['updated_at'] = time();
