@@ -11,82 +11,84 @@
 |
 */
 
+$api_prefix = 'actionview/api';
+
 Route::get('/', function () {
     return view('welcome');
 });
 
 // session router
-Route::post('api/session', 'SessionController@create');
-Route::get('api/session', 'SessionController@getSess');
-Route::delete('api/session', 'SessionController@destroy');
+Route::post($api_prefix . '/session', 'SessionController@create');
+Route::get($api_prefix . '/session', 'SessionController@getSess');
+Route::delete($api_prefix . '/session', 'SessionController@destroy');
 
-Route::post('api/user/register', 'UserController@register');
+Route::post($api_prefix . '/user/register', 'UserController@register');
 
-Route::post('api/user/resetpwdsendmail', 'UserController@sendMailForResetpwd');
-Route::get('api/user/resetpwd', 'UserController@showResetpwd');
-Route::post('api/user/resetpwd', 'UserController@doResetpwd');
+Route::post($api_prefix .'/user/resetpwdsendmail', 'UserController@sendMailForResetpwd');
+Route::get($api_prefix . '/user/resetpwd', 'UserController@showResetpwd');
+Route::post($api_prefix . '/user/resetpwd', 'UserController@doResetpwd');
 // holida api
-Route::get('api/holiday/{year}', 'HolidayController@index');
+Route::get($api_prefix . '/holiday/{year}', 'HolidayController@index');
 // webhook api
-Route::post('api/webhook/{type}/project/{key}', 'WebhookController@exec');
+Route::post($api_prefix . '/webhook/{type}/project/{key}', 'WebhookController@exec');
 
-Route::group([ 'middleware' => 'can' ], function () {
+Route::group([ 'prefix' => $api_prefix, 'middleware' => 'can' ], function () {
     // project route
-    Route::get('api/myproject', 'ProjectController@myproject');
-    Route::get('api/project/recent', 'ProjectController@recent');
-    Route::get('api/project', 'ProjectController@index');
-    Route::get('api/project/checkkey/{key}', 'ProjectController@checkKey');
-    Route::get('api/project/options', 'ProjectController@getOptions');
-    Route::get('api/project/search', 'ProjectController@search');
-    Route::get('api/project/{key}', 'ProjectController@show');
-    Route::post('api/project', 'ProjectController@store');
-    Route::put('api/project/{id}', 'ProjectController@update');
-    Route::get('api/project/{id}/createindex', 'ProjectController@createIndex');
-    Route::post('api/project/batch/status', 'ProjectController@updMultiStatus');
-    Route::post('api/project/batch/createindex', 'ProjectController@createMultiIndex');
-    Route::delete('api/project/{id}', 'ProjectController@destroy');
+    Route::get('myproject', 'ProjectController@myproject');
+    Route::get('project/recent', 'ProjectController@recent');
+    Route::get('project', 'ProjectController@index');
+    Route::get('project/checkkey/{key}', 'ProjectController@checkKey');
+    Route::get('project/options', 'ProjectController@getOptions');
+    Route::get('project/search', 'ProjectController@search');
+    Route::get('project/{key}', 'ProjectController@show');
+    Route::post('project', 'ProjectController@store');
+    Route::put('project/{id}', 'ProjectController@update');
+    Route::get('project/{id}/createindex', 'ProjectController@createIndex');
+    Route::post('project/batch/status', 'ProjectController@updMultiStatus');
+    Route::post('project/batch/createindex', 'ProjectController@createMultiIndex');
+    Route::delete('project/{id}', 'ProjectController@destroy');
 
-    Route::get('api/user/search', 'UserController@search');
-    Route::get('api/user/{id}/renewpwd', 'UserController@renewPwd');
-    Route::post('api/user/batch/delete', 'UserController@delMultiUsers');
-    Route::post('api/user/batch/invalidate', 'UserController@invalidateMultiUsers');
-    Route::post('api/user/fileupload', 'UserController@upload');
-    Route::post('api/user/imports', 'UserController@imports');
-    Route::resource('api/user', 'UserController');
+    Route::get('user/search', 'UserController@search');
+    Route::get('user/{id}/renewpwd', 'UserController@renewPwd');
+    Route::post('user/batch/delete', 'UserController@delMultiUsers');
+    Route::post('user/batch/invalidate', 'UserController@invalidateMultiUsers');
+    Route::post('user/fileupload', 'UserController@upload');
+    Route::post('user/imports', 'UserController@imports');
+    Route::resource('user', 'UserController');
 
-    Route::get('api/logs', 'AccessLogsController@index');
+    Route::get('logs', 'AccessLogsController@index');
 
-    Route::get('api/calendar/{year}', 'CalendarController@index');
-    Route::post('api/calendar', 'CalendarController@update');
-    Route::post('api/calendar/sync', 'CalendarController@sync');
+    Route::get('calendar/{year}', 'CalendarController@index');
+    Route::post('calendar', 'CalendarController@update');
+    Route::post('calendar/sync', 'CalendarController@sync');
 
-    Route::get('api/group/search', 'GroupController@search');
-    Route::post('api/group/batch/delete', 'GroupController@delMultiGroups');
-    Route::resource('api/group', 'GroupController');
+    Route::get('group/search', 'GroupController@search');
+    Route::post('group/batch/delete', 'GroupController@delMultiGroups');
+    Route::resource('group', 'GroupController');
 
-    Route::get('api/directory/{id}/test', 'DirectoryController@test');
-    Route::get('api/directory/{id}/sync', 'DirectoryController@sync');
-    Route::resource('api/directory', 'DirectoryController');
+    Route::get('directory/{id}/test', 'DirectoryController@test');
+    Route::get('directory/{id}/sync', 'DirectoryController@sync');
+    Route::resource('directory', 'DirectoryController');
 
-    Route::get('api/mysetting', 'MysettingController@show');
-    Route::post('api/mysetting/account', 'MysettingController@updAccounts');
-    Route::post('api/mysetting/resetpwd', 'MysettingController@resetPwd');
-    Route::post('api/mysetting/notify', 'MysettingController@setNotifications');
-    Route::post('api/mysetting/favorite', 'MysettingController@setFavorites');
-    Route::post('api/mysetting/avatar', 'MysettingController@setAvatar');
+    Route::get('mysetting', 'MysettingController@show');
+    Route::post('mysetting/account', 'MysettingController@updAccounts');
+    Route::post('mysetting/resetpwd', 'MysettingController@resetPwd');
+    Route::post('mysetting/notify', 'MysettingController@setNotifications');
+    Route::post('mysetting/favorite', 'MysettingController@setFavorites');
+    Route::post('mysetting/avatar', 'MysettingController@setAvatar');
 
     // middleware is put into controller
-    Route::get('api/syssetting', 'SyssettingController@show');
-    Route::post('api/syssetting', 'SyssettingController@update');
-    Route::post('api/syssetting/restpwd', 'SyssettingController@resetPwd');
-    Route::post('api/syssetting/sendtestmail', 'SyssettingController@sendTestMail');
+    Route::get('syssetting', 'SyssettingController@show');
+    Route::post('syssetting', 'SyssettingController@update');
+    Route::post('syssetting/restpwd', 'SyssettingController@resetPwd');
+    Route::post('syssetting/sendtestmail', 'SyssettingController@sendTestMail');
 
-    Route::get('api/getavatar', 'FileController@getAvatar');
-    Route::post('api/tmpfile', 'FileController@uploadTmpFile');
+    Route::get('getavatar', 'FileController@getAvatar');
+    Route::post('tmpfile', 'FileController@uploadTmpFile');
 });
 
 // project config
-Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can', 'privilege:manage_project' ] ], function () {
+Route::group([ 'prefix' => $api_prefix . '/project/{project_key}', 'middleware' => [ 'can', 'privilege:manage_project' ] ], function () {
     // project type config
     Route::resource('type', 'TypeController');
     Route::post('type/batch', 'TypeController@handle');
@@ -127,9 +129,12 @@ Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can',
     Route::post('integrations', 'ExternalUsersController@handle');
 
     Route::resource('webhooks', 'WebhooksController');
+
+    Route::post('labels/{id}/delete', 'LabelsController@delete');
+    Route::resource('labels', 'LabelsController');
 });
 
-Route::group([ 'prefix' => 'api/project/{project_key}', 'middleware' => [ 'can', 'privilege:view_project' ] ], function () {
+Route::group([ 'prefix' => $api_prefix . '/project/{project_key}', 'middleware' => [ 'can', 'privilege:view_project' ] ], function () {
     // project summary 
     Route::get('summary', 'SummaryController@index');
     // config summary 
