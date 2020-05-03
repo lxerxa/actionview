@@ -146,6 +146,11 @@ class Controller extends BaseController
                         })
                         ->where('del_flg', '<>', 1)
                         ->exists();
+                case 'labels':
+                    return DB::collection('issue_' . $project_key)
+                        ->where($field_key, $field['name'])
+                        ->where('del_flg', '<>', 1)
+                        ->exists();
                 default:
                     return true;
             }
