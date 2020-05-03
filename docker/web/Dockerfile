@@ -1,6 +1,6 @@
 FROM ubuntu:16.04
 
-MAINTAINER lxerxa <lxerxa@126.com>
+MAINTAINER lxerxa <actionview@126.com>
 
 RUN apt-get update && \
     apt-get -yq install \
@@ -24,7 +24,7 @@ RUN apt-get update && \
 RUN a2enmod rewrite
 
 WORKDIR /var/www/
-RUN git clone https://github.com/lxerxa/actionview.git actionview
+RUN git clone https://gitee.com/actionview/av.git actionview
 
 ENV COMPOSER_ALLOW_SUPERUSER 1
 
