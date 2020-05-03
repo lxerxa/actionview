@@ -205,7 +205,7 @@ class Provider {
             ->get();
         foreach ($labels as $label)
         {
-            $options[] = $label->name;
+            $options[] = [ 'name' => $label->name, 'bgColor' => $label->bgColor ?: '' ];
         }
 
         return $options;
@@ -1440,6 +1440,22 @@ class Provider {
             ->toArray();
 
         return $epics;
+    }
+
+    /**
+     * check if Label has existed.
+     *
+     * @param string $project_key
+     * @param string $name
+     * @return bool
+     */
+    public static function isLabelExisted($project_key, $name)
+    {
+        $isExisted = Labels::Where('project_key', $project_key)
+            ->Where('name', $name)
+            ->exists();
+
+        return $isExisted;
     }
 }
 
