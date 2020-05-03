@@ -10,8 +10,8 @@
     RewriteRule ^(.*)/$ /$1 [L,R=301]
 
     RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_URI} !^/api
-    RewriteRule ^(.*)$ /index.html [L]
+    RewriteCond %{REQUEST_URI} !^/actionview/api
+    RewriteRule ^(.*)$ index.html [L]
 
     # Handle Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d
