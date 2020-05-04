@@ -496,7 +496,7 @@ class UserController extends Controller
         $data['email'] = $email;
         $rand_code = md5($email . mt_rand() . microtime());
         $http_type = ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https')) ? 'https://' : 'http://';
-        $data['url'] = $http_type . $_SERVER['HTTP_HOST'] . '/resetpwd?code=' . $rand_code;
+        $data['url'] = $http_type . $_SERVER['HTTP_HOST'] . '/actionview/resetpwd?code=' . $rand_code;
 
         $this->sendMail($sendto_email, $data);
 
