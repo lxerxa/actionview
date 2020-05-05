@@ -59,7 +59,7 @@
     <tr>
       <td class='title'>
         <b>{{ $user['name'] }}</b> 关闭了 
-        <a href={{ $http_host . '/project/' . $project['key'] . '/issue?sprint=' . $sprint['no'] }} target='_blank'>
+        <a href={{ $http_host . '/actionview/project/' . $project['key'] . '/issue?sprint=' . $sprint['no'] }} target='_blank'>
           Sprint-{{ $sprint['no'] }}
         </a>
       </td>
@@ -69,11 +69,11 @@
         <table class='contents'>
           <tr>
             <td style='padding: 12.5pt 0cm 1.5pt 10pt;' colspan=2>
-              <a href={{ $http_host . '/project/' . $project['key'] }} target='_blank'>
+              <a href={{ $http_host . '/actionview/project/' . $project['key'] }} target='_blank'>
                 {{ $project['key'] }} - {{ $project['name'] }}
               </a>
               /
-              <a href={{ $http_host . '/project/' . $project['key'] . '/issue?sprint=' . $sprint['no'] }} target='_blank'>
+              <a href={{ $http_host . '/actionview/project/' . $project['key'] . '/issue?sprint=' . $sprint['no'] }} target='_blank'>
                 Sprint-{{ $sprint['no'] }}
               </a>
             <td>
@@ -89,7 +89,7 @@
           @foreach ($incompleted_issues as $key => $issue)
             <tr>
               <td class='cell-title' width='600pt'>
-                <a href={{ $http_host . '/project/' . $project['key'] . '/issue?no=' . $issue['no'] }} target='_blank'>
+                <a href={{ $http_host . '/actionview/project/' . $project['key'] . '/issue?no=' . $issue['no'] }} target='_blank'>
                   {{ $project['key'] . '-' . $issue['no'] . ' ' . $issue['title'] }}
                 </a>
               </td>
@@ -107,7 +107,7 @@
           @foreach ($completed_issues as $key => $issue)
             <tr>
               <td class='cell-title' width='600pt'>
-                <a href={{ $http_host . '/project/' . $project['key'] . '/issue?no=' . $issue['no'] }} target='_blank'>
+                <a href={{ $http_host . '/actionview/project/' . $project['key'] . '/issue?no=' . $issue['no'] }} target='_blank'>
                   {{ $project['key'] . '-' . $issue['no'] . ' ' . $issue['title'] }}
                 </a>
               </td>

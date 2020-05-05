@@ -62,7 +62,7 @@
         @if ($event_key == 'create_wiki') 创建了
         @elseif ($event_key == 'edit_wiki') 编辑了
         @endif
-        Wiki <a href={{ $http_host . '/project/' . $project['key'] . '/wiki/' . $wiki['parent'] . '/' . $wiki['id'] }} target='_blank'>{{ $wiki['name'] }}</a>
+        Wiki <a href={{ $http_host . '/actionview/project/' . $project['key'] . '/wiki/' . $wiki['parent'] . '/' . $wiki['id'] }} target='_blank'>{{ $wiki['name'] }}</a>
       </td>
     </tr>
     <tr>
@@ -70,18 +70,18 @@
         <table class='contents'>
           <tr>
             <td style='padding: 12.5pt 0cm 12.5pt 10pt;' colspan=2>
-              <a href={{ $http_host . '/project/' . $project['key'] }} target='_blank'>
+              <a href={{ $http_host . '/actionview/project/' . $project['key'] }} target='_blank'>
                 {{ $project['key'] }} - {{ $project['name'] }}
               </a>
               /
-              <a href={{ $http_host . '/project/' . $project['key'] . '/wiki/' . $wiki['parent'] . '/' . $wiki['id'] }} target='_blank'>
+              <a href={{ $http_host . '/actionview/project/' . $project['key'] . '/wiki/' . $wiki['parent'] . '/' . $wiki['id'] }} target='_blank'>
                 Wiki - {{ $wiki['name'] }}
               </a>
             <td>
           </tr>
           <tr>
             <td style='padding: 2.5pt 0cm 12.5pt 10pt;'>
-              详细信息请点击： <a href={{ $http_host . '/project/' . $project['key'] . '/wiki/' . $wiki['parent'] . '/' . $wiki['id'] }} target='_blank'>{{ $wiki['name'] }}</a>
+              详细信息请点击： <a href={{ $http_host . '/actionview/project/' . $project['key'] . '/wiki/' . $wiki['parent'] . '/' . $wiki['id'] }} target='_blank'>{{ $wiki['name'] }}</a>
             <td>
           </tr>
           <tr>

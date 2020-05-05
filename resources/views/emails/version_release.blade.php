@@ -59,7 +59,7 @@
     <tr>
       <td class='title'>
         <b>{{ $user['name'] }}</b> 发布了 
-        <a href={{ $http_host . '/project/' . $project['key'] . '/issue?resolve_version=' . $resolve_version['id'] }} target='_blank'>
+        <a href={{ $http_host . '/actionview/project/' . $project['key'] . '/issue?resolve_version=' . $resolve_version['id'] }} target='_blank'>
           版本-{{ $resolve_version['name'] }}
         </a>
       </td>
@@ -69,11 +69,11 @@
         <table class='contents'>
           <tr>
             <td style='padding: 12.5pt 0cm 12.5pt 10pt;' colspan=2>
-              <a href={{ $http_host . '/project/' . $project['key'] }} target='_blank'>
+              <a href={{ $http_host . '/actionview/project/' . $project['key'] }} target='_blank'>
                 {{ $project['key'] }} - {{ $project['name'] }}
               </a>
               /
-              <a href={{ $http_host . '/project/' . $project['key'] . '/issue?resolve_version=' . $resolve_version['id'] }} target='_blank'>
+              <a href={{ $http_host . '/actionview/project/' . $project['key'] . '/issue?resolve_version=' . $resolve_version['id'] }} target='_blank'>
                 版本-{{ $resolve_version['name'] }}
               </a>
             <td>
@@ -84,7 +84,7 @@
           @foreach ($released_issues as $key => $issue)
             <tr>
               <td class='cell-title' width='600pt'>
-                <a href={{ $http_host . '/project/' . $project['key'] . '/issue?no=' . $issue['no'] }} target='_blank'>
+                <a href={{ $http_host . '/actionview/project/' . $project['key'] . '/issue?no=' . $issue['no'] }} target='_blank'>
                   {{ $project['key'] . '-' . $issue['no'] . ' ' . $issue['title'] }}
                 </a>
               </td>
