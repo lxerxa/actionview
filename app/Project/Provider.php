@@ -855,7 +855,7 @@ class Provider {
                 $couple_labels = [];
                 foreach ($options['labels'] as $label)
                 {
-                    $couple_labels[] = [ 'id' => $label, 'name' => $label ];
+                    $couple_labels[] = [ 'id' => $label['name'], 'name' => $label['name'] ];
                 }
                 $val['optionValues'] = $couple_labels;
             }
@@ -1046,7 +1046,7 @@ class Provider {
                 $couple_labels = [];
                 foreach ($labels as $label)
                 {
-                    $couple_labels[] = [ 'id' => $label, 'name' => $label ];
+                    $couple_labels[] = [ 'id' => $label['name'], 'name' => $label['name'] ];
                 }
                 $val['optionValues'] = $couple_labels;
             }
