@@ -103,7 +103,7 @@ class FileController extends Controller
             Event::fire(new FileUploadEvent($project_key, $issue_id, $field, $file->id, $data['uploader']));
         }
 
-        return Response()->json([ 'ecode' => 0, 'data' => [ 'field' => $field, 'file' => File::find($file->id), 'filename' => '/api/project/' . $project_key . '/file/' . $file->id ] ]);
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'field' => $field, 'file' => File::find($file->id), 'filename' => '/actionview/api/project/' . $project_key . '/file/' . $file->id ] ]);
     }
 
     /**
