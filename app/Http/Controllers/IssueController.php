@@ -2796,7 +2796,7 @@ class IssueController extends Controller
     public function initializeWorkflowForImport($wf_definition, $state)
     {
         // create and start workflow instacne
-        $wf_entry = Workflow::createInstance($wf_definition->id);
+        $wf_entry = Workflow::createInstance($wf_definition->id, $this->user->id);
 
         $wf_contents = $wf_definition->contents ?: [];
         $steps = isset($wf_contents['steps']) && $wf_contents['steps'] ? $wf_contents['steps'] : [];
@@ -3068,6 +3068,7 @@ class IssueController extends Controller
      */
     public function batchDelete($project_key, $ids)
     {
+        return;
         if (!$this->isPermissionAllowed($project_key, 'delete_issue'))
         {
             return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
