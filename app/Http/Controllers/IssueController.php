@@ -3068,7 +3068,6 @@ class IssueController extends Controller
      */
     public function batchDelete($project_key, $ids)
     {
-        return;
         if (!$this->isPermissionAllowed($project_key, 'delete_issue'))
         {
             return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
