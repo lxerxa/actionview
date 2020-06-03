@@ -238,7 +238,7 @@ class Controller extends BaseController
                 $vals = explode(',', $val);
                 foreach ($vals as $v)
                 {
-                    $or[] = [ $key . '_ids' => $v ];
+                    $or[] = [ $key . '_ids' => $v == 'me' ? $this->user->id : $v ];
                 }
                 $and[] = [ '$or' => $or ];
             }
