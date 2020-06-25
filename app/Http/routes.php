@@ -220,6 +220,7 @@ Route::group([ 'prefix' => $api_prefix . '/project/{project_key}', 'middleware' 
 
     Route::post('document/{id}/upload', 'DocumentController@upload');
     Route::get('document/{id}/download', 'DocumentController@download');
+    Route::get('document/{id}/downloadthumbnails', 'DocumentController@downloadThumbnails');
     Route::get('document/options', 'DocumentController@getOptions');
     Route::get('document/directory/{id}', 'DocumentController@index');
     Route::get('document/search/path', 'DocumentController@searchPath');
@@ -227,6 +228,8 @@ Route::group([ 'prefix' => $api_prefix . '/project/{project_key}', 'middleware' 
     Route::post('document/{id}', [ 'middleware' => 'privilege:manage_project', 'uses' => 'DocumentController@createFolder' ]);
     Route::put('document/{id}', 'DocumentController@update');
     Route::delete('document/{id}', 'DocumentController@destroy');
+    Route::get('document/dirtree', 'DocumentController@getDirTree');
+    Route::get('document/{id}/dirs', 'DocumentController@getDirChildren');
 
     Route::post('wiki/{id}/upload', 'WikiController@upload');
     Route::get('wiki/{id}/download', 'WikiController@download2');
