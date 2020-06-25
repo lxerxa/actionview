@@ -75,6 +75,111 @@ class DocumentController extends Controller
     }
 
     /**
+     * get the directory children.
+     * @param  string  $project_key
+     * @param  string  $directory
+     * @return \Illuminate\Http\Response
+     */
+    public function getDirChildren(Request $request, $project_key, $directory)
+    {
+        $sub_dirs = DB::collection('document_' . $project_key)
+    	    ->where('parent', $directory)
+            ->where('d', 1)
+            ->where('del_flag', '<>', 1)
+            ->get();
+
+    	$res = [];
+    	foreach ($sub_dirs as $val) 
+        {
+    	    $res[] = [ 'id' => $val['_id']->__toString(), 'name' => $val['name'] ];
+        }
+
+    	return Response()->json([ 'ecode' => 0, 'data' => $res ]);
+    }
+
+    /**
+     * get the directory tree.
+     * @param  string  $project_key
+     * @return \Illuminate\Http\Response
+     */
+    public function getDirTree(Request $request, $project_key)
+    {
+        $dt = [ 'id' => '0', 'name' => '根目录' ];
+
+        $curdir = $request->input('currentdir');
+        if (!$curdir)
+        {
+            $curdir = '0';
+        }
+
+        $pt = [ '0' ];
+        if ($curdir !== '0')
+        {
+            $node = DB::collection('document_' . $project_key)
+                ->where('_id', $curdir)
+    	        ->first();
+
+    	    if ($node)
+    	    {
+    	        $pt = $node['pt'];
+    	        array_push($pt, $curdir);
+            }
+        }
+
+    	foreach($pt as $val)
+    	{
+            $sub_dirs = DB::collection('document_' . $project_key)
+                ->where('parent', $val)
+    	        ->where('d', 1)
+    	        ->where('del_flag', '<>', 1)
+    	        ->get();
+
+    	    $this->addChildren2Tree($dt, $val, $sub_dirs);
+        }
+
+    	return Response()->json([ 'ecode' => 0, 'data' => $dt ]);
+    }
+
+    /**
+     * add children to tree.
+     *
+     * @param  array  $dt
+     * @param  string $parent_id
+     * @param  array  $sub_dirs
+     * @return void
+     */
+    public function addChildren2Tree(&$dt, $parent_id, $sub_dirs)
+    {
+        $new_dirs = [];
+        foreach($sub_dirs as $val)
+        {
+            $new_dirs[] = [ 'id' => $val['_id']->__toString(), 'name' => $val['name'] ];
+        }
+
+        if ($dt['id'] == $parent_id)
+        {
+            $dt['children'] = $new_dirs;
+            return true;
+        }
+        else
+        {
+            if (isset($dt['children']) && $dt['children'])
+            {
+                $children_num = count($dt['children']);
+                for ($i = 0; $i < $children_num; $i++)
+                {
+                    $res = $this->addChildren2Tree($dt['children'][$i], $parent_id, $sub_dirs);
+                    if ($res === true)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+    }
+
+    /**
      * Display a listing of the resource.
      *
      * @return \Illuminate\Http\Response
@@ -515,9 +620,54 @@ class DocumentController extends Controller
         {
             @mkdir($sub_save_path);
         }
-        move_uploaded_file($_FILES[$field]['tmp_name'], $sub_save_path . $basename);
+
+        $filename = $sub_save_path . $basename;
+        move_uploaded_file($_FILES[$field]['tmp_name'], $filename);
 
         $data = [];
+
+        $thumbnail_size = 190;
+        if (in_array($_FILES[$field]['type'], [ 'image/jpeg', 'image/jpg', 'image/png', 'image/gif' ]))
+        {
+            $size = getimagesize($filename);
+            $width = $size[0]; $height = $size[1];
+            $scale = $width < $height ? $height : $width;
+            $thumbnails_width = floor($thumbnail_size * $width / $scale);
+            $thumbnails_height = floor($thumbnail_size * $height / $scale);
+            $thumbnails_filename = $filename . '_thumbnails';
+            if ($scale <= $thumbnail_size)
+            {
+                @copy($filename, $thumbnails_filename);
+            }
+            else if ($_FILES[$field]['type'] == 'image/jpeg' || $_FILES[$field]['type'] == 'image/jpg')
+            {
+                $src_image = imagecreatefromjpeg($filename);
+                $dst_image = imagecreatetruecolor($thumbnails_width, $thumbnails_height);
+                imagecopyresized($dst_image, $src_image, 0, 0, 0, 0, $thumbnails_width, $thumbnails_height, $width, $height);
+                imagejpeg($dst_image, $thumbnails_filename);
+            }
+            else if ($_FILES[$field]['type'] == 'image/png')
+            {
+                $src_image = imagecreatefrompng($filename);
+                $dst_image = imagecreatetruecolor($thumbnails_width, $thumbnails_height);
+                imagecopyresized($dst_image, $src_image, 0, 0, 0, 0, $thumbnails_width, $thumbnails_height, $width, $height);
+                imagepng($dst_image, $thumbnails_filename);
+            }
+            else if ($_FILES[$field]['type'] == 'image/gif')
+            {
+                $src_image = imagecreatefromgif($filename);
+                $dst_image = imagecreatetruecolor($thumbnails_width, $thumbnails_height);
+                imagecopyresized($dst_image, $src_image, 0, 0, 0, 0, $thumbnails_width, $thumbnails_height, $width, $height);
+                imagegif($dst_image, $thumbnails_filename);
+            }
+            else
+            {
+                @copy($filename, $thumbnails_filename);
+            }
+            $data['thumbnails_index'] = $basename . '_thumbnails';
+            // move the thumbnails
+            @rename($thumbnails_filename, $sub_save_path . $data['thumbnails_index']);
+        }
 
         $fname = $_FILES[$field]['name'];
         $extname = '';
@@ -540,7 +690,7 @@ class DocumentController extends Controller
             {
                 break;
             }
-            $i++; 
+            $i++;
         }
         $data['name'] = $fname . ($i < 2 ? '' : ('(' . $i . ')')) . $extname;
 
@@ -557,6 +707,36 @@ class DocumentController extends Controller
         $document = DB::collection('document_' . $project_key)->where('_id', $id)->first();
 
         return Response()->json(['ecode' => 0, 'data' => parent::arrange($document)]);
+    }
+
+    /**
+     * Download Thumbnails file.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  String  $project_key
+     * @param  String  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function downloadThumbnails(Request $request, $project_key, $id)
+    {
+        set_time_limit(0);
+
+        $document = DB::collection('document_' . $project_key)
+            ->where('_id', $id)
+            ->first();
+        if (!$document)
+        {
+            throw new \UnexpectedValueException('the object does not exist.', -11902);
+        }
+
+        $filepath = config('filesystems.disks.local.root', '/tmp') . '/' . substr($document['index'], 0, 2);
+        $filename = $filepath . '/' . $document['thumbnails_index'];
+        if (!file_exists($filename))
+        {
+            throw new \UnexpectedValueException('file does not exist.', -11904);
+        }
+
+        File::download($filename, $document['name']);
     }
 
     /**
