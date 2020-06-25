@@ -51,7 +51,7 @@ class FileController extends Controller
         $data['size']    = $_FILES[$field]['size'];
         $data['type']    = $_FILES[$field]['type'];
         $data['index']   = $basename; 
-        if ($_FILES[$field]['type'] == 'image/jpeg' || $_FILES[$field]['type'] == 'image/jpg' || $_FILES[$field]['type'] == 'image/png' || $_FILES[$field]['type'] == 'image/gif')
+        if (in_array($_FILES[$field]['type'], [ 'image/jpeg', 'image/jpg', 'image/png', 'image/gif' ]))
         {
             $size = getimagesize($filename);
             $width = $size[0]; $height = $size[1];
