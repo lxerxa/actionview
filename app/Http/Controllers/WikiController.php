@@ -74,6 +74,122 @@ class WikiController extends Controller
     }
 
     /**
+     * get the directory children.
+     * @param  string  $project_key
+     * @param  string  $directory
+     * @return \Illuminate\Http\Response
+     */
+    public function getDirChildren(Request $request, $project_key, $directory)
+    {
+        $sub_dirs = DB::collection('wiki_' . $project_key)
+            ->where('parent', $directory)
+            ->where('del_flag', '<>', 1)
+            ->get();
+
+        $res = [];
+        foreach ($sub_dirs as $val)
+        {
+            $res[] = [ 
+                'id' => $val['_id']->__toString(), 
+                'name' => $val['name'],
+                'd' => isset($val['d']) ? $val['d'] : 0, 
+                'parent' => isset($val['parent']) ? $val['parent'] : '' 
+            ];
+        }
+
+        return Response()->json([ 'ecode' => 0, 'data' => $res ]);
+    }
+
+    /**
+     * get the directory tree.
+     * @param  string  $project_key
+     * @return \Illuminate\Http\Response
+     */
+    public function getDirTree(Request $request, $project_key)
+    {
+        $dt = [ 'id' => '0', 'name' => '根目录', 'd' => 1 ];
+
+        $curnode = $request->input('currentnode');
+        if (!$curnode)
+        {
+            $curnode = '0';
+        }
+
+        $pt = [ '0' ];
+        if ($curnode !== '0')
+        {
+            $node = DB::collection('wiki_' . $project_key)
+                ->where('_id', $curnode)
+                ->first();
+
+            if ($node)
+            {
+                $pt = $node['pt'];
+                if (isset($node['d']) && $node['d'] == 1) 
+                {
+                    array_push($pt, $curnode);
+                }
+            }
+        }
+
+        foreach($pt as $val)
+        {
+            $sub_dirs = DB::collection('wiki_' . $project_key)
+                ->where('parent', $val)
+                ->where('del_flag', '<>', 1)
+                ->get();
+
+            $this->addChildren2Tree($dt, $val, $sub_dirs);
+        }
+
+        return Response()->json([ 'ecode' => 0, 'data' => $dt ]);
+    }
+
+    /**
+     * add children to tree.
+     *
+     * @param  array  $dt
+     * @param  string $parent_id
+     * @param  array  $sub_dirs
+     * @return void
+     */
+    public function addChildren2Tree(&$dt, $parent_id, $sub_dirs)
+    {
+        $new_dirs = [];
+        foreach($sub_dirs as $val)
+        {
+            $new_dirs[] = [ 
+                'id' => $val['_id']->__toString(), 
+                'name' => $val['name'], 
+                'd' => isset($val['d']) ? $val['d'] : 0, 
+                'parent' => isset($val['parent']) ? $val['parent'] : '' 
+            ];
+        }
+
+        if ($dt['id'] == $parent_id)
+        {
+            $dt['children'] = $new_dirs;
+            return true;
+        }
+        else
+        {
+            if (isset($dt['children']) && $dt['children'])
+            {
+                $children_num = count($dt['children']);
+                for ($i = 0; $i < $children_num; $i++)
+                {
+                    $res = $this->addChildren2Tree($dt['children'][$i], $parent_id, $sub_dirs);
+                    if ($res === true)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+    }
+
+    /**
      * Display a listing of the resource.
      *
      * @return \Illuminate\Http\Response
