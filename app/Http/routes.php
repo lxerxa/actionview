@@ -231,6 +231,8 @@ Route::group([ 'prefix' => $api_prefix . '/project/{project_key}', 'middleware' 
     Route::get('document/dirtree', 'DocumentController@getDirTree');
     Route::get('document/{id}/dirs', 'DocumentController@getDirChildren');
 
+    Route::get('wiki/dirtree', 'WikiController@getDirTree');
+    Route::get('wiki/{id}/dirs', 'WikiController@getDirChildren');
     Route::post('wiki/{id}/upload', 'WikiController@upload');
     Route::get('wiki/{id}/download', 'WikiController@download2');
     Route::get('wiki/{id}/file/{fid}/download', 'WikiController@download');
