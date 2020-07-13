@@ -1321,7 +1321,7 @@ class Provider {
             }
             else
             {
-                $snap_data['expect_start_time'] = [ 'value' => date('Y/m/d', $issue['expect_start_time']), 'name' => '期望开始时间' ];
+                $snap_data['expect_start_time'] = [ 'value' => '', 'name' => '期望开始时间' ];
             }
         }
 
@@ -1433,13 +1433,21 @@ class Provider {
      */
     public static function getSprintList($project_key, $fields=[])
     {
-        $epics = Sprint::Where('project_key', $project_key)
+        $sprints = Sprint::Where('project_key', $project_key)
             ->WhereIn('status', [ 'active', 'completed' ])
             ->orderBy('no', 'desc')
             ->get($fields)
             ->toArray();
 
-        return $epics;
+        foreach($sprints as $key => $sprint)
+        {
+            if (!isset($sprint['name']))
+            {
+                $sprints[$key]['name'] = 'Sprint ' . $sprint['no'];
+            }
+        }
+
+        return $sprints;
     }
 
     /**
