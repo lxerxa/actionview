@@ -684,7 +684,10 @@ class ReportController extends Controller
             $singulars = CalendarSingular::where([ 'date' => [ '$in' => $days ] ])->get();
             foreach ($singulars as $singular)
             {
-                $results[$singular->day]['notWorking'] = $singular->type == 'holiday' ? 1 : 0;
+                if (isset($results[$singular->day]))
+                {
+                    $results[$singular->day]['notWorking'] = $singular->type == 'holiday' ? 1 : 0;
+                }
             }
         }
 
