@@ -77,6 +77,7 @@ class FieldController extends Controller
 
     private $all_types = [
         'Tags', 
+        'Integer', 
         'Number', 
         'Text', 
         'TextArea', 
@@ -300,6 +301,32 @@ class FieldController extends Controller
                     $defaultValue = implode(',', array_intersect($defaults, $options));
                 }
                 $updValues['defaultValue'] = $defaultValue;
+            }
+        }
+
+        $mmTypes = [ 'Number', 'Integer' ];
+        if (in_array($field->type, $mmTypes))
+        {
+            $maxValue = $request->input('maxValue');
+            if (isset($maxValue))
+            {
+                $updValues['maxValue'] = ($maxValue === '' ? '' : ($maxValue + 0));
+            }
+
+            $minValue = $request->input('minValue');
+            if (isset($minValue))
+            {
+                $updValues['minValue'] = ($minValue === '' ? '' : ($minValue + 0));
+            }
+        }
+
+        $mlTypes = [ 'Text', 'TextArea' ];
+        if (in_array($field->type, $mlTypes))
+        {
+            $maxLength = $request->input('maxLength');
+            if (isset($maxLength))
+            {
+                $updValues['maxLength'] = ($maxLength === '' ? '' : intval($maxLength));
             }
         }
 

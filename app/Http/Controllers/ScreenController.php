@@ -142,7 +142,7 @@ class ScreenController extends Controller
                 }
                 else
                 {
-                    $new_schema[] = Field::Find($field_id, ['name', 'key', 'type', 'defaultValue', 'optionValues'])->toArray();
+                    $new_schema[] = Field::Find($field_id, ['name', 'key', 'type', 'defaultValue', 'optionValues', 'minValue', 'maxValue', 'maxLength'])->toArray();
                 }
             }
             $screen->schema = $new_schema;

@@ -255,6 +255,7 @@ Route::group([ 'prefix' => $api_prefix . '/project/{project_key}', 'middleware' 
     Route::post('sprint', 'SprintController@store');
     Route::post('sprint/moveissue', 'SprintController@moveIssue');
     Route::post('sprint/{no}/publish', 'SprintController@publish');
+    Route::put('sprint/{no}', 'SprintController@update');
     Route::post('sprint/{no}/complete', 'SprintController@complete');
     Route::get('sprint/{no}/log', 'SprintController@getLog');
     Route::get('sprint/{no}', 'SprintController@show');

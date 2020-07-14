@@ -17,6 +17,9 @@ class Field extends Model
         'description',
         'defaultValue',
         'optionValues',
+        'minValue',
+        'maxValue',
+        'maxLength',
         'project_key'
     );
 }

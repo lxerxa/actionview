@@ -258,7 +258,7 @@ class IssueController extends Controller
             $limit = 10;
         }
 
-        $query->take($limit)->orderBy('created_at', 'asc');
+        $query->take($limit)->orderBy('created_at', 'desc');
         $issues = $query->get();
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($issues) ]);
     }
@@ -624,11 +624,11 @@ class IssueController extends Controller
         // get project types
         $types = Provider::getTypeListExt($project_key, [ 'user' => $users, 'assignee' => $assignees, 'state' => $states, 'resolution' => $resolutions, 'priority' => $priorities, 'version' => $versions, 'module' => $modules, 'epic' => $epics, 'labels' => $labels ]);
         // get project sprints
-        $sprint_nos = [];
+        $new_sprints = [];
         $sprints = Provider::getSprintList($project_key);
         foreach ($sprints as $sprint)
         {
-            $sprint_nos[] = strval($sprint['no']);
+            $new_sprints[] = [ 'no' => $sprint['no'], 'name' => $sprint['name'] ];
         }
         // get defined fields
         $fields = Provider::getFieldList($project_key);
@@ -654,7 +654,7 @@ class IssueController extends Controller
                 'labels' => $labels, 
                 'versions' => $versions, 
                 'epics' => $epics,
-                'sprints' => $sprint_nos,
+                'sprints' => $new_sprints,
                 'filters' => $filters, 
                 'display_columns' => $display_columns, 
                 'timetrack' => $timetrack, 
@@ -2130,17 +2130,24 @@ class IssueController extends Controller
         }
 
         $modules = [];
-        $module_list =  Provider::getModuleList($project_key);
+        $module_list = Provider::getModuleList($project_key);
         foreach ($module_list as $module)
         {
             $modules[$module->id] = $module->name;
         }
 
         $epics = [];
-        $epic_list =  Provider::getEpicList($project_key);
+        $epic_list = Provider::getEpicList($project_key);
         foreach ($epic_list as $epic)
         {
             $epics[$epic['_id']] = $epic['name'];
+        }
+
+        $sprints = [];
+        $sprint_list = Provider::getSprintList($project_key);
+        foreach ($sprint_list as $sprint)
+        {
+            $sprints[$sprint['no']] = $sprint['name'];
         }
 
         $fields = [];
@@ -2177,6 +2184,7 @@ class IssueController extends Controller
           'versions' => $versions,
           'modules' => $modules,
           'epics' => $epics,
+          'sprints' => $sprints,
           'fields' => $fields,
         ];
 
@@ -2917,7 +2925,15 @@ class IssueController extends Controller
                 }
                 else if ($fk == 'sprints')
                 {
-                    $tmp[] = 'Sprint ' . implode(',', $issue[$fk]);
+                    $new_sprints = [];
+                    foreach ($issue[$fk] as $sn)
+                    {
+                        if (isset($sprints[$sn]))
+                        {
+                            $new_sprints[] = $sprints[$sn];
+                        }
+                    }
+                    $tmp[] = implode(',', $new_sprints);
                 }
                 else if ($fk == 'labels')
                 {
@@ -3168,7 +3184,7 @@ class IssueController extends Controller
 
             if ($field->type == 'DateTimePicker' || $field->type == 'DatePicker')
             {
-                if ($this->isTimestamp($val) === false)
+                if ($val && $this->isTimestamp($val) === false)
                 {
                     throw new \UnexpectedValueException('the format of datepicker field is incorrect.', -11122);
                 }
@@ -3176,7 +3192,7 @@ class IssueController extends Controller
             }
             else if ($field->type == 'TimeTracking')
             {
-                if (!$this->ttCheck($val))
+                if ($val && !$this->ttCheck($val))
                 {
                     throw new \UnexpectedValueException('the format of timetracking field is incorrect.', -11102);
                 }
@@ -3206,6 +3222,17 @@ class IssueController extends Controller
                     $new_user_ids[] = $uid;
                 }
                 $updValues[$key . '_ids'] = $new_user_ids;
+            }
+            else if ($field->type === 'Number' || $field->type === 'Integer')
+            {
+                if ($val === '')
+                {
+                    $updValues[$key] = '';
+                }
+                else
+                {
+                    $updValues[$key] = $field->type === 'Number' ? floatVal($val) : intVal($val);
+                }
             }
             else 
             {
