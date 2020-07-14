@@ -270,6 +270,25 @@ class Controller extends BaseController
                         $and[] = [ $key => [ '$lte' => strtotime($sections[1] . ' 23:59:59') ] ];
                     }
                 }
+                else if (in_array($val, [ '0d', '0w', '0m', '0y' ]))
+                {
+                    if ($val == '0d')
+                    {
+                        $and[] = [ $key => [ '$gte' => strtotime(date('Y-m-d')), '$lte' => strtotime(date('Y-m-d') . ' 23:59:59') ] ];
+                    }
+                    else if ($val == '0w')
+                    {
+                        $and[] = [ $key => [ '$gte' => mktime(0, 0, 0, date('m'), date('d') - date('w') + 1, date('Y')), '$lte' => mktime(23, 59, 59, date('m'), date('d') - date('w') + 7, date('Y')) ] ];
+                    } 
+                    else if ($val == '0m')
+                    {
+                        $and[] = [ $key => [ '$gte' => mktime(0, 0, 0, date('m'), 1, date('Y')), '$lte' => mktime(23, 59, 59, date('m'), date('t'), date('Y')) ] ];
+                    }
+                    else
+                    {
+                        $and[] = [ $key => [ '$gte' => mktime(0, 0, 0, 1, 1, date('Y')), '$lte' => mktime(23, 59, 59, 12, 31, date('Y')) ] ];
+                    }
+                }
                 else
                 {
                     $unitMap = [ 'w' => 'week', 'm' => 'month', 'y' => 'year' ];
@@ -293,7 +312,7 @@ class Controller extends BaseController
             {
                 $and[] = [ $key => [ '$regex' => $val ] ];
             }
-            else if ($key_type_fields[$key] === 'Number')
+            else if (in_array($key_type_fields[$key],  [ 'Number', 'Integer' ]))
             {
                 if (strpos($val, '~') !== false)
                 {
