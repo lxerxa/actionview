@@ -19,32 +19,32 @@ use DB;
 class FieldController extends Controller
 {
     private $special_fields = [
-        'id', 
-        'type', 
-        'state', 
-        'reporter', 
-        'modifier', 
-        'created_at', 
-        'updated_at', 
-        'resolved_at', 
-        'closed_at', 
-        'regression_times', 
+        'id',
+        'type',
+        'state',
+        'reporter',
+        'modifier',
+        'created_at',
+        'updated_at',
+        'resolved_at',
+        'closed_at',
+        'regression_times',
         'his_resolvers',
         'resolved_logs',
-        'no', 
-        'schema', 
-        'parent_id', 
-        'parent', 
-        'links', 
-        'subtasks', 
-        'entry_id', 
-        'definition_id', 
-        'comments_num', 
-        'worklogs_num', 
-        'gitcommits_num', 
-        'sprint', 
-        'sprints', 
-        'filter', 
+        'no',
+        'schema',
+        'parent_id',
+        'parent',
+        'links',
+        'subtasks',
+        'entry_id',
+        'definition_id',
+        'comments_num',
+        'worklogs_num',
+        'gitcommits_num',
+        'sprint',
+        'sprints',
+        'filter',
         'from',
         'from_kanban_id',
         'limit',
@@ -76,23 +76,23 @@ class FieldController extends Controller
     ];
 
     private $all_types = [
-        'Tags', 
-        'Integer', 
-        'Number', 
-        'Text', 
-        'TextArea', 
-        'Select', 
-        'MultiSelect', 
-        'RadioGroup', 
-        'CheckboxGroup', 
-        'DatePicker', 
-        'DateTimePicker', 
-        'TimeTracking', 
-        'File', 
-        'SingleVersion', 
-        'MultiVersion', 
-        'SingleUser', 
-        'MultiUser', 
+        'Tags',
+        'Integer',
+        'Number',
+        'Text',
+        'TextArea',
+        'Select',
+        'MultiSelect',
+        'RadioGroup',
+        'CheckboxGroup',
+        'DatePicker',
+        'DateTimePicker',
+        'TimeTracking',
+        'File',
+        'SingleVersion',
+        'MultiVersion',
+        'SingleUser',
+        'MultiUser',
         'Url'
     ];
     /**
@@ -103,8 +103,7 @@ class FieldController extends Controller
     public function index($project_key)
     {
         $fields = Provider::getFieldList($project_key);
-        foreach ($fields as $field)
-        {
+        foreach ($fields as $field) {
             $field->screens = Screen::whereRaw([ 'field_ids' => $field->id ])
                 ->orderBy('project_key', 'asc')
                 ->get(['project_key', 'name'])
@@ -112,7 +111,7 @@ class FieldController extends Controller
 
             $field->is_used = !!($field->screens);
 
-            $field->screens = array_filter($field->screens, function($item) use($project_key) { 
+            $field->screens = array_filter($field->screens, function ($item) use ($project_key) {
                 return $item['project_key'] === $project_key || $item['project_key'] === '$_sys_$';
             });
         }
@@ -129,79 +128,62 @@ class FieldController extends Controller
     public function store(Request $request, $project_key)
     {
         $name = $request->input('name');
-        if (!$name)
-        {
+        if (!$name) {
             throw new \UnexpectedValueException('the name cannot be empty.', -12200);
         }
 
         $key = $request->input('key');
-        if (!$key)
-        {
+        if (!$key) {
             throw new \InvalidArgumentException('field key cannot be empty.', -12201);
         }
 
-        if (in_array($key, $this->special_fields))
-        {
+        if (in_array($key, $this->special_fields)) {
             throw new \InvalidArgumentException('field key has been used by system.', -12202);
         }
 
-        if (Provider::isFieldKeyExisted($project_key, $key))
-        {
+        if (Provider::isFieldKeyExisted($project_key, $key)) {
             throw new \InvalidArgumentException('field key cannot be repeated.', -12203);
         }
 
         $type = $request->input('type');
-        if (!$type)
-        {
+        if (!$type) {
             throw new \UnexpectedValueException('the type cannot be empty.', -12204);
         }
 
-        if ($type === 'TimeTracking' && Provider::isFieldKeyExisted($project_key, $key . '_m'))
-        {
+        if ($type === 'TimeTracking' && Provider::isFieldKeyExisted($project_key, $key . '_m')) {
             throw new \InvalidArgumentException('field key cannot be repeated.', -12203);
         }
 
-        if ($type === 'MultiUser' && Provider::isFieldKeyExisted($project_key, $key . '_ids'))
-        {
+        if ($type === 'MultiUser' && Provider::isFieldKeyExisted($project_key, $key . '_ids')) {
             throw new \UnexpectedValueException('the type cannot be empty.', -12204);
         }
 
-        if (!in_array($type, $this->all_types))
-        {
+        if (!in_array($type, $this->all_types)) {
             throw new \UnexpectedValueException('the type is incorrect type.', -12205);
         }
 
         $optionTypes = [ 'Select', 'MultiSelect', 'RadioGroup', 'CheckboxGroup' ];
-        if (in_array($type, $optionTypes))
-        {
+        if (in_array($type, $optionTypes)) {
             $optionValues = $request->input('optionValues') ?: [];
-            foreach ($optionValues as $key => $val)
-            {
-                if (!isset($val['name']) || !$val['name'])
-                {
+            foreach ($optionValues as $key => $val) {
+                if (!isset($val['name']) || !$val['name']) {
                     continue;
                 }
                 $optionValues[$key]['id'] = md5(microtime() . $val['name']);
             }
 
             $defaultValue = $request->input('defaultValue') ?: '';
-            if ($defaultValue)
-            {
+            if ($defaultValue) {
                 $defaults = is_array($defaultValue) ? $defaultValue : explode(',', $defaultValue);
                 $options = array_column($optionValues, 'id');
-                if ('MultiSelect' === $type || 'CheckboxGroup' === $type)
-                {
+                if ('MultiSelect' === $type || 'CheckboxGroup' === $type) {
                     $defaultValue = array_values(array_intersect($defaults, $options));
-                }
-                else
-                {
+                } else {
                     $defaultValue = implode(',', array_intersect($defaults, $options));
                 }
             }
             $field = Field::create([ 'project_key' => $project_key, 'optionValues' => $optionValues, 'defaultValue' => $defaultValue ] + $request->all());
-        }
-        else
-        {
+        } else {
             $field = Field::create([ 'project_key' => $project_key ] + $request->all());
         }
         return Response()->json(['ecode' => 0, 'data' => $field]);
@@ -236,55 +218,41 @@ class FieldController extends Controller
     public function update(Request $request, $project_key, $id)
     {
         $name = $request->input('name');
-        if (isset($name))
-        {
-            if (!$name)
-            {
+        if (isset($name)) {
+            if (!$name) {
                 throw new \UnexpectedValueException('the name can not be empty.', -12200);
             }
         }
 
         $field = Field::find($id);
-        if (!$field || $project_key != $field->project_key)
-        {
+        if (!$field || $project_key != $field->project_key) {
             throw new \UnexpectedValueException('the field does not exist or is not in the project.', -12206);
         }
 
         $updValues = [];
 
         $optionTypes = [ 'Select', 'MultiSelect', 'RadioGroup', 'CheckboxGroup' ];
-        if (in_array($field->type, $optionTypes))
-        {
+        if (in_array($field->type, $optionTypes)) {
             $optionValues = $request->input('optionValues');
             $defaultValue = $request->input('defaultValue');
-            if (isset($optionValues) || isset($defaultValue))
-            {
-                if (isset($optionValues))
-                {
-                    if (isset($field->optionValues) && $field->optionValues)
-                    {
+            if (isset($optionValues) || isset($defaultValue)) {
+                if (isset($optionValues)) {
+                    if (isset($field->optionValues) && $field->optionValues) {
                         $old_option_ids = array_column($field->optionValues, 'id');
-                    }
-                    else
-                    {
+                    } else {
                         $old_option_ids = [];
                     }
 
-                    foreach ($optionValues as $key => $val)
-                    {
-                        if (!isset($val['name']) || !$val['name'])
-                        {
+                    foreach ($optionValues as $key => $val) {
+                        if (!isset($val['name']) || !$val['name']) {
                             continue;
                         }
 
-                        if (!isset($val['id']) || !in_array($val['id'], $old_option_ids))
-                        {
+                        if (!isset($val['id']) || !in_array($val['id'], $old_option_ids)) {
                             $optionValues[$key]['id'] = md5(microtime() . $val['name']);
                         }
                     }
-                }
-                else
-                {
+                } else {
                     $optionValues = $field->optionValues ?: [];
                 }
                 $updValues['optionValues'] = $optionValues;
@@ -292,12 +260,9 @@ class FieldController extends Controller
                 $options = array_column($optionValues, 'id');
                 $defaultValue = isset($defaultValue) ? $defaultValue : ($field->defaultValue ?: '');
                 $defaults = is_array($defaultValue) ? $defaultValue : explode(',', $defaultValue);
-                if ('MultiSelect' === $field->type || 'CheckboxGroup' === $field->type)
-                {
+                if ('MultiSelect' === $field->type || 'CheckboxGroup' === $field->type) {
                     $defaultValue = array_values(array_intersect($defaults, $options));
-                }
-                else
-                {
+                } else {
                     $defaultValue = implode(',', array_intersect($defaults, $options));
                 }
                 $updValues['defaultValue'] = $defaultValue;
@@ -305,27 +270,22 @@ class FieldController extends Controller
         }
 
         $mmTypes = [ 'Number', 'Integer' ];
-        if (in_array($field->type, $mmTypes))
-        {
+        if (in_array($field->type, $mmTypes)) {
             $maxValue = $request->input('maxValue');
-            if (isset($maxValue))
-            {
+            if (isset($maxValue)) {
                 $updValues['maxValue'] = ($maxValue === '' ? '' : ($maxValue + 0));
             }
 
             $minValue = $request->input('minValue');
-            if (isset($minValue))
-            {
+            if (isset($minValue)) {
                 $updValues['minValue'] = ($minValue === '' ? '' : ($minValue + 0));
             }
         }
 
         $mlTypes = [ 'Text', 'TextArea' ];
-        if (in_array($field->type, $mlTypes))
-        {
+        if (in_array($field->type, $mlTypes)) {
             $maxLength = $request->input('maxLength');
-            if (isset($maxLength))
-            {
+            if (isset($maxLength)) {
                 $updValues['maxLength'] = ($maxLength === '' ? '' : intval($maxLength));
             }
         }
@@ -346,19 +306,16 @@ class FieldController extends Controller
     public function destroy($project_key, $id)
     {
         $field = Field::find($id);
-        if (!$field || $project_key != $field->project_key)
-        {
+        if (!$field || $project_key != $field->project_key) {
             throw new \UnexpectedValueException('the field does not exist or is not in the project.', -12206);
         }
 
-        if (in_array($field->key, $this->sys_fields))
-        {
+        if (in_array($field->key, $this->sys_fields)) {
             throw new \UnexpectedValueException('the field is built in the system.', -12208);
         }
 
         $isUsed = Screen::whereRaw([ 'field_ids' => $id ])->exists();
-        if ($isUsed)
-        {
+        if ($isUsed) {
             throw new \UnexpectedValueException('the field has been used in screen.', -12207);
         }
 
@@ -375,23 +332,20 @@ class FieldController extends Controller
      */
     public function viewUsedInProject($project_key, $id)
     {
-        if ($project_key !== '$_sys_$')
-        {
+        if ($project_key !== '$_sys_$') {
             return Response()->json(['ecode' => 0, 'data' => [] ]);
         }
 
         $res = [];
         $projects = Project::all();
-        foreach($projects as $project)
-        {
+        foreach ($projects as $project) {
             $screens = Screen::where('field_ids', $id)
                 ->where('project_key', '<>', '$_sys_$')
                 ->where('project_key', $project->key)
                 ->get([ 'id', 'name' ])
                 ->toArray();
 
-            if ($screens)
-            {
+            if ($screens) {
                 $res[] = [ 'key' => $project->key, 'name' => $project->name, 'status' => $project->status, 'screens' => $screens ];
             }
         }

@@ -22,9 +22,8 @@ class WorkflowController extends Controller
     public function index($project_key)
     {
         $workflows = Provider::getWorkflowList($project_key, [ 'name', 'project_key', 'description', 'latest_modified_time', 'latest_modifier', 'steps' ]);
-        foreach ($workflows as $workflow)
-        {
-            $workflow->is_used = Type::where('workflow_id', $workflow->id)->exists(); 
+        foreach ($workflows as $workflow) {
+            $workflow->is_used = Type::where('workflow_id', $workflow->id)->exists();
         }
 
         return Response()->json([ 'ecode' => 0, 'data' => $workflows ]);
@@ -39,31 +38,30 @@ class WorkflowController extends Controller
     public function store(Request $request, $project_key)
     {
         $name = $request->input('name');
-        if (!$name)
-        {
+        if (!$name) {
             throw new \UnexpectedValueException('the name can not be empty.', -12100);
         }
 
         $contents = $request->input('contents');
-        if (isset($contents) && $contents)
-        {
+        if (isset($contents) && $contents) {
             $latest_modifier = [ 'id' => $this->user->id, 'name' => $this->user->first_name ];
             $latest_modified_time = date('Y-m-d H:i:s');
             $state_ids = Workflow::getStates($contents);
             $screen_ids = Workflow::getScreens($contents);
             $steps = Workflow::getStepNum($contents);
-        }
-        else
-        {
-            $latest_modifier = []; $latest_modified_time = ''; $state_ids = []; $screen_ids = []; $steps = 0;
+        } else {
+            $latest_modifier = [];
+            $latest_modified_time = '';
+            $state_ids = [];
+            $screen_ids = [];
+            $steps = 0;
         }
 
         $source_id = $request->input('source_id');
-        if (isset($source_id) && $source_id)
-        {
+        if (isset($source_id) && $source_id) {
             $source_definition = Definition::find($source_id);
             $latest_modifier = [ 'id' => $this->user->id, 'name' => $this->user->first_name ];
-            $latest_modified_time = date('Y-m-d H:i:s'); 
+            $latest_modified_time = date('Y-m-d H:i:s');
             $state_ids = $source_definition->state_ids;
             $screen_ids = $source_definition->screen_ids;
             $steps = $source_definition->steps;
@@ -83,12 +81,9 @@ class WorkflowController extends Controller
     public function preview(Request $request, $project_key, $id)
     {
         $workflow = Definition::find($id);
-        if ($workflow)
-        {
+        if ($workflow) {
             return Response()->json([ 'ecode' => 0, 'data' => $workflow ]);
-        }
-        else
-        {
+        } else {
             throw new \UnexpectedValueException('the workflow does not exist or is not in the project.', -12101);
         }
     }
@@ -102,8 +97,7 @@ class WorkflowController extends Controller
     public function show(Request $request, $project_key, $id)
     {
         $workflow = Definition::find($id);
-        if (!$workflow || $project_key != $workflow->project_key)
-        {
+        if (!$workflow || $project_key != $workflow->project_key) {
             throw new \UnexpectedValueException('the workflow does not exist or is not in the project.', -12101);
         }
 
@@ -127,22 +121,18 @@ class WorkflowController extends Controller
     public function update(Request $request, $project_key, $id)
     {
         $name = $request->input('name');
-        if (isset($name))
-        {
-            if (!$name)
-            {
+        if (isset($name)) {
+            if (!$name) {
                 throw new \UnexpectedValueException('the name can not be empty.', -12100);
             }
         }
         $workflow = Definition::find($id);
-        if (!$workflow || $project_key != $workflow->project_key)
-        {
+        if (!$workflow || $project_key != $workflow->project_key) {
             throw new \UnexpectedValueException('the workflow does not exist or is not in the project.', -12101);
         }
 
         $contents = $request->input('contents');
-        if (isset($contents))
-        {
+        if (isset($contents)) {
             $latest_modifier = [ 'id' => $this->user->id, 'name' => $this->user->first_name ];
             $latest_modified_time = date('Y-m-d H:i:s');
 
@@ -166,14 +156,12 @@ class WorkflowController extends Controller
     public function destroy($project_key, $id)
     {
         $workflow = Definition::find($id);
-        if (!$workflow || $project_key != $workflow->project_key)
-        {
+        if (!$workflow || $project_key != $workflow->project_key) {
             throw new \UnexpectedValueException('the workflow does not exist or is not in the project.', -12101);
         }
 
         $isUsed = Type::where('workflow_id', $id)->exists();
-        if ($isUsed)
-        {
+        if ($isUsed) {
             throw new \UnexpectedValueException('the workflow has been bound to type.', -12102);
         }
 
@@ -188,23 +176,20 @@ class WorkflowController extends Controller
      */
     public function viewUsedInProject($project_key, $id)
     {
-        if ($project_key !== '$_sys_$')
-        {
+        if ($project_key !== '$_sys_$') {
             return Response()->json(['ecode' => 0, 'data' => [] ]);
         }
 
         $res = [];
         $projects = Project::all();
-        foreach($projects as $project)
-        {
+        foreach ($projects as $project) {
             $types = Type::where('workflow_id', $id)
                 ->where('project_key', '<>', '$_sys_$')
                 ->where('project_key', $project->key)
                 ->get([ 'id', 'name' ])
                 ->toArray();
 
-            if ($types)
-            {
+            if ($types) {
                 $res[] = [ 'key' => $project->key, 'name' => $project->name, 'status' => $project->status, 'types' => $types ];
             }
         }

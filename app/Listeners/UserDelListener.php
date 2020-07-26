@@ -2,15 +2,12 @@
 
 namespace App\Listeners;
 
-use App\Events\Event;
-use App\Acl\Eloquent\Roleactor;
 use App\Acl\Eloquent\Group;
+use App\Acl\Eloquent\Roleactor;
+use App\Events\Event;
 use App\Project\Eloquent\UserGroupProject;
 
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Contracts\Queue\ShouldQueue;
-
-class UserDelListener 
+class UserDelListener
 {
     /**
      * Create the event listener.
@@ -43,15 +40,12 @@ class UserDelListener
      */
     public function delUserFromRole($user_id)
     {
-        $roleactors = Roleactor::whereRaw([ 'user_ids' => $user_id ])->get([ 'user_ids', 'group_ids' ]);
-        foreach ($roleactors as $roleactor)
-        {
+        $roleactors = Roleactor::whereRaw(['user_ids' => $user_id])->get(['user_ids', 'group_ids']);
+        foreach ($roleactors as $roleactor) {
             $new_user_ids = [];
             $old_user_ids = isset($roleactor->user_ids) ? $roleactor->user_ids : [];
-            foreach ($old_user_ids as $uid)
-            {
-                if ($uid != $user_id)
-                {
+            foreach ($old_user_ids as $uid) {
+                if ($uid != $user_id) {
                     $new_user_ids[] = $uid;
                 }
             }
@@ -62,27 +56,24 @@ class UserDelListener
     }
 
     /**
-     * del user from group 
+     * del user from group
      *
      * @param  string  $user_id
      * @return void
      */
     public function delUserFromGroup($user_id)
     {
-        $groups = Group::whereRaw([ 'user_ids' => $user_id ])->get([ 'user_ids' ]);
-        foreach ($groups as $group)
-        {
-           $new_user_ids = [];
-           $old_user_ids = isset($group->user_ids) ? $group->user_ids : [];
-           foreach ($old_user_ids as $uid)
-           {
-               if ($uid != $user_id)
-               {
-                   $new_user_ids[] = $uid;
-               }
-           }
-           $group->user_ids = $new_user_ids;
-           $group->save();
+        $groups = Group::whereRaw(['user_ids' => $user_id])->get(['user_ids']);
+        foreach ($groups as $group) {
+            $new_user_ids = [];
+            $old_user_ids = isset($group->user_ids) ? $group->user_ids : [];
+            foreach ($old_user_ids as $uid) {
+                if ($uid != $user_id) {
+                    $new_user_ids[] = $uid;
+                }
+            }
+            $group->user_ids = $new_user_ids;
+            $group->save();
         }
     }
 
@@ -94,9 +85,8 @@ class UserDelListener
      */
     public function delUserProject($user_id)
     {
-        $links = UserGroupProject::where('ug_id', $user_id)->get([ 'user_id' ]);
-        foreach ($links as $link)
-        {
+        $links = UserGroupProject::where('ug_id', $user_id)->get(['user_id']);
+        foreach ($links as $link) {
             $link->delete();
         }
     }

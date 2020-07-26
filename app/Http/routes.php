@@ -135,9 +135,9 @@ Route::group([ 'prefix' => $api_prefix . '/project/{project_key}', 'middleware' 
 });
 
 Route::group([ 'prefix' => $api_prefix . '/project/{project_key}', 'middleware' => [ 'can', 'privilege:view_project' ] ], function () {
-    // project summary 
+    // project summary
     Route::get('summary', 'SummaryController@index');
-    // config summary 
+    // config summary
     Route::get('config', 'ConfigController@index');
     // project activity
     Route::get('activity', 'ActivityController@index');
@@ -150,7 +150,7 @@ Route::group([ 'prefix' => $api_prefix . '/project/{project_key}', 'middleware' 
     Route::post('version/{id}/release', 'VersionController@release');
     Route::post('version/{id}/delete', 'VersionController@delete');
     Route::resource('version', 'VersionController');
-    // project report 
+    // project report
     Route::get('report/index', 'ReportController@index');
     Route::get('report/trend', 'ReportController@getTrends');
     Route::get('report/worklog', 'ReportController@getWorklogs');
@@ -165,7 +165,7 @@ Route::group([ 'prefix' => $api_prefix . '/project/{project_key}', 'middleware' 
     Route::post('report/{mode}/filter', 'ReportController@saveFilter');
     // project team
     Route::get('team', 'RoleController@index');
-    // preview the workflow chart 
+    // preview the workflow chart
     Route::get('workflow/{id}/preview', 'WorkflowController@preview');
 
     Route::get('issue/options', 'IssueController@getOptions');

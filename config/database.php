@@ -78,7 +78,7 @@ return [
             'schema' => 'public',
         ],
 
-        'mongodb' => [ 
+        'mongodb' => [
             'driver'   => 'mongodb',
             'host'     => env('DB_HOST', 'localhost'),
             'port'     => env('DB_PORT', 27017),

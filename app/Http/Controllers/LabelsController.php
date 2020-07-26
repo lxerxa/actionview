@@ -30,8 +30,7 @@ class LabelsController extends Controller
     public function index(Request $request, $project_key)
     {
         $labels = Labels::where([ 'project_key' => $project_key ])->orderBy('_id', 'asc')->get();
-        foreach ($labels as $key => $label)
-        {
+        foreach ($labels as $key => $label) {
             $label->is_used = $this->isFieldUsedByIssue($project_key, 'labels', $label->toArray());
 
             $completed_issue_cnt = $incompleted_issue_cnt = 0;
@@ -61,13 +60,11 @@ class LabelsController extends Controller
     public function store(Request $request, $project_key)
     {
         $name = $request->input('name');
-        if (!$name)
-        {
+        if (!$name) {
             throw new \UnexpectedValueException('the name can not be empty.', -16100);
         }
 
-        if (Provider::isLabelExisted($project_key, $name))
-        {
+        if (Provider::isLabelExisted($project_key, $name)) {
             throw new \UnexpectedValueException('label name cannot be repeated', -16102);
         }
 
@@ -85,27 +82,22 @@ class LabelsController extends Controller
     public function update(Request $request, $project_key, $id)
     {
         $name = $request->input('name');
-        if (isset($name))
-        {
-            if (!$name)
-            {
+        if (isset($name)) {
+            if (!$name) {
                 throw new \UnexpectedValueException('the name can not be empty.', -16100);
             }
         }
 
         $label = Labels::find($id);
-        if (!$label || $project_key != $label->project_key)
-        {
+        if (!$label || $project_key != $label->project_key) {
             throw new \UnexpectedValueException('the label does not exist or is not in the project.', -16103);
         }
 
-        if ($label->name !== $name && Provider::isLabelExisted($project_key, $name))
-        {
+        if ($label->name !== $name && Provider::isLabelExisted($project_key, $name)) {
             throw new \UnexpectedValueException('label name cannot be repeated', -16102);
         }
 
-        if ($label->name !== $name)
-        {
+        if ($label->name !== $name) {
             $this->updIssueLabels($project_key, $label->name, $name);
         }
 
@@ -124,42 +116,31 @@ class LabelsController extends Controller
     public function delete(Request $request, $project_key, $id)
     {
         $label = Labels::find($id);
-        if (!$label || $project_key != $label->project_key)
-        {
+        if (!$label || $project_key != $label->project_key) {
             throw new \UnexpectedValueException('the label does not exist or is not in the project.', -16103);
         }
 
         $operate_flg = $request->input('operate_flg');
-        if (!isset($operate_flg) || $operate_flg === '0')
-        {
+        if (!isset($operate_flg) || $operate_flg === '0') {
             $is_used = $this->isFieldUsedByIssue($project_key, 'labels', $label->toArray());
-            if ($is_used)
-            {
+            if ($is_used) {
                 throw new \UnexpectedValueException('the label has been used by some issues.', -16104);
             }
-        }
-        else if ($operate_flg === '1')
-        {
+        } elseif ($operate_flg === '1') {
             $swap_label = $request->input('swap_label');
-            if (!isset($swap_label) || !$swap_label)
-            {
+            if (!isset($swap_label) || !$swap_label) {
                 throw new \UnexpectedValueException('the swap label cannot be empty.', -16106);
             }
 
             $slabel = Labels::find($swap_label);
-            if (!$slabel || $project_key != $slabel->project_key)
-            {
+            if (!$slabel || $project_key != $slabel->project_key) {
                 throw new \UnexpectedValueException('the swap label does not exist or is not in the project.', -16107);
             }
 
             $this->updIssueLabels($project_key, $label->name, $slabel->name);
-        }
-        else if ($operate_flg === '2')
-        {
+        } elseif ($operate_flg === '2') {
             $this->updIssueLabels($project_key, $label->name, '');
-        }
-        else
-        {
+        } else {
             throw new \UnexpectedValueException('the operation has error.', -16105);
         }
 
@@ -192,22 +173,16 @@ class LabelsController extends Controller
             ->where('del_flg', '<>', 1)
             ->get();
 
-        foreach ($issues as $issue)
-        {
+        foreach ($issues as $issue) {
             $updValues = [];
 
             $newLabels = [];
-            foreach ($issue['labels'] as $label)
-            {
-                if ($source == $label)
-                {
-                    if ($dest)
-                    {
+            foreach ($issue['labels'] as $label) {
+                if ($source == $label) {
+                    if ($dest) {
                         $newLabels[] = $dest;
                     }
-                } 
-                else 
-                {
+                } else {
                     $newLabels[] = $label;
                 }
             }

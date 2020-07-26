@@ -10,7 +10,7 @@ use App\Project\Eloquent\UserGroupProject;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
-class GroupRoleSetListener 
+class GroupRoleSetListener
 {
     /**
      * Create the event listener.
@@ -30,12 +30,9 @@ class GroupRoleSetListener
      */
     public function handle(Event $event)
     {
-        if ($event instanceof AddGroupToRoleEvent)
-        {
+        if ($event instanceof AddGroupToRoleEvent) {
             $this->linkGroupWithProject($event->group_ids, $event->project_key);
-        }
-        else if ($event instanceof DelGroupFromRoleEvent)
-        {
+        } elseif ($event instanceof DelGroupFromRoleEvent) {
             $this->unlinkGroupWithProject($event->group_ids, $event->project_key);
         }
     }
@@ -49,15 +46,11 @@ class GroupRoleSetListener
      */
     public function linkGroupWithProject($group_ids, $project_key)
     {
-        foreach ($group_ids as $group_id)
-        {
+        foreach ($group_ids as $group_id) {
             $link = UserGroupProject::where('ug_id', $group_id)->where('project_key', $project_key)->first();
-            if ($link)
-            {
+            if ($link) {
                 $link->increment('link_count');
-            }
-            else
-            {
+            } else {
                 UserGroupProject::create([ 'ug_id' => $group_id, 'project_key' => $project_key, 'type' => 'group', 'link_count' => 1 ]);
             }
         }
@@ -72,11 +65,9 @@ class GroupRoleSetListener
      */
     public function unlinkGroupWithProject($group_ids, $project_key)
     {
-        foreach ($group_ids as $group_id)
-        {
+        foreach ($group_ids as $group_id) {
             $link = UserGroupProject::where('ug_id', $group_id)->where('project_key', $project_key)->first();
-            if ($link)
-            {
+            if ($link) {
                 $link->decrement('link_count');
             }
         }

@@ -5,7 +5,7 @@ namespace App\Http\Middleware;
 use Illuminate\Http\JsonResponse;
 use Closure;
 
-class TrimStrings 
+class TrimStrings
 {
     /**
      * Handle an incoming request.
@@ -17,10 +17,8 @@ class TrimStrings
     public function handle($request, Closure $next)
     {
         $params = $request->all();
-        foreach ($params as $k => $v)
-        {
-            if (is_string($v)) 
-            {
+        foreach ($params as $k => $v) {
+            if (is_string($v)) {
                 $request->offsetSet($k, trim($v));
             }
         }

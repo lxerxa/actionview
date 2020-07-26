@@ -40,14 +40,12 @@ class CommentsController extends Controller
      */
     public function store(Request $request, $project_key, $issue_id)
     {
-        if (!$this->isPermissionAllowed($project_key, 'add_comments')) 
-        {
+        if (!$this->isPermissionAllowed($project_key, 'add_comments')) {
             return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
         }
 
         $contents = $request->input('contents');
-        if (!$contents)
-        {
+        if (!$contents) {
             throw new \UnexpectedValueException('the contents can not be empty.', -11200);
         }
 
@@ -58,7 +56,7 @@ class CommentsController extends Controller
         $id = DB::collection($table)->insertGetId(array_only($request->all(), [ 'contents', 'atWho' ]) + [ 'issue_id' => $issue_id, 'creator' => $creator, 'created_at' => time() ]);
 
         // trigger event of comments added
-        Event::fire(new IssueEvent($project_key, $issue_id, $creator, [ 'event_key' => 'add_comments', 'data' => array_only($request->all(), [ 'contents', 'atWho' ]) ])); 
+        Event::fire(new IssueEvent($project_key, $issue_id, $creator, [ 'event_key' => 'add_comments', 'data' => array_only($request->all(), [ 'contents', 'atWho' ]) ]));
 
         $comments = DB::collection($table)->find($id);
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($comments) ]);
@@ -86,16 +84,13 @@ class CommentsController extends Controller
     public function update(Request $request, $project_key, $issue_id, $id)
     {
         $comments = DB::collection('comments_' . $project_key)->find($id);
-        if (!$comments)
-        {
+        if (!$comments) {
             throw new \UnexpectedValueException('the comments does not exist or is not in the project.', -11201);
         }
 
         $contents = $request->input('contents');
-        if (isset($contents))
-        {
-            if (!$contents)
-            {
+        if (isset($contents)) {
+            if (!$contents) {
                 throw new \UnexpectedValueException('the contents can not be empty.', -11200);
             }
         }
@@ -105,97 +100,72 @@ class CommentsController extends Controller
         $table = 'comments_' . $project_key;
         $user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
         $operation = $request->input('operation');
-        if (isset($operation)) 
-        {
-            if (!in_array($operation, [ 'addReply', 'editReply', 'delReply' ]))
-            {
+        if (isset($operation)) {
+            if (!in_array($operation, [ 'addReply', 'editReply', 'delReply' ])) {
                 throw new \UnexpectedValueException('the operation is incorrect value.', -11204);
             }
-            if (!isset($comments['reply']) || !$comments['reply'])
-            {
+            if (!isset($comments['reply']) || !$comments['reply']) {
                 $comments['reply'] = [];
             }
 
-            if ($operation == 'addReply') 
-            {
-                if (!$this->isPermissionAllowed($project_key, 'add_comments')) 
-                {
+            if ($operation == 'addReply') {
+                if (!$this->isPermissionAllowed($project_key, 'add_comments')) {
                     return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
                 }
 
-                $reply_id = md5(microtime() . $this->user->id); 
+                $reply_id = md5(microtime() . $this->user->id);
                 array_push($comments['reply'], array_only($request->all(), [ 'contents', 'atWho' ]) + [ 'id' => $reply_id , 'creator' => $user, 'created_at' => time() ]);
                 $changedComments = array_only($request->all(), [ 'contents', 'atWho' ]) + [ 'to' => $comments['creator'] ];
-            } 
-            else if ($operation == 'editReply')
-            {
+            } elseif ($operation == 'editReply') {
                 $reply_id = $request->input('reply_id');
-                if (!isset($reply_id) || !$reply_id)
-                {
+                if (!isset($reply_id) || !$reply_id) {
                     throw new \UnexpectedValueException('the reply id can not be empty.', -11202);
                 }
-                $index = $this->array_find([ 'id' => $reply_id ], $comments['reply']); 
-                if ($index !== false) 
-                {
-                    if (!$this->isPermissionAllowed($project_key, 'edit_comments') && !($comments['reply'][$index]['creator']['id'] == $this->user->id && $this->isPermissionAllowed($project_key, 'edit_self_comments')))
-                    {
+                $index = $this->array_find([ 'id' => $reply_id ], $comments['reply']);
+                if ($index !== false) {
+                    if (!$this->isPermissionAllowed($project_key, 'edit_comments') && !($comments['reply'][$index]['creator']['id'] == $this->user->id && $this->isPermissionAllowed($project_key, 'edit_self_comments'))) {
                         return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
                     }
                
                     $comments['reply'][$index] = array_merge($comments['reply'][$index], [ 'updated_at' => time(), 'edited_flag' => 1 ] + array_only($request->all(), [ 'contents', 'atWho' ]));
                     $changedComments = array_only($comments['reply'][$index], [ 'contents', 'atWho' ]) + [ 'to' => $comments['creator'] ];
-                }
-                else
-                {
+                } else {
                     throw new \UnexpectedValueException('the reply does not exist', -11203);
                 }
-            }
-            else if ($operation == 'delReply')
-            {
+            } elseif ($operation == 'delReply') {
                 $reply_id = $request->input('reply_id');
-                if (!isset($reply_id) || !$reply_id)
-                {
+                if (!isset($reply_id) || !$reply_id) {
                     throw new \UnexpectedValueException('the reply id can not be empty.', -11202);
                 }
-                $index = $this->array_find([ 'id' => $reply_id ], $comments['reply']); 
-                if ($index !== false) 
-                {
-                    if (!$this->isPermissionAllowed($project_key, 'delete_comments') && !($comments['reply'][$index]['creator']['id'] == $this->user->id && $this->isPermissionAllowed($project_key, 'delete_self_comments')))
-                    {
+                $index = $this->array_find([ 'id' => $reply_id ], $comments['reply']);
+                if ($index !== false) {
+                    if (!$this->isPermissionAllowed($project_key, 'delete_comments') && !($comments['reply'][$index]['creator']['id'] == $this->user->id && $this->isPermissionAllowed($project_key, 'delete_self_comments'))) {
                         return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
                     }
 
                     $changedComments = array_only($comments['reply'][$index], [ 'contents', 'atWho' ]) + [ 'to' => $comments['creator'] ];
                     array_splice($comments['reply'], $index, 1);
-                }
-                else
-                {
+                } else {
                     throw new \UnexpectedValueException('the reply does not exist', -11203);
                 }
             }
             DB::collection($table)->where('_id', $id)->update([ 'reply' => $comments['reply'] ]);
-        }
-        else
-        {
-            if (!$this->isPermissionAllowed($project_key, 'edit_comments') && !($comments['creator']['id'] == $this->user->id && $this->isPermissionAllowed($project_key, 'edit_self_comments')))
-            {
+        } else {
+            if (!$this->isPermissionAllowed($project_key, 'edit_comments') && !($comments['creator']['id'] == $this->user->id && $this->isPermissionAllowed($project_key, 'edit_self_comments'))) {
                 return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
             }
 
-            DB::collection($table)->where('_id', $id)->update([ 'updated_at' => time(), 'edited_flag' => 1 ] + array_only($request->all(), [ 'contents', 'atWho' ]) );
+            DB::collection($table)->where('_id', $id)->update([ 'updated_at' => time(), 'edited_flag' => 1 ] + array_only($request->all(), [ 'contents', 'atWho' ]));
             $changedComments = array_only($request->all(), [ 'contents', 'atWho' ]);
         }
 
-        // trigger event of comments 
+        // trigger event of comments
         $event_key = '';
-        if (isset($operation))
-        {
+        if (isset($operation)) {
             $operation === 'addReply'   && $event_key = 'add_comments';
             $operation === 'editReply'  && $event_key = 'edit_comments';
             $operation === 'delReply'   && $event_key = 'del_comments';
-        }
-        else
-        {
+        } else {
             $event_key = 'edit_comments';
         }
         Event::fire(new IssueEvent($project_key, $issue_id, $user, [ 'event_key' => $event_key, 'data' => $changedComments ]));
@@ -213,13 +183,11 @@ class CommentsController extends Controller
     {
         $table = 'comments_' . $project_key;
         $comments = DB::collection($table)->find($id);
-        if (!$comments)
-        {
+        if (!$comments) {
             throw new \UnexpectedValueException('the comments does not exist or is not in the project.', -11201);
         }
 
-        if (!$this->isPermissionAllowed($project_key, 'manage_project') && !($comments['creator']['id'] == $this->user->id && $this->isPermissionAllowed($project_key, 'delete_self_comments'))) 
-        {
+        if (!$this->isPermissionAllowed($project_key, 'manage_project') && !($comments['creator']['id'] == $this->user->id && $this->isPermissionAllowed($project_key, 'delete_self_comments'))) {
             return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
         }
 
@@ -227,7 +195,7 @@ class CommentsController extends Controller
 
         $user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
         // trigger the event of del comments
-        Event::fire(new IssueEvent($project_key, $issue_id, $user, [ 'event_key' => 'del_comments', 'data' => array_only($comments, [ 'contents', 'atWho' ]) ])); 
+        Event::fire(new IssueEvent($project_key, $issue_id, $user, [ 'event_key' => 'del_comments', 'data' => array_only($comments, [ 'contents', 'atWho' ]) ]));
 
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }
@@ -241,10 +209,8 @@ class CommentsController extends Controller
      */
     public function array_find($needle, $haystack)
     {
-        foreach($haystack as $key => $val)
-        {
-            if ($needle['id'] == $val['id'])
-            {
+        foreach ($haystack as $key => $val) {
+            if ($needle['id'] == $val['id']) {
                 return $key;
             }
         }

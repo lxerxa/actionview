@@ -36,23 +36,19 @@ class TriggerWebhooks extends Command
         $timestamp = time();
 
         $hasRun = WebhookEvents::where('flag', '<>', 0)->exists();
-        if ($hasRun)
-        {
+        if ($hasRun) {
             return;
         }
 
-        while(true)
-        {
+        while (true) {
             WebhookEvents::where('flag', 0)->update([ 'flag' => $timestamp ]);
 
             $events = WebhookEvents::where('flag', $timestamp)->orderBy('_id', 'asc')->get();
-            if ($events->isEmpty())
-            {
+            if ($events->isEmpty()) {
                 break;
             }
 
-            foreach ($events as $event)
-            {
+            foreach ($events as $event) {
                 $header = [ 'Content-Type: application/json', 'Expect:', 'X-Actionview-Token: ' . ($event->token ?: '') ];
                 $this->curlPost($event->request_url, $header, $event->data ?: []);
                 $event->delete();
@@ -94,8 +90,7 @@ class TriggerWebhooks extends Command
         $mh = curl_multi_init();
 
         $chs = [];
-        foreach($nodes as $key => $node)
-        {
+        foreach ($nodes as $key => $node) {
             $chs[$key] = curl_init();
 
             curl_setopt($chs[$key], CURLOPT_URL, isset($node['url']) ? $node['url'] : '');
@@ -115,12 +110,10 @@ class TriggerWebhooks extends Command
         $active = null;
         do {
             $mrc = curl_multi_exec($mh, $active);
-        } while($mrc == CURLM_CALL_MULTI_PERFORM);
+        } while ($mrc == CURLM_CALL_MULTI_PERFORM);
 
-        while ($active && $mrc == CURLM_OK)
-        {
-            if (curl_multi_select($mh) == -1)
-            {
+        while ($active && $mrc == CURLM_OK) {
+            if (curl_multi_select($mh) == -1) {
                 usleep(100);
             }
 
@@ -130,16 +123,12 @@ class TriggerWebhooks extends Command
         }
 
         $results = [];
-        foreach($nodes as $key => $node)
-        {
+        foreach ($nodes as $key => $node) {
             $tmp = [];
             $ecode = curl_errno($chs[$key]);
-            if ($ecode > 0)
-            {
+            if ($ecode > 0) {
                 $tmp = [ 'ecode' => $ecode, 'contents' => curl_error($chs[$key]) ];
-            }
-            else
-            {
+            } else {
                 $tmp = [ 'ecode' => $ecode, 'contents' => curl_multi_getcontent($chs[$key]) ];
             }
             $results[] = $tmp;

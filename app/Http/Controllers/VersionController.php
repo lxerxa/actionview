@@ -45,8 +45,7 @@ class VersionController extends Controller
         $versions = $query->get();
 
         $version_fields = $this->getVersionFields($project_key);
-        foreach ($versions as $version)
-        {
+        foreach ($versions as $version) {
             $unresolved_cnt = DB::collection('issue_' . $project_key)
                 ->where('resolution', 'Unresolved')
                 ->where('del_flg', '<>', 1)
@@ -69,19 +68,17 @@ class VersionController extends Controller
     }
 
     /**
-     * get all fields related with versiob 
+     * get all fields related with versiob
      *
-     * @return array 
+     * @return array
      */
     public function getVersionFields($project_key)
     {
         $version_fields = [];
         // get all project fields
         $fields = Provider::getFieldList($project_key)->toArray();
-        foreach ($fields as $field)
-        {
-            if ($field['type'] === 'SingleVersion' || $field['type'] === 'MultiVersion')
-            {
+        foreach ($fields as $field) {
+            if ($field['type'] === 'SingleVersion' || $field['type'] === 'MultiVersion') {
                 $version_fields[] = [ 'type' => $field['type'], 'key' => $field['key'] ];
             }
         }
@@ -97,18 +94,15 @@ class VersionController extends Controller
     public function store(Request $request, $project_key)
     {
         $name = $request->input('name');
-        if (!$name)
-        {
+        if (!$name) {
             throw new \UnexpectedValueException('the name can not be empty.', -11500);
         }
 
-        if (Version::whereRaw([ 'name' => $name, 'project_key' => $project_key ])->exists())
-        {
+        if (Version::whereRaw([ 'name' => $name, 'project_key' => $project_key ])->exists()) {
             throw new \UnexpectedValueException('version name cannot be repeated', -11501);
         }
 
-        if ($request->input('start_time') && $request->input('end_time') && $request->input('start_time') > $request->input('end_time'))
-        {
+        if ($request->input('start_time') && $request->input('end_time') && $request->input('start_time') > $request->input('end_time')) {
             throw new \UnexpectedValueException('start-time must less then end-time', -11502);
         }
 
@@ -144,12 +138,9 @@ class VersionController extends Controller
             ->count();
         $version->all_cnt = $all_cnt;
 
-        if ($version->all_cnt > 0)
-        {
+        if ($version->all_cnt > 0) {
             $version->is_used = true;
-        }
-        else
-        {
+        } else {
             $version_fields = $this->getVersionFields($project_key);
             $version->is_used = $this->isFieldUsedByIssue($project_key, 'version', $version->toArray(), $version_fields);
         }
@@ -167,40 +158,32 @@ class VersionController extends Controller
     public function release(Request $request, $project_key, $id)
     {
         $version = Version::find($id);
-        if (!$version || $version->project_key != $project_key)
-        {
+        if (!$version || $version->project_key != $project_key) {
             throw new \UnexpectedValueException('the version does not exist or is not in the project.', -11503);
         }
 
         $status = $request->input('status');
-        if (isset($status))
-        {
+        if (isset($status)) {
             $status_list = ['released', 'unreleased', 'archived'];
-            if (!in_array($status, $status_list))
-            {
+            if (!in_array($status, $status_list)) {
                 throw new \UnexpectedValueException('the status value has error.', -11505);
             }
-        }
-        else
-        {
+        } else {
             throw new \UnexpectedValueException('the status value cannot be empty.', -11506);
         }
 
         $version->fill(['status' => $status, 'released_time' => time()])->save();
 
         $operate_flg = $request->input('operate_flg');
-        if (isset($operate_flg) && $operate_flg === '1')
-        {
+        if (isset($operate_flg) && $operate_flg === '1') {
             $swap_version = $request->input('swap_version');
-            if (!isset($swap_version) || !$swap_version)
-            {
+            if (!isset($swap_version) || !$swap_version) {
                 throw new \UnexpectedValueException('the swap version cannot be empty.', -11513);
             }
             $this->updIssueResolveVersion($project_key, $id, $swap_version);
         }
 
-        if ($status === 'released')
-        {
+        if ($status === 'released') {
             $isSendMsg = $request->input('isSendMsg') && true;
             $cur_user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
             Event::fire(new VersionEvent($project_key, $cur_user, [ 'event_key' => 'release_version', 'isSendMsg' => $isSendMsg, 'data' => Version::find($id)->toArray() ]));
@@ -219,36 +202,30 @@ class VersionController extends Controller
     public function update(Request $request, $project_key, $id)
     {
         $version = Version::find($id);
-        if (!$version || $version->project_key != $project_key)
-        {
+        if (!$version || $version->project_key != $project_key) {
             throw new \UnexpectedValueException('the version does not exist or is not in the project.', -11503);
         }
 
         $name = $request->input('name');
-        if (isset($name))
-        {
-            if (!$name)
-            {
+        if (isset($name)) {
+            if (!$name) {
                 throw new \UnexpectedValueException('the name can not be empty.', -11500);
             }
 
-            if ($version->name !== $name && Version::whereRaw([ 'name' => $name, 'project_key' => $project_key ])->exists())
-            {
+            if ($version->name !== $name && Version::whereRaw([ 'name' => $name, 'project_key' => $project_key ])->exists()) {
                 throw new \UnexpectedValueException('version name cannot be repeated', -11501);
             }
         }
 
         $start_time = $request->input('start_time') ? $request->input('start_time') : $version->start_time;
         $end_time = $request->input('end_time') ? $request->input('end_time') : $version->end_time;
-        if ($start_time > $end_time)
-        {
+        if ($start_time > $end_time) {
             throw new \UnexpectedValueException('start-time must be less then end-time', -11502);
         }
 
         $updValues = [];
         $updValues = array_only($request->all(), [ 'name', 'start_time', 'end_time', 'description', 'status' ]);
-        if (!$updValues)
-        {
+        if (!$updValues) {
             return $this->show($project_key, $id);
         }
 
@@ -273,23 +250,19 @@ class VersionController extends Controller
     {
         $source = $request->input('source');
         $source_version = Version::find($source);
-        if (!$source_version || $source_version->project_key != $project_key)
-        {
+        if (!$source_version || $source_version->project_key != $project_key) {
             throw new \UnexpectedValueException('the source version does not exist or is not in the project.', -11507);
         }
-        if ($source_version->status === 'archived')
-        {
+        if ($source_version->status === 'archived') {
             throw new \UnexpectedValueException('the source version has been archived.', -11508);
         }
 
         $dest = $request->input('dest');
         $dest_version = Version::find($dest);
-        if (!$dest_version || $dest_version->project_key != $project_key)
-        {
+        if (!$dest_version || $dest_version->project_key != $project_key) {
             throw new \UnexpectedValueException('the dest version does not exist or is not in the project.', -11509);
         }
-        if ($dest_version->status === 'archived')
-        {
+        if ($dest_version->status === 'archived') {
             throw new \UnexpectedValueException('the source version has been archived.', -11510);
         }
         // update the issue related version info
@@ -311,7 +284,7 @@ class VersionController extends Controller
      * @param  string $project_key
      * @param  string $source
      * @param  string $dest
-     * @return void 
+     * @return void
      */
     public function updIssueResolveVersion($project_key, $source, $dest)
     {
@@ -319,8 +292,7 @@ class VersionController extends Controller
             ->where('resolve_version', 'Unresolved')
             ->where('del_flg', '<>', 1)
             ->get();
-        foreach ($issues as $issue)
-        {
+        foreach ($issues as $issue) {
             $updValues['resolve_version'] = $dest;
             $updValues['modifier'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
             $updValues['updated_at'] = time();
@@ -341,45 +313,36 @@ class VersionController extends Controller
      * @param  string $project_key
      * @param  string $source
      * @param  string $dest
-     * @return void 
+     * @return void
      */
     public function updIssueVersion($project_key, $source, $dest)
     {
         $version_fields = $this->getVersionFields($project_key);
         $issues = DB::collection('issue_' . $project_key)
             ->where(function ($query) use ($source, $version_fields) {
-                foreach ($version_fields as $key => $vf)
-                {
+                foreach ($version_fields as $key => $vf) {
                     $query->orWhere($vf['key'], $source);
                 }
             })
             ->where('del_flg', '<>', 1)
             ->get();
 
-        foreach ($issues as $issue)
-        {
+        foreach ($issues as $issue) {
             $updValues = [];
-            foreach($version_fields as $key => $vf)
-            {
-                if (!isset($issue[$vf['key']]))
-                {
+            foreach ($version_fields as $key => $vf) {
+                if (!isset($issue[$vf['key']])) {
                     continue;
                 }
-                if (is_string($issue[$vf['key']]))
-                {
-                    if ($issue[$vf['key']] === $source)
-                    {
+                if (is_string($issue[$vf['key']])) {
+                    if ($issue[$vf['key']] === $source) {
                         $updValues[$vf['key']] = $dest;
                     }
-                }
-                else if (is_array($issue[$vf['key']]))
-                {
+                } elseif (is_array($issue[$vf['key']])) {
                     $updValues[$vf['key']] = array_values(array_filter(array_unique(str_replace($source, $dest, $issue[$vf['key']]))));
                 }
             }
 
-            if ($updValues)
-            {
+            if ($updValues) {
                 $updFields = array_keys($updValues);
 
                 $updValues['modifier'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
@@ -407,43 +370,32 @@ class VersionController extends Controller
     public function delete(Request $request, $project_key, $id)
     {
         $version = Version::find($id);
-        if (!$version || $version->project_key != $project_key)
-        {
+        if (!$version || $version->project_key != $project_key) {
             throw new \UnexpectedValueException('the version does not exist or is not in the project.', -11503);
         }
 
         $operate_flg = $request->input('operate_flg');
-        if (!isset($operate_flg) || $operate_flg === '0')
-        {
+        if (!isset($operate_flg) || $operate_flg === '0') {
             $version_fields = $this->getVersionFields($project_key);
             $is_used = $this->isFieldUsedByIssue($project_key, 'version', $version->toArray(), $version_fields);
-            if ($is_used)
-            {
+            if ($is_used) {
                 throw new \UnexpectedValueException('the version has been used by some issues.', -11511);
             }
-        }
-        else if ($operate_flg === '1')
-        {
+        } elseif ($operate_flg === '1') {
             $swap_version = $request->input('swap_version');
-            if (!isset($swap_version) || !$swap_version)
-            {
+            if (!isset($swap_version) || !$swap_version) {
                 throw new \UnexpectedValueException('the swap version cannot be empty.', -11513);
-            } 
+            }
 
             $sversion = Version::find($swap_version);
-            if (!$sversion || $sversion->project_key != $project_key)
-            {
+            if (!$sversion || $sversion->project_key != $project_key) {
                 throw new \UnexpectedValueException('the swap version does not exist or is not in the project.', -11514);
             }
 
             $this->updIssueVersion($project_key, $id, $swap_version);
-        }
-        else if ($operate_flg === '2') 
-        {
+        } elseif ($operate_flg === '2') {
             $this->updIssueVersion($project_key, $id, '');
-        }
-        else
-        {
+        } else {
             throw new \UnexpectedValueException('the operation has error.', -11512);
         }
 
@@ -453,12 +405,9 @@ class VersionController extends Controller
         $cur_user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
         Event::fire(new VersionEvent($project_key, $cur_user, [ 'event_key' => 'del_version', 'data' => $version->toArray() ]));
 
-        if ($operate_flg === '1')
-        {
+        if ($operate_flg === '1') {
             return $this->show($project_key, $request->input('swap_version'));
-        }
-        else
-        {
+        } else {
             return Response()->json(['ecode' => 0, 'data' => [ 'id' => $id ]]);
         }
     }

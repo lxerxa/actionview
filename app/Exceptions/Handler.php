@@ -3,11 +3,11 @@
 namespace App\Exceptions;
 
 use Exception;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class Handler extends ExceptionHandler
 {
@@ -46,7 +46,7 @@ class Handler extends ExceptionHandler
     public function render($request, Exception $e)
     {
         $ecode = $e->getCode() ?: -99999;
-        return [ 'ecode' => $ecode, 'emsg' => $e->getMessage() ];
+        return ['ecode' => $ecode, 'emsg' => $e->getMessage()];
         //return parent::render($request, $e);
     }
 }

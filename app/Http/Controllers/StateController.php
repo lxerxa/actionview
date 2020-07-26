@@ -22,24 +22,20 @@ class StateController extends Controller
     public function index($project_key)
     {
         $states = Provider::getStateList($project_key);
-        foreach ($states as $key => $state)
-        {
+        foreach ($states as $key => $state) {
             $workflows = Definition::whereRaw([ 'state_ids' => isset($state['key']) ? $state['key'] : $state['_id'] ])
                 ->orderBy('project_key', 'asc')
                 ->get([ 'project_key', 'name' ])
                 ->toArray();
             $states[$key]['workflows'] = $workflows;
 
-            if ($workflows)
-            {
+            if ($workflows) {
                 $states[$key]['is_used'] = true;
-            }
-            else
-            {
-                $states[$key]['is_used'] = $this->isFieldUsedByIssue($project_key, 'state', $state); 
+            } else {
+                $states[$key]['is_used'] = $this->isFieldUsedByIssue($project_key, 'state', $state);
             }
 
-            $states[$key]['workflows'] = array_filter($workflows, function($item) use($project_key) { 
+            $states[$key]['workflows'] = array_filter($workflows, function ($item) use ($project_key) {
                 return $item['project_key'] === $project_key || $item['project_key'] === '$_sys_$';
             });
         }
@@ -55,19 +51,16 @@ class StateController extends Controller
     public function store(Request $request, $project_key)
     {
         $name = $request->input('name');
-        if (!$name)
-        {
+        if (!$name) {
             throw new \UnexpectedValueException('the name can not be empty.', -12400);
         }
 
         $category = $request->input('category');
-        if (!$category)
-        {
+        if (!$category) {
             throw new \UnexpectedValueException('the category can not be empty.', -12405);
         }
 
-        if (Provider::isStateExisted($project_key, $name))
-        {
+        if (Provider::isStateExisted($project_key, $name)) {
             throw new \UnexpectedValueException('state name cannot be repeated', -12401);
         }
 
@@ -101,32 +94,26 @@ class StateController extends Controller
     public function update(Request $request, $project_key, $id)
     {
         $state = State::find($id);
-        if (!$state || $project_key != $state->project_key)
-        {
+        if (!$state || $project_key != $state->project_key) {
             throw new \UnexpectedValueException('the state does not exist or is not in the project.', -12402);
         }
 
-        if (isset($state->key) && $state->key)
-        {
+        if (isset($state->key) && $state->key) {
             throw new \UnexpectedValueException('the state is built in the system.', -12406);
         }
 
         $name = $request->input('name');
-        if (isset($name))
-        {
-            if (!$name)
-            {
+        if (isset($name)) {
+            if (!$name) {
                 throw new \UnexpectedValueException('the name can not be empty.', -12400);
             }
-            if ($state->name !== $name && Provider::isStateExisted($project_key, $name))
-            {
+            if ($state->name !== $name && Provider::isStateExisted($project_key, $name)) {
                 throw new \UnexpectedValueException('state name cannot be repeated', -12401);
             }
         }
 
         $category = $request->input('category');
-        if (!$category)
-        {
+        if (!$category) {
             throw new \UnexpectedValueException('the category can not be empty.', -12405);
         }
 
@@ -143,25 +130,21 @@ class StateController extends Controller
     public function destroy($project_key, $id)
     {
         $state = State::find($id);
-        if (!$state || $project_key != $state->project_key)
-        {
+        if (!$state || $project_key != $state->project_key) {
             throw new \UnexpectedValueException('the state does not exist or is not in the project.', -12402);
         }
 
-        if (isset($state->key) && $state->key)
-        {
+        if (isset($state->key) && $state->key) {
             throw new \UnexpectedValueException('the state is built in the system.', -12406);
         }
 
-        $isUsed = $this->isFieldUsedByIssue($project_key, 'state', $state->toArray()); 
-        if ($isUsed)
-        {
+        $isUsed = $this->isFieldUsedByIssue($project_key, 'state', $state->toArray());
+        if ($isUsed) {
             throw new \UnexpectedValueException('the state has been used in issue.', -12403);
         }
 
         $isUsed = Definition::whereRaw([ 'state_ids' => isset($state->key) ? $state->key : $id ])->exists();
-        if ($isUsed)
-        {
+        if ($isUsed) {
             throw new \UnexpectedValueException('the state has been used in workflow.', -12404);
         }
 
@@ -177,12 +160,9 @@ class StateController extends Controller
      */
     public function handle(Request $request, $project_key)
     {
-        if ($project_key === '$_sys_$')
-        {
+        if ($project_key === '$_sys_$') {
             return $this->handleSys($request, $project_key);
-        }
-        else
-        {
+        } else {
             return $this->handleProject($request, $project_key);
         }
     }
@@ -198,20 +178,16 @@ class StateController extends Controller
         $properties = [];
         // set state sort.
         $sequence = $request->input('sequence');
-        if (isset($sequence))
-        {
+        if (isset($sequence)) {
             $properties['sequence'] = $sequence;
         }
 
         $state_property = StateProperty::Where('project_key', $project_key)->first();
-        if ($state_property)
-        {
-             $state_property->fill($properties);
-             $state_property->save();
-        }
-        else
-        {
-             StateProperty::create([ 'project_key' => $project_key ] + $properties);
+        if ($state_property) {
+            $state_property->fill($properties);
+            $state_property->save();
+        } else {
+            StateProperty::create([ 'project_key' => $project_key ] + $properties);
         }
 
         return Response()->json(['ecode' => 0, 'data' => [ 'sequence' => $sequence ]]);
@@ -227,14 +203,11 @@ class StateController extends Controller
     {
         // set type sort.
         $sequence = $request->input('sequence');
-        if (isset($sequence))
-        {
+        if (isset($sequence)) {
             $i = 1;
-            foreach ($sequence as $state_id)
-            {
+            foreach ($sequence as $state_id) {
                 $state = State::find($state_id);
-                if (!$state || $state->project_key != $project_key)
-                {
+                if (!$state || $state->project_key != $project_key) {
                     continue;
                 }
                 $state->sn = $i++;
@@ -252,15 +225,13 @@ class StateController extends Controller
      */
     public function viewUsedInProject($project_key, $id)
     {
-        if ($project_key !== '$_sys_$')
-        {
+        if ($project_key !== '$_sys_$') {
             return Response()->json(['ecode' => 0, 'data' => [] ]);
         }
 
         $res = [];
         $projects = Project::all();
-        foreach($projects as $project)
-        {
+        foreach ($projects as $project) {
             $count = DB::collection('issue_' . $project->key)
                 ->where('state', $id)
                 ->where('del_flg', '<>', 1)
@@ -272,8 +243,7 @@ class StateController extends Controller
                 ->get([ 'id', 'name' ])
                 ->toArray();
 
-            if ($count > 0 || $workflows)
-            {
+            if ($count > 0 || $workflows) {
                 $tmp = [ 'key' => $project->key, 'name' => $project->name, 'status' => $project->status ];
                 $tmp['issue_count'] = $count > 0 ? $count : 0;
                 $tmp['workflows'] = $workflows ?: [];

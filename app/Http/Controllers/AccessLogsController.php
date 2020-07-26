@@ -26,68 +26,54 @@ class AccessLogsController extends Controller
         $query = ApiAccessLogs::query();
 
         $uid = $request->input('uid');
-        if (isset($uid) && $uid)
-        {
+        if (isset($uid) && $uid) {
             $query = $query->where('user.id', $uid);
         }
 
         $method = $request->input('method');
-        if (isset($method) && $method)
-        {
+        if (isset($method) && $method) {
             $query = $query->where('request_method', $method);
         }
 
         $project_key = $request->input('project_key');
-        if (isset($project_key) && $project_key)
-        {
+        if (isset($project_key) && $project_key) {
             $query = $query->where('project_key', $project_key);
         }
 
         $module = $request->input('module');
-        if (isset($module) && $module)
-        {
+        if (isset($module) && $module) {
             $query = $query->where('module', $module);
         }
 
         $request_time = $request->input('request_time');
-        if (isset($request_time) && $request_time)
-        {
-            if (strpos($request_time, '~') !== false)
-            {
+        if (isset($request_time) && $request_time) {
+            if (strpos($request_time, '~') !== false) {
                 $sections = explode('~', $request_time);
-                if ($sections[0])
-                {
+                if ($sections[0]) {
                     $query->where('requested_start_at', '>=', strtotime($sections[0]) * 1000);
                 }
-                if ($sections[1])
-                {
+                if ($sections[1]) {
                     $query->where('requested_start_at', '<=', strtotime($sections[1] . ' 23:59:59') * 1000);
                 }
             }
         }
 
         $url = $request->input('request_url');
-        if (isset($url) && $url)
-        {
+        if (isset($url) && $url) {
             $query->where('request_url', 'like', '%' . $url . '%');
         }
 
         $request_source_ip = $request->input('request_source_ip');
-        if (isset($request_source_ip) && $request_source_ip)
-        {
+        if (isset($request_source_ip) && $request_source_ip) {
             $query->where('request_source_ip', $request_source_ip);
         }
 
         $exec_time = $request->input('exec_time');
-        if (isset($exec_time) && $exec_time)
-        {
+        if (isset($exec_time) && $exec_time) {
             $flag = substr($exec_time, 0, 1);
-            if ($flag == '-')
-            {
+            if ($flag == '-') {
                 $query->where('exec_time', '<=', abs(floatval($exec_time)) * 1000);
-            }
-            else
-            {
+            } else {
                 $query->where('exec_time', '>=', abs(floatval($exec_time)) * 1000);
             }
         }
@@ -102,8 +88,7 @@ class AccessLogsController extends Controller
         $logs = $query->get();
 
         $from = $request->input('from');
-        if (isset($from) && $from == 'export')
-        {
+        if (isset($from) && $from == 'export') {
             $this->export($logs);
             exit();
         }
@@ -121,25 +106,24 @@ class AccessLogsController extends Controller
     {
         set_time_limit(0);
 
-        $headers = [ 
-            '用户', 
-            '方法', 
-            'Url', 
-            '模块', 
-            '请求开始时间', 
-            '请求结束时间', 
-            '请求时长(毫秒)', 
-            '来源IP', 
-            'User-Agent', 
-            'Body' 
+        $headers = [
+            '用户',
+            '方法',
+            'Url',
+            '模块',
+            '请求开始时间',
+            '请求结束时间',
+            '请求时长(毫秒)',
+            '来源IP',
+            'User-Agent',
+            'Body'
         ];
 
         $file_name = 'access-logs';
-        Excel::create($file_name, function ($excel) use($headers, $logs) {
-            $excel->sheet('Sheetname', function ($sheet) use($headers, $logs) {
+        Excel::create($file_name, function ($excel) use ($headers, $logs) {
+            $excel->sheet('Sheetname', function ($sheet) use ($headers, $logs) {
                 $sheet->appendRow($headers);
-                foreach ($logs as $log)
-                {
+                foreach ($logs as $log) {
                     $tmp = [];
                     $tmp[] = $log->user ? $log->user['name'] : '';
                     $tmp[] = $log->request_method ?: '';

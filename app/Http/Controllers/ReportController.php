@@ -24,35 +24,35 @@ class ReportController extends Controller
 
     private $default_filters = [
         'issues' => [
-            [ 'id' => 'all_by_type', 'name' => '全部问题/按类型', 'query' => [ 'stat_x' => 'type', 'stat_y' => 'type' ] ], 
-            [ 'id' => 'unresolved_by_assignee', 'name' => '未解决的/按经办人', 'query' => [ 'stat_x' => 'assignee', 'stat_y' => 'assignee', 'resolution' => 'Unresolved' ] ], 
-            [ 'id' => 'unresolved_by_priority', 'name' => '未解决的/按优先级', 'query' => [ 'stat_x' => 'priority', 'stat_y' => 'priority', 'resolution' => 'Unresolved' ] ], 
-            [ 'id' => 'unresolved_by_module', 'name' => '未解决的/按模块', 'query' => [ 'stat_x' => 'module', 'stat_y' => 'module', 'resolution' => 'Unresolved' ] ] 
-        ], 
+            [ 'id' => 'all_by_type', 'name' => '全部问题/按类型', 'query' => [ 'stat_x' => 'type', 'stat_y' => 'type' ] ],
+            [ 'id' => 'unresolved_by_assignee', 'name' => '未解决的/按经办人', 'query' => [ 'stat_x' => 'assignee', 'stat_y' => 'assignee', 'resolution' => 'Unresolved' ] ],
+            [ 'id' => 'unresolved_by_priority', 'name' => '未解决的/按优先级', 'query' => [ 'stat_x' => 'priority', 'stat_y' => 'priority', 'resolution' => 'Unresolved' ] ],
+            [ 'id' => 'unresolved_by_module', 'name' => '未解决的/按模块', 'query' => [ 'stat_x' => 'module', 'stat_y' => 'module', 'resolution' => 'Unresolved' ] ]
+        ],
         'worklog' => [
-            [ 'id' => 'all', 'name' => '全部填报', 'query' => [] ], 
-            [ 'id' => 'in_one_month', 'name' => '过去一个月的', 'query' => [ 'recorded_at' => '1m' ] ], 
-            [ 'id' => 'active_sprint', 'name' => '当前活动Sprint', 'query' => [] ], 
-            [ 'id' => 'latest_completed_sprint', 'name' => '最近已完成Sprint', 'query' => [] ], 
-            //[ 'id' => 'will_release_version', 'name' => '最近要发布版本', 'query' => [] ], 
-            //[ 'id' => 'latest_released_version', 'name' => '最近已发布版本', 'query' => [] ], 
-        ], 
+            [ 'id' => 'all', 'name' => '全部填报', 'query' => [] ],
+            [ 'id' => 'in_one_month', 'name' => '过去一个月的', 'query' => [ 'recorded_at' => '1m' ] ],
+            [ 'id' => 'active_sprint', 'name' => '当前活动Sprint', 'query' => [] ],
+            [ 'id' => 'latest_completed_sprint', 'name' => '最近已完成Sprint', 'query' => [] ],
+            //[ 'id' => 'will_release_version', 'name' => '最近要发布版本', 'query' => [] ],
+            //[ 'id' => 'latest_released_version', 'name' => '最近已发布版本', 'query' => [] ],
+        ],
         'timetracks' => [
-            [ 'id' => 'all', 'name' => '全部问题', 'query' => [] ], 
-            [ 'id' => 'unresolved', 'name' => '未解决的', 'query' => [ 'resolution' => 'Unresolved' ] ], 
-            [ 'id' => 'active_sprint', 'name' => '当前活动Sprint', 'query' => [] ], 
-            [ 'id' => 'latest_completed_sprint', 'name' => '最近已完成Sprint', 'query' => [] ], 
-            //[ 'id' => 'will_release_version', 'name' => '最近要发布版本', 'query' => [] ], 
-            //[ 'id' => 'latest_released_version', 'name' => '最近已发布版本', 'query' => [] ], 
-        ], 
+            [ 'id' => 'all', 'name' => '全部问题', 'query' => [] ],
+            [ 'id' => 'unresolved', 'name' => '未解决的', 'query' => [ 'resolution' => 'Unresolved' ] ],
+            [ 'id' => 'active_sprint', 'name' => '当前活动Sprint', 'query' => [] ],
+            [ 'id' => 'latest_completed_sprint', 'name' => '最近已完成Sprint', 'query' => [] ],
+            //[ 'id' => 'will_release_version', 'name' => '最近要发布版本', 'query' => [] ],
+            //[ 'id' => 'latest_released_version', 'name' => '最近已发布版本', 'query' => [] ],
+        ],
         'regressions' => [
-            [ 'id' => 'all', 'name' => '已解决问题', 'query' => [] ], 
-            [ 'id' => 'active_sprint', 'name' => '当前活动Sprint', 'query' => [] ], 
-            [ 'id' => 'latest_completed_sprint', 'name' => '最近已完成Sprint', 'query' => [] ], 
+            [ 'id' => 'all', 'name' => '已解决问题', 'query' => [] ],
+            [ 'id' => 'active_sprint', 'name' => '当前活动Sprint', 'query' => [] ],
+            [ 'id' => 'latest_completed_sprint', 'name' => '最近已完成Sprint', 'query' => [] ],
         ],
         'trend' => [
-            [ 'id' => 'day_in_one_month', 'name' => '问题每日变化趋势', 'query' => [ 'stat_time' => '1m' ] ], 
-            [ 'id' => 'week_in_two_months', 'name' => '问题每周变化趋势', 'query' => [ 'stat_time' => '2m', 'interval' => 'week' ] ], 
+            [ 'id' => 'day_in_one_month', 'name' => '问题每日变化趋势', 'query' => [ 'stat_time' => '1m' ] ],
+            [ 'id' => 'week_in_two_months', 'name' => '问题每周变化趋势', 'query' => [ 'stat_time' => '2m', 'interval' => 'week' ] ],
         ]
     ];
 
@@ -71,16 +71,13 @@ class ReportController extends Controller
         $res = ReportFilters::where('project_key', $project_key)
             ->where('user', $this->user->id)
             ->get();
-        foreach($res as $v)
-        {
-            if (isset($v['filters']))
-            {
+        foreach ($res as $v) {
+            if (isset($v['filters'])) {
                 $filters[$v['mode']] = $v['filters'];
             }
         }
 
-        foreach($filters as $mode => $some_filters)
-        {
+        foreach ($filters as $mode => $some_filters) {
             $filters[$mode] = $this->convFilters($project_key, $some_filters);
         }
 
@@ -95,64 +92,44 @@ class ReportController extends Controller
      */
     public function convFilters($project_key, $filters)
     {
-        foreach($filters as $key => $filter)
-        {
-            if ($filter['id'] === 'active_sprint')
-            {
+        foreach ($filters as $key => $filter) {
+            if ($filter['id'] === 'active_sprint') {
                 $sprint = Sprint::where('project_key', $project_key)
                     ->where('status', 'active')
                     ->first();
-                if ($sprint)
-                {
+                if ($sprint) {
                     $filters[$key]['query'] = [ 'sprints' => $sprint->no ];
-                }
-                else
-                {
+                } else {
                     unset($filters[$key]);
                 }
-            }
-            else if ($filter['id'] === 'latest_completed_sprint')
-            {
+            } elseif ($filter['id'] === 'latest_completed_sprint') {
                 $sprint = Sprint::where('project_key', $project_key)
                     ->where('status', 'completed')
                     ->orderBy('no', 'desc')
                     ->first();
-                if ($sprint)
-                {
+                if ($sprint) {
                     $filters[$key]['query'] = [ 'sprints' => $sprint->no ];
-                }
-                else
-                {
+                } else {
                     unset($filters[$key]);
                 }
-            }
-            else if ($filter['id'] === 'will_release_version')
-            {
+            } elseif ($filter['id'] === 'will_release_version') {
                 $version = Version::where('project_key', $project_key)
                     ->where('status', 'unreleased')
                     ->orderBy('name', 'asc')
                     ->first();
-                if ($version)
-                {
+                if ($version) {
                     $filters[$key]['query'] = [ 'resolve_version' => $version->id ];
-                }
-                else
-                {
+                } else {
                     unset($filters[$key]);
                 }
-            }
-            else if ($filter['id'] === 'latest_released_version')
-            {
+            } elseif ($filter['id'] === 'latest_released_version') {
                 $version = Version::where('project_key', $project_key)
                     ->where('status', 'released')
                     ->orderBy('name', 'desc')
                     ->first();
-                if ($version)
-                {
+                if ($version) {
                     $filters[$key]['query'] = [ 'resolve_version' => $version->id ];
-                }
-                else
-                {
+                } else {
                     unset($filters[$key]);
                 }
             }
@@ -169,19 +146,17 @@ class ReportController extends Controller
      */
     public function getSomeFilters($project_key, $mode)
     {
-        if (!in_array($mode, $this->mode_enum))
-        {
+        if (!in_array($mode, $this->mode_enum)) {
             throw new \UnexpectedValueException('the mode value is error.', -11851);
         }
 
-        $filters = isset($this->default_filters[$mode]) ? $this->default_filters[$mode] : []; 
+        $filters = isset($this->default_filters[$mode]) ? $this->default_filters[$mode] : [];
 
         $res = ReportFilters::where('project_key', $project_key)
             ->where('mode', $mode)
             ->where('user', $this->user->id)
-            ->first(); 
-        if ($res)
-        {
+            ->first();
+        if ($res) {
             $filters = isset($res->filters) ? $res->filters : [];
         }
 
@@ -197,20 +172,17 @@ class ReportController extends Controller
      */
     public function saveFilter(Request $request, $project_key, $mode)
     {
-        if (!in_array($mode, $this->mode_enum))
-        {
+        if (!in_array($mode, $this->mode_enum)) {
             throw new \UnexpectedValueException('the mode value is error.', -11851);
         }
 
         $name = $request->input('name');
-        if (!$name)
-        {
+        if (!$name) {
             throw new \UnexpectedValueException('the name can not be empty.', -11852);
         }
 
         $query = $request->input('query');
-        if (!isset($query))
-        {
+        if (!isset($query)) {
             throw new \UnexpectedValueException('the query can not be empty.', -11853);
         }
         
@@ -218,18 +190,15 @@ class ReportController extends Controller
             ->where('mode', $mode)
             ->where('user', $this->user->id)
             ->first();
-        if ($res)
-        {
+        if ($res) {
             $filters = isset($res['filters']) ? $res['filters'] : [];
             array_push($filters, [ 'id' => md5(microtime()), 'name' => $name, 'query' => $query ]);
             $res->filters = $filters;
             $res->save();
-        }
-        else
-        {
+        } else {
             $filters = $this->default_filters[$mode];
             array_push($filters, [ 'id' => md5(microtime()), 'name' => $name, 'query' => $query ]);
-            ReportFilters::create([ 'project_key' => $project_key, 'mode' => $mode, 'user' => $this->user->id, 'filters' => $filters ]); 
+            ReportFilters::create([ 'project_key' => $project_key, 'mode' => $mode, 'user' => $this->user->id, 'filters' => $filters ]);
         }
 
         return $this->getSomeFilters($project_key, $mode);
@@ -244,8 +213,7 @@ class ReportController extends Controller
      */
     public function resetSomeFilters(Request $request, $project_key, $mode)
     {
-        if (!in_array($mode, $this->mode_enum))
-        {
+        if (!in_array($mode, $this->mode_enum)) {
             throw new \UnexpectedValueException('the mode value is error.', -11851);
         }
 
@@ -265,46 +233,37 @@ class ReportController extends Controller
      */
     public function editSomeFilters(Request $request, $project_key, $mode)
     {
-        if (!in_array($mode, $this->mode_enum))
-        {
+        if (!in_array($mode, $this->mode_enum)) {
             throw new \UnexpectedValueException('the mode value is error.', -11851);
         }
 
         $sequence = $request->input('sequence');
-        if (isset($sequence))
-        {
-            $old_filters = $this->default_filters[$mode]; 
+        if (isset($sequence)) {
+            $old_filters = $this->default_filters[$mode];
 
             $res = ReportFilters::where('project_key', $project_key)
                 ->where('mode', $mode)
                 ->where('user', $this->user->id)
                 ->first();
-            if ($res)
-            {
+            if ($res) {
                 $old_filters = isset($res->filters) ? $res->filters : [];
             }
             
             $new_filters = [];
-            foreach ($sequence as $id)
-            {
-                foreach ($old_filters as $filter)
-                {
-                    if ($filter['id'] === $id)
-                    {
+            foreach ($sequence as $id) {
+                foreach ($old_filters as $filter) {
+                    if ($filter['id'] === $id) {
                         $new_filters[] = $filter;
                         break;
                     }
                 }
             }
 
-            if ($res)
-            {
+            if ($res) {
                 $res->filters = $new_filters;
                 $res->save();
-            }
-            else
-            {
-                ReportFilters::create([ 'project_key' => $project_key, 'mode' => $mode, 'user' => $this->user->id, 'filters' => $new_filters ]); 
+            } else {
+                ReportFilters::create([ 'project_key' => $project_key, 'mode' => $mode, 'user' => $this->user->id, 'filters' => $new_filters ]);
             }
         }
 
@@ -322,18 +281,14 @@ class ReportController extends Controller
         $where = [];
 
         $issue_id = isset($options['issue_id']) ? $options['issue_id'] : '';
-        if ($issue_id)
-        {
+        if ($issue_id) {
             $where['issue_id'] = $issue_id;
-        }
-        else
-        {
+        } else {
             $issue_ids = [];
 
             $query = DB::collection('issue_' . $project_key)->whereRaw($this->getIssueQueryWhere($project_key, $options));
             $issues = $query->get([ '_id' ]);
-            foreach ($issues as $issue)
-            {
+            foreach ($issues as $issue) {
                 $issue_ids[] = $issue['_id']->__toString();
             }
             $where['issue_id'] = [ '$in' => $issue_ids ];
@@ -341,44 +296,32 @@ class ReportController extends Controller
 
         $cond = [];
         $recorded_at = isset($options['recorded_at']) ? $options['recorded_at'] : '';
-        if ($recorded_at)
-        {
-            if (strpos($recorded_at, '~') !== false)
-            {
+        if ($recorded_at) {
+            if (strpos($recorded_at, '~') !== false) {
                 $sections = explode('~', $recorded_at);
-                if ($sections[0])
-                {
+                if ($sections[0]) {
                     $cond['$gte'] = strtotime($sections[0]);
                 }
-                if ($sections[1])
-                {
+                if ($sections[1]) {
                     $cond['$lte'] = strtotime($sections[1] . ' 23:59:59');
                 }
-                if ($cond)
-                {
+                if ($cond) {
                     $where['recorded_at'] = $cond;
                 }
-            }
-            else
-            {
+            } else {
                 $unitMap = [ 'w' => 'week', 'm' => 'month', 'y' => 'year' ];
                 $unit = substr($recorded_at, -1);
-                if (in_array($unit, [ 'w', 'm', 'y' ]))
-                {
+                if (in_array($unit, [ 'w', 'm', 'y' ])) {
                     $direct = substr($recorded_at, 0, 1);
                     $val = abs(substr($recorded_at, 0, -1));
                     $time_val = strtotime(date('Ymd', strtotime('-' . $val . ' ' . $unitMap[$unit])));
 
-                    if ($direct === '-')
-                    {
+                    if ($direct === '-') {
                         $cond['$lt'] = $time_val;
-                    }
-                    else
-                    {
+                    } else {
                         $cond['$gte'] = $time_val;
                     }
-                    if ($cond)
-                    {
+                    if ($cond) {
                         $where['recorded_at'] = $cond;
                     }
                 }
@@ -386,28 +329,23 @@ class ReportController extends Controller
         }
 
         $recorder = isset($options['recorder']) ? $options['recorder'] : '';
-        if ($recorder)
-        {
+        if ($recorder) {
             $where['recorder.id'] = $recorder;
         }
 
         $sprint_no = isset($options['sprints']) ? $options['sprints'] : '';
-        if ($sprint_no)
-        {
+        if ($sprint_no) {
             $sprint = Sprint::where('project_key', $project_key)->where('no', intval($sprint_no))->first();
 
             $sprint_start_time = strtotime(date('Ymd', $sprint->start_time));
-            if (!isset($cond['$gte']) || $cond['$gte'] < $sprint_start_time)
-            {
+            if (!isset($cond['$gte']) || $cond['$gte'] < $sprint_start_time) {
                 $cond['$gte'] = $sprint_start_time;
             }
 
-            if (isset($sprint->real_complete_time) && $sprint->real_complete_time > 0)
-            {
+            if (isset($sprint->real_complete_time) && $sprint->real_complete_time > 0) {
                 $sprint_complet_time = strtotime(date('Ymd', $sprint->real_complete_time) . ' 23:59:59');
-                if (!isset($cond['$lte']) || $cond['$lte'] > $sprint_complet_time)
-                {
-                    $cond['$lte'] = $sprint_complet_time; 
+                if (!isset($cond['$lte']) || $cond['$lte'] > $sprint_complet_time) {
+                    $cond['$lte'] = $sprint_complet_time;
                 }
             }
 
@@ -456,14 +394,13 @@ class ReportController extends Controller
 
         $pipeline[] = [ '$group' => [ '_id' => '$issue_id', 'value' => [ '$sum' => '$spend_m' ] ] ];
 
-        $ret = DB::collection('worklog')->raw(function($col) use($pipeline) {
+        $ret = DB::collection('worklog')->raw(function ($col) use ($pipeline) {
             return $col->aggregate($pipeline);
         });
 
         $new_results = [];
         $results = iterator_to_array($ret);
-        foreach ($results as $k => $r)
-        {
+        foreach ($results as $k => $r) {
             $tmp = [];
             $tmp['total_value'] = $r['value'];
             $issue = DB::collection('issue_' . $project_key)
@@ -475,10 +412,11 @@ class ReportController extends Controller
             $tmp['state']   = $issue['state'];
             $tmp['type']    = $issue['type'];
             $new_results[]  = $tmp;
- 
         }
 
-        usort($new_results, function ($a, $b) { return $a['no'] <= $b['no']; });
+        usort($new_results, function ($a, $b) {
+            return $a['no'] <= $b['no'];
+        });
 
         return Response()->json([ 'ecode' => 0, 'data' => $new_results ]);
     }
@@ -496,29 +434,24 @@ class ReportController extends Controller
         $where = $this->getWorklogWhere($project_key, $request->all());
         $pipeline[] = [ '$match' => $where ];
 
-        $pipeline[] = [ '$group' => [ '_id' => '$recorder.id', 'value' => [ '$sum' => '$spend_m' ] ] ]; 
+        $pipeline[] = [ '$group' => [ '_id' => '$recorder.id', 'value' => [ '$sum' => '$spend_m' ] ] ];
 
-        $ret = DB::collection('worklog')->raw(function($col) use($pipeline) {
+        $ret = DB::collection('worklog')->raw(function ($col) use ($pipeline) {
             return $col->aggregate($pipeline);
         });
 
         $others_val = 0;
         $results = iterator_to_array($ret);
         $new_results = [];
-        foreach ($results as $r) 
-        {
+        foreach ($results as $r) {
             $user = Sentinel::findById($r['_id']);
-            if ($user)
-            {
+            if ($user) {
                 $new_results[] = [ 'user' => [ 'id' => $user->id, 'name' => $user->first_name ], 'value' => $r['value'] ];
-            }
-            else
-            {
+            } else {
                 $others_val += $r['value'];
             }
         }
-        if ($others_val > 0)
-        {
+        if ($others_val > 0) {
             $new_results[] = [ 'user' => [ 'id' => 'other', 'name' => '' ], 'value' => $other_val ];
         }
 
@@ -539,10 +472,8 @@ class ReportController extends Controller
             ->orderBy('recorded_at', 'desc')
             ->get();
 
-        foreach($worklogs as $worklog)
-        {
-            if (!isset($worklog->spend_m) || !$worklog->spend_m)
-            {
+        foreach ($worklogs as $worklog) {
+            if (!isset($worklog->spend_m) || !$worklog->spend_m) {
                 $worklog->spend_m = $this->ttHandleInM($worklog->spend ?: '');
             }
         }
@@ -550,18 +481,17 @@ class ReportController extends Controller
         return Response()->json(['ecode' => 0, 'data' => $worklogs ]);
     }
 
-     /* get timetracks report by project_key.
-     *
-     * @param  string $project_key
-     * @return \Illuminate\Http\Response
-     */
+    /* get timetracks report by project_key.
+    *
+    * @param  string $project_key
+    * @return \Illuminate\Http\Response
+    */
     public function getTimetracks(Request $request, $project_key)
     {
         $where = $this->getIssueQueryWhere($project_key, $request->all());
 
         $scale = $request->input('scale');
-        if ($scale === 'only')
-        {
+        if ($scale === 'only') {
             $where['$and'][] = [ 'original_estimate' => [ '$exists' => 1, '$ne' => '' ] ];
         }
 
@@ -569,8 +499,7 @@ class ReportController extends Controller
         $issues = $query->orderBy('no', 'desc')->take(10000)->get();
 
         $new_issues = [];
-        foreach($issues as $issue)
-        {
+        foreach ($issues as $issue) {
             $issue_id = $issue['_id']->__toString();
 
             $tmp['id']        = $issue_id;
@@ -587,22 +516,16 @@ class ReportController extends Controller
                 ->where('issue_id', $issue_id)
                 ->orderBy('recorded_at', 'asc')
                 ->get();
-            foreach($worklogs as $log)
-            {
-                $this_spend_m = isset($log['spend_m']) ? $log['spend_m'] : $this->ttHandleInM(isset($log['spend']) ? $log['spend'] : ''); 
-                $spend_m += $this_spend_m; 
-                if ($log['adjust_type'] == '1')
-                {
+            foreach ($worklogs as $log) {
+                $this_spend_m = isset($log['spend_m']) ? $log['spend_m'] : $this->ttHandleInM(isset($log['spend']) ? $log['spend'] : '');
+                $spend_m += $this_spend_m;
+                if ($log['adjust_type'] == '1') {
                     $left_m = $left_m === '' ? '' : $left_m - $this_spend_m;
-                }
-                else if ($log['adjust_type'] == '3')
-                {
+                } elseif ($log['adjust_type'] == '3') {
                     $leave_estimate = isset($log['leave_estimate']) ? $log['leave_estimate'] : '';
                     $leave_estimate_m = isset($log['leave_estimate_m']) ? $log['leave_estimate_m'] : $this->ttHandleInM($leave_estimate);
                     $left_m = $leave_estimate_m;
-                }
-                else if ($log['adjust_type'] == '4')
-                {
+                } elseif ($log['adjust_type'] == '4') {
                     $cut = isset($log['cut']) ? $log['cut'] : '';
                     $cut_m = isset($log['cut_m']) ? $log['cut_m'] : $this->ttHandleInM($cut);
                     $left_m = $left_m === '' ? '' : $left_m - $cut_m;
@@ -625,7 +548,7 @@ class ReportController extends Controller
      *
      * @param  string $interval
      * @param  number $star_stat_time
-     * @param  number $end_stat_time 
+     * @param  number $end_stat_time
      * @return \Illuminate\Http\Response
      */
     public function getInitializedTrendData($interval, $start_stat_time, $end_stat_time)
@@ -633,40 +556,29 @@ class ReportController extends Controller
         // initialize the results
         $results = [];
         $t = $end_stat_time;
-        if ($interval == 'month')
-        {
-       	    $t = strtotime(date('Y/m/t', $end_stat_time));
-        }
-        else if ($interval == 'week')
-        {
+        if ($interval == 'month') {
+            $t = strtotime(date('Y/m/t', $end_stat_time));
+        } elseif ($interval == 'week') {
             $n = date('N', $end_stat_time);
             $t = strtotime(date('Y/m/d', $end_stat_time) . ' +' . (7 - $n) . ' day');
-        }
-        else
-        {
+        } else {
             $t = strtotime(date('Y/m/d', $end_stat_time));
         }
 
         $i = 0;
         $days = [];
-        while($t >= $start_stat_time && $i < 100)
-        {
+        while ($t >= $start_stat_time && $i < 100) {
             $tmp = [ 'new' => 0, 'resolved' => 0, 'closed' => 0 ];
             $y = date('Y', $t);
             $m = date('m', $t);
             $d = date('d', $t);
-            if ($interval == 'month')
-            {
+            if ($interval == 'month') {
                 $tmp['category'] = date('Y/m', $t);
                 $t = mktime(0, 0, 0, $m - 1, $d, $y);
-            }
-            else if ($interval == 'week')
-            {
+            } elseif ($interval == 'week') {
                 $tmp['category'] = date('Y/m/d', $t - 6 * 24 * 3600);
                 $t = mktime(0, 0, 0, $m, $d - 7, $y);
-            }
-            else
-            {
+            } else {
                 $tmp['category'] = date('Y/m/d', $t);
 
                 $days[] = $tmp['category'];
@@ -679,13 +591,10 @@ class ReportController extends Controller
             $i++;
         }
 
-        if ($days)
-        {
+        if ($days) {
             $singulars = CalendarSingular::where([ 'date' => [ '$in' => $days ] ])->get();
-            foreach ($singulars as $singular)
-            {
-                if (isset($results[$singular->day]))
-                {
+            foreach ($singulars as $singular) {
+                if (isset($results[$singular->day])) {
                     $results[$singular->day]['notWorking'] = $singular->type == 'holiday' ? 1 : 0;
                 }
             }
@@ -703,72 +612,58 @@ class ReportController extends Controller
      */
     public function getTrends(Request $request, $project_key)
     {
-    	$interval = $request->input('interval') ?: 'day';
-    	if (!in_array($interval, [ 'day', 'week', 'month' ]))
-    	{
-    	    throw new \UnexpectedValueException('the name can not be empty.', -11852);
-    	}
+        $interval = $request->input('interval') ?: 'day';
+        if (!in_array($interval, [ 'day', 'week', 'month' ])) {
+            throw new \UnexpectedValueException('the name can not be empty.', -11852);
+        }
 
-    	$is_accu = $request->input('is_accu') === '1' ? true : false;
+        $is_accu = $request->input('is_accu') === '1' ? true : false;
 
-    	$project = Project::where('key', $project_key)->first();
-    	if (!$project)
-    	{
-    	    throw new \UnexpectedValueException('the project is not exists.', -11850);
-    	}
+        $project = Project::where('key', $project_key)->first();
+        if (!$project) {
+            throw new \UnexpectedValueException('the project is not exists.', -11850);
+        }
 
-    	$start_stat_time = strtotime($project->created_at);
-    	$end_stat_time = time();
+        $start_stat_time = strtotime($project->created_at);
+        $end_stat_time = time();
 
-    	$where = $this->getIssueQueryWhere($project_key, $request->all());
+        $where = $this->getIssueQueryWhere($project_key, $request->all());
 
         $stat_time = $request->input('stat_time');
-        if (isset($stat_time) && $stat_time)
-        {
+        if (isset($stat_time) && $stat_time) {
             $or = [];
-            if (strpos($stat_time, '~') !== false)
-            {
+            if (strpos($stat_time, '~') !== false) {
                 $cond = [];
                 $sections = explode('~', $stat_time);
-                if ($sections[0])
-                {
+                if ($sections[0]) {
                     $cond['$gte'] = strtotime($sections[0]);
                     $start_stat_time = max([ $start_stat_time, $cond['$gte'] ]);
                 }
-                if ($sections[1])
-                {
+                if ($sections[1]) {
                     $cond['$lte'] = strtotime($sections[1] . ' 23:59:59');
                     $end_stat_time = min([ $end_stat_time, $cond['$lte'] ]);
                 }
-                if ($cond)
-                {
+                if ($cond) {
                     $or[] = [ 'created_at' =>  $cond ];
                     $or[] = [ 'resolved_at' =>  $cond ];
                     $or[] = [ 'closed_at' => $cond ];
                 }
-            }
-            else
-            {
+            } else {
                 $unitMap = [ 'w' => 'week', 'm' => 'month', 'y' => 'year' ];
                 $unit = substr($stat_time, -1);
-                if (in_array($unit, [ 'w', 'm', 'y' ]))
-                {
+                if (in_array($unit, [ 'w', 'm', 'y' ])) {
                     $direct = substr($stat_time, 0, 1);
                     $val = abs(substr($stat_time, 0, -1));
                     $time_val = strtotime(date('Ymd', strtotime('-' . $val . ' ' . $unitMap[$unit])));
                     $cond = [];
-                    if ($direct === '-')
-                    {
+                    if ($direct === '-') {
                         $cond['$lt'] = $time_val;
                         $end_stat_time = min([ $end_stat_time, $cond['$lt'] ]);
-                    }
-                    else
-                    {
+                    } else {
                         $cond['$gte'] = $time_val;
                         $start_stat_time = max([ $start_stat_time, $cond['$gte'] ]);
                     }
-                    if ($cond)
-                    {
+                    if ($cond) {
                         $or[] = [ 'created_at' =>  $cond ];
                         $or[] = [ 'resolved_at' =>  $cond ];
                         $or[] = [ 'closed_at' => $cond ];
@@ -776,13 +671,10 @@ class ReportController extends Controller
                 }
             }
 
-            if (!$is_accu && $or)
-            {
-            	$where['$and'][] = [ '$or' => $or ];
-            }
-            else
-            {
-            	$where['$and'][] = [ 'created_at' => [ '$lte' => $end_stat_time ] ];
+            if (!$is_accu && $or) {
+                $where['$and'][] = [ '$or' => $or ];
+            } else {
+                $where['$and'][] = [ 'created_at' => [ '$lte' => $end_stat_time ] ];
             }
         }
 
@@ -791,68 +683,50 @@ class ReportController extends Controller
         $query = DB::collection('issue_' . $project_key)->whereRaw($where);
         $issues = $query->get([ 'created_at', 'resolved_at', 'closed_at' ]);
 
-        foreach ($issues as $issue)
-        {
-            if (isset($issue['created_at']) && $issue['created_at'])
-            {
-                $created_date = $this->convDate($interval, $issue['created_at']);; 
-                if ($is_accu)
-                {
-                    foreach($results as $key => $val)
-                    {
-                        if ($key >= $created_date)
-                        {
+        foreach ($issues as $issue) {
+            if (isset($issue['created_at']) && $issue['created_at']) {
+                $created_date = $this->convDate($interval, $issue['created_at']);
+                ;
+                if ($is_accu) {
+                    foreach ($results as $key => $val) {
+                        if ($key >= $created_date) {
                             $results[$key]['new'] += 1;
                         }
                     }
-                }
-                else if (isset($results[$created_date]) && $issue['created_at'] >= $start_stat_time)
-                {
+                } elseif (isset($results[$created_date]) && $issue['created_at'] >= $start_stat_time) {
                     $results[$created_date]['new'] += 1;
                 }
             }
-            if (isset($issue['resolved_at']) && $issue['resolved_at'])
-            {
+            if (isset($issue['resolved_at']) && $issue['resolved_at']) {
                 $resolved_date = $this->convDate($interval, $issue['resolved_at']);
-                if ($is_accu)
-                {
-                    foreach($results as $key => $val)
-                    {
-                        if ($key >= $resolved_date)
-                        {
+                if ($is_accu) {
+                    foreach ($results as $key => $val) {
+                        if ($key >= $resolved_date) {
                             $results[$key]['resolved'] += 1;
                         }
                     }
-                }
-                else if (isset($results[$resolved_date]) && $issue['resolved_at'] >= $start_stat_time)
-                {
+                } elseif (isset($results[$resolved_date]) && $issue['resolved_at'] >= $start_stat_time) {
                     $results[$resolved_date]['resolved'] += 1;
                 }
             }
-            if (isset($issue['closed_at']) && $issue['closed_at'])
-            {
+            if (isset($issue['closed_at']) && $issue['closed_at']) {
                 $closed_date = $this->convDate($interval, $issue['closed_at']);
-                if ($is_accu)
-                {
-                    foreach($results as $key => $val)
-                    {
-                        if ($key >= $closed_date)
-                        {
+                if ($is_accu) {
+                    foreach ($results as $key => $val) {
+                        if ($key >= $closed_date) {
                             $results[$key]['closed'] += 1;
                         }
                     }
-                }
-                else if (isset($results[$closed_date]) && $issue['closed_at'] >= $start_stat_time)
-                {
+                } elseif (isset($results[$closed_date]) && $issue['closed_at'] >= $start_stat_time) {
                     $results[$closed_date]['closed'] += 1;
                 }
             }
         }
 
-        return Response()->json([ 
-            'ecode' => 0, 
-            'data' => array_values($results), 
-            'options' => [ 'trend_start_stat_date' => date('Y/m/d', $start_stat_time), 'trend_end_stat_date' => date('Y/m/d', $end_stat_time) ] 
+        return Response()->json([
+            'ecode' => 0,
+            'data' => array_values($results),
+            'options' => [ 'trend_start_stat_date' => date('Y/m/d', $start_stat_time), 'trend_end_stat_date' => date('Y/m/d', $end_stat_time) ]
         ]);
     }
 
@@ -861,119 +735,85 @@ class ReportController extends Controller
      *
      * @param  string $interval
      * @param  number $at
-     * @return string 
+     * @return string
      */
     public function convDate($interval, $at)
     {
-        if ($interval === 'week')
-        {
+        if ($interval === 'week') {
             $n = date('N', $at);
-            return date('Y/m/d', $at - ($n - 1) * 24 * 3600); 
-        }
-        else if ($interval === 'month')
-        {
-            return date('Y/m', $at); 
-        }
-        else
-        {
-            return date('Y/m/d', $at); 
+            return date('Y/m/d', $at - ($n - 1) * 24 * 3600);
+        } elseif ($interval === 'month') {
+            return date('Y/m', $at);
+        } else {
+            return date('Y/m/d', $at);
         }
     }
 
     public function arrangeRegressionData($data, $project_key, $dimension)
     {
-        if (!$dimension)
-        {
+        if (!$dimension) {
             return $data;
         }
 
         $results = [];
-        if (in_array($dimension, ['reporter', 'assignee', 'resolver', 'closer']))
-        {
-            foreach ($data as $value)
-            {
+        if (in_array($dimension, ['reporter', 'assignee', 'resolver', 'closer'])) {
+            foreach ($data as $value) {
                 $tmp = [];
                 $tmp['ones'] = $value['ones'];
                 $tmp['gt_ones'] = $value['gt_ones'];
                 $tmp['category'] = $value['name'];
                 $results[] = $tmp;
             }
-        }
-        else if (in_array($dimension, ['type', 'priority', 'module', 'resolve_version', 'epic']))
-        {
-            if ($dimension === 'module')
-            {
+        } elseif (in_array($dimension, ['type', 'priority', 'module', 'resolve_version', 'epic'])) {
+            if ($dimension === 'module') {
                 $modules = Provider::getModuleList($project_key, ['name']);
-                foreach ($modules as $m)
-                {
-                    foreach ($data as $key => $val)
-                    {
-                        if ($key === $m->id)
-                        {
+                foreach ($modules as $m) {
+                    foreach ($data as $key => $val) {
+                        if ($key === $m->id) {
                             $val['category'] = $m->name;
                             $results[$m->id] = $val;
                             break;
                         }
                     }
                 }
-            }
-            else if ($dimension === 'resolve_version')
-            {
+            } elseif ($dimension === 'resolve_version') {
                 $versions = Provider::getVersionList($project_key, ['name']);
-                foreach ($versions as $v)
-                {
-                    foreach ($data as $key => $val)
-                    {
-                        if ($key === $v->id)
-                        {
+                foreach ($versions as $v) {
+                    foreach ($data as $key => $val) {
+                        if ($key === $v->id) {
                             $val['category'] = $v->name;
                             $results[$key] = $val;
                             break;
                         }
                     }
                 }
-            }
-            else if ($dimension === 'type')
-            {
+            } elseif ($dimension === 'type') {
                 $types = Provider::getTypeList($project_key, ['name']);
-                foreach ($types as $v)
-                {
-                    foreach ($data as $key => $val)
-                    {
-                        if ($key === $v->id)
-                        {
+                foreach ($types as $v) {
+                    foreach ($data as $key => $val) {
+                        if ($key === $v->id) {
                             $val['category'] = $v->name;
                             $results[$key] = $val;
                             break;
                         }
                     }
-                }                
-            }
-            else if ($dimension === 'priority')
-            {
+                }
+            } elseif ($dimension === 'priority') {
                 $priorities = Provider::getPriorityOptions($project_key, ['name']);
-                foreach ($priorities as $v)
-                {
-                    foreach ($data as $key => $val)
-                    {
-                        if ($key === $v['_id'])
-                        {
+                foreach ($priorities as $v) {
+                    foreach ($data as $key => $val) {
+                        if ($key === $v['_id']) {
                             $val['category'] = $v['name'];
                             $results[$key] = $val;
                             break;
                         }
                     }
                 }
-            }
-            else if ($dimension === 'epic')
-            {
+            } elseif ($dimension === 'epic') {
                 $epics = Provider::getEpicList($project_key, ['name']);
-                foreach ($epics as $v)
-                {
-                    foreach ($data as $key => $val)
-                    {
-                        if ($key === $v['_id'])
-                        {
+                foreach ($epics as $v) {
+                    foreach ($data as $key => $val) {
+                        if ($key === $v['_id']) {
                             $val['category'] = $v['name'];
                             $results[$key] = $val;
                             break;
@@ -983,7 +823,7 @@ class ReportController extends Controller
             }
 
             //$others = [ 'ones' => [], 'gt_ones' => [], 'category' => 'others' ];
-            //foreach ($data as $key => $val) 
+            //foreach ($data as $key => $val)
             //{
             //    if (!isset($results[$key]))
             //    {
@@ -996,44 +836,30 @@ class ReportController extends Controller
             //{
             //    $results['others'] = $others;
             //}
-        }
-        else if ($dimension === 'sprints')
-        {
-            foreach ($data as $key => $val) 
-            {
+        } elseif ($dimension === 'sprints') {
+            foreach ($data as $key => $val) {
                 $tmp = [];
                 $tmp['ones'] = $val['ones'];
                 $tmp['gt_ones'] = $val['gt_ones'];
                 $tmp['category'] = 'Sprint ' . $key;
                 $results[] = $tmp;
-            }           
-        }
-        else if ($dimension === 'labels')
-        {
-            foreach ($data as $key => $val) 
-            {
+            }
+        } elseif ($dimension === 'labels') {
+            foreach ($data as $key => $val) {
                 $tmp = [];
                 $tmp['ones'] = $val['ones'];
                 $tmp['gt_ones'] = $val['gt_ones'];
                 $tmp['category'] = $key;
                 $results[] = $tmp;
-            }             
-        }
-        else
-        {
+            }
+        } else {
             $fields = Provider::getFieldList($project_key);
-            foreach ($fields as $field)
-            {
-                if ($field->key === $dimension)
-                {
-                    if (isset($field->optionValues) && $field->optionValues)
-                    {
-                        foreach($field->optionValues as $v)
-                        {
-                            foreach ($data as $key => $val)
-                            {
-                                if ($key === $v['id'])
-                                {
+            foreach ($fields as $field) {
+                if ($field->key === $dimension) {
+                    if (isset($field->optionValues) && $field->optionValues) {
+                        foreach ($field->optionValues as $v) {
+                            foreach ($data as $key => $val) {
+                                if ($key === $v['id']) {
                                     $val['category'] = $v['name'];
                                     $results[$key] = $val;
                                     break;
@@ -1060,12 +886,10 @@ class ReportController extends Controller
 
         $his_resolvers = $request->input('his_resolvers') ? explode(',', $request->input('his_resolvers')) : [];
         $or = [];
-        foreach ($his_resolvers as $resolver)
-        {
+        foreach ($his_resolvers as $resolver) {
             $or[] = [ 'his_resolvers' => $resolver ];
         }
-        if ($or)
-        {
+        if ($or) {
             $where['$and'][] = [ '$or' => $or ];
         }
 
@@ -1073,55 +897,42 @@ class ReportController extends Controller
 
         $sprint_start_time = $sprint_complete_time = 0;
         $sprint_no = $request->input('sprint') ?: '';
-        if ($sprint_no)
-        {
+        if ($sprint_no) {
             $sprint = Sprint::where('project_key', $project_key)->where('no', intval($sprint_no))->first();
 
             $sprint_start_time = strtotime(date('Ymd', $sprint->start_time));
-            if (isset($sprint->real_complete_time) && $sprint->real_complete_time > 0)
-            {
+            if (isset($sprint->real_complete_time) && $sprint->real_complete_time > 0) {
                 $sprint_complete_time = $sprint->real_complete_time;
             }
         }
 
         $dimension = $request->input('stat_dimension') ?: '';
-        if ($dimension)
-        {
+        if ($dimension) {
             $results = [];
-        }
-        else
-        {
+        } else {
             $results = [ 'ones' => [], 'gt_ones' => [] ];
         }
 
         $results = [];
         $query = DB::collection('issue_' . $project_key)->whereRaw($where);
         $issues = $query->orderBy('no', 'desc')->take(1000)->get();
-        foreach($issues as $issue)
-        {
+        foreach ($issues as $issue) {
             $no = $issue['no'];
             $regression_times = $issue['regression_times'];
             $resolved_logs = isset($issue['resolved_logs']) ? $issue['resolved_logs'] : [];
 
-            if ($sprint_start_time > 0)
-            {
+            if ($sprint_start_time > 0) {
                 $tmp_log = [];
-                foreach($resolved_logs as $rl)
-                {
-                    if ($rl['at'] > $sprint_start_time && ($sprint_complete_time <= 0 || $rl['at'] < $sprint_complete_time))
-                    {
-                        if ($his_resolvers && !in_array($rl['user']['id'], $his_resolvers))
-                        {
+                foreach ($resolved_logs as $rl) {
+                    if ($rl['at'] > $sprint_start_time && ($sprint_complete_time <= 0 || $rl['at'] < $sprint_complete_time)) {
+                        if ($his_resolvers && !in_array($rl['user']['id'], $his_resolvers)) {
                             continue;
-                        }
-                        else
-                        {
+                        } else {
                             $tmp_log[] = $rl;
                         }
                     }
                 }
-                if (!$tmp_log)
-                {
+                if (!$tmp_log) {
                     continue;
                 }
 
@@ -1129,112 +940,73 @@ class ReportController extends Controller
                 $regression_times = count($tmp_log);
             }
 
-            if ($dimension == 'resolver')
-            {
+            if ($dimension == 'resolver') {
                 $log_cnt = count($resolved_logs);
                 $tmp_uids = [];
-                foreach ($resolved_logs as $key => $log) 
-                {
+                foreach ($resolved_logs as $key => $log) {
                     $uid = $log['user']['id'];
-                    if (in_array($uid, $tmp_uids))
-                    {
+                    if (in_array($uid, $tmp_uids)) {
                         continue;
-                    }
-                    else
-                    {
+                    } else {
                         $tmp_uids[] = $uid;
                     }
                     
-                    if (!isset($results[$uid]))
-                    {
+                    if (!isset($results[$uid])) {
                         $results[$uid] = [ 'ones' => [], 'gt_ones' => [], 'name' => isset($log['user']['name']) ? $log['user']['name'] : '' ];
                     }
-                    if ($regression_times > 1)
-                    {
-                        if ($key == $log_cnt - 1)
-                        {
+                    if ($regression_times > 1) {
+                        if ($key == $log_cnt - 1) {
                             $results[$uid]['ones'][] = $no;
-                        }
-                        else
-                        {
+                        } else {
                             $results[$uid]['gt_ones'][] = $no;
                         }
-                    }
-                    else
-                    {
+                    } else {
                         $results[$uid]['ones'][] = $no;
                     }
                 }
-            }
-            else if ($dimension)
-            {
+            } elseif ($dimension) {
                 $dimension_values = isset($issue[$dimension]) ? $issue[$dimension] : '';
-                if ($dimension_values && is_array($dimension_values))
-                {
-                    if (isset($dimension_values['id']))
-                    {
-                        if (!isset($results[$dimension_values['id']]))
-                        {
+                if ($dimension_values && is_array($dimension_values)) {
+                    if (isset($dimension_values['id'])) {
+                        if (!isset($results[$dimension_values['id']])) {
                             $results[$dimension_values['id']] = [ 'ones' => [], 'gt_ones' => [], 'name' => isset($dimension_values['name']) ? $dimension_values['name'] : '' ];
                         }
-                        if ($regression_times > 1)
-                        {
+                        if ($regression_times > 1) {
                             $results[$dimension_values['id']]['gt_ones'][] = $no;
-                        }
-                        else
-                        {
+                        } else {
                             $results[$dimension_values['id']]['ones'][] = $no;
                         }
-                    }
-                    else
-                    {
-                        foreach($dimension_values as $val)
-                        {
-                            if (!isset($results[$val]))
-                            {
+                    } else {
+                        foreach ($dimension_values as $val) {
+                            if (!isset($results[$val])) {
                                 $results[$val] = [ 'ones' => [], 'gt_ones' => [] ];
                             }
 
-                            if ($regression_times > 1)
-                            {
+                            if ($regression_times > 1) {
                                 $results[$val]['gt_ones'][] = $no;
-                            }
-                            else
-                            {
+                            } else {
                                 $results[$val]['ones'][] = $no;
                             }
-                        }                        
+                        }
                     }
-                }
-                else if ($dimension_values)
-                {
-                    if (!isset($results[$dimension_values]))
-                    {
+                } elseif ($dimension_values) {
+                    if (!isset($results[$dimension_values])) {
                         $results[$dimension_values] = [ 'ones' => [], 'gt_ones' => [] ];
                     }
 
-                    if ($regression_times > 1)
-                    {
+                    if ($regression_times > 1) {
                         $results[$dimension_values]['gt_ones'][] = $no;
-                    }
-                    else
-                    {
+                    } else {
                         $results[$dimension_values]['ones'][] = $no;
                     }
                 }
-            }
-            else
-            {
-                if (!isset($results[0]))
-                {
+            } else {
+                if (!isset($results[0])) {
                     $results[0] = [ 'ones' => [], 'gt_ones' => [] ];
                 }
-                if ($regression_times > 1)
-                {
+                if ($regression_times > 1) {
                     $results[0]['gt_ones'][] = $no;
-                }
-                else
-                {
+                } else {
                     $results[0]['ones'][] = $no;
                 }
             }
@@ -1246,7 +1018,7 @@ class ReportController extends Controller
      *
      * @param  string $project_key
      * @param  string $dimension
-     * @return array 
+     * @return array
      */
     public function initXYData($project_key, $dimension)
     {
@@ -1256,48 +1028,42 @@ class ReportController extends Controller
 
             case 'type':
                 $types = Provider::getTypeList($project_key, ['name']);
-                foreach ($types as $key => $value) 
-                {
+                foreach ($types as $key => $value) {
                     $results[$value->id] = [ 'name' => $value->name, 'nos' => [] ];
                 }
                 break;
 
             case 'priority':
                 $priorities = Provider::getPriorityOptions($project_key, ['name']);
-                foreach ($priorities as $key => $value) 
-                {
+                foreach ($priorities as $key => $value) {
                     $results[$value['_id']] = [ 'name' => $value['name'], 'nos' => [] ];
                 }
                 break;
 
             case 'state':
                 $states = Provider::getStateOptions($project_key, ['name']);
-                foreach ($states as $key => $value)
-                {
+                foreach ($states as $key => $value) {
                     $results[$value['_id']] = [ 'name' => $value['name'], 'nos' => [] ];
                 }
                 break;
 
             case 'resolution':
                 $resolutions = Provider::getResolutionOptions($project_key, ['name']);
-                foreach ($resolutions as $key => $value)
-                {
+                foreach ($resolutions as $key => $value) {
                     $results[$value['_id']] = [ 'name' => $value['name'], 'nos' => [] ];
                 }
                 break;
 
             case 'module':
                 $modules = Provider::getModuleList($project_key, ['name']);
-                foreach ($modules as $key => $value) 
-                {
+                foreach ($modules as $key => $value) {
                     $results[$value->id] = [ 'name' => $value->name, 'nos' => [] ];
                 }
                 break;
 
             case 'resolve_version':
                 $versions = Provider::getVersionList($project_key, ['name']);
-                foreach ($versions as $key => $value) 
-                {
+                foreach ($versions as $key => $value) {
                     $results[$value->id] = [ 'name' => $value->name, 'nos' => [] ];
                 }
                 $results = array_reverse($results);
@@ -1305,33 +1071,27 @@ class ReportController extends Controller
 
             case 'epic':
                 $epics = Provider::getEpicList($project_key, ['name']);
-                foreach ($epics as $key => $value) 
-                {
+                foreach ($epics as $key => $value) {
                     $results[$value['_id']] = [ 'name' => $value['name'], 'nos' => [] ];
                 }
-                break; 
+                break;
 
             case 'sprints':
                 $sprints = Sprint::where('project_key', $project_key)
                     ->whereIn('status', [ 'active', 'completed' ])
                     ->orderBy('no', 'asc')
                     ->get();
-                foreach($sprints as $s)
-                {
+                foreach ($sprints as $s) {
                     $results[$s->no] = [ 'name' => 'Sprint' . $s->no, 'nos' => [] ];
                 }
                 break;
 
             default:
                 $fields = Provider::getFieldList($project_key);
-                foreach ($fields as $field) 
-                {
-                    if ($field->key === $dimension)
-                    {
-                        if (isset($field->optionValues) && $field->optionValues)
-                        {
-                            foreach($field->optionValues as $val)
-                            {
+                foreach ($fields as $field) {
+                    if ($field->key === $dimension) {
+                        if (isset($field->optionValues) && $field->optionValues) {
+                            foreach ($field->optionValues as $val) {
                                 $results[$val['id']] = [ 'name' => $val['name'], 'nos' => [] ];
                             }
                         }
@@ -1354,8 +1114,7 @@ class ReportController extends Controller
     public function getIssues(Request $request, $project_key)
     {
         $X = $request->input('stat_x') ?: '';
-        if (!$X)
-        {
+        if (!$X) {
             throw new \UnexpectedValueException('the currentX can not be empty.', -11855);
         }
         //$X = $X === 'sprint' ? 'sprints' : $X;
@@ -1366,12 +1125,9 @@ class ReportController extends Controller
 
         $XYData = [];
         $YAxis = [];
-        if ($X === $Y || !$Y)
-        {
+        if ($X === $Y || !$Y) {
             $XYData[$X] = $this->initXYData($project_key, $X);
-        }
-        else
-        {
+        } else {
             $XYData[$X] = $this->initXYData($project_key, $X);
             $XYData[$Y] = $this->initXYData($project_key, $Y);
         }
@@ -1380,52 +1136,36 @@ class ReportController extends Controller
         $query = DB::collection('issue_' . $project_key)->whereRaw($where);
         $issues = $query->orderBy('no', 'desc')->take(10000)->get();
 
-        foreach($issues as $issue)
-        {
-            foreach ($XYData as $dimension => $z)
-            {
-                if (!isset($issue[$dimension]) || !$issue[$dimension])
-                {
+        foreach ($issues as $issue) {
+            foreach ($XYData as $dimension => $z) {
+                if (!isset($issue[$dimension]) || !$issue[$dimension]) {
                     continue;
                 }
 
                 $issue_vals = [];
-                if (is_string($issue[$dimension]))
-                {
-                    if (strpos($issue[$dimension], ',') !== false)
-                    {
+                if (is_string($issue[$dimension])) {
+                    if (strpos($issue[$dimension], ',') !== false) {
                         $issue_vals = explode(',', $issue[$dimension]);
-                    }
-                    else
-                    {
+                    } else {
                         $issue_vals = [ $issue[$dimension] ];
                     }
-                }
-                else if (is_array($issue[$dimension]))
-                {
+                } elseif (is_array($issue[$dimension])) {
                     $issue_vals = $issue[$dimension];
-                    if (isset($issue[$dimension]['id']))
-                    {
+                    if (isset($issue[$dimension]['id'])) {
                         $issue_vals = [ $issue[$dimension] ];
                     }
                 }
 
-                foreach ($issue_vals as $issue_val)
-                {
+                foreach ($issue_vals as $issue_val) {
                     $tmpv = $issue_val;
-                    if (is_array($issue_val) && isset($issue_val['id']))
-                    {
+                    if (is_array($issue_val) && isset($issue_val['id'])) {
                         $tmpv = $issue_val['id'];
                     }
 
-                    if (isset($z[$tmpv]))
-                    {
+                    if (isset($z[$tmpv])) {
                         $XYData[$dimension][$tmpv]['nos'][] = $issue['no'];
-                    }
-                    else if ((is_array($issue_val) && isset($issue_val['id'])) || $dimension === 'labels')
-                    {
-                        if ($dimension === $Y && $X !== $Y)
-                        {
+                    } elseif ((is_array($issue_val) && isset($issue_val['id'])) || $dimension === 'labels') {
+                        if ($dimension === $Y && $X !== $Y) {
                             $YAxis[$tmpv] = isset($issue[$dimension]['name']) ? $issue[$dimension]['name'] : $tmpv;
                         }
 
@@ -1436,47 +1176,34 @@ class ReportController extends Controller
         }
 
         $results = [];
-        if ($X === $Y || !$Y)
-        {
-            foreach ($XYData[$X] as $key => $value)
-            {
+        if ($X === $Y || !$Y) {
+            foreach ($XYData[$X] as $key => $value) {
                 $results[] = [ 'id' => $key, 'name' => $value['name'], 'cnt' => count($value['nos']) ];
             }
-        }
-        else
-        {
-            foreach ($XYData[$X] as $key => $value)
-            {
+        } else {
+            foreach ($XYData[$X] as $key => $value) {
                 $results[$key] = [ 'id' => $key, 'name' => $value['name'], 'y' => [] ];
                 $x_cnt = 0;
 
-                if ($YAxis)
-                {
-                    foreach ($YAxis as $yai => $yav) 
-                    {
-                        if (isset($XYData[$Y][$yai]))
-                        {
+                if ($YAxis) {
+                    foreach ($YAxis as $yai => $yav) {
+                        if (isset($XYData[$Y][$yai])) {
                             $y_cnt = count(array_intersect($value['nos'], $XYData[$Y][$yai]['nos']));
                             $results[$key]['y'][] = [ 'id' => $yai, 'name' => $yav, 'cnt' => $y_cnt ];
                             $x_cnt += $y_cnt;
-                        }
-                        else
-                        {
+                        } else {
                             $results[$key]['y'][] = [ 'id' => $yai, 'name' => yav, 'cnt' => 0 ];
                         }
                     }
-                }
-                else
-                {
-                    foreach ($XYData[$Y] as $key2 => $value2)
-                    {
+                } else {
+                    foreach ($XYData[$Y] as $key2 => $value2) {
                         $y_cnt = count(array_intersect($value['nos'], $value2['nos']));
 
                         $results[$key]['y'][] = [ 'id' => $key2, 'name' => $value2['name'], 'cnt' => $y_cnt ];
                         $x_cnt += $y_cnt;
                     }
-                 }
-                 $results[$key]['cnt'] = $x_cnt;
+                }
+                $results[$key]['cnt'] = $x_cnt;
             }
         }
 

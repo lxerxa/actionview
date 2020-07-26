@@ -6,7 +6,7 @@ use Jenssegers\Mongodb\Eloquent\Model;
 
 class CurrentStep extends Model
 {
-    protected $table = 'oswf_currentstep'; 
+    protected $table = 'oswf_currentstep';
 
     protected $fillable = array(
         'entry_id',

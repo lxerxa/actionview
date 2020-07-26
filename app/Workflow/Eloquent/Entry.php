@@ -9,10 +9,10 @@ class Entry extends Model
     protected $table = 'oswf_entry';
 
     protected $fillable = array(
-        'definition_id', 
+        'definition_id',
         'creator',
         'state',
-        'propertysets' 
+        'propertysets'
     );
 
     public function definition()
@@ -25,4 +25,3 @@ class Entry extends Model
         return $this->hasMany('App\Workflow\Eloquent\CurrentStep');
     }
 }
-

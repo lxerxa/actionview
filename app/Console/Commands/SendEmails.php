@@ -87,8 +87,7 @@ class SendEmails extends Command
             && isset($syssetting['mailserver']['smtp']['host'])
             && isset($syssetting['mailserver']['smtp']['port'])
             && isset($syssetting['mailserver']['smtp']['username'])
-            && isset($syssetting['mailserver']['smtp']['password']))
-        {
+            && isset($syssetting['mailserver']['smtp']['password'])) {
             Config::set('mail.from', $syssetting['mailserver']['send']['from']);
             Config::set('mail.host', $syssetting['mailserver']['smtp']['host']);
             Config::set('mail.port', $syssetting['mailserver']['smtp']['port']);
@@ -102,13 +101,11 @@ class SendEmails extends Command
         if (isset($syssetting['mailserver'])
             && isset($syssetting['mailserver']['send'])
             && isset($syssetting['mailserver']['send']['prefix'])
-            && $syssetting['mailserver']['send']['prefix'])
-        {
+            && $syssetting['mailserver']['send']['prefix']) {
             $this->mail_prefix = $syssetting['mailserver']['send']['prefix'];
         }
 
-        if (isset($syssetting['properties']) && isset($syssetting['properties']['http_host']))
-        {
+        if (isset($syssetting['properties']) && isset($syssetting['properties']['http_host'])) {
             $this->http_host = $syssetting['properties']['http_host'];
         }
 
@@ -135,8 +132,7 @@ class SendEmails extends Command
     {
         $map = [];
         $events = Events::whereRaw([ 'key' => [ '$exists' => 1 ] ])->get();
-        foreach ($events as $event)
-        {
+        foreach ($events as $event) {
             $key = $event->key;
             $map[$key] = $event->id;
         }
@@ -153,8 +149,7 @@ class SendEmails extends Command
     public function getNotifications($project_key, $event_id)
     {
         $en = EventNotifications::where([ 'project_key' => $project_key, 'event_id' => $event_id ])->first();
-        if (!$en)
-        {
+        if (!$en) {
             $en = EventNotifications::where([ 'project_key' => '$_sys_$', 'event_id' => $event_id ])->first();
         }
         return $en && isset($en->notifications) ? $en->notifications : [];
@@ -170,15 +165,15 @@ class SendEmails extends Command
     public function getUsersByRoleId($project_key, $role_id)
     {
         $actor = Roleactor::where([ 'project_key' => $project_key, 'role_id' => $role_id ])->first();
-        if (!$actor) { return [ 'users' => [], 'groups' => [] ]; }
+        if (!$actor) {
+            return [ 'users' => [], 'groups' => [] ];
+        }
 
         $user_ids = isset($actor->user_ids) && $actor->user_ids ? $actor->user_ids : [];
 
-        if (isset($actor->group_ids) && $actor->group_ids)
-        {
+        if (isset($actor->group_ids) && $actor->group_ids) {
             $groups = Group::find($actor->group_ids);
-            foreach ($groups as $group)
-            {
+            foreach ($groups as $group) {
                 $user_ids = array_merge($user_ids, isset($group->users) ? $group->users : []);
             }
         }
@@ -199,19 +194,16 @@ class SendEmails extends Command
         $subject = '';
         $template = '';
 
-        if ($activity['event_key'] == 'start_sprint')
-        {
+        if ($activity['event_key'] == 'start_sprint') {
             $sprint_no = isset($activity['data']) && isset($activity['data']['sprint_no']) ? $activity['data']['sprint_no'] : '';
-            if (!$sprint_no)
-            {
+            if (!$sprint_no) {
                 return;
             }
 
             $sprint = Sprint::where('project_key', $project->key)
                 ->where('no', $sprint_no)
                 ->first();
-            if ($sprint->status !== 'active' || !isset($sprint['issues']))
-            {
+            if ($sprint->status !== 'active' || !isset($sprint['issues'])) {
                 return;
             }
 
@@ -230,12 +222,9 @@ class SendEmails extends Command
 
             $subject = '[' . $this->mail_prefix . '] ' . $project->key . ': Sprint-' . $sprint_no . ' 启动';
             $template = 'emails.sprint_start';
-        }
-        else if ($activity['event_key'] == 'complete_sprint')
-        {
+        } elseif ($activity['event_key'] == 'complete_sprint') {
             $sprint_no = isset($activity['data']) && isset($activity['data']['sprint_no']) ? $activity['data']['sprint_no'] : '';
-            if (!$sprint_no)
-            {
+            if (!$sprint_no) {
                 return;
             }
 
@@ -243,23 +232,20 @@ class SendEmails extends Command
                 ->where('no', $sprint_no)
                 ->first();
 
-            if ($sprint->status !== 'completed')
-            {
+            if ($sprint->status !== 'completed') {
                 return;
             }
 
             $completed_issues = [];
             $incompleted_issues = [];
-            if (isset($sprint->completed_issues) && $sprint->completed_issues)
-            {
+            if (isset($sprint->completed_issues) && $sprint->completed_issues) {
                 $completed_issues = DB::collection('issue_' . $project->key)
                     ->whereIn('no', $sprint->completed_issues)
                     ->where('del_flg', '<>', 1)
                     ->get();
             }
 
-            if (isset($sprint->incompleted_issues) && $sprint->incompleted_issues)
-            {
+            if (isset($sprint->incompleted_issues) && $sprint->incompleted_issues) {
                 $incompleted_issues = DB::collection('issue_' . $project->key)
                     ->whereIn('no', $sprint->incompleted_issues)
                     ->where('del_flg', '<>', 1)
@@ -278,12 +264,9 @@ class SendEmails extends Command
             $subject = '[' . $this->mail_prefix . '] ' . $project->key . ': Sprint-' . $sprint_no . ' 完成';
 
             $template = 'emails.sprint_complete';
-        }
-        else if ($activity['event_key'] == 'release_version')
-        {
+        } elseif ($activity['event_key'] == 'release_version') {
             $release_version = isset($activity['data']) ? $activity['data'] : [];
-            if (!$release_version)
-            {
+            if (!$release_version) {
                 return;
             }
 
@@ -304,13 +287,10 @@ class SendEmails extends Command
             $subject = '[' . $this->mail_prefix . '] ' . $project->key . ':  版本-' . $release_version['name'] . ' 发布';
 
             $template = 'emails.version_release';
-        }
-        else if ($activity['event_key'] == 'create_release_version')
-        {
+        } elseif ($activity['event_key'] == 'create_release_version') {
             $released_issueids = isset($activity['data']['released_issues']) ? $activity['data']['released_issues'] : [];
             $release_version = isset($activity['data']['release_version']) ? $activity['data']['release_version'] : [];
-            if (!$released_issueids || !$release_version)
-            {
+            if (!$released_issueids || !$release_version) {
                 return;
             }
 
@@ -330,19 +310,18 @@ class SendEmails extends Command
             $subject = '[' . $this->mail_prefix . '] ' . $project->key . ':  版本-' . $release_version['name'] . ' 发布';
 
             $template = 'emails.version_release';
-        }
-        else if ($activity['event_key'] == 'create_wiki' || $activity['event_key'] == 'edit_wiki')
-        {
+        } elseif ($activity['event_key'] == 'create_wiki' || $activity['event_key'] == 'edit_wiki') {
             $wiki_id = isset($activity['data']['wiki_id']) ? $activity['data']['wiki_id'] : '';
-            if (!$wiki_id)
-            {
+            if (!$wiki_id) {
                 return;
             }
 
             $wiki = DB::collection('wiki_' . $project->key)
                 ->where('_id', $wiki_id)
                 ->first();
-            if (!$wiki) { return; }
+            if (!$wiki) {
+                return;
+            }
 
             $data = [
                 'project' => $project,
@@ -355,9 +334,7 @@ class SendEmails extends Command
             $subject = '[' . $this->mail_prefix . '] ' . $project->key . ': Wiki-' . $wiki['name'];
 
             $template = 'emails.wiki';
-        }
-        else
-        {
+        } else {
             return;
         }
 
@@ -365,12 +342,11 @@ class SendEmails extends Command
 
         $to_users = EloquentUser::find(array_unique($uids));
 
-        foreach ($to_users as $to_user)
-        {
+        foreach ($to_users as $to_user) {
             $from = $activity['user']['name'];
             $to = $to_user['email'];
             try {
-                Mail::send($template, $data, function($message) use($from, $to, $subject) {
+                Mail::send($template, $data, function ($message) use ($from, $to, $subject) {
                     $message->from(Config::get('mail.from'), $from)
                         ->to($to)
                         ->subject($subject);
@@ -396,76 +372,51 @@ class SendEmails extends Command
         $event_map = $this->event_map;
 
         $issue = DB::collection('issue_' . $project->key)->where('_id', $issue_id)->first();
-        if (!$issue) { return; }
+        if (!$issue) {
+            return;
+        }
 
         $event_key = ($activity['event_key'] == 'add_file' || $activity['event_key'] == 'del_file') ? 'edit_issue' : $activity['event_key'];
         $event_id = isset($event_map[$event_key]) && $event_map[$event_key] ? $event_map[$event_key] : $event_key;
 
         $notifications = $this->getNotifications($project->key, $event_id);
 
-        foreach ($notifications as $notification)
-        {
-            if ('current_user' === $notification)
-            {
+        foreach ($notifications as $notification) {
+            if ('current_user' === $notification) {
                 $uids[] = $activity['user']['id'];
-            }
-            else if ('reporter' === $notification)
-            {
+            } elseif ('reporter' === $notification) {
                 $uids[] = $issue['reporter']['id'];
-            }
-            else if ('assignee' === $notification)
-            {
-                if (isset($issue['assignee']) && isset($issue['assignee']['id']))
-                {
+            } elseif ('assignee' === $notification) {
+                if (isset($issue['assignee']) && isset($issue['assignee']['id'])) {
                     $uids[] = $issue['assignee']['id'];
                 }
-            }
-            else if ('watchers' === $notification)
-            {
+            } elseif ('watchers' === $notification) {
                 $watchers = Watch::where('issue_id', $issue['_id']->__toString())->get();
-                foreach ($watchers as $watcher)
-                {
+                foreach ($watchers as $watcher) {
                     $uids[] = $watcher['user']['id'];
                 }
-            }
-            else if ('project_principal' === $notification)
-            {
+            } elseif ('project_principal' === $notification) {
                 $uids[] = $project->principal['id'];
-            }
-            else if ('module_principal' === $notification && isset($issue['module']))
-            {
+            } elseif ('module_principal' === $notification && isset($issue['module'])) {
                 $module = Module::find($issue['module']);
-                if ($module && isset($module->principal) && isset($module->principal['id']))
-                {
+                if ($module && isset($module->principal) && isset($module->principal['id'])) {
                     $uids[] = $module->principal['id'];
                 }
-            }
-            else if (is_array($notification) && isset($notification['key']))
-            {
-                if ($notification['key'] === 'user' && isset($notification['value']) && isset($notification['value']['id']))
-                {
+            } elseif (is_array($notification) && isset($notification['key'])) {
+                if ($notification['key'] === 'user' && isset($notification['value']) && isset($notification['value']['id'])) {
                     $uids[] = $notification['value']['id'];
-                }
-                else if ($notification['key'] === 'role' && isset($notification['value']))
-                {
+                } elseif ($notification['key'] === 'role' && isset($notification['value'])) {
                     $role_users = $this->getUsersByRoleId($project->key, $notification['value']);
                     $uids = array_merge($uids, $role_users);
-                }
-                else if ($notification['key'] === 'single_user_field' && isset($notification['value']))
-                {
+                } elseif ($notification['key'] === 'single_user_field' && isset($notification['value'])) {
                     $key = $notification['value'];
-                    if (isset($issue[$key]) && isset($issue[$key]['id']))
-                    {
+                    if (isset($issue[$key]) && isset($issue[$key]['id'])) {
                         $uids[] = $issue[$key]['id'];
                     }
-                }
-                else if ($notification['key'] === 'multi_user_field' && isset($notification['value']))
-                {
+                } elseif ($notification['key'] === 'multi_user_field' && isset($notification['value'])) {
                     $key = $notification['value'];
-                    if (isset($issue[$key]) && $issue[$key])
-                    {
-                        foreach ($issue[$key] as $v)
-                        {
+                    if (isset($issue[$key]) && $issue[$key]) {
+                        foreach ($issue[$key] as $v) {
                             $uids[] = $v['id'];
                         }
                     }
@@ -473,38 +424,29 @@ class SendEmails extends Command
             }
         }
 
-        if ($event_key == 'create_issue')
-        {
-            if (isset($issue['type']) && $issue['type'])
-            {
+        if ($event_key == 'create_issue') {
+            if (isset($issue['type']) && $issue['type']) {
                 $type = Type::find($issue['type']);
                 $issue['type'] = $type ? $type->name : '-';
             }
-            if (isset($issue['priority']) && $issue['priority'])
-            {
+            if (isset($issue['priority']) && $issue['priority']) {
                 $priority = Priority::where('_id', $issue['priority'])->orWhere('key', $issue['priority'])->first();
                 $issue['priority'] = $priority ? $priority->name : '-';
-            }
-            else
-            {
+            } else {
                 $issue['priority'] = '-';
             }
         }
 
         $atWho = [];
-        if ($event_key == 'add_comments' or $event_key == 'edit_comments' or $event_key == 'del_comments')
-        {
-            if (isset($activity['data']) && isset($activity['data']['atWho']) && $activity['data']['atWho'])
-            {
-                foreach ($activity['data']['atWho'] as $who)
-                {
+        if ($event_key == 'add_comments' or $event_key == 'edit_comments' or $event_key == 'del_comments') {
+            if (isset($activity['data']) && isset($activity['data']['atWho']) && $activity['data']['atWho']) {
+                foreach ($activity['data']['atWho'] as $who) {
                     $uids[] = $who['id'];
                     $atWho[] = $who['id'];
                 }
             }
-            if (isset($activity['data']) && isset($activity['data']['to']) && $activity['data']['to'])
-            {
-                 $uids[] = $activity['data']['to']['id'];
+            if (isset($activity['data']) && isset($activity['data']['to']) && $activity['data']['to']) {
+                $uids[] = $activity['data']['to']['id'];
             }
         }
 
@@ -518,11 +460,9 @@ class SendEmails extends Command
         ];
 
         $to_users = EloquentUser::find(array_values(array_unique(array_filter($uids))));
-        foreach ($to_users as $to_user)
-        {
+        foreach ($to_users as $to_user) {
             $new_data = $data;
-            if (in_array($to_user->id, $atWho))
-            {
+            if (in_array($to_user->id, $atWho)) {
                 $new_data['at'] = true;
             }
 
@@ -530,7 +470,7 @@ class SendEmails extends Command
             $to = $to_user['email'];
             $subject = '[' . $this->mail_prefix . '](' . $project->key . '-' . $issue['no'] . ')' . (isset($issue['title']) ? $issue['title'] : '-');
             try {
-                Mail::send('emails.issue', $new_data, function($message) use($from, $to, $subject) {
+                Mail::send('emails.issue', $new_data, function ($message) use ($from, $to, $subject) {
                     $message->from(Config::get('mail.from'), $from)
                         ->to($to)
                         ->subject($subject);
@@ -554,28 +494,25 @@ class SendEmails extends Command
         // mark up the notice message
         DB::collection('mq')->where('flag', 0)->update([ 'flag' => $point ]);
 
-        if (!$this->isSmtpConfiged())
-        {
+        if (!$this->isSmtpConfiged()) {
             return;
         }
 
         $data = DB::collection('mq')->where('flag', $point)->orderBy('_id', 'asc')->get();
-        foreach ($data as $val)
-        {
+        foreach ($data as $val) {
             $uids = [];
             $project_key = $val['project_key'];
 
             $project = Project::where('key', $project_key)->first();
-            if (!$project) { continue; }
+            if (!$project) {
+                continue;
+            }
 
             $activity = DB::collection('activity_' . $project_key)->where('_id', $val['activity_id'])->first();
 
-            if (isset($activity['issue_id']) && $activity['issue_id'])
-            {
+            if (isset($activity['issue_id']) && $activity['issue_id']) {
                 $this->issueNoticeHandle($project, $activity);
-            }
-            else
-            {
+            } else {
                 $this->otherNoticeHandle($project, $activity);
             }
 

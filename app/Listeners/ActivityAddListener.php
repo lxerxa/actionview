@@ -19,7 +19,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 
 use DB;
 
-class ActivityAddListener 
+class ActivityAddListener
 {
     /**
      * Create the event listener.
@@ -40,26 +40,18 @@ class ActivityAddListener
     {
         // this activity_id is used for notice
 
-        if ($event instanceof FileUploadEvent)
-        {
+        if ($event instanceof FileUploadEvent) {
             $activity_id = $this->addFileActivity($event->project_key, $event->issue_id, $event->user, $event->file_id, 'add_file');
             $this->putMQ($event->project_key, $activity_id);
-        }
-        else if ($event instanceof FileDelEvent)
-        {
+        } elseif ($event instanceof FileDelEvent) {
             $activity_id = $this->addFileActivity($event->project_key, $event->issue_id, $event->user, $event->file_id, 'del_file');
             $this->putMQ($event->project_key, $activity_id);
-        }
-        else if ($event instanceof IssueEvent)
-        {
+        } elseif ($event instanceof IssueEvent) {
             $activity_id = $this->addIssueActivity($event->project_key, $event->issue_id, $event->user, $event->param);
             $this->putMQ($event->project_key, $activity_id);
-        }
-        else if ($event instanceof VersionEvent || $event instanceof SprintEvent || $event instanceof WikiEvent)
-        {
+        } elseif ($event instanceof VersionEvent || $event instanceof SprintEvent || $event instanceof WikiEvent) {
             $activity_id = $this->addProjectActivity($event->project_key, $event->user, $event->param);
-            if (isset($event->param['isSendMsg']) && $event->param['isSendMsg'])
-            {
+            if (isset($event->param['isSendMsg']) && $event->param['isSendMsg']) {
                 $this->putMQ($event->project_key, $activity_id);
             }
         }
@@ -78,8 +70,7 @@ class ActivityAddListener
     public function addFileActivity($project_key, $issue_id, $user, $file_id, $event_key)
     {
         $file_info = File::find($file_id);
-        if (!$file_info || $file_info->del_flg == 1)
-        {
+        if (!$file_info || $file_info->del_flg == 1) {
             return;
         }
 
@@ -116,38 +107,30 @@ class ActivityAddListener
     {
         $info = [];
 
-        if (isset($param['snap_id']) && $param['snap_id'])
-        {
-            $diff_items = []; $diff_keys = [];
+        if (isset($param['snap_id']) && $param['snap_id']) {
+            $diff_items = [];
+            $diff_keys = [];
 
             $snaps = DB::collection('issue_his_' . $project_key)->where('issue_id', $issue_id)->orderBy('_id', 'desc')->get();
-            foreach ($snaps as $i => $snap)
-            {
-                if ($snap['_id']->__toString() != $param['snap_id'])
-                {
+            foreach ($snaps as $i => $snap) {
+                if ($snap['_id']->__toString() != $param['snap_id']) {
                     continue;
                 }
 
                 $after_data = $snap['data'];
                 $before_data = $snaps[$i + 1]['data'];
-                foreach ($after_data as $key => $val)
-                {
-                    if (!isset($before_data[$key]) || $val !== $before_data[$key])
-                    {
+                foreach ($after_data as $key => $val) {
+                    if (!isset($before_data[$key]) || $val !== $before_data[$key]) {
                         $tmp = [];
                         $tmp['field'] = isset($val['name']) ? $val['name'] : '';
                         $tmp['after_value'] = isset($val['value']) ? $val['value'] : '';
                         $tmp['before_value'] = isset($before_data[$key]) && isset($before_data[$key]['value']) ? $before_data[$key]['value'] : '';
 
-                        if (is_array($tmp['after_value']) && is_array($tmp['before_value']))
-                        {
+                        if (is_array($tmp['after_value']) && is_array($tmp['before_value'])) {
                             $diff1 = array_diff($tmp['after_value'], $tmp['before_value']);
                             $tmp['after_value'] = implode(',', $diff1);
-                        }
-                        else
-                        {
-                            if (is_array($tmp['after_value']))
-                            {
+                        } else {
+                            if (is_array($tmp['after_value'])) {
                                 $tmp['after_value'] = implode(',', $tmp['after_value']);
                             }
                         }
@@ -156,27 +139,20 @@ class ActivityAddListener
                     }
                 }
 
-                foreach ($before_data as $key => $val)
-                {
-                    if (array_search($key, $diff_keys) !== false)
-                    {
+                foreach ($before_data as $key => $val) {
+                    if (array_search($key, $diff_keys) !== false) {
                         continue;
                     }
-                    if (!isset($after_data[$key]) || $val !== $after_data[$key])
-                    {
+                    if (!isset($after_data[$key]) || $val !== $after_data[$key]) {
                         $tmp = [];
                         $tmp['field'] = isset($val['name']) ? $val['name'] : '';
                         $tmp['before_value'] = isset($val['value']) ? $val['value'] : '';
                         $tmp['after_value'] = isset($after_data[$key]) && isset($after_data[$key]['value']) ? $after_data[$key]['value'] : '';
-                        if (is_array($tmp['after_value']) && is_array($tmp['before_value']))
-                        {
+                        if (is_array($tmp['after_value']) && is_array($tmp['before_value'])) {
                             $diff1 = array_diff($tmp['after_value'], $tmp['before_value']);
                             $tmp['after_value'] = implode(',', $diff1);
-                        }
-                        else
-                        {
-                            if (is_array($tmp['after_value']))
-                            {
+                        } else {
+                            if (is_array($tmp['after_value'])) {
                                 $tmp['after_value'] = implode(',', $tmp['after_value']);
                             }
                         }
@@ -185,15 +161,12 @@ class ActivityAddListener
                 }
                 break;
             }
-            if ($diff_items) 
-            {
+            if ($diff_items) {
                 // insert activity into db.
                 $info = [ 'issue_id' => $issue_id, 'event_key' => $param['event_key'], 'user' => $user, 'data' => $diff_items, 'created_at' => time() ];
                 return DB::collection('activity_' . $project_key)->insertGetId($info);
             }
-        }
-        else
-        {
+        } else {
             $info = [ 'issue_id' => $issue_id, 'event_key' => $param['event_key'], 'user' => $user, 'data' => isset($param['data']) ? $param['data'] : '', 'created_at' => time() ];
             return DB::collection('activity_' . $project_key)->insertGetId($info);
         }
@@ -209,8 +182,7 @@ class ActivityAddListener
      */
     public function putMQ($project_key, $activity_id)
     {
-        if (!$activity_id)
-        {
+        if (!$activity_id) {
             return;
         }
         $info = [ 'project_key' => $project_key, 'activity_id' => $activity_id->__toString(), 'flag' => 0, 'created_at' => time() ];

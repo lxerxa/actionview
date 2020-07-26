@@ -2,7 +2,8 @@
 
 namespace App\Utils;
 
-class CurlRequest {
+class CurlRequest
+{
 
     /**
      * The curl get request.
@@ -18,8 +19,7 @@ class CurlRequest {
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_HEADER, 0);
         
-        if (!$header)
-        {
+        if (!$header) {
             $header = [ 'Content-Type: application/json', 'Expect:' ];
         }
         curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
@@ -50,8 +50,7 @@ class CurlRequest {
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_HEADER, 0);
 
-        if (!$header)
-        {
+        if (!$header) {
             $header = [ 'Content-Type: application/json', 'Expect:' ];
         }
         curl_setopt($ch, CURLOPT_HTTPHEADER, $header);

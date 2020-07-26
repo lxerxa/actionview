@@ -2,9 +2,9 @@
 
 namespace App\Utils;
 
-class File {
-
-    static function download($filename, $displayname)
+class File
+{
+    public static function download($filename, $displayname)
     {
         header("Content-type: application/octet-stream");
         header("Accept-Ranges: bytes");
@@ -14,8 +14,7 @@ class File {
         $fp = fopen($filename, 'rb');
         ob_end_clean();
         ob_start();
-        while(!feof($fp))
-        {
+        while (!feof($fp)) {
             $chunk_size = 1024 * 8;
             echo fread($fp, $chunk_size);
             ob_flush();
