@@ -23,7 +23,13 @@ class Controller extends BaseController
 
     public function __construct()
     {
-        $this->user = Sentinel::getUser();
+    }
+
+    public function __get($property)
+    {
+        if ($property == 'user') {
+            return Sentinel::getUser();
+        }
     }
 
     public function arrange($data)
