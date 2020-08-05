@@ -37,12 +37,9 @@ class FieldConfigChangeListener
      */
     public function handle(Event $event)
     {
-        if ($event instanceof FieldChangeEvent)
-        {
+        if ($event instanceof FieldChangeEvent) {
             $this->updateSchema($event->field_id, 1);
-        }
-        else if ($event instanceof FieldDeleteEvent)
-        {
+        } elseif ($event instanceof FieldDeleteEvent) {
             $this->updateSchema($event->field_id, 2);
             $this->updateDisplayColumns($event->project_key, $event->field_key);
             $this->updateKanbanDisplayFields($event->project_key, $event->field_key);
@@ -60,25 +57,21 @@ class FieldConfigChangeListener
     public function updateSchema($field_id, $flag)
     {
         $screens = Screen::whereRaw([ 'field_ids' => $field_id ])->get([ 'schema' ]);
-        foreach ($screens as $screen)
-        {
+        foreach ($screens as $screen) {
             $new_schema = [];
-            foreach ($screen->schema as $field)
-            {
-                if ($field['_id'] != $field_id)
-                {
+            foreach ($screen->schema as $field) {
+                if ($field['_id'] != $field_id) {
                     $new_schema[] = $field;
                     continue;
                 }
 
-                if ($flag == 1)
-                {
+                if ($flag == 1) {
                     $new_field = Field::Find($field_id, ['name', 'key', 'type', 'applyToTypes', 'defaultValue', 'optionValues', 'minValue', 'maxValue', 'maxLength'])->toArray();
-                    if (isset($field['required']) && $field['required'])
-                    {
+                    if (isset($field['required']) && $field['required']) {
                         $new_field['required'] = true;
                     }
-                    $new_schema[] = $new_field;;
+                    $new_schema[] = $new_field;
+                    ;
                 }
             }
             $screen->schema = $new_schema;
@@ -97,33 +90,23 @@ class FieldConfigChangeListener
     public function unsetIssueVal($project_key, $field_key, $field_type)
     {
         $res = [];
-        if ($project_key === '$_sys_$')
-        {
+        if ($project_key === '$_sys_$') {
             $projects = Project::all();
-            foreach($projects as $project)
-            {
+            foreach ($projects as $project) {
                 DB::collection('issue_' . $project->key)->whereRaw([ $field_key => [ '$exists' => 1 ] ])->unset($field_key);
 
-                if ($field_type === 'MultiUser')
-                {
+                if ($field_type === 'MultiUser') {
                     DB::collection('issue_' . $project->key)->whereRaw([ $field_key . '_ids' => [ '$exists' => 1 ] ])->unset($field_key . '_ids');
-                }
-                else if ($field_type === 'TimeTracking')
-                {
+                } elseif ($field_type === 'TimeTracking') {
                     DB::collection('issue_' . $project->key)->whereRaw([ $field_key . '_m' => [ '$exists' => 1 ] ])->unset($field_key . '_m');
                 }
             }
-        }
-        else
-        {
+        } else {
             DB::collection('issue_' . $project_key)->whereRaw([ $field_key => [ '$exists' => 1 ] ])->unset($field_key);
 
-            if ($field_type === 'MultiUser')
-            {
+            if ($field_type === 'MultiUser') {
                 DB::collection('issue_' . $project_key)->whereRaw([ $field_key . '_ids' => [ '$exists' => 1 ] ])->unset($field_key . '_ids');
-            }
-            else if ($field_type === 'TimeTracking')
-            {
+            } elseif ($field_type === 'TimeTracking') {
                 DB::collection('issue_' . $project_key)->whereRaw([ $field_key . '_m' => [ '$exists' => 1 ] ])->unset($field_key . '_m');
             }
         }
@@ -139,22 +122,16 @@ class FieldConfigChangeListener
     public function updateKanbanDisplayFields($project_key, $field_key)
     {
         $res = [];
-        if ($project_key === '$_sys_$')
-        {
+        if ($project_key === '$_sys_$') {
             $res = Board::whereRaw([ 'display_fields' => $field_key ])->get();
-        }
-        else
-        {
+        } else {
             $res = Board::whereRaw([ 'display_fields' => $field_key, 'project_key' => $project_key ])->get();
         }
-        foreach ($res as $value)
-        {
+        foreach ($res as $value) {
             $new_fields = [];
             $display_fields = isset($value->display_fields) ? $value->display_fields : [];
-            foreach ($display_fields as $val)
-            {
-                if ($val === $field_key)
-                {
+            foreach ($display_fields as $val) {
+                if ($val === $field_key) {
                     continue;
                 }
 
@@ -176,23 +153,17 @@ class FieldConfigChangeListener
     public function updateDisplayColumns($project_key, $field_key)
     {
         $res = [];
-        if ($project_key === '$_sys_$')
-        {
+        if ($project_key === '$_sys_$') {
             $res = UserIssueListColumns::whereRaw([ 'column_keys' => $field_key ])->get();
-        }
-        else
-        {
+        } else {
             $res = UserIssueListColumns::whereRaw([ 'column_keys' => $field_key, 'project_key' => $project_key ])->get();
         }
-        foreach ($res as $value)
-        {
+        foreach ($res as $value) {
             $new_columns = [];
             $column_keys = [];
             $columns = isset($value->columns) ? $value->columns : [];
-            foreach ($columns as $column)
-            {
-                if ($column['key'] === $field_key)
-                {
+            foreach ($columns as $column) {
+                if ($column['key'] === $field_key) {
                     continue;
                 }
 
@@ -205,23 +176,17 @@ class FieldConfigChangeListener
             $value->save();
         }
 
-        if ($project_key === '$_sys_$')
-        {
+        if ($project_key === '$_sys_$') {
             $res = ProjectIssueListColumns::whereRaw([ 'column_keys' => $field_key ])->get();
-        }
-        else
-        {
+        } else {
             $res = ProjectIssueListColumns::whereRaw([ 'column_keys' => $field_key, 'project_key' => $project_key ])->get();
         }
-        foreach ($res as $value)
-        {
+        foreach ($res as $value) {
             $new_columns = [];
             $column_keys = [];
             $columns = isset($value->columns) ? $value->columns : [];
-            foreach ($columns as $column)
-            {
-                if ($column['key'] === $field_key)
-                {
+            foreach ($columns as $column) {
+                if ($column['key'] === $field_key) {
                     continue;
                 }
 

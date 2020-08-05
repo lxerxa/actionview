@@ -24,11 +24,9 @@ class SummaryController extends Controller
     {
         $filters = Provider::getIssueFilters($project_key, $this->user->id);
         $filters = array_slice($filters, 0, 4);
-        foreach ($filters as $key => $filter)
-        {
+        foreach ($filters as $key => $filter) {
             $query = [];
-            if (isset($filter['query']) && $filter['query'])
-            {
+            if (isset($filter['query']) && $filter['query']) {
                 $query = $filter['query'];
             }
 
@@ -56,8 +54,7 @@ class SummaryController extends Controller
 
         // initialize the pulse data
         $t = strtotime('-2 week');
-        while($t <= time())
-        {
+        while ($t <= time()) {
             $ymd = date('Y/m/d', $t);
             $trend[$ymd] = [ 'new' => 0, 'resolved' => 0, 'closed' => 0 ];
             $t += 24 * 3600;
@@ -73,38 +70,30 @@ class SummaryController extends Controller
             ->where('del_flg', '<>', 1)
             ->get([ 'created_at', 'resolved_at', 'closed_at' ]);
 
-        foreach ($issues as $issue)
-        {
-            if (isset($issue['created_at']) && $issue['created_at'])
-            {
+        foreach ($issues as $issue) {
+            if (isset($issue['created_at']) && $issue['created_at']) {
                 $created_date = date('Y/m/d', $issue['created_at']);
-                if (isset($trend[$created_date]))
-                {
+                if (isset($trend[$created_date])) {
                     $trend[$created_date]['new'] += 1;
                 }
             }
 
-            if (isset($issue['resolved_at']) && $issue['resolved_at'])
-            {
+            if (isset($issue['resolved_at']) && $issue['resolved_at']) {
                 $resolved_date = date('Y/m/d', $issue['resolved_at']);
-                if (isset($trend[$resolved_date]))
-                {
+                if (isset($trend[$resolved_date])) {
                     $trend[$resolved_date]['resolved'] += 1;
                 }
             }
-            if (isset($issue['closed_at']) && $issue['closed_at'])
-            {
+            if (isset($issue['closed_at']) && $issue['closed_at']) {
                 $closed_date = date('Y/m/d', $issue['closed_at']);
-                if (isset($trend[$closed_date]))
-                {
+                if (isset($trend[$closed_date])) {
                     $trend[$closed_date]['closed'] += 1;
                 }
             }
         }
 
         $new_trend = [];
-        foreach ($trend as $key => $val)
-        {
+        foreach ($trend as $key => $val) {
             $new_trend[] = [ 'day' => $key ] + $val;
         }
         return $new_trend;
@@ -122,30 +111,25 @@ class SummaryController extends Controller
         // the two weeks issuepulse
         $trend = $this->getPulseData($project_key);
 
-        $types = Provider::getTypeList($project_key); 
+        $types = Provider::getTypeList($project_key);
         
         $optPriorities = [];
-        $priorities = Provider::getPriorityList($project_key); 
-        foreach ($priorities as $priority)
-        {
-            if (isset($priority['key']))
-            {
+        $priorities = Provider::getPriorityList($project_key);
+        foreach ($priorities as $priority) {
+            if (isset($priority['key'])) {
                 $optPriorities[$priority['key']] = $priority['name'];
-            }
-            else
-            {
+            } else {
                 $optPriorities[$priority['_id']] = $priority['name'];
             }
         }
 
         $optModules = [];
         $modules = Provider::getModuleList($project_key);
-        foreach ($modules as $module)
-        {
+        foreach ($modules as $module) {
             $optModules[$module->id] = $module->name;
         }
 
-        //$users = Provider::getUserList($project_key); 
+        //$users = Provider::getUserList($project_key);
 
         $issues = DB::collection('issue_' . $project_key)
             ->where('created_at', '>=', strtotime(date('Ymd', strtotime('-1 week'))))
@@ -153,10 +137,8 @@ class SummaryController extends Controller
             ->get([ 'type' ]);
 
         $new_issues = [ 'total' => 0 ];
-        foreach ($issues as $issue)
-        {
-            if (!isset($new_issues[$issue['type']]))
-            {
+        foreach ($issues as $issue) {
+            if (!isset($new_issues[$issue['type']])) {
                 $new_issues[$issue['type']] = 0;
             }
             $new_issues[$issue['type']] += 1;
@@ -170,10 +152,8 @@ class SummaryController extends Controller
             ->get([ 'type' ]);
 
         $closed_issues = [ 'total' => 0 ];
-        foreach ($issues as $issue)
-        {
-            if (!isset($closed_issues[$issue['type']]))
-            {
+        foreach ($issues as $issue) {
+            if (!isset($closed_issues[$issue['type']])) {
                 $closed_issues[$issue['type']] = 0;
             }
             $closed_issues['total'] += 1;
@@ -181,15 +161,11 @@ class SummaryController extends Controller
         }
 
         $new_percent = $closed_percent = 0;
-        if ($new_issues['total'] > 0 || $closed_issues['total'] > 0)
-        {
+        if ($new_issues['total'] > 0 || $closed_issues['total'] > 0) {
             $new_percent = $new_issues['total'] * 100 / ($new_issues['total'] + $closed_issues['total']);
-            if ($new_percent > 0 && $new_percent < 1)
-            {
+            if ($new_percent > 0 && $new_percent < 1) {
                 $new_percent = 1;
-            }
-            else 
-            {
+            } else {
                 $new_percent = floor($new_percent);
             }
             $closed_percent = 100 - $new_percent;
@@ -205,20 +181,16 @@ class SummaryController extends Controller
 
         $users = [];
         $assignee_unresolved_issues = [];
-        foreach ($issues as $issue)
-        {
-            if (!isset($issue['assignee']) || !$issue['assignee']) 
-            {
+        foreach ($issues as $issue) {
+            if (!isset($issue['assignee']) || !$issue['assignee']) {
                 continue;
             }
 
             $users[$issue['assignee']['id']] = $issue['assignee']['name'];
-            if (!isset($assignee_unresolved_issues[$issue['assignee']['id']][$issue['type']]))
-            {
+            if (!isset($assignee_unresolved_issues[$issue['assignee']['id']][$issue['type']])) {
                 $assignee_unresolved_issues[$issue['assignee']['id']][$issue['type']] = 0;
             }
-            if (!isset($assignee_unresolved_issues[$issue['assignee']['id']]['total']))
-            {
+            if (!isset($assignee_unresolved_issues[$issue['assignee']['id']]['total'])) {
                 $assignee_unresolved_issues[$issue['assignee']['id']]['total'] = 0;
             }
             $assignee_unresolved_issues[$issue['assignee']['id']][$issue['type']] += 1;
@@ -227,23 +199,17 @@ class SummaryController extends Controller
         $assignee_unresolved_issues = $this->calPercent($assignee_unresolved_issues);
 
         $priority_unresolved_issues = [];
-        foreach ($issues as $issue)
-        {
-            if (!isset($issue['priority']) || !$issue['priority'])
-            {
+        foreach ($issues as $issue) {
+            if (!isset($issue['priority']) || !$issue['priority']) {
                 $priority_id = '-1';
-            }
-            else
-            {
-                $priority_id = isset($optPriorities[$issue['priority']]) ? $issue['priority'] : '-1'; 
+            } else {
+                $priority_id = isset($optPriorities[$issue['priority']]) ? $issue['priority'] : '-1';
             }
 
-            if (!isset($priority_unresolved_issues[$priority_id][$issue['type']]))
-            {
+            if (!isset($priority_unresolved_issues[$priority_id][$issue['type']])) {
                 $priority_unresolved_issues[$priority_id][$issue['type']] = 0;
             }
-            if (!isset($priority_unresolved_issues[$priority_id]['total']))
-            {
+            if (!isset($priority_unresolved_issues[$priority_id]['total'])) {
                 $priority_unresolved_issues[$priority_id]['total'] = 0;
             }
             $priority_unresolved_issues[$priority_id][$issue['type']] += 1;
@@ -251,10 +217,8 @@ class SummaryController extends Controller
         }
 
         $sorted_priority_unresolved_issues = [];
-        foreach ($optPriorities as $key => $val)
-        {
-            if (isset($priority_unresolved_issues[$key]))
-            {
+        foreach ($optPriorities as $key => $val) {
+            if (isset($priority_unresolved_issues[$key])) {
                 $sorted_priority_unresolved_issues[$key] = $priority_unresolved_issues[$key];
             }
         }
@@ -265,35 +229,26 @@ class SummaryController extends Controller
         $sorted_priority_unresolved_issues = $this->calPercent($sorted_priority_unresolved_issues);
 
         $module_unresolved_issues = [];
-        foreach ($issues as $issue)
-        {
+        foreach ($issues as $issue) {
             $module_ids = [];
-            if (!isset($issue['module']) || !$issue['module'])
-            {
+            if (!isset($issue['module']) || !$issue['module']) {
                 $module_ids = [ '-1' ];
-            }
-            else
-            {
+            } else {
                 $ms = is_string($issue['module']) ? explode(',', $issue['module']) : $issue['module'];
-                foreach ($ms as $m)
-                {
+                foreach ($ms as $m) {
                     $module_ids[] = isset($optModules[$m]) ? $m : '-1';
                 }
                 $module_ids = array_unique($module_ids);
             }
 
-            foreach ($module_ids as $module_id)
-            {
-                if (count($module_ids) > 1 && $module_id === '-1')
-                {
+            foreach ($module_ids as $module_id) {
+                if (count($module_ids) > 1 && $module_id === '-1') {
                     continue;
                 }
-                if (!isset($module_unresolved_issues[$module_id][$issue['type']]))
-                {
+                if (!isset($module_unresolved_issues[$module_id][$issue['type']])) {
                     $module_unresolved_issues[$module_id][$issue['type']] = 0;
                 }
-                if (!isset($module_unresolved_issues[$module_id]['total']))
-                {
+                if (!isset($module_unresolved_issues[$module_id]['total'])) {
                     $module_unresolved_issues[$module_id]['total'] = 0;
                 }
                 $module_unresolved_issues[$module_id][$issue['type']] += 1;
@@ -302,10 +257,8 @@ class SummaryController extends Controller
         }
 
         $sorted_module_unresolved_issues = [];
-        foreach ($optModules as $key => $val)
-        {   
-            if (isset($module_unresolved_issues[$key]))
-            {   
+        foreach ($optModules as $key => $val) {
+            if (isset($module_unresolved_issues[$key])) {
                 $sorted_module_unresolved_issues[$key] = $module_unresolved_issues[$key];
             }
         }
@@ -315,73 +268,64 @@ class SummaryController extends Controller
 
         $sorted_module_unresolved_issues = $this->calPercent($sorted_module_unresolved_issues);
 
-        return Response()->json([ 
-            'ecode' => 0, 
-            'data' => [ 
+        return Response()->json([
+            'ecode' => 0,
+            'data' => [
                 'filters' => $filters,
                 'trend' => $trend,
-                'new_issues' => $new_issues, 
-                'closed_issues' => $closed_issues, 
-                'assignee_unresolved_issues' => $assignee_unresolved_issues, 
-                'priority_unresolved_issues' => $sorted_priority_unresolved_issues, 
-                'module_unresolved_issues' => $sorted_module_unresolved_issues ], 
-            'options' => [ 
-                'types' => $types, 
-                'users' => $users, 
-                'priorities' => $optPriorities, 
-                'modules' => $optModules, 
-                'twoWeeksAgo' => date('m/d', strtotime('-2 week')) 
-            ] 
+                'new_issues' => $new_issues,
+                'closed_issues' => $closed_issues,
+                'assignee_unresolved_issues' => $assignee_unresolved_issues,
+                'priority_unresolved_issues' => $sorted_priority_unresolved_issues,
+                'module_unresolved_issues' => $sorted_module_unresolved_issues ],
+            'options' => [
+                'types' => $types,
+                'users' => $users,
+                'priorities' => $optPriorities,
+                'modules' => $optModules,
+                'twoWeeksAgo' => date('m/d', strtotime('-2 week'))
+            ]
         ]);
     }
 
-    function calPercent($arr)
+    public function calPercent($arr)
     {
         $total = 0;
         $counts = [];
         $quotients = [];
         $remainders = [];
 
-        foreach ($arr as $key => $val)
-        {
+        foreach ($arr as $key => $val) {
             $counts[$key] = isset($val['total']) && $val['total'] ? $val['total'] : 0;
             $total += $counts[$key];
         }
 
-        foreach ($counts as $key => $count)
-        {
+        foreach ($counts as $key => $count) {
             $quotient = $count * 100 / $total;
-            if ($quotient > 0 && $quotient <= 1)
-            {
+            if ($quotient > 0 && $quotient <= 1) {
                 $quotients[$key] = 1;
-            }
-            else
-            {
+            } else {
                 $quotients[$key] = floor($quotient);
             }
             $remainders[$key] = ($count * 100) % $total;
         }
 
         $sum = array_sum($quotients);
-        if ($sum < 100)
-        {
+        if ($sum < 100) {
             $less = 100 - $sum;
             arsort($remainders);
 
             $i = 1;
-            foreach ($remainders as $key => $remainder)
-            {
+            foreach ($remainders as $key => $remainder) {
                 $quotients[$key] += 1;
-                if ($i >= $less)
-                {
+                if ($i >= $less) {
                     break;
                 }
                 $i++;
             }
         }
 
-        foreach ($arr as $key => $val)
-        {
+        foreach ($arr as $key => $val) {
             $arr[$key]['percent'] = $quotients[$key];
         }
         return $arr;

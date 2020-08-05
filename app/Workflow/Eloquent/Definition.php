@@ -43,5 +43,4 @@ class Definition extends Model
     {
         return true;
     }
-
 }

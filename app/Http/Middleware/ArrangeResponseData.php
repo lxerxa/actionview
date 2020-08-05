@@ -7,7 +7,7 @@ use Closure;
 
 use MongoDB\BSON\ObjectID;
 
-class ArrangeResponseData 
+class ArrangeResponseData
 {
     /**
      * Handle an incoming request.
@@ -20,8 +20,7 @@ class ArrangeResponseData
     {
         $response = $next($request);
 
-        if ($response instanceof JsonResponse)
-        {
+        if ($response instanceof JsonResponse) {
             $old_data = $response->getData(true);
             $new_data = $this->arrange($old_data);
             $response->setData($new_data);
@@ -38,22 +37,18 @@ class ArrangeResponseData
      */
     public function arrange($data)
     {
-        if (!is_array($data))
-        {
+        if (!is_array($data)) {
             return $data;
         }
 
-        if (array_key_exists('_id', $data))
-        {
+        if (array_key_exists('_id', $data)) {
             $data['id'] = $data['_id'] instanceof ObjectID ? $data['_id']->__toString() : $data['_id'];
             unset($data['_id']);
         }
-        foreach ($data as $k => $val)
-        {
+        foreach ($data as $k => $val) {
             $data[$k] = $this->arrange($val);
         }
 
         return $data;
     }
-
 }

@@ -32,28 +32,21 @@ class RoleController extends Controller
     public function index($project_key)
     {
         $roles = Provider::getRoleList($project_key)->toArray();
-        foreach ($roles as $key => $role)
-        {
-            if ($project_key === '$_sys_$')
-            {
+        foreach ($roles as $key => $role) {
+            if ($project_key === '$_sys_$') {
                 $actor = Roleactor::where('role_id', $role['_id'])->first();
-                if ($actor && ($actor->user_ids || $actor->group_ids))
-                {
+                if ($actor && ($actor->user_ids || $actor->group_ids)) {
                     $roles[$key]['is_used'] = true;
                 }
-            }
-            else 
-            {
+            } else {
                 $user_groups = $this->getGroupsAndUsers($project_key, $role['_id']);
                 $roles[$key]['users'] = $user_groups['users'];
                 $roles[$key]['groups'] = $user_groups['groups'];
 
-                if (isset($role['user_ids']))
-                {
+                if (isset($role['user_ids'])) {
                     unset($roles[$key]['user_ids']);
                 }
-                if (isset($role['group_ids']))
-                {
+                if (isset($role['group_ids'])) {
                     unset($roles[$key]['group_ids']);
                 }
             }
@@ -72,25 +65,21 @@ class RoleController extends Controller
     public function store(Request $request, $project_key)
     {
         $name = $request->input('name');
-        if (!$name)
-        {
+        if (!$name) {
             throw new \UnexpectedValueException('the name can not be empty.', -12700);
         }
 
         $permissions = $request->input('permissions');
-        if (isset($permissions))
-        {
+        if (isset($permissions)) {
             $allPermissions = Acl::getAllPermissions();
-            if (array_diff($permissions, $allPermissions))
-            {
+            if (array_diff($permissions, $allPermissions)) {
                 throw new \UnexpectedValueException('the illegal permission.', -12701);
             }
         }
 
         $role = Role::create($request->all() + [ 'project_key' => $project_key ]);
 
-        if (isset($permissions) && $role)
-        {
+        if (isset($permissions) && $role) {
             RolePermissions::create([ 'project_key' => $project_key, 'role_id' => $role->id, 'permissions' => $permissions ]);
             $role->permissions = $permissions;
         }
@@ -120,8 +109,7 @@ class RoleController extends Controller
     public function setActor(Request $request, $project_key, $id)
     {
         $new_user_ids = $request->input('users');
-        if (isset($new_user_ids))
-        {
+        if (isset($new_user_ids)) {
             $actor = Roleactor::where([ 'project_key' => $project_key, 'role_id' => $id ])->first();
             $old_user_ids = $actor && $actor->user_ids ? $actor->user_ids : [];
 
@@ -152,8 +140,7 @@ class RoleController extends Controller
     public function setGroupActor(Request $request, $project_key, $id)
     {
         $new_group_ids = $request->input('groups');
-        if (isset($new_group_ids))
-        {
+        if (isset($new_group_ids)) {
             $actor = Roleactor::where([ 'project_key' => $project_key, 'role_id' => $id ])->first();
             $old_group_ids = $actor && $actor->group_ids ? $actor->group_ids : [];
 
@@ -184,25 +171,20 @@ class RoleController extends Controller
     public function update(Request $request, $project_key, $id)
     {
         $name = $request->input('name');
-        if (isset($name))
-        {
-            if (!$name)
-            {
+        if (isset($name)) {
+            if (!$name) {
                 throw new \UnexpectedValueException('the name can not be empty.', -12700);
             }
         }
         $role = Role::find($id);
-        if (!$role || $project_key != $role->project_key)
-        {
+        if (!$role || $project_key != $role->project_key) {
             throw new \UnexpectedValueException('the role does not exist or is not in the project.', -12702);
         }
 
         $permissions = $request->input('permissions');
-        if (isset($permissions))
-        {
+        if (isset($permissions)) {
             $allPermissions = Acl::getAllPermissions();
-            if (array_diff($permissions, $allPermissions))
-            {
+            if (array_diff($permissions, $allPermissions)) {
                 throw new \UnexpectedValueException('the illegal permission.', -12701);
             }
             $role->permissions = $permissions;
@@ -222,32 +204,24 @@ class RoleController extends Controller
     public function destroy($project_key, $id)
     {
         $role = Role::find($id);
-        if (!$role || $project_key != $role->project_key)
-        {
+        if (!$role || $project_key != $role->project_key) {
             throw new \UnexpectedValueException('the role does not exist or is not in the project.', -12702);
         }
 
-        if ($project_key === '$_sys_$')
-        {
+        if ($project_key === '$_sys_$') {
             $actors = Roleactor::where('role_id', $role->id)->get();
-            foreach($actors as $actor)
-            {
-                if ($actor->user_ids || $actor->group_ids)
-                {
+            foreach ($actors as $actor) {
+                if ($actor->user_ids || $actor->group_ids) {
                     throw new \UnexpectedValueException('the role has been used in some projects.', -12703);
                 }
             }
-            foreach($actors as $actor)
-            {
+            foreach ($actors as $actor) {
                 $actor->delete();
             }
-        }
-        else
-        {
+        } else {
             $actor = Roleactor::where([ 'project_key' => $project_key, 'role_id' => $id ])->first();
-            if ($actor)
-            {
-                $user_ids = isset($actor->user_ids) ? $actor->user_ids : []; 
+            if ($actor) {
+                $user_ids = isset($actor->user_ids) ? $actor->user_ids : [];
                 $user_ids && Event::fire(new DelUserFromRoleEvent($user_ids, $project_key));
                 $group_ids = isset($actor->group_ids) ? $actor->group_ids : [];
                 $group_ids && Event::fire(new DelGroupFromRoleEvent($group_ids, $project_key));
@@ -294,26 +268,25 @@ class RoleController extends Controller
      *
      * @param  string $project_key
      * @param  string $role_id
-     * @return array 
+     * @return array
      */
     public function getGroupsAndUsers($project_key, $role_id)
     {
         $actor = Roleactor::where([ 'project_key' => $project_key, 'role_id' => $role_id ])->first();
-        if (!$actor) { return [ 'users' => [], 'groups' => [] ]; }
+        if (!$actor) {
+            return [ 'users' => [], 'groups' => [] ];
+        }
 
         $new_users = [];
-        if (isset($actor->user_ids) && $actor->user_ids)
-        {
+        if (isset($actor->user_ids) && $actor->user_ids) {
             $users = EloquentUser::find($actor->user_ids);
-            foreach ($users as $user)
-            {
+            foreach ($users as $user) {
                 $new_users[] = [ 'id' => $user->id, 'name' => $user->first_name, 'email' => $user->email, 'nameAndEmail' => $user->first_name . '('. $user->email . ')' ];
             }
         }
 
         $new_groups = [];
-        if (isset($actor->group_ids) && $actor->group_ids)
-        {
+        if (isset($actor->group_ids) && $actor->group_ids) {
             $new_groups = Group::find($actor->group_ids)->toArray();
         }
 
@@ -321,7 +294,7 @@ class RoleController extends Controller
     }
 
     /**
-     * set permissions 
+     * set permissions
      *
      * @param  string $project_key
      * @param  string $role_id
@@ -330,17 +303,14 @@ class RoleController extends Controller
     public function setPermissions(Request $request, $project_key, $id)
     {
         $role = Role::find($id);
-        if (!$role || ($role->project_key != '$_sys_$' && $project_key != $role->project_key))
-        {
+        if (!$role || ($role->project_key != '$_sys_$' && $project_key != $role->project_key)) {
             throw new \UnexpectedValueException('the role does not exist or is not in the project.', -12702);
         }
 
         $permissions = $request->input('permissions');
-        if (isset($permissions))
-        {
+        if (isset($permissions)) {
             $allPermissions = Acl::getAllPermissions();
-            if (array_diff($permissions, $allPermissions))
-            {
+            if (array_diff($permissions, $allPermissions)) {
                 throw new \UnexpectedValueException('the illegal permission.', -12701);
             }
 
@@ -364,8 +334,7 @@ class RoleController extends Controller
     public function getPermissions($project_key, $role_id)
     {
         $rp = RolePermissions::where([ 'project_key' => $project_key, 'role_id' => $role_id ])->first();
-        if (!$rp && $project_key !== '$_sys_$')
-        {
+        if (!$rp && $project_key !== '$_sys_$') {
             $rp = RolePermissions::where([ 'project_key' => '$_sys_$', 'role_id' => $role_id ])->first();
         }
         return $rp && isset($rp->permissions) ? $rp->permissions : [];
@@ -398,22 +367,19 @@ class RoleController extends Controller
      */
     public function viewUsedInProject($project_key, $id)
     {
-        if ($project_key !== '$_sys_$')
-        {
+        if ($project_key !== '$_sys_$') {
             return Response()->json(['ecode' => 0, 'data' => [] ]);
         }
 
         $res = [];
         $projects = Project::all();
-        foreach($projects as $project)
-        {
+        foreach ($projects as $project) {
             $roleactor = Roleactor::where('role_id', $id)
                 ->where('project_key', '<>', '$_sys_$')
                 ->where('project_key', $project->key)
                 ->first();
 
-            if ($roleactor && ($roleactor->user_ids || $roleactor->group_ids))
-            {
+            if ($roleactor && ($roleactor->user_ids || $roleactor->group_ids)) {
                 $res[] = [ 'key' => $project->key, 'name' => $project->name, 'status' => $project->status ];
             }
         }

@@ -9,9 +9,8 @@ use App\Acl\Acl;
 use Sentinel;
 use DB;
 
-class Func 
+class Func
 {
-
     public static $issue_properties = [];
 
     public static $snap_id = '';
@@ -19,8 +18,8 @@ class Func
     /**
      * check if user is the type.
      *
-     * @param  array $param  
-     * @return boolean 
+     * @param  array $param
+     * @return boolean
      */
     public static function isSome($param)
     {
@@ -28,24 +27,17 @@ class Func
         $project_key = $param['project_key'];
         $caller = $param['caller'];
 
-        if ($param['someParam'] == 'assignee')
-        {
+        if ($param['someParam'] == 'assignee') {
             $issue = DB::collection('issue_' . $project_key)->where('_id', $issue_id)->first();
-            if ($issue && isset($issue['assignee']) && isset($issue['assignee']['id']) && $issue['assignee']['id'] === $caller)
-            {
+            if ($issue && isset($issue['assignee']) && isset($issue['assignee']['id']) && $issue['assignee']['id'] === $caller) {
                 return true;
             }
-        }
-        else if ($param['someParam'] == 'reporter')
-        {
+        } elseif ($param['someParam'] == 'reporter') {
             $issue = DB::collection('issue_' . $project_key)->where('_id', $issue_id)->first();
-            if ($issue && isset($issue['reporter']) && isset($issue['reporter']['id']) && $issue['reporter']['id'] === $caller)
-            {
+            if ($issue && isset($issue['reporter']) && isset($issue['reporter']['id']) && $issue['reporter']['id'] === $caller) {
                 return true;
             }
-        }
-        else if ($param['someParam'] == 'principal')
-        {
+        } elseif ($param['someParam'] == 'principal') {
             $principal = Provider::getProjectPrincipal($project_key) ?: [];
             return $principal && $principal['id'] === $caller;
         }
@@ -76,10 +68,8 @@ class Func
         $project_key = $param['project_key'];
 
         $subtasks = DB::collection('issue_' . $project_key)->where('parent_id', $issue_id)->get([ 'state' ]);
-        foreach ($subtasks as $subtask)
-        {
-            if ($subtask['state'] != $param['stateParam'])
-            {
+        foreach ($subtasks as $subtask) {
+            if ($subtask['state'] != $param['stateParam']) {
                 return false;
             }
         }
@@ -114,10 +104,8 @@ class Func
         $caller = $param['caller'];
 
         $roles = Acl::getRolesByUid($project_key, $caller);
-        foreach ($roles as $role)
-        {
-            if ($role === $param['roleParam'])
-            {
+        foreach ($roles as $role) {
+            if ($role === $param['roleParam']) {
                 return true;
             }
         }
@@ -128,12 +116,11 @@ class Func
      * set resolution value to issue_properties.
      *
      * @param  array $param
-     * @return void 
+     * @return void
      */
     public static function setResolution($param)
     {
-        if (isset($param['resolutionParam']) && $param['resolutionParam'])
-        {
+        if (isset($param['resolutionParam']) && $param['resolutionParam']) {
             self::$issue_properties[ 'resolution'] = $param['resolutionParam'];
         }
     }
@@ -146,8 +133,7 @@ class Func
      */
     public static function setState($param)
     {
-        if (isset($param['state']) && $param['state'])
-        {
+        if (isset($param['state']) && $param['state']) {
             self::$issue_properties['state'] = $param['state'];
         }
     }
@@ -161,8 +147,7 @@ class Func
     public static function assignIssueToUser($param)
     {
         $user_info = Sentinel::findById($param['assignedUserParam']);
-        if ($user_info)
-        {
+        if ($user_info) {
             self::$issue_properties['assignee'] = [ 'id' => $user_info->id, 'name' => $user_info->first_name ];
         }
     }
@@ -179,27 +164,19 @@ class Func
         $issue_id = $param['issue_id'];
         $caller = $param['caller'];
 
-        if ($param['assigneeParam'] == 'me')
-        {
+        if ($param['assigneeParam'] == 'me') {
             $user_info = Sentinel::findById($caller);
-            if ($user_info)
-            {
+            if ($user_info) {
                 self::$issue_properties['assignee'] = [ 'id' => $user_info->id, 'name' => $user_info->first_name ];
             }
-        }
-        else if ($param['assigneeParam'] == 'reporter')
-        {
+        } elseif ($param['assigneeParam'] == 'reporter') {
             $issue = DB::collection('issue_' . $project_key)->where('_id', $issue_id)->first();
-            if ($issue && isset($issue['reporter']))
-            {
+            if ($issue && isset($issue['reporter'])) {
                 self::$issue_properties['assignee'] = $issue['reporter'];
             }
-        }
-        else if ($param['assigneeParam'] == 'principal')
-        {
+        } elseif ($param['assigneeParam'] == 'principal') {
             $principal = Provider::getProjectPrincipal($project_key) ?: [];
-            if ($principal)
-            {
+            if ($principal) {
                 self::$issue_properties['assignee'] = $principal;
             }
         }
@@ -218,7 +195,9 @@ class Func
         $caller = $param['caller'];
         $comments = isset($param['comments']) ? $param['comments'] : '';
 
-        if (!$comments) { return; }
+        if (!$comments) {
+            return;
+        }
 
         $user_info = Sentinel::findById($caller);
         $creator = [ 'id' => $user_info->id, 'name' => $user_info->first_name, 'email' => $user_info->email ];
@@ -242,8 +221,7 @@ class Func
         $project_key = $param['project_key'];
         $caller = $param['caller'];
 
-        if (count(self::$issue_properties) > 0)
-        {
+        if (count(self::$issue_properties) > 0) {
             $updValues = [];
             $user_info = Sentinel::findById($caller);
             $updValues['modifier'] = [ 'id' => $user_info->id, 'name' => $user_info->first_name, 'email' => $user_info->email ];
@@ -273,35 +251,29 @@ class Func
     {
         $issue_id = $param['issue_id'];
         $project_key = $param['project_key'];
-        $event_key = array_get($param, 'eventParam', 'normal'); 
+        $event_key = array_get($param, 'eventParam', 'normal');
 
         $user_info = Sentinel::findById($param['caller']);
         $caller = [ 'id' => $user_info->id, 'name' => $user_info->first_name, 'email' => $user_info->email ];
 
-        if (self::$snap_id) 
-        {
+        if (self::$snap_id) {
             Event::fire(new IssueEvent($project_key, $issue_id, $caller, [ 'event_key' => $event_key, 'snap_id' => self::$snap_id ]));
         }
 
         $updValues = [];
-        if ($event_key === 'resolve_issue')
-        {
+        if ($event_key === 'resolve_issue') {
             $updValues['resolved_at'] = time();
             $updValues['resolver'] = $caller;
 
             $issue = DB::collection('issue_' . $project_key)->where('_id', $issue_id)->first();
-            if (isset($issue['regression_times']) && $issue['regression_times'])
-            {
+            if (isset($issue['regression_times']) && $issue['regression_times']) {
                 $updValues['regression_times'] = $issue['regression_times'] + 1;
-            }
-            else
-            {
+            } else {
                 $updValues['regression_times'] = 1;
             }
             
             $logs = [];
-            if (isset($issue['resolved_logs']) && $issue['resolved_logs'])
-            {
+            if (isset($issue['resolved_logs']) && $issue['resolved_logs']) {
                 $logs = $issue['resolved_logs'];
             }
             $log = [];
@@ -311,19 +283,15 @@ class Func
             $updValues['resolved_logs'] = $logs;
 
             $his_resolvers = [];
-            foreach($logs as $v)
-            {
+            foreach ($logs as $v) {
                 $his_resolvers[] = $v['user']['id'];
             }
             $updValues['his_resolvers'] = array_unique($his_resolvers);
-        }
-        else if ($event_key === 'close_issue')
-        {
+        } elseif ($event_key === 'close_issue') {
             $updValues['closed_at'] = time();
             $updValues['closer'] = $caller;
         }
-        if ($updValues)
-        {
+        if ($updValues) {
             DB::collection('issue_' . $project_key)->where('_id', $issue_id)->update($updValues);
         }
     }

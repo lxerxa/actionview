@@ -20,28 +20,20 @@ class Privilege
     public function handle($request, Closure $next, $permission)
     {
         // global permission check
-        if ($permission === 'sys_admin')
-        {
-            if (! $this->globalCheck('sys_admin'))
-            {
+        if ($permission === 'sys_admin') {
+            if (! $this->globalCheck('sys_admin')) {
                 return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
             }
-        }
-        else if ($permission === 'view_project')
-        {
-            if ($request->isMethod('get')) 
-            {
-                if (! $this->projectCheck($request, 'view_project'))
-                {
+        } elseif ($permission === 'view_project') {
+            if ($request->isMethod('get')) {
+                if (! $this->projectCheck($request, 'view_project')) {
                     return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
                 }
             }
         }
         // project permission check
-        else
-        {
-            if (! $this->projectCheck($request, $permission))
-            {
+        else {
+            if (! $this->projectCheck($request, $permission)) {
                 return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
             }
         }
@@ -90,24 +82,19 @@ class Privilege
         $user = Sentinel::getUser();
         $project_key = $request->project_key;
 
-        if ($project_key === '$_sys_$')
-        {
+        if ($project_key === '$_sys_$') {
             return $user->hasAccess([ 'sys_admin' ]);
         }
 
         $isAllowed = Acl::isAllowed($user->id, $permission, $project_key);
-        if (!$isAllowed)
-        {
-            if ($permission === 'manage_project' || $permission === 'view_project')
-            {
-                if ($user->email === 'admin@action.view')
-                {
-                     return true;
+        if (!$isAllowed) {
+            if ($permission === 'manage_project' || $permission === 'view_project') {
+                if ($user->email === 'admin@action.view') {
+                    return true;
                 }
 
                 $project = Project::where('key', $project_key)->first();
-                if ($project && isset($project->principal) && isset($project->principal['id']) && $project->principal['id'] === $user->id)
-                {
+                if ($project && isset($project->principal) && isset($project->principal['id']) && $project->principal['id'] === $user->id) {
                     return true;
                 }
             }

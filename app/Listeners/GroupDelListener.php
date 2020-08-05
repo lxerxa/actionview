@@ -11,7 +11,7 @@ use App\Project\Eloquent\UserGroupProject;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
-class GroupDelListener 
+class GroupDelListener
 {
     /**
      * Create the event listener.
@@ -44,14 +44,11 @@ class GroupDelListener
     public function delGroupFromRole($group_id)
     {
         $roleactors = Roleactor::whereRaw([ 'group_ids' => $group_id ])->get([ 'group_ids', 'user_ids' ]);
-        foreach ($roleactors as $roleactor)
-        {
+        foreach ($roleactors as $roleactor) {
             $new_group_ids = [];
             $old_group_ids = isset($roleactor->group_ids) ? $roleactor->group_ids : [];
-            foreach ($old_group_ids as $gid)
-            {
-                if ($gid != $group_id)
-                {
+            foreach ($old_group_ids as $gid) {
+                if ($gid != $group_id) {
                     $new_group_ids[] = $gid;
                 }
             }
@@ -70,8 +67,7 @@ class GroupDelListener
     public function delGroupProject($group_id)
     {
         $links = UserGroupProject::where('ug_id', $group_id)->get();
-        foreach ($links as $link)
-        {
+        foreach ($links as $link) {
             $link->delete();
         }
     }

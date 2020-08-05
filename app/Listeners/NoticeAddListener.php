@@ -11,7 +11,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 
 use DB;
 
-class NoticeAddListener 
+class NoticeAddListener
 {
     /**
      * Create the event listener.
@@ -32,16 +32,11 @@ class NoticeAddListener
     {
         // this activity_id is used for notice
 
-        if ($event instanceof FileUploadEvent)
-        {
+        if ($event instanceof FileUploadEvent) {
             $this->putMQ($event->project_key, $event->issue_id, $event->user, [ 'event_key' => 'add_file',  'data' => $event->file_id ]);
-        }
-        else if ($event instanceof FileDelEvent)
-        {
+        } elseif ($event instanceof FileDelEvent) {
             $this->putMQ($event->project_key, $event->issue_id, $event->user, [ 'event_key' => 'add_file',  'data' => $event->file_id ]);
-        }
-        else if ($event instanceof IssueEvent)
-        {
+        } elseif ($event instanceof IssueEvent) {
             $this->putMQ($event->project_key, $event->issue_id, $event->user, $event->param);
         }
     }
@@ -58,6 +53,6 @@ class NoticeAddListener
     {
         $info = [ 'project_key' => $project_key, 'issue_id' => $issue_id, 'event_key' => $param['event_key'], 'user' => $user, 'data' => isset($param['data']) ? $param['data'] : '', 'created_at' => time() ];
 
-        DB::collection('mq')->insert($info); 
+        DB::collection('mq')->insert($info);
     }
 }

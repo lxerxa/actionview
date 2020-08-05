@@ -22,8 +22,7 @@ class TypeController extends Controller
     public function index($project_key)
     {
         $types = Type::where([ 'project_key' => $project_key ])->orderBy('sn', 'asc')->get();
-        foreach ($types as $type)
-        {
+        foreach ($types as $type) {
             $type->is_used = $this->isFieldUsedByIssue($project_key, 'type', $type->toArray());
         }
 
@@ -43,21 +42,18 @@ class TypeController extends Controller
     public function store(Request $request, $project_key)
     {
         $name = $request->input('name');
-        if (!$name)
-        {
+        if (!$name) {
             throw new \UnexpectedValueException('the name can not be empty.', -12000);
         }
 
         $abb = $request->input('abb');
-        if (!$abb)
-        {
+        if (!$abb) {
             throw new \UnexpectedValueException('the abb can not be empty.', -12002);
         }
         
         // check screen_id
         $screen_id = $request->input('screen_id');
-        if (!$screen_id)
-        {
+        if (!$screen_id) {
             throw new \UnexpectedValueException('the related screen can not be empty.', -12004);
         }
         //if (Screen::find($screen_id)->project_key != $project_key)
@@ -67,18 +63,15 @@ class TypeController extends Controller
 
         // check workflow_id, workflow is too required? fix me
         $workflow_id = $request->input('workflow_id');
-        if (!$workflow_id)
-        {
+        if (!$workflow_id) {
             throw new \UnexpectedValueException('the related workflow can not be empty.', -12005);
         }
 
-        if (Provider::isTypeExisted($project_key, $name))
-        {
+        if (Provider::isTypeExisted($project_key, $name)) {
             throw new \UnexpectedValueException('type name cannot be repeated', -12001);
         }
 
-        if (Provider::isTypeAbbExisted($project_key, $abb))
-        {
+        if (Provider::isTypeAbbExisted($project_key, $abb)) {
             throw new \UnexpectedValueException('type abb cannot be repeated', -12003);
         }
 
@@ -117,27 +110,22 @@ class TypeController extends Controller
     public function update(Request $request, $project_key, $id)
     {
         $name = $request->input('name');
-        if (isset($name))
-        {
-            if (!$name)
-            {
+        if (isset($name)) {
+            if (!$name) {
                 throw new \UnexpectedValueException('the name can not be empty.', -12000);
             }
         }
 
         $abb = $request->input('abb');
-        if (isset($abb))
-        {
-            if (!$abb)
-            {
+        if (isset($abb)) {
+            if (!$abb) {
                 throw new \UnexpectedValueException('the abb can not be empty.', -12001);
             }
         }
 
         // check screen_id
         $screen_id = $request->input('screen_id');
-        if (isset($screen_id) && !$screen_id)
-        {
+        if (isset($screen_id) && !$screen_id) {
             throw new \UnexpectedValueException('the related screen can not be empty.', -12004);
         }
         //if (Screen::find($screen_id)->project_key != $project_key)
@@ -147,8 +135,7 @@ class TypeController extends Controller
 
         // check workflow_id
         $workflow_id = $request->input('workflow_id');
-        if (isset($workflow_id) && !$workflow_id)
-        {
+        if (isset($workflow_id) && !$workflow_id) {
             throw new \UnexpectedValueException('the related workflow can not be empty.', -12005);
         }
         //if (Definition::find($workflow_id)->project_key != $project_key)
@@ -157,27 +144,23 @@ class TypeController extends Controller
         //}
 
         $type = Type::find($id);
-        if (!$type || $project_key != $type->project_key)
-        {
+        if (!$type || $project_key != $type->project_key) {
             throw new \UnexpectedValueException('the type does not exist or is not in the project.', -12006);
         }
 
-        if ($type->name !== $name && Provider::isTypeExisted($project_key, $name))
-        {
+        if ($type->name !== $name && Provider::isTypeExisted($project_key, $name)) {
             throw new \UnexpectedValueException('type name cannot be repeated', -12001);
         }
 
         $abb = $request->input('abb');
-        if ($type->abb !== $abb && Provider::isTypeAbbExisted($project_key, $abb))
-        {
+        if ($type->abb !== $abb && Provider::isTypeAbbExisted($project_key, $abb)) {
             throw new \UnexpectedValueException('type abb cannot be repeated', -12003);
         }
 
         $defaults = [];
         $disabled = $request->input('disabled');
-        if (isset($disabled) && $type->default === true)
-        {
-            $defaults['default'] = false; 
+        if (isset($disabled) && $type->default === true) {
+            $defaults['default'] = false;
         }
 
         $type->fill($defaults + $request->except(['project_key', 'type']))->save();
@@ -197,14 +180,12 @@ class TypeController extends Controller
     public function destroy($project_key, $id)
     {
         $type = Type::find($id);
-        if (!$type || $project_key != $type->project_key)
-        {
+        if (!$type || $project_key != $type->project_key) {
             throw new \UnexpectedValueException('the type does not exist or is not in the project.', -12006);
         }
 
-        $isUsed = $this->isFieldUsedByIssue($project_key, 'type', $type->toArray()); 
-        if ($isUsed)
-        {
+        $isUsed = $this->isFieldUsedByIssue($project_key, 'type', $type->toArray());
+        if ($isUsed) {
             throw new \UnexpectedValueException('the type has been used in issue.', -12007);
         }
 
@@ -222,14 +203,11 @@ class TypeController extends Controller
     {
         // set type sort.
         $sequence_types = $request->input('sequence');
-        if (isset($sequence_types))
-        {
+        if (isset($sequence_types)) {
             $i = 1;
-            foreach ($sequence_types as $type_id)
-            {
+            foreach ($sequence_types as $type_id) {
                 $type = Type::find($type_id);
-                if (!$type || $type->project_key != $project_key)
-                {
+                if (!$type || $type->project_key != $project_key) {
                     continue;
                 }
                 $type->sn = $i++;
@@ -239,24 +217,18 @@ class TypeController extends Controller
 
         // set default value
         $default_type_id = $request->input('defaultValue');
-        if (isset($default_type_id))
-        {
+        if (isset($default_type_id)) {
             $type = Type::find($default_type_id);
-            if (!$type || $type->project_key != $project_key)
-            {
+            if (!$type || $type->project_key != $project_key) {
                 throw new \UnexpectedValueException('the type does not exist or is not in the project.', -12006);
             }
 
             $types = Type::where('project_key', $project_key)->get();
-            foreach ($types as $type)
-            {
-                if ($type->id == $default_type_id)
-                {
+            foreach ($types as $type) {
+                if ($type->id == $default_type_id) {
                     $type->default = true;
                     $type->save();
-                }
-                else if (isset($type->default))
-                {
+                } elseif (isset($type->default)) {
                     $type->unset('default');
                 }
             }

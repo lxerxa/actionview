@@ -15,7 +15,7 @@ use App\Acl\Acl;
 use Sentinel;
 use DB;
 
-use MongoDB\BSON\ObjectID; 
+use MongoDB\BSON\ObjectID;
 
 class Controller extends BaseController
 {
@@ -23,23 +23,26 @@ class Controller extends BaseController
 
     public function __construct()
     {
-        $this->user = Sentinel::getUser(); 
+    }
+
+    public function __get($property)
+    {
+        if ($property == 'user') {
+            return Sentinel::getUser();
+        }
     }
 
     public function arrange($data)
     {
-        if (!is_array($data))
-        {
+        if (!is_array($data)) {
             return $data;
         }
 
-        if (array_key_exists('_id', $data))
-        {
+        if (array_key_exists('_id', $data)) {
             $data['_id'] = $data['_id'] instanceof ObjectID ? $data['_id']->__toString() : $data['_id'];
         }
 
-        foreach ($data as $k => $val)
-        {
+        foreach ($data as $k => $val) {
             $data[$k] = $this->arrange($val);
         }
 
@@ -58,16 +61,13 @@ class Controller extends BaseController
         $uid = isset($user_id) && $user_id ? $user_id : $this->user->id;
 
         $isAllowed = Acl::isAllowed($uid, $permission, $project_key);
-        if (!$isAllowed && in_array($permission, [ 'view_project', 'manage_project' ]))
-        {
-            if ($this->user->email === 'admin@action.view')
-            {
+        if (!$isAllowed && in_array($permission, [ 'view_project', 'manage_project' ])) {
+            if ($this->user->email === 'admin@action.view') {
                 return true;
             }
 
             $project = Project::where([ 'key' => $project_key ])->first();
-            if ($project && isset($project->principal) && isset($project->principal['id']) && $uid === $project->principal['id'])
-            {
+            if ($project && isset($project->principal) && isset($project->principal['id']) && $uid === $project->principal['id']) {
                 return true;
             }
         }
@@ -77,33 +77,28 @@ class Controller extends BaseController
     /**
      * check if the field is used by issue.
      *
-     * @return true 
+     * @return true
      */
     public function isFieldUsedByIssue($project_key, $field_key, $field, $ext_info='')
     {
-        if ($field['project_key'] !== $project_key)
-        {
-             return true;
+        if ($field['project_key'] !== $project_key) {
+            return true;
         }
 
-        if ($project_key === '$_sys_$')
-        {
-            switch($field_key)
-            {
+        if ($project_key === '$_sys_$') {
+            switch ($field_key) {
                 case 'type':
                     return false;
                 case 'state':
                 case 'priority':
                 case 'resolution':
                     $projects = Project::all();
-                    foreach($projects as $project)
-                    {
+                    foreach ($projects as $project) {
                         $isUsed = DB::collection('issue_' . $project->key)
                                       ->where($field_key, isset($field['key']) ? $field['key'] : $field['_id'])
                                       ->where('del_flg', '<>', 1)
                                       ->exists();
-                        if ($isUsed)
-                        {
+                        if ($isUsed) {
                             return true;
                         }
                     }
@@ -111,11 +106,8 @@ class Controller extends BaseController
                 default:
                     return true;
             }
-        }
-        else
-        {
-            switch($field_key)
-            {
+        } else {
+            switch ($field_key) {
                 case 'type':
                 case 'state':
                 case 'priority':
@@ -131,16 +123,14 @@ class Controller extends BaseController
                         ->where('del_flg', '<>', 1)
                         ->exists();
                 case 'version':
-                    if (!$ext_info)
-                    {
+                    if (!$ext_info) {
                         return false;
                     }
 
                     $vid = $field['_id'];
                     return DB::collection('issue_' . $project_key)
                         ->where(function ($query) use ($vid, $ext_info) {
-                            foreach ($ext_info as $key => $vf) 
-                            {
+                            foreach ($ext_info as $key => $vf) {
                                 $query->orWhere($vf['key'], $vid);
                             }
                         })
@@ -181,171 +171,113 @@ class Controller extends BaseController
         $all_fields = array_merge($fields ? $fields->toArray() : [], $special_fields);
         // convert into key-type array
         $key_type_fields = [];
-        foreach ($all_fields as $key => $val) 
-        {
+        foreach ($all_fields as $key => $val) {
             $key_type_fields[$val['key']] = $val['type'];
         }
         // get the query where value
         $where = array_only($query, array_column($all_fields, 'key'));
 
         $and = [];
-        foreach ($where as $key => $val)
-        {
-            if ($key === 'no')
-            {
+        foreach ($where as $key => $val) {
+            if ($key === 'no') {
                 $and[] = [ 'no' => intval($val) ];
-            }
-            else if ($key === 'title')
-            {
-                if (is_numeric($val) && strpos($val, '.') === false)
-                {
+            } elseif ($key === 'title') {
+                if (is_numeric($val) && strpos($val, '.') === false) {
                     $and[] = [ '$or' => [ [ 'no' => $val + 0 ], [ 'title'  => [ '$regex' => $val ] ] ] ];
-                }
-                else if (strpos($val, ',') !== false)
-                {
+                } elseif (strpos($val, ',') !== false) {
                     $nos = explode(',', $val);
                     $new_nos = [];
-                    foreach ($nos as $no)
-                    {
-                        if ($no && is_numeric($no))
-                        {
+                    foreach ($nos as $no) {
+                        if ($no && is_numeric($no)) {
                             $new_nos[] = $no + 0;
                         }
                     }
                     $and[] = [ '$or' => [ [ 'no' => [ '$in' => $new_nos ] ], [ 'title'  => [ '$regex' => $val ] ] ] ];
-                }
-                else
-                {
+                } else {
                     $and[] = [ 'title' => [ '$regex' => $val ] ];
                 }
-            }
-            else if ($key === 'sprints')
-            {
+            } elseif ($key === 'sprints') {
                 $and[] = [ 'sprints' => $val + 0 ];
-            }
-            else if ($key_type_fields[$key] === 'SingleUser')
-            {
+            } elseif ($key_type_fields[$key] === 'SingleUser') {
                 $users = explode(',', $val);
-                if (in_array('me', $users))
-                {
+                if (in_array('me', $users)) {
                     array_push($users, $this->user->id);
                 }
                 $and[] = [ $key . '.' . 'id' => [ '$in' => $users ] ];
-            }
-            else if ($key_type_fields[$key] === 'MultiUser')
-            {
+            } elseif ($key_type_fields[$key] === 'MultiUser') {
                 $or = [];
                 $vals = explode(',', $val);
-                foreach ($vals as $v)
-                {
+                foreach ($vals as $v) {
                     $or[] = [ $key . '_ids' => $v == 'me' ? $this->user->id : $v ];
                 }
                 $and[] = [ '$or' => $or ];
-            }
-            else if (in_array($key_type_fields[$key], [ 'Select', 'SingleVersion', 'RadioGroup' ]))
-            {
+            } elseif (in_array($key_type_fields[$key], [ 'Select', 'SingleVersion', 'RadioGroup' ])) {
                 $and[] = [ $key => [ '$in' => explode(',', $val) ] ];
-            }
-            else if (in_array($key_type_fields[$key], [ 'MultiSelect', 'MultiVersion', 'CheckboxGroup' ]))
-            {
+            } elseif (in_array($key_type_fields[$key], [ 'MultiSelect', 'MultiVersion', 'CheckboxGroup' ])) {
                 $or = [];
                 $vals = explode(',', $val);
-                foreach ($vals as $v)
-                {
+                foreach ($vals as $v) {
                     $or[] = [ $key => $v ];
                 }
                 $and[] = [ '$or' => $or ];
-            }
-            else if (in_array($key_type_fields[$key], [ 'Duration', 'DatePicker', 'DateTimePicker' ]))
-            {
-                if (strpos($val, '~') !== false)
-                {
+            } elseif (in_array($key_type_fields[$key], [ 'Duration', 'DatePicker', 'DateTimePicker' ])) {
+                if (strpos($val, '~') !== false) {
                     $sections = explode('~', $val);
-                    if ($sections[0])
-                    {
+                    if ($sections[0]) {
                         $and[] = [ $key => [ '$gte' => strtotime($sections[0]) ] ];
                     }
-                    if ($sections[1])
-                    {
+                    if ($sections[1]) {
                         $and[] = [ $key => [ '$lte' => strtotime($sections[1] . ' 23:59:59') ] ];
                     }
-                }
-                else if (in_array($val, [ '0d', '0w', '0m', '0y' ]))
-                {
-                    if ($val == '0d')
-                    {
+                } elseif (in_array($val, [ '0d', '0w', '0m', '0y' ])) {
+                    if ($val == '0d') {
                         $and[] = [ $key => [ '$gte' => strtotime(date('Y-m-d')), '$lte' => strtotime(date('Y-m-d') . ' 23:59:59') ] ];
-                    }
-                    else if ($val == '0w')
-                    {
+                    } elseif ($val == '0w') {
                         $and[] = [ $key => [ '$gte' => mktime(0, 0, 0, date('m'), date('d') - date('w') + 1, date('Y')), '$lte' => mktime(23, 59, 59, date('m'), date('d') - date('w') + 7, date('Y')) ] ];
-                    } 
-                    else if ($val == '0m')
-                    {
+                    } elseif ($val == '0m') {
                         $and[] = [ $key => [ '$gte' => mktime(0, 0, 0, date('m'), 1, date('Y')), '$lte' => mktime(23, 59, 59, date('m'), date('t'), date('Y')) ] ];
-                    }
-                    else
-                    {
+                    } else {
                         $and[] = [ $key => [ '$gte' => mktime(0, 0, 0, 1, 1, date('Y')), '$lte' => mktime(23, 59, 59, 12, 31, date('Y')) ] ];
                     }
-                }
-                else
-                {
+                } else {
                     $unitMap = [ 'w' => 'week', 'm' => 'month', 'y' => 'year' ];
                     $unit = substr($val, -1);
-                    if (in_array($unit, [ 'w', 'm', 'y' ]))
-                    {
+                    if (in_array($unit, [ 'w', 'm', 'y' ])) {
                         $direct = substr($val, 0, 1);
                         $val = abs(substr($val, 0, -1));
-                        if ($direct === '-')
-                        {
+                        if ($direct === '-') {
                             $and[] = [ $key => [ '$lt' => strtotime(date('Ymd', strtotime('-' . $val . ' ' . $unitMap[$unit]))) ] ];
-                        }
-                        else
-                        {
+                        } else {
                             $and[] = [ $key => [ '$gte' => strtotime(date('Ymd', strtotime('-' . $val . ' ' . $unitMap[$unit]))) ] ];
                         }
                     }
                 }
-            }
-            else if (in_array($key_type_fields[$key], [ 'Text', 'TextArea', 'Url' ]))
-            {
+            } elseif (in_array($key_type_fields[$key], [ 'Text', 'TextArea', 'Url' ])) {
                 $and[] = [ $key => [ '$regex' => $val ] ];
-            }
-            else if (in_array($key_type_fields[$key],  [ 'Number', 'Integer' ]))
-            {
-                if (strpos($val, '~') !== false)
-                {
+            } elseif (in_array($key_type_fields[$key], [ 'Number', 'Integer' ])) {
+                if (strpos($val, '~') !== false) {
                     $sections = explode('~', $val);
-                    if ($sections[0])
-                    {
+                    if ($sections[0]) {
                         $and[] = [ $key => [ '$gte' => $sections[0] + 0 ] ];
                     }
-                    if ($sections[1])
-                    {
+                    if ($sections[1]) {
                         $and[] = [ $key => [ '$lte' => $sections[1] + 0 ] ];
                     }
                 }
-            }
-            else if ($key_type_fields[$key] === 'TimeTracking')
-            {
-                if (strpos($val, '~') !== false)
-                {
+            } elseif ($key_type_fields[$key] === 'TimeTracking') {
+                if (strpos($val, '~') !== false) {
                     $sections = explode('~', $val);
-                    if ($sections[0])
-                    {
+                    if ($sections[0]) {
                         $and[] = [ $key . '_m' => [ '$gte' => $this->ttHandleInM($sections[0]) ] ];
                     }
-                    if ($sections[1])
-                    {
+                    if ($sections[1]) {
                         $and[] = [ $key . '_m' => [ '$lte' => $this->ttHandleInM($sections[1]) ] ];
                     }
                 }
             }
         }
 
-        if (isset($query['watcher']) && $query['watcher'])
-        {
+        if (isset($query['watcher']) && $query['watcher']) {
             $watcher = $query['watcher'] === 'me' ? $this->user->id : $query['watcher'];
 
             $watched_issues = Watch::where('project_key', $project_key)
@@ -355,8 +287,7 @@ class Controller extends BaseController
             $watched_issue_ids = array_column($watched_issues, 'issue_id');
 
             $watchedIds = [];
-            foreach ($watched_issue_ids as $id)
-            {
+            foreach ($watched_issue_ids as $id) {
                 $watchedIds[] = new ObjectID($id);
             }
             $and[] = [ '_id' => [ '$in' => $watchedIds ] ];

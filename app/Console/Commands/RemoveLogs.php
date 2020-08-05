@@ -38,20 +38,18 @@ class RemoveLogs extends Command
 
     public function handle()
     {
-        $durations = [ 
-            '3m' => '3 months', 
-            '6m' => '6 months', 
-            '1y' => '1 year', 
-            '2y' => '2 years', 
+        $durations = [
+            '3m' => '3 months',
+            '6m' => '6 months',
+            '1y' => '1 year',
+            '2y' => '2 years',
         ];
 
         $log_save_duration = '6 months';
 
         $syssetting = SysSetting::first()->toArray();
-        if (isset($syssetting['properties']) && isset($syssetting['properties']['logs_save_duration']))
-        {
-            if (isset($durations[$syssetting['properties']['logs_save_duration']]))
-            {
+        if (isset($syssetting['properties']) && isset($syssetting['properties']['logs_save_duration'])) {
+            if (isset($durations[$syssetting['properties']['logs_save_duration']])) {
                 $log_save_duration = $durations[$syssetting['properties']['logs_save_duration']];
             }
         }

@@ -11,7 +11,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 
 use DB;
 
-class FileChangeListener 
+class FileChangeListener
 {
     /**
      * Create the event listener.
@@ -30,12 +30,9 @@ class FileChangeListener
      */
     public function handle(Event $event)
     {
-        if ($event instanceof FileUploadEvent)
-        {
+        if ($event instanceof FileUploadEvent) {
             $this->updIssueField($event->project_key, $event->issue_id, $event->field_key, $event->file_id, $event->user, 1);
-        }
-        else if ($event instanceof FileDelEvent)
-        {
+        } elseif ($event instanceof FileDelEvent) {
             $this->updIssueField($event->project_key, $event->issue_id, $event->field_key, $event->file_id, $event->user, 2);
         }
     }
@@ -54,23 +51,16 @@ class FileChangeListener
         $table = 'issue_' . $project_key;
         $issue = DB::collection($table)->where('_id', $issue_id)->first();
 
-        if (!isset($issue[$field_key]) || !is_array($issue[$field_key]))
-        {
+        if (!isset($issue[$field_key]) || !is_array($issue[$field_key])) {
             $issue[$field_key] = [];
         }
-        if ($flag == 1)
-        {
+        if ($flag == 1) {
             array_push($issue[$field_key], $file_id);
-        } 
-        else 
-        {
+        } else {
             $index = array_search($file_id, $issue[$field_key]);
-            if ($index !== false)
-            {
+            if ($index !== false) {
                 array_splice($issue[$field_key], $index, 1);
-            }
-            else
-            {
+            } else {
                 return;
             }
         }

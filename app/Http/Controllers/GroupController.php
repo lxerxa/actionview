@@ -31,11 +31,9 @@ class GroupController extends Controller
     {
         $s = $request->input('s');
         $groups = [];
-        if ($s)
-        {
+        if ($s) {
             $groups = Group::Where('name', 'like', '%' . $s .  '%')
                 ->get([ 'name' ]);
-
         }
         return Response()->json([ 'ecode' => 0, 'data' => $groups ]);
     }
@@ -49,13 +47,11 @@ class GroupController extends Controller
     {
         $query = Group::where('name', '<>', '');
 
-        if ($name = $request->input('name'))
-        {
+        if ($name = $request->input('name')) {
             $query->where('name', 'like', '%' . $name . '%');
         }
 
-        if ($directory = $request->input('directory'))
-        {
+        if ($directory = $request->input('directory')) {
             $query->where('directory', $directory);
         }
 
@@ -67,8 +63,7 @@ class GroupController extends Controller
         $query = $query->skip($page_size * ($page - 1))->take($page_size);
         $groups = $query->get([ 'name', 'users', 'directory' ]);
 
-        foreach ($groups as $group)
-        {
+        foreach ($groups as $group) {
             $group->users = EloquentUser::find($group->users ?: []);
         }
 
@@ -84,8 +79,7 @@ class GroupController extends Controller
     public function store(Request $request)
     {
         $name = $request->input('name');
-        if (!$name)
-        {
+        if (!$name) {
             throw new \UnexpectedValueException('the name can not be empty.', -10200);
         }
 
@@ -102,8 +96,7 @@ class GroupController extends Controller
     public function show($id)
     {
         $group = Group::find($id);
-        if (!$group)
-        {
+        if (!$group) {
             throw new \UnexpectedValueException('the group does not exist.', -10201);
         }
         $group->users = EloquentUser::find($group->users);
@@ -122,28 +115,23 @@ class GroupController extends Controller
     {
         $updValues = [];
         $name = $request->input('name');
-        if (isset($name))
-        {
-            if (!$name)
-            {
+        if (isset($name)) {
+            if (!$name) {
                 throw new \UnexpectedValueException('the name can not be empty.', -10201);
             }
             $updValues['name'] = $name;
         }
 
         $user_ids = $request->input('users');
-        if (isset($user_ids))
-        {
+        if (isset($user_ids)) {
             $updValues['users'] = $user_ids ?: [];
         }
 
         $group = Group::find($id);
-        if (!$group)
-        {
+        if (!$group) {
             throw new \UnexpectedValueException('the group does not exist.', -10201);
         }
-        if (isset($group->diectory) && $group->directory && $group->diectory != 'self')
-        {
+        if (isset($group->diectory) && $group->directory && $group->diectory != 'self') {
             throw new \UnexpectedValueException('the group come from external directroy.', -10203);
         }
 
@@ -161,12 +149,10 @@ class GroupController extends Controller
     public function destroy($id)
     {
         $group = Group::find($id);
-        if (!$group)
-        {
+        if (!$group) {
             throw new \UnexpectedValueException('the group does not exist.', -10201);
         }
-        if (isset($group->diectory) && $group->directory && $group->diectory != 'self')
-        {
+        if (isset($group->diectory) && $group->directory && $group->diectory != 'self') {
             throw new \UnexpectedValueException('the group come from external directroy.', -10203);
         }
 
@@ -183,19 +169,15 @@ class GroupController extends Controller
     public function delMultiGroups(Request $request)
     {
         $ids = $request->input('ids');
-        if (!isset($ids) || !$ids)
-        {
+        if (!isset($ids) || !$ids) {
             throw new \InvalidArgumentException('the selected groups cannot been empty.', -10201);
         }
 
         $deleted_ids = [];
-        foreach ($ids as $id)
-        {
+        foreach ($ids as $id) {
             $group = Group::find($id);
-            if ($group)
-            {
-                if (isset($group->diectory) && $group->directory && $group->diectory != 'self')
-                {
+            if ($group) {
+                if (isset($group->diectory) && $group->directory && $group->diectory != 'self') {
                     continue;
                 }
                 $group->delete();

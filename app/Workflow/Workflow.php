@@ -19,12 +19,13 @@ use App\Workflow\ConfigNotFoundException;
 use App\Workflow\SplitNotFoundException;
 use App\Workflow\JoinNotFoundException;
 
-class Workflow {
+class Workflow
+{
 
     /**
      * The workflow five states.
      *
-     * @var int 
+     * @var int
      */
     const OSWF_CREATED    = 1;
     const OSWF_ACTIVATED  = 2;
@@ -35,7 +36,7 @@ class Workflow {
     /**
      * The workflow instance object.
      *
-     * @var App\Workflow\Eloquent\Entry 
+     * @var App\Workflow\Eloquent\Entry
      */
     protected $entry;
 
@@ -47,7 +48,7 @@ class Workflow {
     protected $wf_config;
 
     /**
-     * workflow options 
+     * workflow options
      *
      * @var array
      */
@@ -62,26 +63,19 @@ class Workflow {
     public function __construct($entry_id)
     {
         $entry = Entry::find($entry_id);
-        if ($entry)
-        {
+        if ($entry) {
             $this->entry = $entry;
             $definition = Definition::find($entry->definition_id);
-            if (!$definition)
-            {
+            if (!$definition) {
                 throw new ConfigNotFoundException();
             }
 
-            if (isset($definition->contents) && $definition->contents)
-            {
+            if (isset($definition->contents) && $definition->contents) {
                 $this->wf_config = $definition->contents;
-            }
-            else
-            {
+            } else {
                 throw new ConfigNotFoundException();
             }
-        }
-        else
-        {
+        } else {
             throw new EntryNotFoundException();
         }
     }
@@ -110,7 +104,7 @@ class Workflow {
      */
     public function getEntryId()
     {
-       return $this->entry->id; 
+        return $this->entry->id;
     }
 
     /**
@@ -121,10 +115,8 @@ class Workflow {
      */
     private function isActionAvailable($action_descriptor)
     {
-        if (isset($action_descriptor['restrict_to']) && isset($action_descriptor['restrict_to']['conditions']) && $action_descriptor['restrict_to']['conditions'])
-        {
-            if (!$this->passesConditions($action_descriptor['restrict_to']['conditions']))
-            {
+        if (isset($action_descriptor['restrict_to']) && isset($action_descriptor['restrict_to']['conditions']) && $action_descriptor['restrict_to']['conditions']) {
+            if (!$this->passesConditions($action_descriptor['restrict_to']['conditions'])) {
                 return false;
             }
         }
@@ -134,15 +126,14 @@ class Workflow {
     /**
      * initialize workflow.
      *
-     * @param array options 
+     * @param array options
      * @return void
      */
     public function start($options=[])
     {
         $this->options = array_merge($this->options, $options);
 
-        if (!isset($this->wf_config['initial_action']) || !$this->wf_config['initial_action'])
-        {
+        if (!isset($this->wf_config['initial_action']) || !$this->wf_config['initial_action']) {
             throw new ActionNotFoundException();
         }
 
@@ -161,20 +152,17 @@ class Workflow {
         //}
 
         $action_descriptor = $this->wf_config['initial_action'];
-        if (!$this->isActionAvailable($action_descriptor))
-        {
+        if (!$this->isActionAvailable($action_descriptor)) {
             throw new ActionNotAvailableException();
         }
 
         // confirm result whose condition is satified.
-        if (!isset($action_descriptor['results']) || !$action_descriptor['results'])
-        {
+        if (!isset($action_descriptor['results']) || !$action_descriptor['results']) {
             throw new ResultNotFoundException();
         }
 
         $available_result_descriptor = $this->getAvailableResult($action_descriptor['results']);
-        if (!$available_result_descriptor)
-        {
+        if (!$available_result_descriptor) {
             throw new ResultNotAvailableException();
         }
         // create new current step
@@ -238,8 +226,7 @@ class Workflow {
     public function getStepMeta($step_id, $name='')
     {
         $step_description = $this->getStepDescriptor($step_id);
-        if ($name) 
-        {
+        if ($name) {
             return isset($step_description[$name]) ? $step_description[$name] : '';
         }
         return $step_description;
@@ -250,7 +237,7 @@ class Workflow {
      *
      * @param App\Workflow\Eloquent\CurrentStep $current_step
      * @param int $action_id
-     * @return string previous_id 
+     * @return string previous_id
      */
     private function moveToHistory($current_step, $action_id)
     {
@@ -279,21 +266,17 @@ class Workflow {
     private function createNewCurrentStep($result_descriptor, $action_id, $previous_id='')
     {
         $step_descriptor = [];
-        if (isset($result_descriptor['step']) && $result_descriptor['step'])
-        {
+        if (isset($result_descriptor['step']) && $result_descriptor['step']) {
             $step_descriptor = $this->getStepDescriptor($result_descriptor['step']);
-            if (!$step_descriptor)
-            {
+            if (!$step_descriptor) {
                 throw new StepNotFoundException();
             }
         }
-        if (!$step_descriptor)
-        {
+        if (!$step_descriptor) {
             return;
         }
         // order to use for workflow post-function
-        if (isset($step_descriptor['state']) && $step_descriptor['state'])
-        {
+        if (isset($step_descriptor['state']) && $step_descriptor['state']) {
             $this->options['state'] = $step_descriptor['state'];
         }
 
@@ -310,8 +293,7 @@ class Workflow {
         $new_current_step->save();
 
         // trigger before step
-        if (isset($step_descriptor['pre_functions']) && $step_descriptor['pre_functions'])
-        {
+        if (isset($step_descriptor['pre_functions']) && $step_descriptor['pre_functions']) {
             $this->executeFunctions($step_descriptor['pre_functions']);
         }
     }
@@ -325,111 +307,90 @@ class Workflow {
      */
     private function transitionWorkflow($current_steps, $action_id)
     {
-        foreach ($current_steps as $current_step)
-        {
+        foreach ($current_steps as $current_step) {
             $step_descriptor = $this->getStepDescriptor($current_step->step_id);
-            if (!$step_descriptor)
-            {
+            if (!$step_descriptor) {
                 throw new StepNotFoundException();
             }
 
             $action_descriptor = $this->getActionDescriptor(isset($step_descriptor['actions']) ? $step_descriptor['actions'] : [], $action_id);
-            if ($action_descriptor)
-            {
+            if ($action_descriptor) {
                 break;
             }
         }
-        if (!$action_descriptor)
-        {
-            throw new ActionNotFoundException(); 
+        if (!$action_descriptor) {
+            throw new ActionNotFoundException();
         }
-        if (!$this->isActionAvailable($action_descriptor))
-        {
+        if (!$this->isActionAvailable($action_descriptor)) {
             throw new ActionNotAvailableException();
         }
 
-        if (!isset($action_descriptor['results']) || !$action_descriptor['results'])
-        {
+        if (!isset($action_descriptor['results']) || !$action_descriptor['results']) {
             throw new ResultNotFoundException();
         }
         // confirm result whose condition is satified.
         $available_result_descriptor = $this->getAvailableResult($action_descriptor['results']);
-        if (!$available_result_descriptor)
-        {
+        if (!$available_result_descriptor) {
             throw new ResultNotAvailableException();
         }
 
         // triggers after step
-        if (isset($step_descriptor['post_functions']) && $step_descriptor['post_functions'])
-        {
+        if (isset($step_descriptor['post_functions']) && $step_descriptor['post_functions']) {
             $this->executeFunctions($step_descriptor['post_functions']);
         }
         // triggers before action
-        if (isset($action_descriptor['pre_functions']) && $action_descriptor['pre_functions'])
-        {
+        if (isset($action_descriptor['pre_functions']) && $action_descriptor['pre_functions']) {
             $this->executeFunctions($action_descriptor['pre_functions']);
         }
         // triggers before result
-        if (isset($available_result_descriptor['pre_functions']) && $available_result_descriptor['pre_functions'])
-        {
+        if (isset($available_result_descriptor['pre_functions']) && $available_result_descriptor['pre_functions']) {
             $this->executeFunctions($available_result_descriptor['pre_functions']);
         }
         // split workflow
-        if (isset($available_result_descriptor['split']) && $available_result_descriptor['split'])
-        {
+        if (isset($available_result_descriptor['split']) && $available_result_descriptor['split']) {
             // get split result
             $split_descriptor = $this->getSplitDescriptor($available_result_descriptor['split']);
-            if (!$split_descriptor)
-            {
+            if (!$split_descriptor) {
                 throw new SplitNotFoundException();
             }
 
             // move current to history step
             $prevoius_id = $this->moveToHistory($current_step, $action_id);
-            foreach ($split_descriptor['list'] as $result_descriptor)
-            {
+            foreach ($split_descriptor['list'] as $result_descriptor) {
                 $this->createNewCurrentStep($result_descriptor, $action_id, $prevoius_id);
             }
-        }
-        else if (isset($available_result_descriptor['join']) && $available_result_descriptor['join'])
-        {
+        } elseif (isset($available_result_descriptor['join']) && $available_result_descriptor['join']) {
             // fix me. join logic will be realized, suggest using the propertyset
             // get join result
             $join_descriptor = $this->getJoinDescriptor($available_result_descriptor['join']);
-            if (!$join_descriptor)
-            {
+            if (!$join_descriptor) {
                 throw new JoinNotFoundException();
             }
 
             // move current to history step
             $prevoius_id = $this->moveToHistory($current_step, $action_id);
-            if ($this->isJoinCompleted())
-            {
+            if ($this->isJoinCompleted()) {
                 // record other previous_ids by propertyset
                 $this->createNewCurrentStep($join_descriptor, $action_id, $prevoius_id);
             }
-        }
-        else
-        {
+        } else {
             // move current to history step
             $prevoius_id = $this->moveToHistory($current_step, $action_id);
             // create current step
             $this->createNewCurrentStep($available_result_descriptor, $action_id, $prevoius_id);
         }
         // triggers after result
-        if (isset($available_result_descriptor['post_functions']) && $available_result_descriptor['post_functions'])
-        {
+        if (isset($available_result_descriptor['post_functions']) && $available_result_descriptor['post_functions']) {
             $this->executeFunctions($available_result_descriptor['post_functions']);
         }
         // triggers after action
-        if (isset($action_descriptor['post_functions']) && $action_descriptor['post_functions'])
-        {
+        if (isset($action_descriptor['post_functions']) && $action_descriptor['post_functions']) {
             $this->executeFunctions($action_descriptor['post_functions']);
         }
     }
 
     /**
-     * check if the join is completed 
+     * check if the join is completed
      */
     private function isJoinCompleted()
     {
@@ -437,7 +398,7 @@ class Workflow {
     }
 
     /**
-     * execute action 
+     * execute action
      *
      * @param string $action_id
      * @param array $options;
@@ -446,14 +407,12 @@ class Workflow {
     public function doAction($action_id, $options=[])
     {
         $state = $this->getEntryState($this->entry->id);
-        if ($state != self::OSWF_CREATED && $state != self::OSWF_ACTIVATED)
-        {
+        if ($state != self::OSWF_CREATED && $state != self::OSWF_ACTIVATED) {
             throw new StateNotActivatedException();
         }
 
         $current_steps = $this->getCurrentSteps();
-        if (!$current_steps)
-        {
+        if (!$current_steps) {
             throw new CurrentStepNotFoundException();
         }
 
@@ -467,14 +426,12 @@ class Workflow {
      * get join descriptor from list.
      *
      * @param string $join_id
-     * @return array 
+     * @return array
      */
     private function getJoinDescriptor($join_id)
     {
-        foreach ($this->wf_config['joins'] as $join)
-        {
-            if ($join['id'] == $join_id)
-            {
+        foreach ($this->wf_config['joins'] as $join) {
+            if ($join['id'] == $join_id) {
                 return $join;
             }
         }
@@ -485,14 +442,12 @@ class Workflow {
      * get split descriptor from list.
      *
      * @param string $split_id
-     * @return array 
+     * @return array
      */
     private function getSplitDescriptor($split_id)
     {
-        foreach ($this->wf_config['splits'] as $split)
-        {
-            if ($split['id'] == $split_id)
-            {
+        foreach ($this->wf_config['splits'] as $split) {
+            if ($split['id'] == $split_id) {
                 return $split;
             }
         }
@@ -504,16 +459,14 @@ class Workflow {
      *
      * @param array $actions
      * @param string $action_id
-     * @return array 
+     * @return array
      */
     private function getActionDescriptor($actions, $action_id)
     {
         // get global config
         $actions = $actions ?: [];
-        foreach ($actions as $action)
-        {
-            if ($action['id'] == $action_id)
-            {
+        foreach ($actions as $action) {
+            if ($action['id'] == $action_id) {
                 return $action;
             }
         }
@@ -529,10 +482,8 @@ class Workflow {
      */
     private function getStepDescriptor($step_id)
     {
-        foreach ($this->wf_config['steps'] as $step)
-        {
-            if ($step['id'] == $step_id)
-            {
+        foreach ($this->wf_config['steps'] as $step) {
+            if ($step['id'] == $step_id) {
                 return $step;
             }
         }
@@ -578,8 +529,7 @@ class Workflow {
         $available_actions = [];
         // get current steps
         $current_steps = $this->getCurrentSteps();
-        foreach ($current_steps as $current_step)
-        {
+        foreach ($current_steps as $current_step) {
             $actions = $this->getAvailableActionsFromStep($current_step->step_id, $dest_state);
             $actions && $available_actions += $actions;
         }
@@ -596,38 +546,29 @@ class Workflow {
     private function getAvailableActionsFromStep($step_id, $dest_state = false)
     {
         $step_descriptor = $this->getStepDescriptor($step_id);
-        if (!$step_descriptor)
-        {
+        if (!$step_descriptor) {
             throw new StepNotFoundException();
         }
-        if (!isset($step_descriptor['actions']) || !$step_descriptor['actions'])
-        {
+        if (!isset($step_descriptor['actions']) || !$step_descriptor['actions']) {
             return [];
         }
         // global conditions for step
-        if (!$this->isActionAvailable($step_descriptor))
-        {
+        if (!$this->isActionAvailable($step_descriptor)) {
             return [];
         }
 
         $available_actions = [];
-        foreach ($step_descriptor['actions'] as $action)
-        {
-            if ($this->isActionAvailable($action))
-            {
-                if ($dest_state)
-                {
+        foreach ($step_descriptor['actions'] as $action) {
+            if ($this->isActionAvailable($action)) {
+                if ($dest_state) {
                     $state = '';
-                    if (isset($action['results']) && is_array($action['results']) && count($action['results']) > 0 && isset($action['results'][0]['step']))
-                    {
+                    if (isset($action['results']) && is_array($action['results']) && count($action['results']) > 0 && isset($action['results'][0]['step'])) {
                         $dest_step_descriptor = $this->getStepDescriptor($action['results'][0]['step']);
                         $state = $dest_step_descriptor['state'];
                     }
                     
                     $available_actions[] = [ 'id' => $action['id'], 'name' => $action['name'], 'screen' => $action['screen'] ?: '', 'state' => $state ];
-                }
-                else
-                {
+                } else {
                     $available_actions[] = [ 'id' => $action['id'], 'name' => $action['name'], 'screen' => $action['screen'] ?: '' ];
                 }
             }
@@ -637,7 +578,7 @@ class Workflow {
     }
 
     /**
-     * get available result from result-list 
+     * get available result from result-list
      *
      * @param array $results_descriptor
      * @return array
@@ -647,18 +588,13 @@ class Workflow {
         $available_result_descriptor = [];
 
         // confirm result whose condition is satified.
-        foreach ($results_descriptor as $result_descriptor)
-        {
-            if (isset($result_descriptor['conditions']) && $result_descriptor['conditions'])
-            {
-                if ($this->passesConditions($result_descriptor['conditions']))
-                {
+        foreach ($results_descriptor as $result_descriptor) {
+            if (isset($result_descriptor['conditions']) && $result_descriptor['conditions']) {
+                if ($this->passesConditions($result_descriptor['conditions'])) {
                     $available_result_descriptor = $result_descriptor;
                     break;
                 }
-            }
-            else
-            {
+            } else {
                 $available_result_descriptor = $result_descriptor;
             }
         }
@@ -673,23 +609,19 @@ class Workflow {
      */
     private function passesConditions($conditions)
     {
-        if (!isset($conditions['list']) || !$conditions['list'])
-        {
+        if (!isset($conditions['list']) || !$conditions['list']) {
             return true;
         }
 
         $type = isset($conditions['type']) && isset($conditions['type']) ? $conditions['type'] : 'and';
         $result = $type == 'and' ? true : false;
 
-        foreach ($conditions['list'] as $condition)
-        {
+        foreach ($conditions['list'] as $condition) {
             $tmp = $this->passesCondition($condition);
-            if ($type == 'and' && !$tmp)
-            {
+            if ($type == 'and' && !$tmp) {
                 return false;
             }
-            if ($type == 'or' && $tmp)
-            {
+            if ($type == 'or' && $tmp) {
                 return true;
             }
         }
@@ -715,15 +647,12 @@ class Workflow {
      */
     private function executeFunctions($functions)
     {
-        if (!$functions || !is_array($functions))
-        {
+        if (!$functions || !is_array($functions)) {
             return;
         }
 
-        foreach ($functions as $function) 
-        {
-            if (is_array($function) && $function)
-            {
+        foreach ($functions as $function) {
+            if (is_array($function) && $function) {
                 $this->executeFunction($function);
             }
         }
@@ -742,8 +671,7 @@ class Workflow {
         $action = isset($method[1]) && $method[1] ? $method[1] : 'handle';
 
         // check handle function exists
-        if (!method_exists($class, $action))
-        {
+        if (!method_exists($class, $action)) {
             throw new FunctionNotFoundException();
         }
         $args = isset($function['args']) ? $function['args'] : [];
@@ -771,8 +699,7 @@ class Workflow {
     private function genTmpVars($args=[])
     {
         $tmp_vars = [];
-        foreach ($this->entry as $key => $val)
-        {
+        foreach ($this->entry as $key => $val) {
             $tmp_vars[$key] = $val;
         }
         $tmp_vars = array_merge($tmp_vars, $this->options);
@@ -783,7 +710,7 @@ class Workflow {
     /**
      * get property set
      *
-     * @return mixed 
+     * @return mixed
      */
     public function getPropertySet($key)
     {
@@ -791,9 +718,9 @@ class Workflow {
     }
 
     /**
-     * add property set 
+     * add property set
      *
-     * @return void 
+     * @return void
      */
     public function setPropertySet($key, $val)
     {
@@ -804,7 +731,7 @@ class Workflow {
     /**
      * remove property set
      *
-     * @return void 
+     * @return void
      */
     public function removePropertySet($key)
     {
@@ -820,32 +747,27 @@ class Workflow {
     {
         $state_ids = [];
         $steps = isset($contents['steps']) && $contents['steps'] ? $contents['steps'] : [];
-        foreach ($steps as $step)
-        {
+        foreach ($steps as $step) {
             $state_ids[] = isset($step['state']) ? $step['state'] : '';
         }
         return $state_ids;
     }
 
     /**
-     * get used screens in the workflow 
+     * get used screens in the workflow
      *
-     * @return array 
+     * @return array
      */
     public static function getScreens($contents)
     {
         $screen_ids = [];
         $steps = isset($contents['steps']) && $contents['steps'] ? $contents['steps'] : [];
-        foreach ($steps as $step)
-        {
-            if (!isset($step['actions']) || !$step['actions'])
-            {
+        foreach ($steps as $step) {
+            if (!isset($step['actions']) || !$step['actions']) {
                 continue;
             }
-            foreach ($step['actions'] as $action)
-            {
-                if (!isset($action['screen']) || !$action['screen'])
-                {
+            foreach ($step['actions'] as $action) {
+                if (!isset($action['screen']) || !$action['screen']) {
                     continue;
                 }
                 $action['screen'] !=  '-1' && !in_array($action['screen'], $screen_ids) && $screen_ids[] = $action['screen'];
@@ -855,9 +777,9 @@ class Workflow {
     }
 
     /**
-     * get step num 
+     * get step num
      *
-     * @return int 
+     * @return int
      */
     public static function getStepNum($contents)
     {

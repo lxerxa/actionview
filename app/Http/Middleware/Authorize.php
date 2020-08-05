@@ -7,7 +7,7 @@ use App\System\Eloquent\SysSetting;
 use Closure;
 use Sentinel;
 
-class Authorize 
+class Authorize
 {
     /**
      * Handle an incoming request.
@@ -19,13 +19,11 @@ class Authorize
     public function handle($request, Closure $next)
     {
         $setting = SysSetting::first();
-        if (!($setting && isset($setting->properties) && isset($setting->properties['enable_login_protection']) && $setting->properties['enable_login_protection'] === 1))
-        {
+        if (!($setting && isset($setting->properties) && isset($setting->properties['enable_login_protection']) && $setting->properties['enable_login_protection'] === 1)) {
             Sentinel::removeCheckpoint('throttle');
         }
 
-        if (! $user = Sentinel::check())
-        {
+        if (! $user = Sentinel::check()) {
             return Response()->json([ 'ecode' => -10001, 'data' => '' ]);
         }
         return $next($request);

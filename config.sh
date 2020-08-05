@@ -46,5 +46,9 @@ fi
 if [ `grep -c "'sync_flag'," $eloquentuserfile` -eq 0 ]; then
   sed -i "/fillable/a\        'sync_flag'," $eloquentuserfile
 fi
+#add phone field to fillable
+if [ `grep -c "'phone'," $eloquentuserfile` -eq 0 ]; then
+  sed -i "/fillable/a\        'phone'," $eloquentuserfile
+fi
 
 echo "configure complete."

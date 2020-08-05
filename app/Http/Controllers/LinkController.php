@@ -30,8 +30,7 @@ class LinkController extends Controller
     {
         $values = [];
         $src = $request->input('src');
-        if (!$src)
-        {
+        if (!$src) {
             throw new \UnexpectedValueException('the src issue value can not be empty.', -11151);
         }
         $values['src'] = $src;
@@ -44,8 +43,7 @@ class LinkController extends Controller
         $values['relation'] = $relation;
 
         $dest = $request->input('dest');
-        if (!$dest)
-        {
+        if (!$dest) {
             throw new \UnexpectedValueException('the dest issue value can not be empty.', -11152);
         }
         $values['dest'] = $dest;
@@ -53,8 +51,7 @@ class LinkController extends Controller
         $values['creator'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
 
         $isExists = Linked::whereRaw([ 'src' => $src, 'dest' => $dest ])->exists();
-        if ($isExists || Linked::whereRaw([ 'dest' => $src, 'src' => $dest ])->exists())
-        {
+        if ($isExists || Linked::whereRaw([ 'dest' => $src, 'src' => $dest ])->exists()) {
             throw new \UnexpectedValueException('the relation of two issues has been exists.', -11154);
         }
 
@@ -68,7 +65,7 @@ class LinkController extends Controller
         $link['src'] = array_only($src_issue, ['_id', 'no', 'type', 'title', 'state']);
 
         $dest_issue = DB::collection('issue_' . $project_key)->where('_id', $dest)->first();
-        $link['dest'] = array_only($dest_issue, ['_id', 'no', 'type', 'title', 'state']); 
+        $link['dest'] = array_only($dest_issue, ['_id', 'no', 'type', 'title', 'state']);
 
         // trigger event of issue linked
         Event::fire(new IssueEvent($project_key, $src, $values['creator'], [ 'event_key' => 'create_link', 'data' => [ 'dest' => $dest, 'relation' => $relation ]]));
@@ -85,8 +82,7 @@ class LinkController extends Controller
     public function destroy($project_key, $id)
     {
         $link = Linked::find($id);
-        if (!$link)
-        {
+        if (!$link) {
             throw new \UnexpectedValueException('the link does not exist or is not in the project.', -11155);
         }
 

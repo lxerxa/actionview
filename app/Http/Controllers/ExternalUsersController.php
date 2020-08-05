@@ -34,28 +34,23 @@ class ExternalUsersController extends Controller
         $data = [];
 
         $user = $request->input('user');
-        if (!isset($user) || !$user)
-        {
+        if (!isset($user) || !$user) {
             throw new \UnexpectedValueException('the user cannot be empty.', -16000);
         }
         $data['user'] = $user;
 
         $mode = $request->input('mode');
-        if (!isset($mode) || !$mode)
-        {
+        if (!isset($mode) || !$mode) {
             throw new \UnexpectedValueException('the mode cannot be empty.', -16001);
         }
-        if (!in_array($mode, [ 'use', 'resetPwd', 'enable', 'disable' ]))
-        {
+        if (!in_array($mode, [ 'use', 'resetPwd', 'enable', 'disable' ])) {
             throw new \UnexpectedValueException('the mode value has error.', -16002);
         }
         $data['status'] = $mode == 'disable' ? 'disabled' : 'enabled';
 
-        if ($mode == 'use' || $mode == 'resetPwd')
-        {
+        if ($mode == 'use' || $mode == 'resetPwd') {
             $pwd = $request->input('pwd');
-            if (!isset($pwd) || !$pwd)
-            {
+            if (!isset($pwd) || !$pwd) {
                 throw new \UnexpectedValueException('the password cannot be empty.', -16003);
             }
             $data['pwd'] = $pwd;
@@ -66,8 +61,7 @@ class ExternalUsersController extends Controller
         $external_user = ExternalUsers::where('project_key', $project_key)
             ->where('user', $user)
             ->first();
-        if (!$external_user)
-        {
+        if (!$external_user) {
             $external_user = new ExternalUsers;
         }
 

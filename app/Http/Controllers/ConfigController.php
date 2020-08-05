@@ -22,11 +22,9 @@ class ConfigController extends Controller
     public function index($project_key)
     {
         $new_types = [];
-        $types = Provider::getTypeList($project_key); 
-        foreach ($types as $type)
-        {
-            if (isset($type->disabled) && $type->disabled)
-            {
+        $types = Provider::getTypeList($project_key);
+        foreach ($types as $type) {
+            if (isset($type->disabled) && $type->disabled) {
                 continue;
             }
             $type->screen = $type->screen;
@@ -36,8 +34,7 @@ class ConfigController extends Controller
 
         $priorities = Provider::getPriorityList($project_key);
         $roles = Provider::getRoleList($project_key);
-        foreach($roles as $role)
-        {
+        foreach ($roles as $role) {
             $role->permissions = $this->getPermissions($project_key, $role->id);
         }
 
@@ -54,8 +51,7 @@ class ConfigController extends Controller
     public function getPermissions($project_key, $role_id)
     {
         $rp = RolePermissions::where([ 'project_key' => $project_key, 'role_id' => $role_id ])->first();
-        if (!$rp && $project_key !== '$_sys_$')
-        {
+        if (!$rp && $project_key !== '$_sys_$') {
             $rp = RolePermissions::where([ 'project_key' => '$_sys_$', 'role_id' => $role_id ])->first();
         }
         return $rp && isset($rp->permissions) ? $rp->permissions : [];

@@ -35,16 +35,14 @@ class EpicController extends Controller
         $columns = isset($board->columns) ? $board->columns : [];
 
         $all_states = [];
-        foreach ($columns as $column)
-        {
+        foreach ($columns as $column) {
             $all_states = array_merge($all_states, isset($column['states']) ? $column['states'] : []);
         }
         $last_column = array_pop($columns);
         $completed_states = isset($last_column['states']) ? $last_column['states'] : [];
 
         $epics = Epic::where([ 'project_key' => $project_key ])->orderBy('sn', 'asc')->get();
-        foreach ($epics as $epic)
-        {
+        foreach ($epics as $epic) {
             $epic->is_used = $this->isFieldUsedByIssue($project_key, 'epic', $epic->toArray());
 
             $completed_issue_cnt = $incompleted_issue_cnt = $inestimable_issue_cnt = 0;
@@ -53,18 +51,12 @@ class EpicController extends Controller
                 ->where('epic', $epic->id)
                 ->where('del_flg', '<>', 1)
                 ->get(['state']);
-            foreach ($issues as $issue)
-            {
-                if (in_array($issue['state'], $completed_states))
-                {
+            foreach ($issues as $issue) {
+                if (in_array($issue['state'], $completed_states)) {
                     $completed_issue_cnt++;
-                }
-                else if (in_array($issue['state'], $all_states))
-                {
+                } elseif (in_array($issue['state'], $all_states)) {
                     $incompleted_issue_cnt++;
-                }
-                else
-                {
+                } else {
                     $inestimable_issue_cnt++;
                 }
             }
@@ -85,19 +77,16 @@ class EpicController extends Controller
     public function store(Request $request, $project_key)
     {
         $name = $request->input('name');
-        if (!$name)
-        {
+        if (!$name) {
             throw new \UnexpectedValueException('the name can not be empty.', -11800);
         }
 
         $bgColor = $request->input('bgColor');
-        if (!$bgColor)
-        {
+        if (!$bgColor) {
             throw new \UnexpectedValueException('the bgColor can not be empty.', -11801);
         }
 
-        if (Provider::isEpicExisted($project_key, $name))
-        {
+        if (Provider::isEpicExisted($project_key, $name)) {
             throw new \UnexpectedValueException('epic name cannot be repeated', -11802);
         }
 
@@ -129,31 +118,25 @@ class EpicController extends Controller
     public function update(Request $request, $project_key, $id)
     {
         $name = $request->input('name');
-        if (isset($name))
-        {
-            if (!$name)
-            {
+        if (isset($name)) {
+            if (!$name) {
                 throw new \UnexpectedValueException('the name can not be empty.', -11800);
             }
         }
 
         $bgColor = $request->input('bgColor');
-        if (isset($bgColor))
-        {
-            if (!$bgColor)
-            {
+        if (isset($bgColor)) {
+            if (!$bgColor) {
                 throw new \UnexpectedValueException('the bgColor can not be empty.', -11801);
             }
         }
 
         $epic = Epic::find($id);
-        if (!$epic || $project_key != $epic->project_key)
-        {
+        if (!$epic || $project_key != $epic->project_key) {
             throw new \UnexpectedValueException('the epic does not exist or is not in the project.', -11803);
         }
 
-        if ($epic->name !== $name && Provider::isEpicExisted($project_key, $name))
-        {
+        if ($epic->name !== $name && Provider::isEpicExisted($project_key, $name)) {
             throw new \UnexpectedValueException('epic name cannot be repeated', -11802);
         }
 
@@ -172,14 +155,11 @@ class EpicController extends Controller
     {
         // set epic sort.
         $sequence_epics = $request->input('sequence');
-        if (isset($sequence_epics))
-        {
+        if (isset($sequence_epics)) {
             $i = 1;
-            foreach ($sequence_epics as $epic_id)
-            {
+            foreach ($sequence_epics as $epic_id) {
                 $epic = Epic::find($epic_id);
-                if (!$epic || $epic->project_key != $project_key)
-                {
+                if (!$epic || $epic->project_key != $project_key) {
                     continue;
                 }
                 $epic->sn = $i++;
@@ -200,42 +180,31 @@ class EpicController extends Controller
     public function delete(Request $request, $project_key, $id)
     {
         $epic = Epic::find($id);
-        if (!$epic || $project_key != $epic->project_key)
-        {
+        if (!$epic || $project_key != $epic->project_key) {
             throw new \UnexpectedValueException('the epic does not exist or is not in the project.', -11803);
         }
 
         $operate_flg = $request->input('operate_flg');
-        if (!isset($operate_flg) || $operate_flg === '0')
-        {
+        if (!isset($operate_flg) || $operate_flg === '0') {
             $is_used = $this->isFieldUsedByIssue($project_key, 'epic', $epic->toArray());
-            if ($is_used)
-            {
+            if ($is_used) {
                 throw new \UnexpectedValueException('the epic has been used by some issues.', -11804);
             }
-        }
-        else if ($operate_flg === '1')
-        {
+        } elseif ($operate_flg === '1') {
             $swap_epic = $request->input('swap_epic');
-            if (!isset($swap_epic) || !$swap_epic)
-            {
+            if (!isset($swap_epic) || !$swap_epic) {
                 throw new \UnexpectedValueException('the swap epic cannot be empty.', -11806);
             }
 
             $sepic = Epic::find($swap_epic);
-            if (!$sepic || $project_key != $sepic->project_key)
-            {
+            if (!$sepic || $project_key != $sepic->project_key) {
                 throw new \UnexpectedValueException('the swap epic does not exist or is not in the project.', -11807);
             }
 
             $this->updIssueEpic($project_key, $id, $swap_epic);
-        }
-        else if ($operate_flg === '2')
-        {
+        } elseif ($operate_flg === '2') {
             $this->updIssueEpic($project_key, $id, '');
-        }
-        else
-        {
+        } else {
             throw new \UnexpectedValueException('the operation has error.', -11805);
         }
 
@@ -268,8 +237,7 @@ class EpicController extends Controller
             ->where('del_flg', '<>', 1)
             ->get();
 
-        foreach ($issues as $issue)
-        {
+        foreach ($issues as $issue) {
             $updValues = [];
             $updValues['epic'] = $dest;
 

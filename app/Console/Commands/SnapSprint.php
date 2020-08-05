@@ -42,8 +42,7 @@ class SnapSprint extends Command
             ->where('complete_time', '>', time())
             ->get();
 
-        foreach ($active_sprints as $sprint)
-        {
+        foreach ($active_sprints as $sprint) {
             $project_key = $sprint->project_key;
 
             $contents = [];
@@ -51,8 +50,7 @@ class SnapSprint extends Command
             $issues = DB::collection('issue_' . $project_key)
                 ->where([ 'no' => [ '$in' => $issue_nos ] ])
                 ->get();
-            foreach ($issues as $issue)
-            { 
+            foreach ($issues as $issue) {
                 $tmp = [];
                 $tmp['no'] = $issue['no'];
                 $tmp['state'] = isset($issue['state']) ? $issue['state'] : '';
@@ -62,10 +60,10 @@ class SnapSprint extends Command
 
             SprintDayLog::where([ 'project_key' => $project_key, 'no' => $sprint->no, 'day' => date('Y/m/d') ])->delete();
 
-            SprintDayLog::create([ 
-                'project_key' => $project_key, 
-                'no' => $sprint->no, 
-                'day' => date('Y/m/d'), 
+            SprintDayLog::create([
+                'project_key' => $project_key,
+                'no' => $sprint->no,
+                'day' => date('Y/m/d'),
                 'issues' => $contents ]);
         }
     }

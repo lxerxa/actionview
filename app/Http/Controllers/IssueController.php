@@ -47,46 +47,36 @@ class IssueController extends Controller
     public function index(Request $request, $project_key)
     {
         $where = $this->getIssueQueryWhere($project_key, $request->all());
-        $query = DB::collection('issue_' . $project_key)->whereRaw($where); 
+        $query = DB::collection('issue_' . $project_key)->whereRaw($where);
 
         $from = $request->input('from');
         $from_kanban_id = $request->input('from_kanban_id');
-        if (isset($from) && in_array($from, [ 'kanban', 'active_sprint', 'backlog' ]) && isset($from_kanban_id) && $from_kanban_id) 
-        {
+        if (isset($from) && in_array($from, [ 'kanban', 'active_sprint', 'backlog' ]) && isset($from_kanban_id) && $from_kanban_id) {
             $board = Board::find($from_kanban_id);
-            if ($board && isset($board->query) && $board->query)
-            {
+            if ($board && isset($board->query) && $board->query) {
                 $global_query = $this->getIssueQueryWhere($project_key, $board->query);
                 $query->whereRaw($global_query);
             }
 
-            if ($from === 'kanban')
-            {
+            if ($from === 'kanban') {
                 $query->where(function ($query) {
                     $query->whereRaw([ 'resolve_version' => [ '$exists' => 0 ] ])->orWhere('resolve_version', '');
                 });
-            }
-            else if ($from === 'active_sprint' || $from === 'backlog')
-            {
+            } elseif ($from === 'active_sprint' || $from === 'backlog') {
                 $active_sprint_issues = [];
                 $active_sprint = Sprint::where('project_key', $project_key)->where('status', 'active')->first();
-                if ($from === 'active_sprint' && !$active_sprint) 
-                {
+                if ($from === 'active_sprint' && !$active_sprint) {
                     Response()->json([ 'ecode' => 0, 'data' => []]);
-                }
-                else if ($active_sprint && isset($active_sprint['issues']) && $active_sprint['issues'])
-                {
+                } elseif ($active_sprint && isset($active_sprint['issues']) && $active_sprint['issues']) {
                     $active_sprint_issues = $active_sprint['issues'];
                 }
 
                 $last_column_states = [];
-                if ($board && isset($board->columns))
-                {
+                if ($board && isset($board->columns)) {
                     $board_columns = $board->columns;
                     $last_column = array_pop($board_columns) ?: [];
-                    if ($last_column && isset($last_column['states']) && $last_column['states'])
-                    {
-                        $last_column_states = $last_column['states']; 
+                    if ($last_column && isset($last_column['states']) && $last_column['states']) {
+                        $last_column_states = $last_column['states'];
                     }
                 }
  
@@ -100,11 +90,9 @@ class IssueController extends Controller
         $total = $query->count();
 
         $orderBy = $request->input('orderBy') ?: '';
-        if ($orderBy)
-        {
+        if ($orderBy) {
             $orderBy = explode(',', $orderBy);
-            foreach ($orderBy as $val)
-            {
+            foreach ($orderBy as $val) {
                 $val = explode(' ', trim($val));
                 $field = array_shift($val);
                 $sort = array_pop($val) ?: 'asc';
@@ -120,16 +108,14 @@ class IssueController extends Controller
         $query = $query->skip($page_size * ($page - 1))->take($page_size);
         $issues = $query->get();
 
-        if (isset($from) && $from == 'export')
-        {
+        if (isset($from) && $from == 'export') {
             $export_fields = $request->input('export_fields');
             $this->export($project_key, isset($export_fields) ? explode(',', $export_fields) : [], $issues);
             exit();
         }
 
         $watched_issue_ids = [];
-        if (!isset($from) || !$from)
-        {
+        if (!isset($from) || !$from) {
             $watched_issues = Watch::where('project_key', $project_key)
                 ->where('user.id', $this->user->id)
                 ->get()
@@ -139,54 +125,42 @@ class IssueController extends Controller
 
         $cache_parents = [];
         $issue_ids = [];
-        foreach ($issues as $key => $issue)
-        {
+        foreach ($issues as $key => $issue) {
             $issue_ids[] = $issue['_id']->__toString();
             // set issue watching flag
-            if (in_array($issue['_id']->__toString(), $watched_issue_ids))
-            {
+            if (in_array($issue['_id']->__toString(), $watched_issue_ids)) {
                 $issues[$key]['watching'] = true;
             }
 
             // get the parent issue
-            if (isset($issue['parent_id']) && $issue['parent_id'])
-            {
-                if (isset($cache_parents[$issue['parent_id']]) && $cache_parents[$issue['parent_id']])
-                {
+            if (isset($issue['parent_id']) && $issue['parent_id']) {
+                if (isset($cache_parents[$issue['parent_id']]) && $cache_parents[$issue['parent_id']]) {
                     $issues[$key]['parent'] = $cache_parents[$issue['parent_id']];
-                }
-                else
-                {
+                } else {
                     $parent = DB::collection('issue_' . $project_key)->where('_id', $issue['parent_id'])->first();
                     $issues[$key]['parent'] = $parent ? array_only($parent, [ '_id', 'title', 'no', 'type', 'state' ]) : [];
                     $cache_parents[$issue['parent_id']] = $issues[$key]['parent'];
                 }
             }
 
-            if (!isset($from))
-            {
+            if (!isset($from)) {
                 $issues[$key]['hasSubtasks'] = DB::collection('issue_' . $project_key)->where('parent_id', $issue['_id']->__toString())->exists();
             }
         }
 
-        if ($issues && isset($from) && in_array($from, [ 'kanban', 'active_sprint', 'backlog', 'his_sprint' ]))
-        {
+        if ($issues && isset($from) && in_array($from, [ 'kanban', 'active_sprint', 'backlog', 'his_sprint' ])) {
             $filter = $request->input('filter') ?: '';
             $issues = $this->arrangeIssues($project_key, $issues, $from, $from_kanban_id, $filter === 'all');
         }
 
         $options = [ 'total' => $total, 'sizePerPage' => $page_size ];
 
-        if (isset($from) && $from == 'gantt')
-        {
-            foreach ($issues as $key => $issue) 
-            {
-                if (!isset($issue['parent_id']) || !$issue['parent_id'] || in_array($issue['parent_id'], $issue_ids)) 
-                {
+        if (isset($from) && $from == 'gantt') {
+            foreach ($issues as $key => $issue) {
+                if (!isset($issue['parent_id']) || !$issue['parent_id'] || in_array($issue['parent_id'], $issue_ids)) {
                     continue;
                 }
-                if (isset($issue['parent']) && $issue['parent']) 
-                {
+                if (isset($issue['parent']) && $issue['parent']) {
                     $issues[] = $issue['parent'];
                     $issue_ids[] = $issue['parent_id'];
                 }
@@ -194,8 +168,7 @@ class IssueController extends Controller
 
             $singulars = CalendarSingular::all();
             $new_singulars = [];
-            foreach ($singulars as $singular)
-            {
+            foreach ($singulars as $singular) {
                 $tmp = [];
                 $tmp['notWorking'] = $singular->type == 'holiday' ? 1 : 0;
                 $tmp['date'] = $singular->date;
@@ -217,44 +190,32 @@ class IssueController extends Controller
     {
         $query = DB::collection('issue_' . $project_key)->where('del_flg', '<>', 1);
 
-        if ($s = $request->input('s'))
-        {
-            if (is_numeric($s) && strpos($s, '.') === false)
-            {
+        if ($s = $request->input('s')) {
+            if (is_numeric($s) && strpos($s, '.') === false) {
                 $query->where(function ($query) use ($s) {
                     $query->where('no', $s + 0)->orWhere('title', 'like', '%' . $s . '%');
                 });
-            }
-            else
-            {
+            } else {
                 $query->where('title', 'like', '%' . $s . '%');
             }
         }
 
         $type = $request->input('type');
-        if (isset($type))
-        {
-            if ($type == 'standard')
-            {
-                $query->where(function ($query) { 
+        if (isset($type)) {
+            if ($type == 'standard') {
+                $query->where(function ($query) {
                     $query->where('parent_id', '')->orWhereNull('parent_id')->orWhere('parent_id', 'exists', false);
                 });
-   
-            } 
-            else if ($type == 'subtask')
-            {
-                $query->where(function ($query) { 
+            } elseif ($type == 'subtask') {
+                $query->where(function ($query) {
                     $query->where('parent_id', 'exists', true)->where('parent_id', '<>', '')->whereNotNull('parent_id');
                 });
             }
         }
 
-        if ($limit = $request->input('limit'))
-        {
+        if ($limit = $request->input('limit')) {
             $limit = intval($limit) < 10 ? 10 : intval($limit);
-        }
-        else
-        {
+        } else {
             $limit = 10;
         }
 
@@ -272,66 +233,49 @@ class IssueController extends Controller
     public function store(Request $request, $project_key)
     {
         $issue_type = $request->input('type');
-        if (!$issue_type)
-        {
+        if (!$issue_type) {
             throw new \UnexpectedValueException('the issue type can not be empty.', -11100);
         }
 
         $schema = Provider::getSchemaByType($issue_type);
-        if (!$schema)
-        {
+        if (!$schema) {
             throw new \UnexpectedValueException('the schema of the type is not existed.', -11101);
         }
 
-        if (!$this->requiredCheck($schema, $request->all(), 'create'))
-        {
+        if (!$this->requiredCheck($schema, $request->all(), 'create')) {
             throw new \UnexpectedValueException('the required field is empty.', -11121);
         }
 
         // handle timetracking
         $insValues = [];
-        foreach ($schema as $field)
-        {
+        foreach ($schema as $field) {
             $fieldValue = $request->input($field['key']);
-            if (!isset($fieldValue) || !$fieldValue)
-            {
+            if (!isset($fieldValue) || !$fieldValue) {
                 continue;
             }
 
-            if ($field['type'] == 'TimeTracking')
-            {
-                if (!$this->ttCheck($fieldValue))
-                {
+            if ($field['type'] == 'TimeTracking') {
+                if (!$this->ttCheck($fieldValue)) {
                     throw new \UnexpectedValueException('the format of timetracking is incorrect.', -11102);
                 }
                 $insValues[$field['key']] = $this->ttHandle($fieldValue);
                 $insValues[$field['key'] . '_m'] = $this->ttHandleInM($insValues[$field['key']]);
-            }
-            else if ($field['type'] == 'DatePicker' || $field['type'] == 'DateTimePicker')
-            {
-                if ($this->isTimestamp($fieldValue) === false)
-                {
+            } elseif ($field['type'] == 'DatePicker' || $field['type'] == 'DateTimePicker') {
+                if ($this->isTimestamp($fieldValue) === false) {
                     throw new \UnexpectedValueException('the format of datepicker field is incorrect.', -11122);
                 }
-            }
-            else if ($field['type'] == 'SingleUser')
-            {
+            } elseif ($field['type'] == 'SingleUser') {
                 $user_info = Sentinel::findById($fieldValue);
-                if ($user_info)
-                {
+                if ($user_info) {
                     $insValues[$field['key']] = [ 'id' => $fieldValue, 'name' => $user_info->first_name, 'email' => $user_info->email ];
                 }
-            }
-            else if ($field['type'] == 'MultiUser')
-            {
+            } elseif ($field['type'] == 'MultiUser') {
                 $user_ids = $fieldValue;
                 $new_user_ids = [];
                 $insValues[$field['key']] = [];
-                foreach ($user_ids as $uid)
-                {
+                foreach ($user_ids as $uid) {
                     $user_info = Sentinel::findById($uid);
-                    if ($user_info)
-                    {
+                    if ($user_info) {
                         array_push($insValues[$field['key']], [ 'id' => $uid, 'name' => $user_info->first_name, 'email' => $user_info->email ]);
                         $new_user_ids[] = $uid;
                     }
@@ -343,54 +287,44 @@ class IssueController extends Controller
         // handle assignee
         $assignee = [];
         $assignee_id = $request->input('assignee');
-        if (!$assignee_id)
-        {
+        if (!$assignee_id) {
             $module_ids = $request->input('module');
-            if ($module_ids)
-            {
+            if ($module_ids) {
                 //$module_ids = explode(',', $module_ids);
                 $module = Provider::getModuleById($module_ids[0]);
-                if (isset($module['defaultAssignee']) && $module['defaultAssignee'] === 'modulePrincipal')
-                {
+                if (isset($module['defaultAssignee']) && $module['defaultAssignee'] === 'modulePrincipal') {
                     $assignee2 = $module['principal'] ?: '';
                     $assignee_id = isset($assignee2['id']) ? $assignee2['id'] : '';
-                }
-                else if (isset($module['defaultAssignee']) && $module['defaultAssignee'] === 'projectPrincipal') 
-                {
+                } elseif (isset($module['defaultAssignee']) && $module['defaultAssignee'] === 'projectPrincipal') {
                     $assignee2 = Provider::getProjectPrincipal($project_key) ?: '';
-                    $assignee_id = isset($assignee2['id']) ? $assignee2['id'] : ''; 
+                    $assignee_id = isset($assignee2['id']) ? $assignee2['id'] : '';
                 }
             }
         }
-        if ($assignee_id)
-        {
-            if ($assignee_id != $this->user->id && !$this->isPermissionAllowed($project_key, 'assigned_issue', $assignee_id))
-            {
+        if ($assignee_id) {
+            if ($assignee_id != $this->user->id && !$this->isPermissionAllowed($project_key, 'assigned_issue', $assignee_id)) {
                 return Response()->json(['ecode' => -11118, 'emsg' => 'the assigned user has not assigned-issue permission.']);
             }
 
             $user_info = Sentinel::findById($assignee_id);
-            if ($user_info)
-            {
+            if ($user_info) {
                 $assignee = [ 'id' => $assignee_id, 'name' => $user_info->first_name, 'email' => $user_info->email ];
             }
         }
-        if (!$assignee) 
-        {
+        if (!$assignee) {
             $assignee = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
         }
         $insValues['assignee'] = $assignee;
 
-        //$priority = $request->input('priority'); 
+        //$priority = $request->input('priority');
         //if (!isset($priority) || !$priority)
         //{
         //    $insValues['priority'] = Provider::getDefaultPriority($project_key);
         //}
 
-        $resolution = $request->input('resolution'); 
-        if (!isset($resolution) || !$resolution)
-        {
-            $insValues['resolution'] = 'Unresolved'; 
+        $resolution = $request->input('resolution');
+        if (!isset($resolution) || !$resolution) {
+            $insValues['resolution'] = 'Unresolved';
         }
 
         // get reporter(creator)
@@ -401,7 +335,7 @@ class IssueController extends Controller
         $max_no = DB::collection($table)->count() + 1;
         $insValues['no'] = $max_no;
 
-        // workflow initialize 
+        // workflow initialize
         $workflow = $this->initializeWorkflow($issue_type);
         $insValues = $insValues + $workflow;
 
@@ -418,8 +352,7 @@ class IssueController extends Controller
         Event::fire(new IssueEvent($project_key, $id->__toString(), $insValues['reporter'], [ 'event_key' => 'create_issue' ]));
 
         // create the Labels for project
-        if (isset($insValues['labels']) && $insValues['labels'])
-        {
+        if (isset($insValues['labels']) && $insValues['labels']) {
             $this->createLabels($project_key, $insValues['labels']);
         }
 
@@ -430,7 +363,7 @@ class IssueController extends Controller
      * initialize the workflow by type.
      *
      * @param  int  $type
-     * @return array 
+     * @return array
      */
     public function initializeWorkflow($type)
     {
@@ -460,31 +393,25 @@ class IssueController extends Controller
     {
         $issue = DB::collection('issue_' . $project_key)->where('_id', $id)->first();
         $schema = Provider::getSchemaByType($issue['type']);
-        if (!$schema)
-        {
+        if (!$schema) {
             throw new \UnexpectedValueException('the schema of the type is not existed.', -11101);
         }
 
-        if (isset($issue['assignee']['id']))
-        {
+        if (isset($issue['assignee']['id'])) {
             $user = Sentinel::findById($issue['assignee']['id']);
             $issue['assignee']['avatar'] = isset($user->avatar) ? $user->avatar : '';
         }
 
-        foreach ($schema as $field)
-        {
-            if ($field['type'] === 'File' && isset($issue[$field['key']]) && $issue[$field['key']]) 
-            {
-               foreach ($issue[$field['key']] as $key => $fid)
-                {
+        foreach ($schema as $field) {
+            if ($field['type'] === 'File' && isset($issue[$field['key']]) && $issue[$field['key']]) {
+                foreach ($issue[$field['key']] as $key => $fid) {
                     $issue[$field['key']][$key] = File::find($fid);
                 }
             }
         }
 
         // get avaliable actions for wf
-        if (isset($issue['entry_id']) && $issue['entry_id'])
-        {
+        if (isset($issue['entry_id']) && $issue['entry_id']) {
             try {
                 $wf = new Workflow($issue['entry_id']);
                 $issue['wfactions'] = $wf->getAvailableActions([ 'project_key' => $project_key, 'issue_id' => $id, 'caller' => $this->user->id ]);
@@ -492,21 +419,16 @@ class IssueController extends Controller
                 $issue['wfactions'] = [];
             }
 
-            foreach ($issue['wfactions'] as $key => $action)
-            {
-                if (isset($action['screen']) && $action['screen'] && $action['screen'] != 'comments')
-                {
+            foreach ($issue['wfactions'] as $key => $action) {
+                if (isset($action['screen']) && $action['screen'] && $action['screen'] != 'comments') {
                     $issue['wfactions'][$key]['schema'] = Provider::getSchemaByScreenId($project_key, $issue['type'], $action['screen']);
                 }
             }
         }
 
-        if (isset($issue['parent_id']) && $issue['parent_id']) 
-        {
+        if (isset($issue['parent_id']) && $issue['parent_id']) {
             $issue['parent'] = DB::collection('issue_' . $project_key)->where('_id', $issue['parent_id'])->first(['no', 'type', 'title', 'state']);
-        }
-        else
-        {
+        } else {
             $issue['hasSubtasks'] = DB::collection('issue_' . $project_key)->where('parent_id', $id)->exists();
         }
 
@@ -515,24 +437,17 @@ class IssueController extends Controller
         $issue['links'] = [];
         $links = DB::collection('linked')->where('src', $id)->orWhere('dest', $id)->where('del_flg', '<>', 1)->orderBy('created_at', 'asc')->get();
         $link_fields = ['_id', 'no', 'type', 'title', 'state'];
-        foreach ($links as $link)
-        {
-            if ($link['src'] == $id)
-            {
+        foreach ($links as $link) {
+            if ($link['src'] == $id) {
                 $link['src'] = array_only($issue, $link_fields);
-            }
-            else
-            {
+            } else {
                 $src_issue = DB::collection('issue_' . $project_key)->where('_id', $link['src'])->first();
                 $link['src'] = array_only($src_issue, $link_fields);
             }
 
-            if ($link['dest'] == $id)
-            {
+            if ($link['dest'] == $id) {
                 $link['dest'] = array_only($issue, $link_fields);
-            }
-            else
-            {
+            } else {
                 $dest_issue = DB::collection('issue_' . $project_key)->where('_id', $link['dest'])->first();
                 $link['dest'] = array_only($dest_issue, $link_fields);
             }
@@ -541,8 +456,7 @@ class IssueController extends Controller
 
         $issue['watchers'] = array_column(Watch::where('issue_id', $id)->orderBy('_id', 'desc')->get()->toArray(), 'user');
         
-        if (Watch::where('issue_id', $id)->where('user.id', $this->user->id)->exists())
-        {
+        if (Watch::where('issue_id', $id)->where('user.id', $this->user->id)->exists()) {
             $issue['watching'] = true;
         }
 
@@ -550,11 +464,9 @@ class IssueController extends Controller
         $comments = DB::collection('comments_' . $project_key)
             ->where('issue_id', $id)
             ->get();
-        foreach($comments as $comment)
-        {
+        foreach ($comments as $comment) {
             $comments_num += 1;
-            if (isset($comment['reply']))
-            {
+            if (isset($comment['reply'])) {
                 $comments_num += count($comment['reply']);
             }
         }
@@ -584,10 +496,8 @@ class IssueController extends Controller
 
         $wf = new Workflow($issue['entry_id']);
         $wfactions = $wf->getAvailableActions([ 'project_key' => $project_key, 'issue_id' => $id, 'caller' => $this->user->id ], true);
-        foreach ($wfactions as $key => $action)
-        {
-            if (isset($action['screen']) && $action['screen'])
-            {
+        foreach ($wfactions as $key => $action) {
+            if (isset($action['screen']) && $action['screen']) {
                 $wfactions[$key]['schema'] = Provider::getSchemaByScreenId($project_key, $issue['type'], $action['screen']);
             }
         }
@@ -626,8 +536,7 @@ class IssueController extends Controller
         // get project sprints
         $new_sprints = [];
         $sprints = Provider::getSprintList($project_key);
-        foreach ($sprints as $sprint)
-        {
+        foreach ($sprints as $sprint) {
             $new_sprints[] = [ 'no' => $sprint['no'], 'name' => $sprint['name'] ];
         }
         // get defined fields
@@ -641,26 +550,26 @@ class IssueController extends Controller
         // get issue link relations
         $relations = $this->getLinkRelations();
 
-        return Response()->json([ 
-            'ecode' => 0, 
-            'data' => parent::arrange([ 
-                'users' => $users, 
-                'assignees' => $assignees, 
-                'types' => $types, 
-                'states' => $states, 
-                'resolutions' => $resolutions, 
-                'priorities' => $priorities, 
-                'modules' => $modules, 
-                'labels' => $labels, 
-                'versions' => $versions, 
+        return Response()->json([
+            'ecode' => 0,
+            'data' => parent::arrange([
+                'users' => $users,
+                'assignees' => $assignees,
+                'types' => $types,
+                'states' => $states,
+                'resolutions' => $resolutions,
+                'priorities' => $priorities,
+                'modules' => $modules,
+                'labels' => $labels,
+                'versions' => $versions,
                 'epics' => $epics,
                 'sprints' => $new_sprints,
-                'filters' => $filters, 
-                'display_columns' => $display_columns, 
-                'timetrack' => $timetrack, 
-                'relations' => $relations, 
-                'fields' => $fields 
-            ]) 
+                'filters' => $filters,
+                'display_columns' => $display_columns,
+                'timetrack' => $timetrack,
+                'relations' => $relations,
+                'fields' => $fields
+            ])
         ]);
     }
 
@@ -676,51 +585,42 @@ class IssueController extends Controller
     {
         $table = 'issue_' . $project_key;
         $issue = DB::collection($table)->find($id);
-        if (!$issue)
-        {
+        if (!$issue) {
             throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -11103);
         }
 
-        if (!$this->isPermissionAllowed($project_key, 'assign_issue'))
-        {
+        if (!$this->isPermissionAllowed($project_key, 'assign_issue')) {
             return Response()->json(['ecode' => -11116, 'emsg' => 'the current user has not assign-issue permission.']);
         }
 
-        $updValues = []; $assignee = [];
+        $updValues = [];
+        $assignee = [];
         $assignee_id = $request->input('assignee');
-        if (!isset($assignee_id) || !$assignee_id)
-        {
+        if (!isset($assignee_id) || !$assignee_id) {
             throw new \UnexpectedValueException('the issue assignee cannot be empty.', -11104);
         }
 
-        if ($assignee_id === 'me')
-        {
-            if (!$this->isPermissionAllowed($project_key, 'assigned_issue'))
-            {
+        if ($assignee_id === 'me') {
+            if (!$this->isPermissionAllowed($project_key, 'assigned_issue')) {
                 return Response()->json(['ecode' => -11117, 'emsg' => 'the current user has not assigned-issue permission.']);
             }
 
             $assignee = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
             $updValues['assignee'] = $assignee;
-        }
-        else
-        {
-            if (!$this->isPermissionAllowed($project_key, 'assigned_issue', $assignee_id))
-            {
+        } else {
+            if (!$this->isPermissionAllowed($project_key, 'assigned_issue', $assignee_id)) {
                 return Response()->json(['ecode' => -11118, 'emsg' => 'the assigned user has not assigned-issue permission.']);
             }
 
             $user_info = Sentinel::findById($assignee_id);
-            if ($user_info)
-            {
+            if ($user_info) {
                 $assignee = [ 'id' => $assignee_id, 'name' => $user_info->first_name, 'email' => $user_info->email ];
                 $updValues['assignee'] = $assignee;
             }
         }
 
         // issue assignee has no change.
-        if ($assignee['id'] === $issue['assignee']['id'])
-        {
+        if ($assignee['id'] === $issue['assignee']['id']) {
             return $this->show($project_key, $id);
         }
 
@@ -746,21 +646,18 @@ class IssueController extends Controller
      */
     public function setLabels(Request $request, $project_key, $id)
     {
-        if (!$this->isPermissionAllowed($project_key, 'edit_issue'))
-        {
+        if (!$this->isPermissionAllowed($project_key, 'edit_issue')) {
             return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
         }
 
         $labels = $request->input('labels');
-        if (!isset($labels))
-        {
+        if (!isset($labels)) {
             return $this->show($project_key, $id);
         }
 
         $table = 'issue_' . $project_key;
         $issue = DB::collection($table)->find($id);
-        if (!$issue)
-        {
+        if (!$issue) {
             throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -11103);
         }
 
@@ -775,8 +672,7 @@ class IssueController extends Controller
         // trigger event of issue edited
         Event::fire(new IssueEvent($project_key, $id, $updValues['modifier'], [ 'event_key' => 'edit_issue', 'snap_id' => $snap_id ]));
         // create the Labels for project
-        if ($labels)
-        {
+        if ($labels) {
             $this->createLabels($project_key, $labels);
         }
 
@@ -796,14 +692,12 @@ class IssueController extends Controller
         $project_labels = Labels::where('project_key', $project_key)
             ->whereIn('name', $labels)
             ->get();
-        foreach ($project_labels as $label)
-        {
+        foreach ($project_labels as $label) {
             $created_labels[] = $label->name;
         }
         // get uncreated labels
         $new_labels = array_diff($labels, $created_labels);
-        foreach ($new_labels as $label)
-        {
+        foreach ($new_labels as $label) {
             Labels::create([ 'project_key' => $project_key, 'name' => $label ]);
         }
         return true;
@@ -819,21 +713,14 @@ class IssueController extends Controller
      */
     public function requiredCheck($schema, $data, $mode='create')
     {
-        foreach ($schema as $field)
-        {
-            if (isset($field['required']) && $field['required'])
-            {
-                if ($mode == 'update')
-                {
-                    if (isset($data[$field['key']]) && !$data[$field['key']] && $data[$field['key']] !== 0)
-                    {
+        foreach ($schema as $field) {
+            if (isset($field['required']) && $field['required']) {
+                if ($mode == 'update') {
+                    if (isset($data[$field['key']]) && !$data[$field['key']] && $data[$field['key']] !== 0) {
                         return false;
                     }
-                }
-                else 
-                {
-                    if (!isset($data[$field['key']]) || !$data[$field['key']] && $data[$field['key']] !== 0)
-                    {
+                } else {
+                    if (!isset($data[$field['key']]) || !$data[$field['key']] && $data[$field['key']] !== 0) {
                         return false;
                     }
                 }
@@ -848,14 +735,11 @@ class IssueController extends Controller
      * @param  int $timestamp
      * @return bool
      */
-    public function isTimestamp($timestamp) 
+    public function isTimestamp($timestamp)
     {
-        if(strtotime(date('Y-m-d H:i:s', $timestamp)) === $timestamp) 
-        {
+        if (strtotime(date('Y-m-d H:i:s', $timestamp)) === $timestamp) {
             return $timestamp;
-        } 
-        else 
-        {
+        } else {
             return false;
         }
     }
@@ -870,14 +754,10 @@ class IssueController extends Controller
     {
         $valid_keys = array_merge(array_column($schema, 'key'), [ 'type', 'assignee', 'labels', 'parent_id', 'resolution', 'priority', 'progress', 'expect_start_time', 'expect_compete_time' ]);
 
-        foreach ($schema as $field)
-        {
-            if ($field['type'] == 'MultiUser')
-            {
+        foreach ($schema as $field) {
+            if ($field['type'] == 'MultiUser') {
                 $valid_keys[] = $field['key'] . '_ids';
-            }
-            else if ($field['type'] == 'TimeTracking')
-            {
+            } elseif ($field['type'] == 'TimeTracking') {
                 $valid_keys[] = $field['key'] . '_m';
             }
         }
@@ -895,79 +775,60 @@ class IssueController extends Controller
      */
     public function update(Request $request, $project_key, $id)
     {
-        if (!$this->isPermissionAllowed($project_key, 'edit_issue') && !$this->isPermissionAllowed($project_key, 'exec_workflow'))
-        {
+        if (!$this->isPermissionAllowed($project_key, 'edit_issue') && !$this->isPermissionAllowed($project_key, 'exec_workflow')) {
             return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
         }
 
-        if (!$request->all())
-        {
-            return $this->show($project_key, $id); 
+        if (!$request->all()) {
+            return $this->show($project_key, $id);
         }
 
         $table = 'issue_' . $project_key;
         $issue = DB::collection($table)->find($id);
-        if (!$issue)
-        {
+        if (!$issue) {
             throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -11103);
         }
 
         $schema = Provider::getSchemaByType($request->input('type') ?: $issue['type']);
-        if (!$schema)
-        {
+        if (!$schema) {
             throw new \UnexpectedValueException('the schema of the type is not existed.', -11101);
         }
 
-        if (!$this->requiredCheck($schema, $request->all(), 'update'))
-        {
+        if (!$this->requiredCheck($schema, $request->all(), 'update')) {
             throw new \UnexpectedValueException('the required field is empty.', -11121);
         }
 
         // handle timetracking
         $updValues = [];
-        foreach ($schema as $field)
-        {
+        foreach ($schema as $field) {
             $fieldValue = $request->input($field['key']);
-            if (!isset($fieldValue) || !$fieldValue)
-            {
+            if (!isset($fieldValue) || !$fieldValue) {
                 continue;
             }
 
-            if ($field['type'] == 'TimeTracking')
-            {
-                if (!$this->ttCheck($fieldValue))
-                {
+            if ($field['type'] == 'TimeTracking') {
+                if (!$this->ttCheck($fieldValue)) {
                     throw new \UnexpectedValueException('the format of timetracking field is incorrect.', -11102);
                 }
 
                 $updValues[$field['key']] = $this->ttHandle($fieldValue);
                 $updValues[$field['key'] . '_m'] = $this->ttHandleInM($updValues[$field['key']]);
-            }
-            else if ($field['type'] == 'DatePicker' || $field['type'] == 'DateTimePicker')
-            {
-                if ($this->isTimestamp($fieldValue) === false) 
-                {
+            } elseif ($field['type'] == 'DatePicker' || $field['type'] == 'DateTimePicker') {
+                if ($this->isTimestamp($fieldValue) === false) {
                     throw new \UnexpectedValueException('the format of datepicker field is incorrect.', -11122);
                 }
-            }
-            else if ($field['type'] == 'SingleUser')
-            {
+            } elseif ($field['type'] == 'SingleUser') {
                 $user_info = Sentinel::findById($fieldValue);
-                if ($user_info)
-                {
+                if ($user_info) {
                     $updValues[$field['key']] = [ 'id' => $fieldValue, 'name' => $user_info->first_name, 'email' => $user_info->email ];
                 }
-            }
-            else if ($field['type'] == 'MultiUser')
-            {
+            } elseif ($field['type'] == 'MultiUser') {
                 $user_ids = $fieldValue;
                 $updValues[$field['key']] = [];
                 $new_user_ids = [];
-                foreach ($user_ids as $uid)
-                {
+                foreach ($user_ids as $uid) {
                     $user_info = Sentinel::findById($uid);
-                    if ($user_info)
-                    {
+                    if ($user_info) {
                         array_push($updValues[$field['key']], [ 'id' => $uid, 'name' => $user_info->first_name, 'email' => $user_info->email ]);
                     }
                     $new_user_ids[] = $uid;
@@ -977,16 +838,13 @@ class IssueController extends Controller
         }
 
         $assignee_id = $request->input('assignee');
-        if ($assignee_id)
-        {
-            if ((!isset($issue['assignee']) || (isset($issue['assignee']) && $assignee_id != $issue['assignee']['id'])) && !$this->isPermissionAllowed($project_key, 'assigned_issue', $assignee_id))
-            {
+        if ($assignee_id) {
+            if ((!isset($issue['assignee']) || (isset($issue['assignee']) && $assignee_id != $issue['assignee']['id'])) && !$this->isPermissionAllowed($project_key, 'assigned_issue', $assignee_id)) {
                 return Response()->json(['ecode' => -11118, 'emsg' => 'the assigned user has not assigned-issue permission.']);
             }
 
             $user_info = Sentinel::findById($assignee_id);
-            if ($user_info)
-            {
+            if ($user_info) {
                 $assignee = [ 'id' => $assignee_id, 'name' => $user_info->first_name, 'email' => $user_info->email ];
                 $updValues['assignee'] = $assignee;
             }
@@ -994,8 +852,7 @@ class IssueController extends Controller
 
         $valid_keys = $this->getValidKeysBySchema($schema);
         $updValues = $updValues + array_only($request->all(), $valid_keys);
-        if (!$updValues)
-        {
+        if (!$updValues) {
             return $this->show($project_key, $id);
         }
 
@@ -1009,12 +866,11 @@ class IssueController extends Controller
         // trigger event of issue edited
         Event::fire(new IssueEvent($project_key, $id, $updValues['modifier'], [ 'event_key' => 'edit_issue', 'snap_id' => $snap_id ]));
         // create the Labels for project
-        if (isset($updValues['labels']) && $updValues['labels'])
-        {
+        if (isset($updValues['labels']) && $updValues['labels']) {
             $this->createLabels($project_key, $updValues['labels']);
         }
 
-        return $this->show($project_key, $id); 
+        return $this->show($project_key, $id);
     }
 
     /**
@@ -1031,8 +887,7 @@ class IssueController extends Controller
             ->where('_id', $id)
             ->where('del_flg', '<>', 1)
             ->first();
-        if (!$issue)
-        {
+        if (!$issue) {
             throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -11103);
         }
 
@@ -1044,8 +899,7 @@ class IssueController extends Controller
             ->where('parent_id', $id)
             ->where('del_flg', '<>', 1)
             ->get();
-        foreach ($subtasks as $subtask)
-        {
+        foreach ($subtasks as $subtask) {
             $sub_id = $subtask['_id']->__toString();
             DB::collection($table)->where('_id', $sub_id)->update([ 'del_flg' => 1 ]);
 
@@ -1060,7 +914,7 @@ class IssueController extends Controller
         DB::collection('linked')->where('src', $id)->orWhere('dest', $id)->delete();
         // delete this issue
         DB::collection($table)->where('_id', $id)->update([ 'del_flg' => 1 ]);
-        // trigger event of issue deleted 
+        // trigger event of issue deleted
         Event::fire(new IssueEvent($project_key, $id, $user, [ 'event_key' => 'del_issue' ]));
 
         return Response()->json(['ecode' => 0, 'data' => [ 'ids' => $ids ]]);
@@ -1086,13 +940,11 @@ class IssueController extends Controller
     public function saveIssueFilter(Request $request, $project_key)
     {
         $name = $request->input('name');
-        if (!$name)
-        {
+        if (!$name) {
             throw new \UnexpectedValueException('the name can not be empty.', -11105);
         }
 
-        if (UserIssueFilters::whereRaw([ 'name' => $name, 'user' => $this->user->id, 'project_key' => $project_key ])->exists())
-        {
+        if (UserIssueFilters::whereRaw([ 'name' => $name, 'user' => $this->user->id, 'project_key' => $project_key ])->exists()) {
             throw new \UnexpectedValueException('filter name cannot be repeated', -11106);
         }
 
@@ -1101,32 +953,25 @@ class IssueController extends Controller
         $res = UserIssueFilters::where('project_key', $project_key)
             ->where('user', $this->user->id)
             ->first();
-        if ($res)
-        {
+        if ($res) {
             $filters = isset($res['filters']) ? $res['filters'] : [];
-            foreach($filters as $filter)
-            {
-                if (isset($filter['name']) && $filter['name'] === $name)
-                {
+            foreach ($filters as $filter) {
+                if (isset($filter['name']) && $filter['name'] === $name) {
                     throw new \UnexpectedValueException('filter name cannot be repeated', -11106);
                 }
             }
             array_push($filters, [ 'id' => md5(microtime()), 'name' => $name, 'query' => $query ]);
             $res->filters = $filters;
             $res->save();
-        }
-        else
-        {
+        } else {
             $filters = Provider::getDefaultIssueFilters();
-            foreach($filters as $filter)
-            {
-                if (isset($filter['name']) && $filter['name'] === $name)
-                {
+            foreach ($filters as $filter) {
+                if (isset($filter['name']) && $filter['name'] === $name) {
                     throw new \UnexpectedValueException('filter name cannot be repeated', -11106);
                 }
             }
             array_push($filters, [ 'id' => md5(microtime()), 'name' => $name, 'query' => $query ]);
-            UserIssueFilters::create([ 'project_key' => $project_key, 'user' => $this->user->id, 'filters' => $filters ]); 
+            UserIssueFilters::create([ 'project_key' => $project_key, 'user' => $this->user->id, 'filters' => $filters ]);
         }
         return $this->getIssueFilters($project_key);
     }
@@ -1170,8 +1015,7 @@ class IssueController extends Controller
             ->delete();
 
         $delete_from_project = $request->input('delete_from_project') ?: false;
-        if ($delete_from_project && $this->isPermissionAllowed($project_key, 'manage_project'))
-        {
+        if ($delete_from_project && $this->isPermissionAllowed($project_key, 'manage_project')) {
             ProjectIssueListColumns::where('project_key', $project_key)->delete();
         }
  
@@ -1189,15 +1033,12 @@ class IssueController extends Controller
         $column_keys = [];
         $new_columns = [];
         $columns = $request->input('columns') ?: [];
-        foreach ($columns as $column)
-        {
-            if (!isset($column['key']))
-            {
+        foreach ($columns as $column) {
+            if (!isset($column['key'])) {
                 continue;
             }
 
-            if (in_array($column['key'], $column_keys))
-            {
+            if (in_array($column['key'], $column_keys)) {
                 continue;
             }
             $column_keys[] = $column['key'];
@@ -1207,29 +1048,22 @@ class IssueController extends Controller
         $res = UserIssueListColumns::where('project_key', $project_key)
             ->where('user', $this->user->id)
             ->first();
-        if ($res)
-        {
+        if ($res) {
             $res->columns = $new_columns;
             $res->column_keys = $column_keys;
             $res->save();
-        }
-        else
-        {
-            UserIssueListColumns::create([ 'project_key' => $project_key, 'user' => $this->user->id, 'column_keys' => $column_keys, 'columns' => $new_columns ]); 
+        } else {
+            UserIssueListColumns::create([ 'project_key' => $project_key, 'user' => $this->user->id, 'column_keys' => $column_keys, 'columns' => $new_columns ]);
         }
 
         $save_for_project = $request->input('save_for_project') ?: false;
-        if ($save_for_project && $this->isPermissionAllowed($project_key, 'manage_project'))
-        {
+        if ($save_for_project && $this->isPermissionAllowed($project_key, 'manage_project')) {
             $res = ProjectIssueListColumns::where('project_key', $project_key)->first();
-            if ($res)
-            {
+            if ($res) {
                 $res->columns = $new_columns;
                 $res->column_keys = $column_keys;
                 $res->save();
-            }
-            else
-            {
+            } else {
                 ProjectIssueListColumns::create([ 'project_key' => $project_key, 'column_keys' => $column_keys, 'columns' => $new_columns ]);
             }
         }
@@ -1246,37 +1080,29 @@ class IssueController extends Controller
     public function editFilters(Request $request, $project_key)
     {
         $sequence = $request->input('sequence');
-        if (isset($sequence))
-        {
+        if (isset($sequence)) {
             $old_filters = Provider::getDefaultIssueFilters();
             $res = UserIssueFilters::where('project_key', $project_key)
                 ->where('user', $this->user->id)
                 ->first();
-            if ($res)
-            {
+            if ($res) {
                 $old_filters = isset($res->filters) ? $res->filters : [];
             }
             
             $new_filters = [];
-            foreach ($sequence as $id)
-            {
-                foreach ($old_filters as $filter)
-                {
-                    if ($filter['id'] === $id)
-                    {
+            foreach ($sequence as $id) {
+                foreach ($old_filters as $filter) {
+                    if ($filter['id'] === $id) {
                         $new_filters[] = $filter;
                         break;
                     }
                 }
             }
-            if ($res)
-            {
+            if ($res) {
                 $res->filters = $new_filters;
                 $res->save();
-            }
-            else
-            {
-                UserIssueFilters::create([ 'project_key' => $project_key, 'user' => $this->user->id, 'filters' => $new_filters ]); 
+            } else {
+                UserIssueFilters::create([ 'project_key' => $project_key, 'user' => $this->user->id, 'filters' => $new_filters ]);
             }
         }
         return $this->getIssueFilters($project_key);
@@ -1308,93 +1134,74 @@ class IssueController extends Controller
     {
         $changedRecords = [];
         $records = DB::collection('issue_his_' . $project_key)->where('issue_id', $id)->orderBy('_id', 'asc')->get();
-        foreach ($records as $i => $item)
-        {
-            if ($i == 0)
-            {
+        foreach ($records as $i => $item) {
+            if ($i == 0) {
                 $changedRecords[] = [ 'operation' => 'create', 'operator' => $item['operator'], 'operated_at' => $item['operated_at'] ];
-            }
-            else
-            {
+            } else {
                 $changed_items = [];
                 $changed_items['operation'] = 'modify';
                 $changed_items['operated_at'] = $item['operated_at'];
                 $changed_items['operator'] = $item['operator'];
 
-                $diff_items = []; $diff_keys = [];
+                $diff_items = [];
+                $diff_keys = [];
                 $after_data = $item['data'];
                 $before_data = $records[$i - 1]['data'];
 
-                foreach ($after_data as $key => $val)
-                {
-                    if (!isset($before_data[$key]) || $val !== $before_data[$key])
-                    {
+                foreach ($after_data as $key => $val) {
+                    if (!isset($before_data[$key]) || $val !== $before_data[$key]) {
                         $tmp = [];
                         $tmp['field'] = isset($val['name']) ? $val['name'] : '';
                         $tmp['after_value'] = isset($val['value']) ? $val['value'] : '';
                         $tmp['before_value'] = isset($before_data[$key]) && isset($before_data[$key]['value']) ? $before_data[$key]['value'] : '';
 
-                        if (is_array($tmp['after_value']) && is_array($tmp['before_value']))
-                        {
+                        if (is_array($tmp['after_value']) && is_array($tmp['before_value'])) {
                             $diff1 = array_diff($tmp['after_value'], $tmp['before_value']);
                             $diff2 = array_diff($tmp['before_value'], $tmp['after_value']);
                             $tmp['after_value'] = implode(',', $diff1);
                             $tmp['before_value'] = implode(',', $diff2);
-                        }
-                        else
-                        {
-                            if (is_array($tmp['after_value']))
-                            {
+                        } else {
+                            if (is_array($tmp['after_value'])) {
                                 $tmp['after_value'] = implode(',', $tmp['after_value']);
                             }
-                            if (is_array($tmp['before_value']))
-                            {
+                            if (is_array($tmp['before_value'])) {
                                 $tmp['before_value'] = implode(',', $tmp['before_value']);
                             }
                         }
-                        $diff_items[] = $tmp; 
-                        $diff_keys[] = $key; 
+                        $diff_items[] = $tmp;
+                        $diff_keys[] = $key;
                     }
                 }
 
-                foreach ($before_data as $key => $val)
-                {
-                    if (array_search($key, $diff_keys) !== false)
-                    {
+                foreach ($before_data as $key => $val) {
+                    if (array_search($key, $diff_keys) !== false) {
                         continue;
                     }
 
-                    if (!isset($after_data[$key]) || $val !== $after_data[$key])
-                    {
+                    if (!isset($after_data[$key]) || $val !== $after_data[$key]) {
                         $tmp = [];
                         $tmp['field'] = isset($val['name']) ? $val['name'] : '';
                         $tmp['before_value'] = isset($val['value']) ? $val['value'] : '';
                         $tmp['after_value'] = isset($after_data[$key]) && isset($after_data[$key]['value']) ? $after_data[$key]['value'] : '';
-                        if (is_array($tmp['after_value']) && is_array($tmp['before_value']))
-                        {
+                        if (is_array($tmp['after_value']) && is_array($tmp['before_value'])) {
                             $diff1 = array_diff($tmp['after_value'], $tmp['before_value']);
                             $diff2 = array_diff($tmp['before_value'], $tmp['after_value']);
                             $tmp['after_value'] = implode(',', $diff1);
                             $tmp['before_value'] = implode(',', $diff2);
-                        }
-                        else
-                        {
-                            if (is_array($tmp['after_value']))
-                            {
+                        } else {
+                            if (is_array($tmp['after_value'])) {
                                 $tmp['after_value'] = implode(',', $tmp['after_value']);
                             }
-                            if (is_array($tmp['before_value']))
-                            {
+                            if (is_array($tmp['before_value'])) {
                                 $tmp['before_value'] = implode(',', $tmp['before_value']);
                             }
                         }
 
-                        $diff_items[] = $tmp; 
+                        $diff_items[] = $tmp;
                     }
                 }
 
-                if ($diff_items)
-                {
+                if ($diff_items) {
                     $changed_items['data'] = $diff_items;
                     $changedRecords[] = $changed_items;
                 }
@@ -1402,8 +1209,7 @@ class IssueController extends Controller
         }
 
         $sort = ($request->input('sort') === 'asc') ? 'asc' : 'desc';
-        if ($sort === 'desc')
-        {
+        if ($sort === 'desc') {
             $changedRecords = array_reverse($changedRecords);
         }
 
@@ -1421,8 +1227,7 @@ class IssueController extends Controller
     public function doAction(Request $request, $project_key, $id, $workflow_id)
     {
         $action_id = $request->input('action_id');
-        if (!$action_id)
-        {
+        if (!$action_id) {
             throw new Exception('the executed action has error.', -11115);
         }
 
@@ -1430,9 +1235,9 @@ class IssueController extends Controller
             $entry = new Workflow($workflow_id);
             $entry->doAction($action_id, [ 'project_key' => $project_key, 'issue_id' => $id, 'caller' => $this->user->id ] + array_only($request->all(), [ 'comments' ]));
         } catch (Exception $e) {
-          throw new Exception('the executed action has error.', -11115);
+            throw new Exception('the executed action has error.', -11115);
         }
-        return $this->show($project_key, $id); 
+        return $this->show($project_key, $id);
     }
 
     /**
@@ -1449,16 +1254,13 @@ class IssueController extends Controller
         $cur_user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
 
         $flag = $request->input('flag');
-        if (isset($flag) && $flag)
-        {
+        if (isset($flag) && $flag) {
             Watch::create([ 'project_key' => $project_key, 'issue_id' => $id, 'user' => $cur_user ]);
-            // trigger event of issue watched 
+            // trigger event of issue watched
             Event::fire(new IssueEvent($project_key, $id, $cur_user, [ 'event_key' => 'watched_issue' ]));
-        }
-        else
-        {
+        } else {
             $flag = false;
-            // trigger event of issue watched 
+            // trigger event of issue watched
             Event::fire(new IssueEvent($project_key, $id, $cur_user, [ 'event_key' => 'unwatched_issue' ]));
         }
         
@@ -1477,37 +1279,29 @@ class IssueController extends Controller
         $updValues = [];
 
         $assignee_id = $request->input('assignee');
-        if (isset($assignee_id))
-        {
-            if ($assignee_id)
-            {
-                if (!$this->isPermissionAllowed($project_key, 'assigned_issue', $assignee_id))
-                {
+        if (isset($assignee_id)) {
+            if ($assignee_id) {
+                if (!$this->isPermissionAllowed($project_key, 'assigned_issue', $assignee_id)) {
                     return Response()->json(['ecode' => -11118, 'emsg' => 'the assigned user has not assigned-issue permission.']);
                 }
 
                 $user_info = Sentinel::findById($assignee_id);
-                if ($user_info)
-                {
+                if ($user_info) {
                     $assignee = [ 'id' => $assignee_id, 'name' => $user_info->first_name, 'email' => $user_info->email ];
                     $updValues['assignee'] = $assignee;
                 }
-            }
-            else
-            {
+            } else {
                 throw new \UnexpectedValueException('the issue assignee cannot be empty.', -11104);
             }
         }
 
         $resolution = $request->input('resolution');
-        if (isset($resolution) && $resolution)
-        {
+        if (isset($resolution) && $resolution) {
             $updValues['resolution'] = $resolution;
         }
 
         $issue = DB::collection('issue_' . $project_key)->where('_id', $id)->first();
-        if (!$issue)
-        {
+        if (!$issue) {
             throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -11103);
         }
 
@@ -1539,26 +1333,22 @@ class IssueController extends Controller
     public function copy(Request $request, $project_key)
     {
         $title = $request->input('title');
-        if (!$title)
-        {
+        if (!$title) {
             throw new \UnexpectedValueException('the issue title cannot be empty.', -11108);
         }
 
         $src_id = $request->input('source_id');
-        if (!isset($src_id) || !$src_id)
-        {
+        if (!isset($src_id) || !$src_id) {
             throw new \UnexpectedValueException('the copied issue id cannot be empty.', -11109);
         }
 
         $src_issue = DB::collection('issue_' . $project_key)->where('_id', $src_id)->first();
-        if (!$src_issue )
-        {
+        if (!$src_issue) {
             throw new \UnexpectedValueException('the copied issue does not exist or is not in the project.', -11103);
         }
 
         $schema = Provider::getSchemaByType($src_issue['type']);
-        if (!$schema)
-        {
+        if (!$schema) {
             throw new \UnexpectedValueException('the schema of the type is not existed.', -11101);
         }
 
@@ -1570,31 +1360,24 @@ class IssueController extends Controller
         $insValues['reporter'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
 
         $assignee_id = $request->input('assignee');
-        if (isset($assignee_id))
-        {
-            if ($assignee_id)
-            {
-                if (!$this->isPermissionAllowed($project_key, 'assigned_issue', $assignee_id))
-                {
+        if (isset($assignee_id)) {
+            if ($assignee_id) {
+                if (!$this->isPermissionAllowed($project_key, 'assigned_issue', $assignee_id)) {
                     return Response()->json(['ecode' => -11118, 'emsg' => 'the assigned user has not assigned-issue permission.']);
                 }
 
                 $user_info = Sentinel::findById($assignee_id);
-                if ($user_info)
-                {
+                if ($user_info) {
                     $assignee = [ 'id' => $assignee_id, 'name' => $user_info->first_name, 'email' => $user_info->email ];
                     $insValues['assignee'] = $assignee;
                 }
-            }
-            else
-            {
+            } else {
                 throw new \UnexpectedValueException('the issue assignee cannot be empty.', -11104);
             }
         }
 
         $resolution = $request->input('resolution');
-        if (isset($resolution) && $resolution)
-        {
+        if (isset($resolution) && $resolution) {
             $insValues['resolution'] = $resolution;
         }
 
@@ -1615,9 +1398,9 @@ class IssueController extends Controller
         Provider::snap2His($project_key, $id, $schema);
         // create link of clone
         Linked::create([ 'src' => $src_id, 'relation' => 'is cloned by', 'dest' => $id->__toString(), 'creator' => $insValues['reporter'] ]);
-        // trigger event of issue created 
+        // trigger event of issue created
         Event::fire(new IssueEvent($project_key, $id->__toString(), $insValues['reporter'], [ 'event_key' => 'create_issue' ]));
-        // trigger event of link created 
+        // trigger event of link created
         Event::fire(new IssueEvent($project_key, $src_id, $insValues['reporter'], [ 'event_key' => 'create_link', 'data' => [ 'relation' => 'is cloned by', 'dest' => $id->__toString() ] ]));
 
         return $this->show($project_key, $id->__toString());
@@ -1635,36 +1418,30 @@ class IssueController extends Controller
     {
         $table = 'issue_' . $project_key;
         $issue = DB::collection($table)->find($id);
-        if (!$issue)
-        {
+        if (!$issue) {
             throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -11103);
         }
 
         $type = $request->input('type');
-        if (!isset($type) || !$type)
-        {
+        if (!isset($type) || !$type) {
             throw new \UnexpectedValueException('the issue type cannot be empty.', -11100);
         }
 
         $parent_id = $request->input('parent_id');
-        if (!isset($parent_id))
-        {
+        if (!isset($parent_id)) {
             $parent_id = '';
         }
  
         $updValues = [];
-        if ($parent_id)
-        {
-            // standard convert to subtask 
+        if ($parent_id) {
+            // standard convert to subtask
             $hasSubtasks = DB::collection($table)->where('parent_id', $id)->exists();
-            if ($hasSubtasks)
-            {
+            if ($hasSubtasks) {
                 throw new \UnexpectedValueException('the issue can not convert to subtask.', -11114);
             }
 
             $parent_issue = DB::collection($table)->find($parent_id);
-            if (!$parent_issue)
-            {
+            if (!$parent_issue) {
                 throw new \UnexpectedValueException('the dest parent issue does not exist or is not in the project.', -11110);
             }
         }
@@ -1678,10 +1455,9 @@ class IssueController extends Controller
         // add to histroy table
         $snap_id = Provider::snap2His($project_key, $id, null, [ 'parent_id', 'type' ]);
         // trigger event of issue moved
-        Event::fire(new IssueEvent($project_key, $id, $updValues['modifier'], [ 'event_key' => 'edit_issue', 'snap_id' => $snap_id ] ));
+        Event::fire(new IssueEvent($project_key, $id, $updValues['modifier'], [ 'event_key' => 'edit_issue', 'snap_id' => $snap_id ]));
 
         return $this->show($project_key, $id);
-
     }
 
     /**
@@ -1696,24 +1472,20 @@ class IssueController extends Controller
     {
         $table = 'issue_' . $project_key;
         $issue = DB::collection($table)->find($id);
-        if (!$issue)
-        {
+        if (!$issue) {
             throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -11103);
         }
 
-        $parent_id = $request->input('parent_id'); 
-        if (!isset($parent_id) || !$parent_id)
-        {
+        $parent_id = $request->input('parent_id');
+        if (!isset($parent_id) || !$parent_id) {
             throw new \UnexpectedValueException('the dest parent cannot be empty.', -11111);
         }
         $parent_issue = DB::collection($table)->find($parent_id);
-        if (!$parent_issue)
-        {
+        if (!$parent_issue) {
             throw new \UnexpectedValueException('the dest parent issue does not exist or is not in the project.', -11110);
         }
 
-        if ($parent_id === $issue['parent_id'])
-        {
+        if ($parent_id === $issue['parent_id']) {
             return $this->show($project_key, $id);
         }
 
@@ -1738,38 +1510,34 @@ class IssueController extends Controller
      * @param  string  $project_key
      * @return \Illuminate\Http\Response
      */
-    public function release(Request $request, $project_key) 
+    public function release(Request $request, $project_key)
     {
-        $ids = $request->input('ids'); 
-        if (!$ids)
-        {
+        $ids = $request->input('ids');
+        if (!$ids) {
             throw new \UnexpectedValueException('the released issues cannot be empty.', -11132);
         }
 
         $name = $request->input('name');
-        if (!$name)
-        {
+        if (!$name) {
             throw new \UnexpectedValueException('the released version cannot be empty.', -11131);
         }
 
         $isExisted = Version::where('project_key', $project_key)
             ->where('name', $name)
             ->exists();
-        if ($isExisted)
-        {
+        if ($isExisted) {
             throw new \UnexpectedValueException('the released version has been existed.', -11133);
         }
 
         $user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
         $version = Version::create([ 'project_key' => $project_key, 'user' => $user, 'status' => 'released', 'released_time' => time() ] + $request->all());
 
-        foreach ($ids as $id)
-        {
+        foreach ($ids as $id) {
             DB::collection('issue_' . $project_key)->where('_id', $id)->update([ 'resolve_version' => $version->id ]);
             // add to histroy table
             $snap_id = Provider::snap2His($project_key, $id, null, [ 'resolve_version' ]);
             // trigger event of issue moved
-            Event::fire(new IssueEvent($project_key, $id, $user, [ 'event_key' => 'edit_issue', 'snap_id' => $snap_id ] ));
+            Event::fire(new IssueEvent($project_key, $id, $user, [ 'event_key' => 'edit_issue', 'snap_id' => $snap_id ]));
         }
 
         $isSendMsg = $request->input('isSendMsg') && true;
@@ -1781,21 +1549,18 @@ class IssueController extends Controller
     /**
      * get timetrack setting.
      *
-     * @return array 
+     * @return array
      */
-    function getTimeTrackSetting() 
+    public function getTimeTrackSetting()
     {
         $options = [ 'w2d' => 5, 'd2h' => 8 ];
 
         $setting = SysSetting::first();
-        if ($setting && isset($setting->properties))
-        {
-            if (isset($setting->properties['week2day']))
-            {
+        if ($setting && isset($setting->properties)) {
+            if (isset($setting->properties['week2day'])) {
                 $options['w2d'] = $setting->properties['week2day'];
             }
-            if (isset($setting->properties['day2hour']))
-            {
+            if (isset($setting->properties['day2hour'])) {
                 $options['d2h'] = $setting->properties['day2hour'];
             }
         }
@@ -1807,7 +1572,7 @@ class IssueController extends Controller
      *
      * @return array
      */
-    function getLinkRelations()
+    public function getLinkRelations()
     {
         $relations = [
           [ 'id' => 'blocks', 'out' => 'blocks', 'in' => 'is blocked by' ],
@@ -1826,30 +1591,22 @@ class IssueController extends Controller
      */
     public function classifyIssues($issues)
     {
-        if (!$issues) { return []; }
+        if (!$issues) {
+            return [];
+        }
 
         $classified_issues  = [];
-        foreach ($issues as $issue)
-        {
-            if (isset($issue['parent']) && $issue['parent'])
-            {
-                if (isset($classified_issues[$issue['parent']['no']]) && $classified_issues[$issue['parent']['no']])
-                {
+        foreach ($issues as $issue) {
+            if (isset($issue['parent']) && $issue['parent']) {
+                if (isset($classified_issues[$issue['parent']['no']]) && $classified_issues[$issue['parent']['no']]) {
                     $classified_issues[$issue['parent']['no']][] =  $issue;
-                }
-                else
-                {
+                } else {
                     $classified_issues[$issue['parent']['no']] = [ $issue ];
                 }
-            }
-            else
-            {
-                if (isset($classified_issues[$issue['no']]) && $classified_issues[$issue['no']])
-                {
+            } else {
+                if (isset($classified_issues[$issue['no']]) && $classified_issues[$issue['no']]) {
                     array_unshift($classified_issues[$issue['no']], $issue);
-                }
-                else
-                {
+                } else {
                     $classified_issues[$issue['no']] = [ $issue ];
                 }
             }
@@ -1867,15 +1624,12 @@ class IssueController extends Controller
     public function addAvatar(&$issues)
     {
         $cache_avatars = [];
-        foreach ($issues as $key => $issue)
-        {
-            if (!isset($issue['assignee']) || !isset($issue['assignee']['id']))
-            {
+        foreach ($issues as $key => $issue) {
+            if (!isset($issue['assignee']) || !isset($issue['assignee']['id'])) {
                 continue;
             }
             //get assignee avatar for kanban
-            if (!array_key_exists($issue['assignee']['id'], $cache_avatars))
-            {
+            if (!array_key_exists($issue['assignee']['id'], $cache_avatars)) {
                 $user = Sentinel::findById($issue['assignee']['id']);
                 $cache_avatars[$issue['assignee']['id']] = isset($user->avatar) ? $user->avatar : '';
             }
@@ -1893,10 +1647,8 @@ class IssueController extends Controller
     public function flatIssues($classified_issues)
     {
         $issues = [];
-        foreach ($classified_issues as $some)
-        {
-            foreach ($some as $one)
-            {
+        foreach ($classified_issues as $some) {
+            foreach ($some as $one) {
                 $issues[] = $one;
             }
         }
@@ -1911,12 +1663,11 @@ class IssueController extends Controller
      * @param  string $from
      * @param  string $from_board_id
      * @param  bool   $isUpdRank
-     * @return array 
+     * @return array
      */
     public function arrangeIssues($project_key, $issues, $from, $from_board_id, $isUpdRank=false)
     {
-        if ($from === 'his_sprint')
-        {
+        if ($from === 'his_sprint') {
             $this->addAvatar($issues);
             return $issues;
         }
@@ -1926,20 +1677,17 @@ class IssueController extends Controller
 
         // whether the board is ranked
         $rankmap = BoardRankMap::where([ 'board_id' => $from_board_id ])->first();
-        if (!$rankmap)
-        {
+        if (!$rankmap) {
             $issues = $this->flatIssues($classified_issues);
 
             $rank = [];
-            foreach ($issues as $issue)
-            {
+            foreach ($issues as $issue) {
                 $rank[] = $issue['no'];
             }
             
             BoardRankMap::create([ 'board_id' => $from_board_id, 'rank' => $rank ]);
 
-            if ($from === 'active_sprint')
-            {
+            if ($from === 'active_sprint') {
                 $issues = $this->sprintFilter($project_key, $issues);
             }
 
@@ -1947,110 +1695,89 @@ class IssueController extends Controller
             return $issues;
         }
  
-        $sub2parent_map = []; 
-        foreach ($issues as $issue)
-        {
-            if (isset($issue['parent']) && $issue['parent'])
-            {
+        $sub2parent_map = [];
+        foreach ($issues as $issue) {
+            if (isset($issue['parent']) && $issue['parent']) {
                 $sub2parent_map[$issue['no']] = $issue['parent']['no'];
             }
         }
 
-        $rank = $rankmap->rank; 
-        foreach ($classified_issues as $no => $some)
-        {
-            if (count($some) <= 1) { continue; }
+        $rank = $rankmap->rank;
+        foreach ($classified_issues as $no => $some) {
+            if (count($some) <= 1) {
+                continue;
+            }
 
             $group_issues = [];
-            foreach ($some as $one)
-            {
+            foreach ($some as $one) {
                 $group_issues[$one['no']] = $one;
             }
 
             $sorted_group_issues = [];
-            foreach ($rank as $val)
-            {
-                if (isset($group_issues[$val]))
-                {
+            foreach ($rank as $val) {
+                if (isset($group_issues[$val])) {
                     $sorted_group_issues[$val] = $group_issues[$val];
                 }
             }
 
-            foreach ($group_issues as $no2 => $issue)
-            {
-                if (!isset($sorted_group_issues[$no2]))
-                {
+            foreach ($group_issues as $no2 => $issue) {
+                if (!isset($sorted_group_issues[$no2])) {
                     $sorted_group_issues[$no2] = $issue;
                 }
             }
             $classified_issues[$no] = array_values($sorted_group_issues);
 
-            // prevent the sort confusion 
+            // prevent the sort confusion
             $parentInd = 0;
-            foreach ($classified_issues[$no] as $sk => $si)
-            {
-                if ($si['no'] === $no)
-                {
+            foreach ($classified_issues[$no] as $sk => $si) {
+                if ($si['no'] === $no) {
                     $parentInd = $sk;
                     break;
                 }
             }
-            if ($parentInd > 0)
-            {
+            if ($parentInd > 0) {
                 $pi = array_splice($classified_issues[$no], $parentInd, 1);
                 array_unshift($classified_issues[$no], array_pop($pi));
             }
         }
 
         $sorted_issues = [];
-        foreach ($rank as $val)
-        {
-            if (isset($classified_issues[$val]) && $classified_issues[$val])
-            {
-                $sorted_issues[$val] = $classified_issues[$val]; 
-            }
-            else
-            {
-                if (isset($sub2parent_map[$val]) && $sub2parent_map[$val])
-                {
+        foreach ($rank as $val) {
+            if (isset($classified_issues[$val]) && $classified_issues[$val]) {
+                $sorted_issues[$val] = $classified_issues[$val];
+            } else {
+                if (isset($sub2parent_map[$val]) && $sub2parent_map[$val]) {
                     $parent = $sub2parent_map[$val];
-                    if (!isset($sorted_issues[$parent]))
-                    {
-                        $sorted_issues[$parent] = $classified_issues[$parent]; 
+                    if (!isset($sorted_issues[$parent])) {
+                        $sorted_issues[$parent] = $classified_issues[$parent];
                     }
                 }
             }
         }
 
         // append some issues which is ranked
-        foreach ($classified_issues as $key => $val)
-        {
-            if (!isset($sorted_issues[$key]))
-            {
+        foreach ($classified_issues as $key => $val) {
+            if (!isset($sorted_issues[$key])) {
                 $sorted_issues[$key] = $val;
             }
         }
 
         // convert array to ordered array
-        $issues = $this->flatIssues($sorted_issues); 
+        $issues = $this->flatIssues($sorted_issues);
 
-        if ($isUpdRank)
-        {
+        if ($isUpdRank) {
             $new_rank = [];
-            foreach ($issues as $issue)
-            {
+            foreach ($issues as $issue) {
                 $new_rank[] = $issue['no'];
             }
 
-            if (array_diff_assoc($new_rank, $rank) || array_diff_assoc($rank, $new_rank))
-            {
+            if (array_diff_assoc($new_rank, $rank) || array_diff_assoc($rank, $new_rank)) {
                 $rankmap = BoardRankMap::where('board_id', $from_board_id)->first();
                 $rankmap && $rankmap->update([ 'rank' => $new_rank ]);
             }
         }
 
-        if ($from === 'active_sprint')
-        {
+        if ($from === 'active_sprint') {
             $issues = $this->sprintFilter($project_key, $issues);
         }
 
@@ -2070,24 +1797,21 @@ class IssueController extends Controller
         $active_sprint_issues = [];
         $active_sprint_issue_nos = [];
         $active_sprint = Sprint::where('project_key', $project_key)->where('status', 'active')->first();
-        if ($active_sprint && isset($active_sprint->issues) && $active_sprint->issues)
-        {
+        if ($active_sprint && isset($active_sprint->issues) && $active_sprint->issues) {
             $active_sprint_issue_nos = $active_sprint->issues;
         }
 
-        foreach($issues as $issue)
-        {
-            if (in_array($issue['no'], $active_sprint_issue_nos))
-            {
+        foreach ($issues as $issue) {
+            if (in_array($issue['no'], $active_sprint_issue_nos)) {
                 $active_sprint_issues[] = $issue;
-           }
+            }
         }
 
         return $active_sprint_issues;
     }
 
     /**
-     * get some options for export 
+     * get some options for export
      *
      * @param  string $project_key
      * @return array
@@ -2096,69 +1820,59 @@ class IssueController extends Controller
     {
         $types = [];
         $type_list = Provider::getTypeList($project_key);
-        foreach ($type_list as $type)
-        {
+        foreach ($type_list as $type) {
             $types[$type->id] = $type->name;
         }
 
         $states = [];
         $state_list =  Provider::getStateOptions($project_key);
-        foreach ($state_list as $state)
-        {
+        foreach ($state_list as $state) {
             $states[$state['_id']] = $state['name'];
         }
 
         $resolutions = [];
         $resolution_list = Provider::getResolutionOptions($project_key);
-        foreach ($resolution_list as $resolution)
-        {
+        foreach ($resolution_list as $resolution) {
             $resolutions[$resolution['_id']] = $resolution['name'];
         }
 
         $priorities = [];
         $priority_list = Provider::getPriorityOptions($project_key);
-        foreach ($priority_list as $priority)
-        {
+        foreach ($priority_list as $priority) {
             $priorities[$priority['_id']] = $priority['name'];
         }
 
         $versions = [];
         $version_list = Provider::getVersionList($project_key);
-        foreach($version_list as $version)
-        {
+        foreach ($version_list as $version) {
             $versions[$version->id] = $version->name;
         }
 
         $modules = [];
         $module_list = Provider::getModuleList($project_key);
-        foreach ($module_list as $module)
-        {
+        foreach ($module_list as $module) {
             $modules[$module->id] = $module->name;
         }
 
         $epics = [];
         $epic_list = Provider::getEpicList($project_key);
-        foreach ($epic_list as $epic)
-        {
+        foreach ($epic_list as $epic) {
             $epics[$epic['_id']] = $epic['name'];
         }
 
         $sprints = [];
         $sprint_list = Provider::getSprintList($project_key);
-        foreach ($sprint_list as $sprint)
-        {
+        foreach ($sprint_list as $sprint) {
             $sprints[$sprint['no']] = $sprint['name'];
         }
 
         $fields = [];
         $field_list = Provider::getFieldList($project_key);
-        foreach ($field_list as $field)
-        {
+        foreach ($field_list as $field) {
             $tmp = [];
             $tmp['name'] = $field->name;
             $tmp['type'] = $field->type;
-            if (isset($field->optionValues))
-            {
+            if (isset($field->optionValues)) {
                 $tmp['optionValues'] = $field->optionValues;
             }
             $fields[$field->key] = $tmp;
@@ -2187,7 +1901,6 @@ class IssueController extends Controller
           'sprints' => $sprints,
           'fields' => $fields,
         ];
-
     }
 
     /**
@@ -2200,40 +1913,34 @@ class IssueController extends Controller
     {
         set_time_limit(0);
 
-        if (!($fid = $request->input('fid')))
-        {
+        if (!($fid = $request->input('fid'))) {
             throw new \UnexpectedValueException('导入文件ID不能为空。', -11140);
         }
 
         $pattern = $request->input('pattern');
-        if (!isset($pattern))
-        {
+        if (!isset($pattern)) {
             $pattern = '1';
         }
 
         $file = config('filesystems.disks.local.root', '/tmp') . '/' . substr($fid, 0, 2) . '/' . $fid;
-        if (!file_exists($file))
-        {
+        if (!file_exists($file)) {
             throw new \UnexpectedValueException('获取导入文件失败。', -11141);
         }
 
         $err_msgs = [];
         $fatal_err_msgs = [];
-        Excel::load($file, function($reader) use($project_key, $pattern, &$err_msgs, &$fatal_err_msgs) {
+        Excel::load($file, function ($reader) use ($project_key, $pattern, &$err_msgs, &$fatal_err_msgs) {
             $reader = $reader->getSheet(0);
             $data = $reader->toArray();
-            if (!$data)
-            {
+            if (!$data) {
                 $fatal_err_msgs = $err_msgs = '文件内容不能为空。';
                 return;
             }
 
             $new_fields = [];
             $fields = Provider::getFieldList($project_key);
-            foreach($fields as $field)
-            {
-                if ($field->type !== 'File')
-                { 
+            foreach ($fields as $field) {
+                if ($field->type !== 'File') {
                     $new_fields[$field->key] = $field->name;
                 }
             }
@@ -2251,27 +1958,18 @@ class IssueController extends Controller
 
             // arrange the excel data
             $data = $this->arrangeExcel($data, $fields);
-            foreach ($data as $val)
-            {
-                if (!isset($val['title']) && !isset($val['type']))
-                {
+            foreach ($data as $val) {
+                if (!isset($val['title']) && !isset($val['type'])) {
                     $fatal_err_msgs = $err_msgs = '主题列和类型列没找到。';
-                }
-                else if (!isset($val['title']))
-                {
+                } elseif (!isset($val['title'])) {
                     $fatal_err_msgs = $err_msgs = '主题列没找到。';
-                }
-                else if (!isset($val['type']))
-                {
+                } elseif (!isset($val['type'])) {
                     $fatal_err_msgs = $err_msgs = '类型列没找到。';
-                }
-                else if (!$val['title'])
-                {
+                } elseif (!$val['title']) {
                     $fatal_err_msgs = $err_msgs = '主题列不能有空值。';
                 }
 
-                if ($err_msgs)
-                {
+                if ($err_msgs) {
                     return;
                 }
             }
@@ -2280,8 +1978,7 @@ class IssueController extends Controller
             $new_types = [];
             $standard_type_ids = [];
             $types = Provider::getTypeList($project_key);
-            foreach ($types as $type)
-            {
+            foreach ($types as $type) {
                 $tmp = [];
                 $tmp['id'] = $type->id;
                 $tmp['name'] = $type->name;
@@ -2289,8 +1986,7 @@ class IssueController extends Controller
                 $tmp['workflow'] = $type->workflow;
                 $tmp['schema'] = Provider::getSchemaByType($type->id);
                 $new_types[$type->name] = $tmp;
-                if ($tmp['type'] == 'standard')
-                {
+                if ($tmp['type'] == 'standard') {
                     $standard_type_ids[] = $tmp['id'];
                 }
             }
@@ -2299,8 +1995,7 @@ class IssueController extends Controller
             // get the state option
             $new_priorities = [];
             $priorities = Provider::getPriorityOptions($project_key);
-            foreach($priorities as $priority)
-            {
+            foreach ($priorities as $priority) {
                 $new_priorities[$priority['name']] = $priority['_id'];
             }
             $priorities = $new_priorities;
@@ -2308,8 +2003,7 @@ class IssueController extends Controller
             // get the state option
             $new_states = [];
             $states = Provider::getStateOptions($project_key);
-            foreach($states as $state)
-            {
+            foreach ($states as $state) {
                 $new_states[$state['name']] = $state['_id'];
             }
             $states = $new_states;
@@ -2317,15 +2011,13 @@ class IssueController extends Controller
             // get the state option
             $new_resolutions = [];
             $resolutions = Provider::getResolutionOptions($project_key);
-            foreach($resolutions as $resolution)
-            {
+            foreach ($resolutions as $resolution) {
                 $new_resolutions[$resolution['name']] = $resolution['_id'];
             }
             $resolutions = $new_resolutions;
 
             // initialize the error msg
-            foreach ($data as $val)
-            {
+            foreach ($data as $val) {
                 $err_msgs[$val['title']] = [];
                 $fatal_err_msgs[$val['title']] = [];
             }
@@ -2334,91 +2026,63 @@ class IssueController extends Controller
             $standard_issues = [];
             $subtask_issues = [];
 
-            foreach ($data as $value)
-            {
+            foreach ($data as $value) {
                 $issue = [];
                 $cur_title = $issue['title'] = $value['title'];
 
-                if (!$value['type'])
-                {
+                if (!$value['type']) {
                     $fatal_err_msgs[$cur_title][] = $err_msgs[$cur_title][] = '类型列不能有空值。';
                     continue;
-                }
-                else if (!isset($types[$value['type']]))
-                {
+                } elseif (!isset($types[$value['type']])) {
                     $fatal_err_msgs[$cur_title][] = $err_msgs[$cur_title][] = '类型列值匹配失败。';
                     continue;
-                }
-                else 
-                {
+                } else {
                     $issue['type'] = $types[$value['type']]['id'];
                 }
 
-                if ($types[$value['type']]['type'] === 'subtask' && (!isset($value['parent']) || !$value['parent']))
-                {
+                if ($types[$value['type']]['type'] === 'subtask' && (!isset($value['parent']) || !$value['parent'])) {
                     $fatal_err_msgs[$cur_title][] = $err_msgs[$cur_title][] = '父级任务列不能为空。';
-                }
-                else
-                {
+                } else {
                     $issue['parent'] = $value['parent'];
                 }
 
-                if (isset($value['priority']) && $value['priority'])
-                {
-                    if (!isset($priorities[$value['priority']]) || !$priorities[$value['priority']])
-                    {
+                if (isset($value['priority']) && $value['priority']) {
+                    if (!isset($priorities[$value['priority']]) || !$priorities[$value['priority']]) {
                         $err_msgs[$cur_title][] = '优先级列值匹配失败。';
-                    }
-                    else
-                    {
+                    } else {
                         $issue['priority'] = $priorities[$value['priority']];
                     }
                 }
 
-                if (isset($value['state']) && $value['state'])
-                {
-                    if (!isset($states[$value['state']]) || !$states[$value['state']])
-                    {
+                if (isset($value['state']) && $value['state']) {
+                    if (!isset($states[$value['state']]) || !$states[$value['state']]) {
                         $err_msgs[$cur_title][] = '状态列值匹配失败。';
-                    }
-                    else
-                    {
+                    } else {
                         $issue['state'] = $states[$value['state']];
                         $workflow = $types[$value['type']]['workflow'];
-                        if (!in_array($issue['state'], $workflow['state_ids']))
-                        {
+                        if (!in_array($issue['state'], $workflow['state_ids'])) {
                             $err_msgs[$cur_title][] = '状态列值不在相应流程里。';
                         }
                     }
                 }
 
-                if (isset($value['resolution']) && $value['resolution'])
-                {
-                    if (!isset($resolutions[$value['resolution']]) || !$resolutions[$value['resolution']])
-                    {
+                if (isset($value['resolution']) && $value['resolution']) {
+                    if (!isset($resolutions[$value['resolution']]) || !$resolutions[$value['resolution']]) {
                         $err_msgs[$cur_title][] = '解决结果列值匹配失败。';
-                    }
-                    else
-                    {
+                    } else {
                         $issue['resolution'] = $resolutions[$value['resolution']];
                     }
                 }
 
                 $user_relate_fields = [ 'assignee' => '经办人', 'reporter' => '报告者', 'resolver' => '解决者', 'closer' => '关闭时间' ];
-                foreach ($user_relate_fields as $uk => $uv)
-                {
-                    if (isset($value[$uk]) && $value[$uk])
-                    {
+                foreach ($user_relate_fields as $uk => $uv) {
+                    if (isset($value[$uk]) && $value[$uk]) {
                         $tmp_user = EloquentUser::where('first_name', $value[$uk])->first();
-                        if (!$tmp_user)
-                        {
+                        if (!$tmp_user) {
                             $err_msgs[$cur_title][] = $uv . '列用户不存在。';
-                        }
-                        else
-                        {
+                        } else {
                             $issue[$uk] = [ 'id' => $tmp_user->id, 'name' => $tmp_user->first_name, 'email' => $tmp_user->email ];
-                            if ($uk == 'resolver')
-                            {
+                            if ($uk == 'resolver') {
                                 $issue['his_resolvers'] = [ $tmp_user->id ];
                             }
                         }
@@ -2426,43 +2090,32 @@ class IssueController extends Controller
                 }
 
                 $time_relate_fields = [ 'created_at' => '创建时间', 'resolved_at' => '解决时间', 'closed_at' => '关闭时间', 'updated_at' => '更新时间' ];
-                foreach ($time_relate_fields as $tk => $tv)
-                {
-                    if (isset($value[$tk]) && $value[$tk])
-                    {
+                foreach ($time_relate_fields as $tk => $tv) {
+                    if (isset($value[$tk]) && $value[$tk]) {
                         $stamptime = strtotime($value[$tk]);
-                        if ($stamptime === false)
-                        {
+                        if ($stamptime === false) {
                             $err_msgs[$cur_title][] = $tv . '列值格式错误。';
-                        }
-                        else
-                        {
+                        } else {
                             $issue[$tk] = $stamptime;
                         }
                     }
                 }
 
                 $schema = $types[$value['type']]['schema'];
-                foreach ($schema as $field)
-                {
-                    if (isset($field['required']) && $field['required'] && (!isset($value[$field['key']]) || !$value[$field['key']]))
-                    {
+                foreach ($schema as $field) {
+                    if (isset($field['required']) && $field['required'] && (!isset($value[$field['key']]) || !$value[$field['key']])) {
                         $err_msgs[$cur_title][] = $fields[$field['key']] . '列值不能为空。';
                         continue;
                     }
 
-                    if (isset($value[$field['key']]) && $value[$field['key']])
-                    {
+                    if (isset($value[$field['key']]) && $value[$field['key']]) {
                         $field_key = $field['key'];
                         $field_value = $value[$field['key']];
-                    }
-                    else
-                    {
+                    } else {
                         continue;
                     }
 
-                    if (in_array($field_key, [ 'priority', 'resolution', 'assignee' ]))
-                    {
+                    if (in_array($field_key, [ 'priority', 'resolution', 'assignee' ])) {
                         continue;
                     }
 
@@ -2476,139 +2129,94 @@ class IssueController extends Controller
                     //    }
                     //    $issue['sprints'] = $new_sprints;
                     //}
-                    if ($field_key == 'labels')
-                    {
+                    if ($field_key == 'labels') {
                         $issue['labels'] = [];
-                        foreach (explode(',', $field_value) as $val)
-                        {
-                            if (trim($val))
-                            {
-                                $issue['labels'][] = trim($val); 
+                        foreach (explode(',', $field_value) as $val) {
+                            if (trim($val)) {
+                                $issue['labels'][] = trim($val);
                             }
                         }
                         $issue['labels'] = array_values(array_unique($issue['labels']));
-                    }
-                    else if ($field['type'] === 'SingleUser' || $field_key === 'assignee')
-                    {
+                    } elseif ($field['type'] === 'SingleUser' || $field_key === 'assignee') {
                         $tmp_user = EloquentUser::where('first_name', $field_value)->first();
-                        if (!$tmp_user)
-                        {
+                        if (!$tmp_user) {
                             $err_msgs[$cur_title][] = $fields[$field_key] . '列用户不存在。';
-                        }
-                        else
-                        {
+                        } else {
                             $issue[$field_key] = [ 'id' => $tmp_user->id, 'name' => $tmp_user->first_name, 'email' => $tmp_user->email ];
                         }
-                    }
-                    else if ($field['type'] === 'MultiUser')
-                    {
+                    } elseif ($field['type'] === 'MultiUser') {
                         $issue[$field_key] = [];
                         $issue[$field_key . '_ids'] = [];
-                        foreach(explode(',', $field_value) as $val)
-                        {
-                            if (!trim($val))
-                            {
+                        foreach (explode(',', $field_value) as $val) {
+                            if (!trim($val)) {
                                 continue;
                             }
 
                             $tmp_user = EloquentUser::where('first_name', trim($val))->first();
-                            if (!$tmp_user)
-                            {
+                            if (!$tmp_user) {
                                 $err_msgs[$cur_title][] = $fields[$field_key] . '列用户不存在。';
-                            }
-                            else if (!in_array($tmp_user->id, $issue[$field_key . '_ids']))
-                            {
+                            } elseif (!in_array($tmp_user->id, $issue[$field_key . '_ids'])) {
                                 $issue[$field_key][] = [ 'id' => $tmp_user->id, 'name' => $tmp_user->first_name, 'email' => $tmp_user->email ];
                                 $issue[$field_key . '_ids'][] = $tmp_user->id;
                             }
                         }
-                    }
-                    else if (in_array($field['type'], [ 'Select', 'RadioGroup', 'SingleVersion' ]))
-                    {
-                        foreach ($field['optionValues'] as $val)
-                        {
-                            if ($val['name'] === $field_value)
-                            {
+                    } elseif (in_array($field['type'], [ 'Select', 'RadioGroup', 'SingleVersion' ])) {
+                        foreach ($field['optionValues'] as $val) {
+                            if ($val['name'] === $field_value) {
                                 $issue[$field_key] = $val['id'];
                                 break;
                             }
                         }
-                        if (!isset($issue[$field_key]))
-                        {
+                        if (!isset($issue[$field_key])) {
                             $err_msgs[$cur_title][] = $fields[$field_key] . '列值匹配失败。';
                         }
-                    }
-                    else if (in_array($field['type'], [ 'MultiSelect', 'CheckboxGroup', 'MultiVersion' ]))
-                    {
+                    } elseif (in_array($field['type'], [ 'MultiSelect', 'CheckboxGroup', 'MultiVersion' ])) {
                         $issue[$field_key] = [];
-                        foreach (explode(',', $field_value) as $val)
-                        {
+                        foreach (explode(',', $field_value) as $val) {
                             $val = trim($val);
-                            if (!$val)
-                            {
+                            if (!$val) {
                                 continue;
                             }
 
                             $isMatched = false;
-                            foreach ($field['optionValues'] as $val2)
-                            {
-                                if ($val2['name'] === $val)
-                                {
+                            foreach ($field['optionValues'] as $val2) {
+                                if ($val2['name'] === $val) {
                                     $issue[$field_key][] = $val2['id'];
                                     $isMatched = true;
                                     break;
                                 }
                             }
-                            if (!$isMatched)
-                            {
+                            if (!$isMatched) {
                                 $err_msgs[$cur_title][] = $fields[$field_key] . '列值匹配失败。';
                             }
                         }
                         $issue[$field_key] = array_values(array_unique($issue[$field_key]));
-                    }
-                    else if (in_array($field['type'], [ 'DatePicker', 'DatetimePicker' ]))
-                    {
+                    } elseif (in_array($field['type'], [ 'DatePicker', 'DatetimePicker' ])) {
                         $stamptime = strtotime($field_value);
-                        if ($stamptime === false)
-                        {
+                        if ($stamptime === false) {
                             $err_msgs[$cur_title][] = $fields[$field_key] . '列值格式错误。';
-                        }
-                        else
-                        {
+                        } else {
                             $issue[$field_key] = $stamptime;
                         }
-                    }
-                    else if ($field['type'] === 'TimeTracking')
-                    {
-                        if (!$this->ttCheck($field_value))
-                        {
+                    } elseif ($field['type'] === 'TimeTracking') {
+                        if (!$this->ttCheck($field_value)) {
                             $err_msgs[$cur_title][] = $fields[$field_key] . '列值格式错误。';
-                        }
-                        else
-                        {
+                        } else {
                             $issue[$field_key] = $this->ttHandle($field_value);
                             $issue[$field_key . '_m'] = $this->ttHandleInM($issue[$field_key]);
                         }
-                    }
-                    else if ($field['type'] === 'Number')
-                    {
+                    } elseif ($field['type'] === 'Number') {
                         $issue[$field_key] = floatval($field_value);
-                    }
-                    else
-                    {
+                    } else {
                         $issue[$field_key] = $field_value;
                     }
                 }
 
-                if ($types[$value['type']]['type'] === 'subtask')
-                {
+                if ($types[$value['type']]['type'] === 'subtask') {
                     $subtask_issues[] = $issue;
-                }
-                else
-                {
+                } else {
                     $standard_titles[] = $issue['title'];
-                    if (isset($issue['parent']))
-                    {
+                    if (isset($issue['parent'])) {
                         unset($issue['parent']);
                     }
                     $standard_issues[] = $issue;
@@ -2616,49 +2224,37 @@ class IssueController extends Controller
             }
 
             $new_subtask_issues = [];
-            foreach ($standard_titles as $title)
-            {
+            foreach ($standard_titles as $title) {
                 $new_subtask_issues[$title] = [];
             }
 
-            foreach ($subtask_issues as $issue)
-            {
-                $parent_issues = array_filter($standard_issues, function($v) use ($issue) { return $v['title'] === $issue['parent']; });
-                if (count($parent_issues) > 1)
-                {
+            foreach ($subtask_issues as $issue) {
+                $parent_issues = array_filter($standard_issues, function ($v) use ($issue) {
+                    return $v['title'] === $issue['parent'];
+                });
+                if (count($parent_issues) > 1) {
                     $fatal_err_msgs[$issue['title']][] = $err_msgs[$issue['title']][] = '找到多个父级任务。';
-                }
-                else if (count($parent_issues) == 1)
-                {
+                } elseif (count($parent_issues) == 1) {
                     $parent_issue = array_pop($parent_issues);
-                    if (isset($issue['parent']))
-                    {
+                    if (isset($issue['parent'])) {
                         unset($issue['parent']);
                     }
                     $new_subtask_issues[$parent_issue['title']][] = $issue;
-                }
-                else
-                {
+                } else {
                     $parent_issues = DB::table('issue_' . $project_key)
                         ->where('title', $issue['parent'])
                         ->whereIn('type', $standard_type_ids)
                         ->where('del_flg', '<>', 1)
                         ->get();
-                    if (count($parent_issues) > 1)
-                    {
+                    if (count($parent_issues) > 1) {
                         $fatal_err_msgs[$issue['title']][] = $err_msgs[$issue['title']][] = '找到多个父级任务。';
-                    }
-                    else if (count($parent_issues) == 1)
-                    {
+                    } elseif (count($parent_issues) == 1) {
                         $parent_issue = array_pop($parent_issues);
-                        if (isset($issue['parent']))
-                        {
+                        if (isset($issue['parent'])) {
                             unset($issue['parent']);
                         }
                         $new_subtask_issues[] = $issue + [ 'parent_id' => $parent_issue['_id']->__toString() ];
-                    }
-                    else
-                    {
+                    } else {
                         $fatal_err_msgs[$issue['title']][] = $err_msgs[$issue['title']][] = '父级任务不存在。';
                     }
                 }
@@ -2667,43 +2263,33 @@ class IssueController extends Controller
 
             $err_msgs = array_filter($err_msgs);
             $fatal_err_msgs = array_filter($fatal_err_msgs);
-            if ($pattern == '2')
-            {
-                if ($fatal_err_msgs)
-                {
+            if ($pattern == '2') {
+                if ($fatal_err_msgs) {
                     return;
                 }
-            }
-            else if ($err_msgs)
-            {
+            } elseif ($err_msgs) {
                 return;
             }
 
 
             $new_types = [];
-            foreach($types as $type)
-            {
+            foreach ($types as $type) {
                 $new_types[$type['id']] = $type;
             }
             $types = $new_types;
 
-            foreach ($subtask_issues as $issue)
-            {
-                if (isset($issue['parent_id']) && $issue['parent_id'])
-                {
+            foreach ($subtask_issues as $issue) {
+                if (isset($issue['parent_id']) && $issue['parent_id']) {
                     $this->importIssue($project_key, $issue, $types[$issue['type']]['schema'], $types[$issue['type']]['workflow']);
                 }
             }
 
-            foreach ($standard_issues as $issue)
-            {
+            foreach ($standard_issues as $issue) {
                 $id = $this->importIssue($project_key, $issue, $types[$issue['type']]['schema'], $types[$issue['type']]['workflow']);
-                if (!isset($subtask_issues[$issue['title']]) || !$subtask_issues[$issue['title']])
-                {
+                if (!isset($subtask_issues[$issue['title']]) || !$subtask_issues[$issue['title']]) {
                     continue;
                 }
-                foreach ($subtask_issues[$issue['title']] as $sub_issue)
-                {
+                foreach ($subtask_issues[$issue['title']] as $sub_issue) {
                     $sub_issue['parent_id'] = $id;
                     $this->importIssue($project_key, $sub_issue, $types[$sub_issue['type']]['schema'], $types[$sub_issue['type']]['workflow']);
                 }
@@ -2712,68 +2298,55 @@ class IssueController extends Controller
 
 
         $emsgs = '';
-        if ($pattern == '2')
-        {
+        if ($pattern == '2') {
             $emsgs = array_filter($fatal_err_msgs);
-        }
-        else
-        {
+        } else {
             $emsgs = array_filter($err_msgs);
         }
 
-        if ($emsgs)
-        {
+        if ($emsgs) {
             return Response()->json([ 'ecode' => -11146, 'emsg' => $emsgs ]);
-        }
-        else
-        {
+        } else {
             return Response()->json([ 'ecode' => 0, 'emsg' => '' ]);
         }
     }
 
     /**
-     * import the issue into the project 
+     * import the issue into the project
      *
      * @param  string $project_key
      * @param  array $data
      * @param  array $schema
-     * @return string id 
+     * @return string id
      */
     public function importIssue($project_key, $data, $schema, $workflow)
     {
         $table = 'issue_' . $project_key;
 
         $insValues = $data;
-        if (!isset($insValues['resolution']) || !$insValues['resolution'])
-        {
+        if (!isset($insValues['resolution']) || !$insValues['resolution']) {
             $insValues['resolution'] = 'Unresolved';
         }
 
         $max_no = DB::collection($table)->count() + 1;
         $insValues['no'] = $max_no;
 
-        if (!isset($insValues['assignee']) || !$insValues['assignee'])
-        {
+        if (!isset($insValues['assignee']) || !$insValues['assignee']) {
             $insValues['assignee'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
         }
 
         // get reporter(creator)
-        if (!isset($insValues['reporter']) || !$insValues['reporter'])
-        {
+        if (!isset($insValues['reporter']) || !$insValues['reporter']) {
             $insValues['reporter'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
         }
-        if (!isset($insValues['created_at']) || !$insValues['created_at'])
-        {
+        if (!isset($insValues['created_at']) || !$insValues['created_at']) {
             $insValues['created_at'] = time();
         }
 
-        if (!isset($data['state']) || !$data['state'])
-        {
+        if (!isset($data['state']) || !$data['state']) {
             $wf = $this->initializeWorkflow($data['type']);
             $insValues += $wf;
-        }
-        else if (in_array($data['state'], $workflow->state_ids ?: []))
-        {
+        } elseif (in_array($data['state'], $workflow->state_ids ?: [])) {
             $wf = $this->initializeWorkflowForImport($workflow, $data['state']);
             $insValues += $wf;
         }
@@ -2786,8 +2359,7 @@ class IssueController extends Controller
         // trigger event of issue created
         Event::fire(new IssueEvent($project_key, $id, $insValues['reporter'], [ 'event_key' => 'create_issue' ]));
 
-        if (isset($insValues['labels']) && $insValues['labels'])
-        {
+        if (isset($insValues['labels']) && $insValues['labels']) {
             $this->createLabels($project_key, $insValues['labels']);
         }
 
@@ -2810,16 +2382,13 @@ class IssueController extends Controller
         $steps = isset($wf_contents['steps']) && $wf_contents['steps'] ? $wf_contents['steps'] : [];
 
         $fake_step = [];
-        foreach($steps as $step)
-        {
-            if (isset($step['state']) && $step['state'] == $state)
-            {
+        foreach ($steps as $step) {
+            if (isset($step['state']) && $step['state'] == $state) {
                 $fake_step = $step;
                 break;
             }
         }
-        if (!$fake_step)
-        {
+        if (!$fake_step) {
             return [];
         }
 
@@ -2833,196 +2402,133 @@ class IssueController extends Controller
     }
 
     /**
-     * export xls for issue list 
+     * export xls for issue list
      *
      * @param  string $project_key
      * @param  array $export_fields
      * @param  array $issues
      * @return void
      */
-    public function export($project_key, $export_fields, $issues) 
+    public function export($project_key, $export_fields, $issues)
     {
         set_time_limit(0);
 
         $options = $this->getOptionsForExport($project_key);
-        foreach ($options as $key => $val)
-        {
+        foreach ($options as $key => $val) {
             $$key = $val;
         }
 
-        foreach ($export_fields as $key => $field)
-        {
-            if (!array_key_exists($field, $fields))
-            {
+        foreach ($export_fields as $key => $field) {
+            if (!array_key_exists($field, $fields)) {
                 unset($export_fields[$key]);
             }
         }
         $export_fields = array_values($export_fields);
 
         $headers = [];
-        foreach ($export_fields as $fk)
-        {
+        foreach ($export_fields as $fk) {
             $headers[] = isset($fields[$fk]) && $fields[$fk] ? $fields[$fk]['name'] : '';
         }
 
         $new_issues = [];
-        foreach ($issues as $issue)
-        {
+        foreach ($issues as $issue) {
             $tmp = [];
-            foreach ($export_fields as $fk)
-            {
-                if (!isset($issue[$fk]) || (!$issue[$fk] && $issue[$fk] !== 0))
-                {
+            foreach ($export_fields as $fk) {
+                if (!isset($issue[$fk]) || (!$issue[$fk] && $issue[$fk] !== 0)) {
                     $tmp[] = '';
                     continue;
                 }
 
-                if (in_array($fk, [ 'assignee', 'reporter', 'closer', 'resolver' ]))
-                {
+                if (in_array($fk, [ 'assignee', 'reporter', 'closer', 'resolver' ])) {
                     $tmp[] = isset($issue[$fk]['name']) ? $issue[$fk]['name'] : '';
-                }
-                else if ($fk == 'module')
-                {
+                } elseif ($fk == 'module') {
                     $new_modules = [];
                     $module_ids = [];
-                    if (is_array($issue[$fk]))
-                    {
+                    if (is_array($issue[$fk])) {
                         $module_ids = $issue[$fk];
-                    }
-                    else
-                    {
+                    } else {
                         $module_ids = explode(',', $issue[$fk]);
                     }
-                    foreach ($module_ids as $id)
-                    {
-                        if (!isset($modules[$id]) || !$modules[$id])
-                        {
+                    foreach ($module_ids as $id) {
+                        if (!isset($modules[$id]) || !$modules[$id]) {
                             continue;
                         }
                         $new_modules[] = $modules[$id];
                     }
                     $tmp[] = implode(',', $new_modules);
-                }
-                else if ($fk == 'type')
-                {
+                } elseif ($fk == 'type') {
                     $tmp[] = isset($types[$issue[$fk]]) && $types[$issue[$fk]] ? $types[$issue[$fk]] : '';
-                }
-                else if ($fk == 'priority')
-                {
+                } elseif ($fk == 'priority') {
                     $tmp[] = isset($priorities[$issue[$fk]]) && $priorities[$issue[$fk]] ? $priorities[$issue[$fk]] : '';
-                }
-                else if ($fk == 'state')
-                {
+                } elseif ($fk == 'state') {
                     $tmp[] = isset($states[$issue[$fk]]) && $states[$issue[$fk]] ? $states[$issue[$fk]] : '';
-                }
-                else if ($fk == 'resolution')
-                {
+                } elseif ($fk == 'resolution') {
                     $tmp[] = isset($resolutions[$issue[$fk]]) && $resolutions[$issue[$fk]] ? $resolutions[$issue[$fk]] : '';
-                }
-                else if ($fk == 'epic')
-                {
+                } elseif ($fk == 'epic') {
                     $tmp[] = isset($epics[$issue[$fk]]) && $epics[$issue[$fk]] ? $epics[$issue[$fk]] : '';
-                }
-                else if ($fk == 'sprints')
-                {
+                } elseif ($fk == 'sprints') {
                     $new_sprints = [];
-                    foreach ($issue[$fk] as $sn)
-                    {
-                        if (isset($sprints[$sn]))
-                        {
+                    foreach ($issue[$fk] as $sn) {
+                        if (isset($sprints[$sn])) {
                             $new_sprints[] = $sprints[$sn];
                         }
                     }
                     $tmp[] = implode(',', $new_sprints);
-                }
-                else if ($fk == 'labels')
-                {
+                } elseif ($fk == 'labels') {
                     $tmp[] = implode(',', $issue[$fk]);
-                }
-                else if ($fk == 'progress')
-                {
+                } elseif ($fk == 'progress') {
                     $tmp[] = $issue[$fk] . '%';
-                }
-                else if (isset($fields[$fk]) && $fields[$fk])
-                {
-                    if ($fields[$fk]['type'] == 'DateTimePicker')
-                    {
+                } elseif (isset($fields[$fk]) && $fields[$fk]) {
+                    if ($fields[$fk]['type'] == 'DateTimePicker') {
                         $tmp[] = date('Y-m-d H:i:s', $issue[$fk]);
-                    }
-                    else if ($fields[$fk]['type'] == 'DatePicker')
-                    {
+                    } elseif ($fields[$fk]['type'] == 'DatePicker') {
                         $tmp[] = date('Y-m-d', $issue[$fk]);
-                    }
-                    else if ($fields[$fk]['type'] == 'SingleVersion' || $fields[$fk]['type'] == 'MultiVersion')
-                    {
+                    } elseif ($fields[$fk]['type'] == 'SingleVersion' || $fields[$fk]['type'] == 'MultiVersion') {
                         $new_versions = [];
                         $version_ids = [];
-                        if (is_array($issue[$fk]))
-                        {
+                        if (is_array($issue[$fk])) {
                             $version_ids = $issue[$fk];
-                        }
-                        else
-                        {
+                        } else {
                             $version_ids = explode(',', $issue[$fk]);
                         }
-                        foreach ($version_ids as $id)
-                        {
-                            if (isset($versions[$id]) && $versions[$id])
-                            {
+                        foreach ($version_ids as $id) {
+                            if (isset($versions[$id]) && $versions[$id]) {
                                 $new_versions[] = $versions[$id];
                             }
                         }
                         $tmp[] = implode(',', $new_versions);
-                    } 
-                    else if ($fields[$fk]['type'] == 'SingleUser')
-                    {
+                    } elseif ($fields[$fk]['type'] == 'SingleUser') {
                         $tmp[] = isset($issue[$fk]['name']) ? $issue[$fk]['name'] : '';
-                    }
-                    else if ($fields[$fk]['type'] == 'MultiUser')
-                    {
+                    } elseif ($fields[$fk]['type'] == 'MultiUser') {
                         $new_users = [];
-                        foreach ($issue[$fk] as $user)
-                        {
-                            if (isset($user['name']) && $user['name'])
-                            {
+                        foreach ($issue[$fk] as $user) {
+                            if (isset($user['name']) && $user['name']) {
                                 $new_users[] = $user['name'];
                             }
                         }
                         $tmp[] = implode(',', $new_users);
-                    }
-                    else
-                    {
-                        if (isset($fields[$fk]['optionValues']) && $fields[$fk]['optionValues'])
-                        {
+                    } else {
+                        if (isset($fields[$fk]['optionValues']) && $fields[$fk]['optionValues']) {
                             $tmpOptions = [];
-                            foreach ($fields[$fk]['optionValues'] as $ov)
-                            {
+                            foreach ($fields[$fk]['optionValues'] as $ov) {
                                 $tmpOptions[$ov['id']] = $ov['name'];
                             }
                             $ov_ids = [];
-                            if (is_array($issue[$fk]))
-                            {
-                                $ov_ids = $issue[$fk]; 
-                            }
-                            else
-                            {
-                                $ov_ids = explode(',', $issue[$fk]); 
+                            if (is_array($issue[$fk])) {
+                                $ov_ids = $issue[$fk];
+                            } else {
+                                $ov_ids = explode(',', $issue[$fk]);
                             }
                             $ov_names = [];
-                            foreach ($ov_ids as $ovid)
-                            {
-                                $ov_names[] = isset($tmpOptions[$ovid]) ? $tmpOptions[$ovid] : ''; 
+                            foreach ($ov_ids as $ovid) {
+                                $ov_names[] = isset($tmpOptions[$ovid]) ? $tmpOptions[$ovid] : '';
                             }
                             $tmp[] = implode(',', array_filter($ov_names));
-                        }
-                        else
-                        {
+                        } else {
                             $tmp[] = (string)$issue[$fk];
                         }
                     }
-                }
-                else
-                {
+                } else {
                     $tmp[] = (string)$issue[$fk];
                 }
             }
@@ -3030,11 +2536,10 @@ class IssueController extends Controller
         }
 
         $file_name = $project_key . '-issues';
-        Excel::create($file_name, function ($excel) use($headers, $new_issues) {
-            $excel->sheet('Sheetname', function ($sheet) use($headers, $new_issues) {
+        Excel::create($file_name, function ($excel) use ($headers, $new_issues) {
+            $excel->sheet('Sheetname', function ($sheet) use ($headers, $new_issues) {
                 $sheet->appendRow($headers);
-                foreach ($new_issues as $issue)
-                {
+                foreach ($new_issues as $issue) {
                     $sheet->appendRow($issue);
                 }
             });
@@ -3051,26 +2556,19 @@ class IssueController extends Controller
     public function batchHandle(Request $request, $project_key)
     {
         $method = $request->input('method');
-        if ($method == 'update')
-        {
+        if ($method == 'update') {
             $data = $request->input('data');
-            if (!$data || !isset($data['ids']) || !$data['ids'] || !is_array($data['ids']) || !isset($data['values']) || !$data['values'] || !is_array($data['values']))
-            {
+            if (!$data || !isset($data['ids']) || !$data['ids'] || !is_array($data['ids']) || !isset($data['values']) || !$data['values'] || !is_array($data['values'])) {
                 throw new \UnexpectedValueException('the batch params has errors.', -11124);
             }
             return $this->batchUpdate($project_key, $data['ids'], $data['values']);
-        }
-        else if ($method == 'delete')
-        {
+        } elseif ($method == 'delete') {
             $data = $request->input('data');
-            if (!$data || !isset($data['ids']) || !$data['ids'] || !is_array($data['ids']))
-            {
+            if (!$data || !isset($data['ids']) || !$data['ids'] || !is_array($data['ids'])) {
                 throw new \UnexpectedValueException('the batch params has errors.', -11124);
             }
             return $this->batchDelete($project_key, $data['ids']);
-        }
-        else
-        {
+        } else {
             throw new \UnexpectedValueException('the batch method has errors.', -11125);
         }
     }
@@ -3084,22 +2582,19 @@ class IssueController extends Controller
      */
     public function batchDelete($project_key, $ids)
     {
-        if (!$this->isPermissionAllowed($project_key, 'delete_issue'))
-        {
+        if (!$this->isPermissionAllowed($project_key, 'delete_issue')) {
             return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
         }
 
         $user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
 
         $table = 'issue_' . $project_key;
-        foreach ($ids as $id)
-        {
+        foreach ($ids as $id) {
             $issue = DB::collection($table)
                 ->where('_id', $id)
                 ->where('del_flg', '<>', 1)
                 ->first();
-            if (!$issue)
-            {
+            if (!$issue) {
                 continue;
             }
 
@@ -3108,8 +2603,7 @@ class IssueController extends Controller
                 ->where('parent_id', $id)
                 ->where('del_flg', '<>', 1)
                 ->get();
-            foreach ($subtasks as $subtask)
-            {
+            foreach ($subtasks as $subtask) {
                 $sub_id = $subtask['_id']->__toString();
                 DB::collection($table)->where('_id', $sub_id)->update([ 'del_flg' => 1 ]);
 
@@ -3125,7 +2619,7 @@ class IssueController extends Controller
             // delete this issue
             DB::collection($table)->where('_id', $id)->update([ 'del_flg' => 1 ]);
 
-            // trigger event of issue deleted 
+            // trigger event of issue deleted
             Event::fire(new IssueEvent($project_key, $id, $user, [ 'event_key' => 'del_issue' ]));
         }
 
@@ -3142,23 +2636,19 @@ class IssueController extends Controller
      */
     public function batchUpdate($project_key, $ids, $values)
     {
-        if (!$this->isPermissionAllowed($project_key, 'edit_issue'))
-        {
+        if (!$this->isPermissionAllowed($project_key, 'edit_issue')) {
             return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
         }
 
         $schemas = [];
 
         $updValues = [];
-        if (isset($values['type']))
-        {
-            if (!$values['type'])
-            {
+        if (isset($values['type'])) {
+            if (!$values['type']) {
                 throw new \UnexpectedValueException('the issue type can not be empty.', -11100);
             }
         
-            if (!($schemas[$values['type']] = Provider::getSchemaByType($values['type'])))
-            {
+            if (!($schemas[$values['type']] = Provider::getSchemaByType($values['type']))) {
                 throw new \UnexpectedValueException('the schema of the type is not existed.', -11101);
             }
 
@@ -3167,75 +2657,53 @@ class IssueController extends Controller
 
         $new_fields = [];
         $fields = Provider::getFieldList($project_key);
-        foreach($fields as $field)
-        {
+        foreach ($fields as $field) {
             $new_fields[$field->key] = $field;
         }
         $fields = $new_fields;
 
-        foreach ($values as $key => $val)
-        {
-            if (!isset($fields[$key]) || $fields[$key]->type == 'File')
-            {
+        foreach ($values as $key => $val) {
+            if (!isset($fields[$key]) || $fields[$key]->type == 'File') {
                 continue;
             }
 
             $field = $fields[$key];
 
-            if ($field->type == 'DateTimePicker' || $field->type == 'DatePicker')
-            {
-                if ($val && $this->isTimestamp($val) === false)
-                {
+            if ($field->type == 'DateTimePicker' || $field->type == 'DatePicker') {
+                if ($val && $this->isTimestamp($val) === false) {
                     throw new \UnexpectedValueException('the format of datepicker field is incorrect.', -11122);
                 }
                 $updValues[$key] = $val;
-            }
-            else if ($field->type == 'TimeTracking')
-            {
-                if ($val && !$this->ttCheck($val))
-                {
+            } elseif ($field->type == 'TimeTracking') {
+                if ($val && !$this->ttCheck($val)) {
                     throw new \UnexpectedValueException('the format of timetracking field is incorrect.', -11102);
                 }
                 $updValues[$key] = $this->ttHandle($val);
                 $updValues[$key . '_m'] = $this->ttHandleInM($updValues[$key]);
-            }
-            else if ($key == 'assignee' || $field->type == 'SingleUser')
-            {
+            } elseif ($key == 'assignee' || $field->type == 'SingleUser') {
                 $user_info = Sentinel::findById($val);
-                if ($user_info)
-                {
+                if ($user_info) {
                     $updValues[$key] = [ 'id' => $val, 'name' => $user_info->first_name, 'email' => $user_info->email ];
                 }
-            }
-            else if ($field->type == 'MultiUser')
-            {
+            } elseif ($field->type == 'MultiUser') {
                 $user_ids = $val;
                 $updValues[$key] = [];
                 $new_user_ids = [];
-                foreach ($user_ids as $uid)
-                {
+                foreach ($user_ids as $uid) {
                     $user_info = Sentinel::findById($uid);
-                    if ($user_info)
-                    {
+                    if ($user_info) {
                         array_push($updValues[$key], [ 'id' => $uid, 'name' => $user_info->first_name, 'email' => $user_info->email ]);
                     }
                     $new_user_ids[] = $uid;
                 }
                 $updValues[$key . '_ids'] = $new_user_ids;
-            }
-            else if ($field->type === 'Number' || $field->type === 'Integer')
-            {
-                if ($val === '')
-                {
+            } elseif ($field->type === 'Number' || $field->type === 'Integer') {
+                if ($val === '') {
                     $updValues[$key] = '';
-                }
-                else
-                {
+                } else {
                     $updValues[$key] = $field->type === 'Number' ? floatVal($val) : intVal($val);
                 }
-            }
-            else 
-            {
+            } else {
                 $updValues[$key] = $val;
             }
         }
@@ -3244,31 +2712,24 @@ class IssueController extends Controller
         $updValues['updated_at'] = time();
 
         $table = 'issue_' . $project_key;
-        foreach ($ids as $id)
-        {
+        foreach ($ids as $id) {
             $issue = DB::collection($table)->find($id);
-            if (!$issue)
-            {
+            if (!$issue) {
                 continue;
             }
 
             $schema = [];
             $type = isset($values['type']) ? $values['type'] : $issue['type'];
-            if (!isset($schemas[$type]))
-            {
-                if (!($schemas[$type] = $schema = Provider::getSchemaByType($type)))
-                {
+            if (!isset($schemas[$type])) {
+                if (!($schemas[$type] = $schema = Provider::getSchemaByType($type))) {
                     continue;
                 }
-            }
-            else 
-            {
+            } else {
                 $schema = $schemas[$type];
             }
 
             $valid_keys = $this->getValidKeysBySchema($schema);
-            if (!array_only($updValues, $valid_keys))
-            {
+            if (!array_only($updValues, $valid_keys)) {
                 continue;
             }
 
@@ -3282,11 +2743,10 @@ class IssueController extends Controller
         }
 
         // create the Labels for project
-        if (isset($updValues['labels']) && $updValues['labels'])
-        {
+        if (isset($updValues['labels']) && $updValues['labels']) {
             $this->createLabels($project_key, $updValues['labels']);
         }
 
-        return Response()->json([ 'ecode' => 0, 'data' => [ 'ids' => $ids ] ]); 
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'ids' => $ids ] ]);
     }
 }

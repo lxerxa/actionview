@@ -28,9 +28,10 @@ class BoardController extends Controller
      * get user accessed board list
      *
      * @param  string  $project_key
-     * @return response 
+     * @return response
      */
-    public function index($project_key) {
+    public function index($project_key)
+    {
         // get all boards
         $boards = Board::Where('project_key', $project_key)
             ->orderBy('_id', 'asc')
@@ -43,26 +44,20 @@ class BoardController extends Controller
 
         $list = [];
         $accessed_boards = [];
-        foreach($access_records as $record)
-        {
-            foreach($boards as $board)
-            {
-                if ($board->id == $record->board_id)
-                {
-                    $accessed_boards[] = $record->board_id; 
+        foreach ($access_records as $record) {
+            foreach ($boards as $board) {
+                if ($board->id == $record->board_id) {
+                    $accessed_boards[] = $record->board_id;
                     break;
                 }
             }
-            if (in_array($record->board_id, $accessed_boards))
-            {
+            if (in_array($record->board_id, $accessed_boards)) {
                 $list[] = $board;
             }
         }
 
-        foreach ($boards as $board)
-        {
-            if (!in_array($board->id, $accessed_boards))
-            {
+        foreach ($boards as $board) {
+            if (!in_array($board->id, $accessed_boards)) {
                 $list[] = $board;
             }
         }
@@ -72,10 +67,8 @@ class BoardController extends Controller
             ->orderBy('no', 'asc')
             ->get();
         // compatible with old data
-        foreach ($sprints as $sprint)
-        {
-            if (!$sprint->name)
-            {
+        foreach ($sprints as $sprint) {
+            if (!$sprint->name) {
                 $sprint->name = 'Sprint ' . $sprint->no;
             }
         }
@@ -94,26 +87,26 @@ class BoardController extends Controller
 
         return Response()->json([ 'ecode' => 0, 'data' => $list, 'options' => [ 'epics' => $epics, 'sprints' => $sprints, 'versions' => $versions, 'completed_sprint_num' => $completed_sprint_num ] ]);
 
-/*
-$example = [ 
-  'id' => '111',
-  'name' => '1111111111',
-  'type' => 'kanban',
-  'query' => [ 'type' => [ '59af4ad51d41c85e9108a8a7' ], 'subtask' => true ],
-  'last_access_time' => 11111111,
-  'columns' => [
-    [ 'no' => 1, 'name' => '待处理', 'states' => [ 'Open', 'Reopened' ] ],
-    [ 'no' => 2, 'name' => '处理中', 'states' => [ 'In Progess' ] ],
-    [ 'no' => 3, 'name' => '关闭', 'states' => [ 'Resolved', 'Closed' ] ]
-  ],
-  'filters' => [
-    [ 'no' => 1, 'id' => '11111', 'name' => '111111', 'query' => [ 'updated_at' => '1m' ] ],
-    [ 'no' => 2, 'id' => '22222', 'name' => '222222' ],
-    [ 'no' => 3, 'id' => '33333', 'name' => '333333' ],
-  ],
-];
-        return Response()->json([ 'ecode' => 0, 'data' => [ $example ] ]);
-*/
+        /*
+        $example = [
+          'id' => '111',
+          'name' => '1111111111',
+          'type' => 'kanban',
+          'query' => [ 'type' => [ '59af4ad51d41c85e9108a8a7' ], 'subtask' => true ],
+          'last_access_time' => 11111111,
+          'columns' => [
+            [ 'no' => 1, 'name' => '待处理', 'states' => [ 'Open', 'Reopened' ] ],
+            [ 'no' => 2, 'name' => '处理中', 'states' => [ 'In Progess' ] ],
+            [ 'no' => 3, 'name' => '关闭', 'states' => [ 'Resolved', 'Closed' ] ]
+          ],
+          'filters' => [
+            [ 'no' => 1, 'id' => '11111', 'name' => '111111', 'query' => [ 'updated_at' => '1m' ] ],
+            [ 'no' => 2, 'id' => '22222', 'name' => '222222' ],
+            [ 'no' => 3, 'id' => '33333', 'name' => '333333' ],
+          ],
+        ];
+                return Response()->json([ 'ecode' => 0, 'data' => [ $example ] ]);
+        */
     }
 
     /**
@@ -125,44 +118,36 @@ $example = [
     public function store(Request $request, $project_key)
     {
         $name = $request->input('name');
-        if (!$name)
-        {
+        if (!$name) {
             throw new \UnexpectedValueException('the name can not be empty.', -11600);
         }
 
         $type = $request->input('type');
-        if (!$type || ($type != 'kanban' && $type != 'scrum'))
-        {
+        if (!$type || ($type != 'kanban' && $type != 'scrum')) {
             throw new \UnexpectedValueException('the type value has error.', -11608);
         }
 
-        $columns = [ 
-            [ 'no' => 1, 'name' => '开始', 'states' => [] ], 
+        $columns = [
+            [ 'no' => 1, 'name' => '开始', 'states' => [] ],
             [ 'no' => 2, 'name' => '处理中', 'states' => [] ],
             [ 'no' => 3, 'name' => '完成', 'states' => [] ],
         ];
         $states = Provider::getStateOptions($project_key);
-        foreach ($states as $state)
-        {
+        foreach ($states as $state) {
             $state_val = $state['_id'];
-            if ($state['category'] === 'new')
-            {
+            if ($state['category'] === 'new') {
                 array_push($columns[0]['states'], $state_val);
-            }
-            else if ($state['category'] === 'inprogress')
-            {
+            } elseif ($state['category'] === 'inprogress') {
                 array_push($columns[1]['states'], $state_val);
-            }
-            else if ($state['category'] === 'completed')
-            {
+            } elseif ($state['category'] === 'completed') {
                 array_push($columns[2]['states'], $state_val);
             }
         }
 
         // only support for kanban type, fix me
-        $board = Board::create([ 
-            'project_key' => $project_key, 
-            'query' => [ 'subtask' => true ], 
+        $board = Board::create([
+            'project_key' => $project_key,
+            'query' => [ 'subtask' => true ],
             'columns' => $columns ] + $request->all());
 
         return Response()->json(['ecode' => 0, 'data' => $board]);
@@ -178,50 +163,42 @@ $example = [
     public function update(Request $request, $project_key, $id)
     {
         $board = Board::find($id);
-        if (!$board || $project_key != $board->project_key)
-        {
+        if (!$board || $project_key != $board->project_key) {
             throw new \UnexpectedValueException('the board does not exist or is not in the project.', -11601);
         }
 
         $updValues = [];
         $name = $request->input('name');
-        if (isset($name))
-        {
-            if (!$name)
-            {
+        if (isset($name)) {
+            if (!$name) {
                 throw new \UnexpectedValueException('the name can not be empty.', -11600);
             }
             $updValues['name'] = $name;
         }
 
         $description = $request->input('description');
-        if (isset($description))
-        {
+        if (isset($description)) {
             $updValues['description'] = $description;
         }
 
         $query = $request->input('query');
-        if (isset($query))
-        {
+        if (isset($query)) {
             // defaultly display subtask issue
             $updValues['query'] = [ 'subtask' => true ] + $query;
         }
 
         $filters = $request->input('filters');
-        if (isset($filters))
-        {
+        if (isset($filters)) {
             $updValues['filters'] = $filters;
         }
 
         $columns = $request->input('columns');
-        if (isset($columns))
-        {
+        if (isset($columns)) {
             $updValues['columns'] = $columns;
         }
 
         $display_fields = $request->input('display_fields');
-        if (isset($display_fields))
-        {
+        if (isset($display_fields)) {
             $updValues['display_fields'] = $display_fields ?: [];
         }
 
@@ -252,7 +229,7 @@ $example = [
     }
 
     /**
-     * rank the column issues 
+     * rank the column issues
      *
      * @param  string  $project_key
      * @param  string  $id
@@ -261,35 +238,30 @@ $example = [
     public function setRank(Request $request, $project_key, $id)
     {
         $current = $request->input('current') ?: '';
-        if (!$current)
-        {
+        if (!$current) {
             throw new \UnexpectedValueException('the ranked issue not be empty.', -11603);
         }
 
         $up = $request->input('up') ?: -1;
         $down = $request->input('down') ?: -1;
-        if ($up == -1 && $down == -1)
-        {
+        if ($up == -1 && $down == -1) {
             throw new \UnexpectedValueException('the ranked position can not be empty.', -11604);
         }
 
         $rankmap = BoardRankMap::where([ 'board_id' => $id ])->first();
-        if (!$rankmap || !isset($rankmap->rank))
-        {
+        if (!$rankmap || !isset($rankmap->rank)) {
             throw new \UnexpectedValueException('the rank list is not exist.', -11605);
         }
 
         $rank = $rankmap->rank;
         $curInd = array_search($current, $rank);
-        if ($curInd === false)
-        {
+        if ($curInd === false) {
             throw new \UnexpectedValueException('the issue is not found in the rank list.', -11606);
         }
 
         $blocks = [ $current ];
         $subtasks = Provider::getChildrenByParentNo($project_key, $current);
-        if ($subtasks)
-        {
+        if ($subtasks) {
             $rankedSubtasks = array_intersect($rank, $subtasks);
             $blocks = array_merge($blocks, $rankedSubtasks);
         }
@@ -297,61 +269,48 @@ $example = [
         // delete current issue from the rank
         array_splice($rank, $curInd, count($blocks));
 
-        if ($up != -1)
-        {
+        if ($up != -1) {
             $upInd = array_search($up, $rank);
 
             $subtasks = Provider::getChildrenByParentNo($project_key, $up);
             $intersects = array_intersect($rank, $subtasks);
 
-            if ($upInd === false && !$intersects)
-            {
+            if ($upInd === false && !$intersects) {
                 throw new \UnexpectedValueException('the ranked position is not found.', -11607);
-            }
-            else
-            {
+            } else {
                 $realUpInd = -1;
-                if ($intersects)
-                {
+                if ($intersects) {
                     $realUpInd = array_search(array_pop($intersects), $rank);
-                }
-                else
-                {
+                } else {
                     $realUpInd = $upInd;
                 }
                 // insert current issue into the rank
                 array_splice($rank, $realUpInd + 1, 0, $blocks);
             }
-        }
-        else
-        {
+        } else {
             $downInd = array_search($down, $rank);
-            if ($downInd !== false)
-            {
+            if ($downInd !== false) {
                 // insert current issue into the rank
                 array_splice($rank, $downInd, 0, $blocks);
-            }
-            else
-            {
+            } else {
                 $subtasks = Provider::getChildrenByParentNo($project_key, $down);
                 $intersects = array_intersect($rank, $subtasks);
 
-                if (!$intersects)
-                {
+                if (!$intersects) {
                     throw new \UnexpectedValueException('the ranked position is not found.', -11607);
                 }
-                $realDownInd = array_search(array_shift($intersects), $rank); 
+                $realDownInd = array_search(array_shift($intersects), $rank);
                 // insert current issue into the rank
                 array_splice($rank, $realDownInd, 0, $blocks);
             }
-        } 
+        }
 
-        $old_rank = BoardRankMap::where([ 'board_id' => $id ])->first(); 
+        $old_rank = BoardRankMap::where([ 'board_id' => $id ])->first();
         $old_rank && $old_rank->delete();
 
         BoardRankMap::create([ 'board_id' => $id, 'rank' => $rank ]);
 
-        $rankmap = BoardRankMap::where([ 'board_id' => $id ])->first(); 
+        $rankmap = BoardRankMap::where([ 'board_id' => $id ])->first();
         return Response()->json([ 'ecode' => 0, 'data' => $rankmap ]);
     }
 
@@ -362,15 +321,15 @@ $example = [
      * @param  string  $id
      * @return void
      */
-    public function recordAccess($project_key, $id) 
+    public function recordAccess($project_key, $id)
     {
         $record = AccessBoardLog::where([ 'board_id' => $id, 'user_id' => $this->user->id ])->first();
         $record && $record->delete();
 
-        AccessBoardLog::create([ 
-          'project_key' => $project_key, 
-          'user_id' => $this->user->id, 
-          'board_id' => $id, 
+        AccessBoardLog::create([
+          'project_key' => $project_key,
+          'user_id' => $this->user->id,
+          'board_id' => $id,
           'latest_access_time' => time() ]);
         return Response()->json(['ecode' => 0, 'data' => [ 'id' => $id ] ]);
     }
@@ -384,8 +343,7 @@ $example = [
     public function destroy($project_key, $id)
     {
         $board = Board::find($id);
-        if (!$board || $project_key != $board->project_key)
-        {
+        if (!$board || $project_key != $board->project_key) {
             throw new \UnexpectedValueException('the board does not exist or is not in the project.', -11601);
         }
 
@@ -397,6 +355,5 @@ $example = [
 
         Board::destroy($id);
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
-        
     }
 }

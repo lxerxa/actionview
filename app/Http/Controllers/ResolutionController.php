@@ -24,8 +24,7 @@ class ResolutionController extends Controller
     public function index($project_key)
     {
         $resolutions = Provider::getResolutionList($project_key);
-        foreach ($resolutions as $key => $resolution)
-        {
+        foreach ($resolutions as $key => $resolution) {
             $resolutions[$key]['is_used'] = $this->isFieldUsedByIssue($project_key, 'resolution', $resolution);
         }
         return Response()->json(['ecode' => 0, 'data' => $resolutions]);
@@ -40,13 +39,11 @@ class ResolutionController extends Controller
     public function store(Request $request, $project_key)
     {
         $name = $request->input('name');
-        if (!$name)
-        {
+        if (!$name) {
             throw new \UnexpectedValueException('the name can not be empty.', -12500);
         }
 
-        if (Provider::isResolutionExisted($project_key, $name))
-        {
+        if (Provider::isResolutionExisted($project_key, $name)) {
             throw new \UnexpectedValueException('resolution name cannot be repeated', -12501);
         }
 
@@ -82,25 +79,20 @@ class ResolutionController extends Controller
     public function update(Request $request, $project_key, $id)
     {
         $resolution = Resolution::find($id);
-        if (!$resolution || $project_key != $resolution->project_key)
-        {
+        if (!$resolution || $project_key != $resolution->project_key) {
             throw new \UnexpectedValueException('the resolution does not exist or is not in the project.', -12502);
         }
 
-        if (isset($resolution->key) && $resolution->key)
-        {
+        if (isset($resolution->key) && $resolution->key) {
             throw new \UnexpectedValueException('the resolution is built in the system.', -12504);
         }
 
         $name = $request->input('name');
-        if (isset($name))
-        {
-            if (!$name)
-            {
+        if (isset($name)) {
+            if (!$name) {
                 throw new \UnexpectedValueException('the name can not be empty.', -12500);
             }
-            if ($resolution->name !== $name && Provider::isResolutionExisted($project_key, $name))
-            {
+            if ($resolution->name !== $name && Provider::isResolutionExisted($project_key, $name)) {
                 throw new \UnexpectedValueException('resolution name cannot be repeated', -12501);
             }
         }
@@ -120,45 +112,40 @@ class ResolutionController extends Controller
     public function destroy($project_key, $id)
     {
         $resolution = Resolution::find($id);
-        if (!$resolution || $project_key != $resolution->project_key)
-        {
+        if (!$resolution || $project_key != $resolution->project_key) {
             throw new \UnexpectedValueException('the resolution does not exist or is not in the project.', -12502);
         }
 
-        if (isset($resolution->key) && in_array($resolution->key, [ 'Unresolved', 'Fixed' ]))
-        {
+        if (isset($resolution->key) && in_array($resolution->key, [ 'Unresolved', 'Fixed' ])) {
             throw new \UnexpectedValueException('the resolution is built in the system.', -12504);
         }
 
         $isUsed = $this->isFieldUsedByIssue($project_key, 'resolution', $resolution->toArray());
-        if ($isUsed)
-        {
+        if ($isUsed) {
             throw new \UnexpectedValueException('the resolution has been used in issue.', -12503);
         }
 
         Resolution::destroy($id);
 
         $resolution_property = ResolutionProperty::Where('project_key', $project_key)->first();
-        if ($resolution_property)
-        {
-             $properties = [];
-             if ($resolution_property->defaultValue == $id)
-             {
-                 $properties['defaultValue'] = '';
-             }
-             if ($resolution_property->sequence && in_array($id, $resolution_property->sequence))
-             {
-                 $sequence = [];
-                 foreach ($resolution_property->sequence as $val)
-                 {
-                     if ($val == $id) { continue; }
-                     $sequence[] = $val;
-                 }
-                 $properties['sequence'] = $sequence;
-             }
+        if ($resolution_property) {
+            $properties = [];
+            if ($resolution_property->defaultValue == $id) {
+                $properties['defaultValue'] = '';
+            }
+            if ($resolution_property->sequence && in_array($id, $resolution_property->sequence)) {
+                $sequence = [];
+                foreach ($resolution_property->sequence as $val) {
+                    if ($val == $id) {
+                        continue;
+                    }
+                    $sequence[] = $val;
+                }
+                $properties['sequence'] = $sequence;
+            }
 
-             $resolution_property->fill($properties);
-             $resolution_property->save();
+            $resolution_property->fill($properties);
+            $resolution_property->save();
         }
 
         // trigger to change resolution field config
@@ -174,12 +161,9 @@ class ResolutionController extends Controller
      */
     public function handle(Request $request, $project_key)
     {
-        if ($project_key === '$_sys_$')
-        {
+        if ($project_key === '$_sys_$') {
             return $this->handleSys($request, $project_key);
-        }
-        else
-        {
+        } else {
             return $this->handleProject($request, $project_key);
         }
     }
@@ -195,27 +179,22 @@ class ResolutionController extends Controller
         $properties = [];
         // set resolution sort.
         $sequence = $request->input('sequence');
-        if (isset($sequence))
-        {
+        if (isset($sequence)) {
             $properties['sequence'] = $sequence;
         }
 
         // set default value
         $defaultValue = $request->input('defaultValue');
-        if (isset($defaultValue))
-        {
+        if (isset($defaultValue)) {
             $properties['defaultValue'] = $defaultValue;
         }
 
         $resolution_property = ResolutionProperty::Where('project_key', $project_key)->first();
-        if ($resolution_property)
-        {
-             $resolution_property->fill($properties);
-             $resolution_property->save();
-        }
-        else
-        {
-             ResolutionProperty::create([ 'project_key' => $project_key ] + $properties);
+        if ($resolution_property) {
+            $resolution_property->fill($properties);
+            $resolution_property->save();
+        } else {
+            ResolutionProperty::create([ 'project_key' => $project_key ] + $properties);
         }
 
         return Response()->json(['ecode' => 0, 'data' => [ 'sequence' => $sequence ?: null, 'default' => $defaultValue ?: null ]]);
@@ -231,14 +210,11 @@ class ResolutionController extends Controller
     {
         // set type sort.
         $sequence = $request->input('sequence');
-        if (isset($sequence))
-        {
+        if (isset($sequence)) {
             $i = 1;
-            foreach ($sequence as $resolution_id)
-            {
+            foreach ($sequence as $resolution_id) {
                 $resolution = Resolution::find($resolution_id);
-                if (!$resolution || $resolution->project_key != $project_key)
-                {
+                if (!$resolution || $resolution->project_key != $project_key) {
                     continue;
                 }
                 $resolution->sn = $i++;
@@ -248,24 +224,18 @@ class ResolutionController extends Controller
 
         // set default value
         $default_resolution_id = $request->input('defaultValue');
-        if (isset($default_resolution_id))
-        {
+        if (isset($default_resolution_id)) {
             $resolution = Resolution::find($default_resolution_id);
-            if (!$resolution || $resolution->project_key != $project_key)
-            {
+            if (!$resolution || $resolution->project_key != $project_key) {
                 throw new \UnexpectedValueException('the resolution does not exist or is not in the project.', -12502);
             }
 
             $resolutions = Resolution::where('project_key', $project_key)->get();
-            foreach ($resolutions as $resolution)
-            {
-                if ($resolution->id == $default_resolution_id)
-                {
+            foreach ($resolutions as $resolution) {
+                if ($resolution->id == $default_resolution_id) {
                     $resolution->default = true;
                     $resolution->save();
-                }
-                else if (isset($resolution->default))
-                {
+                } elseif (isset($resolution->default)) {
                     $resolution->unset('default');
                 }
             }
@@ -281,21 +251,18 @@ class ResolutionController extends Controller
      */
     public function viewUsedInProject($project_key, $id)
     {
-        if ($project_key !== '$_sys_$')
-        {
+        if ($project_key !== '$_sys_$') {
             return Response()->json(['ecode' => 0, 'data' => [] ]);
         }
 
         $res = [];
         $projects = Project::all();
-        foreach($projects as $project)
-        {
+        foreach ($projects as $project) {
             $count = DB::collection('issue_' . $project->key)
                 ->where('resolution', $id)
                 ->where('del_flg', '<>', 1)
                 ->count();
-            if ($count > 0)
-            {
+            if ($count > 0) {
                 $res[] = [ 'key' => $project->key, 'name' => $project->name, 'status' => $project->status, 'issue_count' => $count ];
             }
         }
