@@ -316,7 +316,8 @@ class VersionController extends Controller
     public function updIssueResolveVersion($project_key, $source, $dest)
     {
         $issues = DB::collection('issue_' . $project_key)
-            ->where('resolve_version', 'Unresolved')
+            ->where('resolution', 'Unresolved')
+            ->where('resolve_version', $source)
             ->where('del_flg', '<>', 1)
             ->get();
         foreach ($issues as $issue)
