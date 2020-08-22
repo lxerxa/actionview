@@ -8,8 +8,10 @@ use Illuminate\Support\Facades\Event;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Events\WikiEvent;
+use App\Project\Eloquent\WikiFavorites;
 use App\Utils\File;
 use DB;
+use MongoDB\BSON\ObjectID;
 use Zipper;
 
 class WikiController extends Controller
@@ -220,6 +222,25 @@ class WikiController extends Controller
             });
         }
 
+        $favorite_wikis = WikiFavorites::where('project_key', $project_key)
+            ->where('user.id', $this->user->id)
+            ->get()
+            ->toArray();
+        $favorite_dids = array_column($favorite_wikis, 'wid');
+
+        $myfavorite = $request->input('myfavorite');
+        if (isset($myfavorite) && $myfavorite == '1')
+        {
+            $mode = 'search';
+            $favoritedIds = [];
+            foreach ($favorite_dids as $did)
+            {
+                $favoritedIds[] = new ObjectID($did);
+            }
+
+            $query->whereIn('_id', $favoritedIds);
+        }
+
         if ($directory !== '0')
         {
             $query = $query->where($mode === 'search' ? 'pt' : 'parent', $directory);
@@ -238,6 +259,20 @@ class WikiController extends Controller
         $limit = 1000; // fix me
         $query->take($limit);
         $documents = $query->get();
+
+        $favorite_wikis = WikiFavorites::where('project_key', $project_key)
+            ->where('user.id', $this->user->id)
+            ->get()
+            ->toArray();
+        $favorite_wids = array_column($favorite_wikis, 'wid');
+
+        foreach ($documents as $k => $d)
+        {
+            if (in_array($d['_id']->__toString(), $favorite_wids))
+            {
+                $documents[$k]['favorited'] = true;
+            }
+        }
 
         $path = [];
         $home = [];
@@ -551,6 +586,11 @@ class WikiController extends Controller
         if (!$document)
         {
             throw new \UnexpectedValueException('the object does not exist.', -11954);
+        }
+
+        if (WikiFavorites::where('wid', $id)->where('user.id', $this->user->id)->exists())
+        {
+            $document['favorited'] = true;
         }
 
         $newest = [];
@@ -1157,5 +1197,36 @@ class WikiController extends Controller
         }
 
         File::download($filename, $name);
+    }
+
+    /**
+     * favorite action.
+     *
+     * @param  string  $project_key
+     * @param  string  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function favorite(Request $request, $project_key, $id)
+    {
+        $document = DB::collection('wiki_' . $project_key)
+            ->where('_id', $id)
+            ->where('del_flag', '<>', 1)
+            ->first();
+        if (!$document)
+        {
+            throw new \UnexpectedValueException('the object does not exist.', -11954);
+        }
+
+        WikiFavorites::where('wid', $id)->where('user.id', $this->user->id)->delete();
+
+        $cur_user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+
+        $flag = $request->input('flag');
+        if (isset($flag) && $flag)
+        {
+            WikiFavorites::create([ 'project_key' => $project_key, 'wid' => $id, 'user' => $cur_user ]);
+        }
+
+        return Response()->json(['ecode' => 0, 'data' => ['id' => $id, 'user' => $cur_user, 'favorited' => $flag]]);
     }
 }
