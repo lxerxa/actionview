@@ -7,10 +7,12 @@ use Illuminate\Http\Request;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Events\DocumentEvent;
+use App\Project\Eloquent\DocumentFavorites;
 use App\Acl\Acl;
 use DB;
 use App\Utils\File;
 
+use MongoDB\BSON\ObjectID;
 use Zipper;
 
 class DocumentController extends Controller
@@ -209,7 +211,7 @@ class DocumentController extends Controller
         if (isset($uploader_id) && $uploader_id)
         {
             $mode = 'search';
-            $query->where('uploader.id', $uploader_id);
+            $query->where('uploader.id', $uploader_id == 'me' ? $this->user->id : $uploader_id);
         }
 
         $name = $request->input('name');
@@ -227,6 +229,25 @@ class DocumentController extends Controller
             $unit = substr($uploaded_at, -1);
             $val = abs(substr($uploaded_at, 0, -1));
             $query->where('uploaded_at', '>=', strtotime(date('Ymd', strtotime('-' . $val . ' ' . $unitMap[$unit]))));
+        }
+
+        $favorite_documents = DocumentFavorites::where('project_key', $project_key)
+            ->where('user.id', $this->user->id)
+            ->get()
+            ->toArray();
+        $favorite_dids = array_column($favorite_documents, 'did');
+
+        $myfavorite = $request->input('myfavorite');
+        if (isset($myfavorite) && $myfavorite == '1') 
+        {
+            $mode = 'search';
+            $favoritedIds = [];
+            foreach ($favorite_dids as $did)
+            {
+                $favoritedIds[] = new ObjectID($did);
+            }
+
+            $query->whereIn('_id', $favoritedIds);
         }
 
         if ($directory !== '0')
@@ -247,6 +268,14 @@ class DocumentController extends Controller
         $limit = 1000; // fix me
         $query->take($limit);
         $documents = $query->get();
+
+        foreach ($documents as $k => $d)
+        {
+            if (in_array($d['_id']->__toString(), $favorite_dids))
+            {
+                $documents[$k]['favorited'] = true;
+            }
+        }
 
         $path = [];
         if ($directory === '0')
@@ -546,6 +575,7 @@ class DocumentController extends Controller
     {
         $document = DB::collection('document_' . $project_key)
             ->where('_id', $id)
+            ->where('del_flag', '<>', 1)
             ->first();
         if (!$document)
         {
@@ -845,5 +875,36 @@ class DocumentController extends Controller
         }
 
         File::download($filename, $name);
+    }
+
+    /**
+     * favorite action.
+     *
+     * @param  string  $project_key
+     * @param  string  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function favorite(Request $request, $project_key, $id)
+    {
+        $document = DB::collection('document_' . $project_key)
+            ->where('_id', $id)
+            ->where('del_flag', '<>', 1)
+            ->first();
+        if (!$document)
+        {
+            throw new \UnexpectedValueException('the object does not exist.', -11902);
+        }
+
+        DocumentFavorites::where('did', $id)->where('user.id', $this->user->id)->delete();
+
+        $cur_user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+
+        $flag = $request->input('flag');
+        if (isset($flag) && $flag)
+        {
+            DocumentFavorites::create([ 'project_key' => $project_key, 'did' => $id, 'user' => $cur_user ]);
+        }
+
+        return Response()->json(['ecode' => 0, 'data' => ['id' => $id, 'user' => $cur_user, 'favorited' => $flag]]);
     }
 }
