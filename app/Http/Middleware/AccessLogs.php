@@ -34,12 +34,12 @@ class AccessLogs
     	$request_url = $request->getRequestUri();
         $module = $project_key = '';
         $matches = [];
-    	if (preg_match("/^\/api\/project\/([^\/]+)\/([^\/\?]+)(.*)/i", $request_url, $matches))
+    	if (preg_match("/^\/actionview\/api\/project\/([^\/]+)\/([^\/\?]+)(.*)/i", $request_url, $matches))
     	{
     	    $project_key = $matches[1];
     	    $module = $matches[2];
     	}
-        else if ($request_method == 'POST' && strpos($request_url, '/api/session') !== false)
+        else if ($request_method == 'POST' && strpos($request_url, '/actionview/api/session') !== false)
         {
             $module = 'login';
         }
