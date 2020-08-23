@@ -28,8 +28,42 @@ class UserController extends Controller
 
     public function __construct()
     {
-        $this->middleware('privilege:sys_admin', [ 'except' => [ 'register', 'search', 'show', 'sendMailForResetpwd', 'showResetpwd', 'doResetpwd' ] ]);
+        $this->middleware('privilege:sys_admin', [ 'except' => [ 'login', 'register', 'search', 'show', 'sendMailForResetpwd', 'showResetpwd', 'doResetpwd' ] ]);
         parent::__construct();
+    }
+
+    /**
+     * user login.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function login(Request $request)
+    {
+        $email = $request->input('email');
+        $password = $request->input('password');
+        if (!$email || !$password)
+        {
+            throw new \UnexpectedValueException('email or password cannot be empty.', -10003);
+        }
+
+        if (strpos($email, '@') === false)
+        {
+            $setting = SysSetting::first();
+            if ($setting && isset($setting->properties) && isset($setting->properties['login_mail_domain']))
+            {
+                $email = $email . '@' . $setting->properties['login_mail_domain'];
+            }
+        }
+
+        $user = Sentinel::authenticate([ 'email' => $email, 'password' => $password ]);
+        if ($user)
+        {
+            return Response()->json([ 'ecode' => 0, 'data' => $user ]);
+        }
+        else
+        {
+            return Response()->json([ 'ecode' => -10000, 'data' => [] ]);
+        }
     }
 
     /**
@@ -319,6 +353,8 @@ class UserController extends Controller
 
         $user = Sentinel::update($user, array_only($request->all(), ['first_name', 'email', 'phone', 'invalid_flag']));
         $user->status = $user->invalid_flag === 1 ? 'invalid' : (Activation::completed($user) ? 'active' : 'unactivated');
+
+        $user->groups = array_column(Group::whereRaw([ 'users' => $user->id ])->get([ 'name' ])->toArray() ?: [], 'name');
 
         return Response()->json([ 'ecode' => 0, 'data' => $user ]);
     }
