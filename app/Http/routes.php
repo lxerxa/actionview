@@ -22,6 +22,7 @@ Route::post($api_prefix . '/session', 'SessionController@create');
 Route::get($api_prefix . '/session', 'SessionController@getSess');
 Route::delete($api_prefix . '/session', 'SessionController@destroy');
 
+Route::post($api_prefix . '/user/login', 'UserController@login');
 Route::post($api_prefix . '/user/register', 'UserController@register');
 
 Route::post($api_prefix .'/user/resetpwdsendmail', 'UserController@sendMailForResetpwd');
@@ -218,6 +219,7 @@ Route::group([ 'prefix' => $api_prefix . '/project/{project_key}', 'middleware' 
     Route::get('file/{id}', [ 'middleware' => 'privilege:download_file', 'uses' => 'FileController@download' ]);
     Route::delete('file/{id}', 'FileController@delete');
 
+    Route::post('document/{id}/favorite', 'DocumentController@favorite');
     Route::post('document/{id}/upload', 'DocumentController@upload');
     Route::get('document/{id}/download', 'DocumentController@download');
     Route::get('document/{id}/downloadthumbnails', 'DocumentController@downloadThumbnails');
@@ -233,6 +235,7 @@ Route::group([ 'prefix' => $api_prefix . '/project/{project_key}', 'middleware' 
 
     Route::get('wiki/dirtree', 'WikiController@getDirTree');
     Route::get('wiki/{id}/dirs', 'WikiController@getDirChildren');
+    Route::post('wiki/{id}/favorite', 'WikiController@favorite');
     Route::post('wiki/{id}/upload', 'WikiController@upload');
     Route::get('wiki/{id}/download', 'WikiController@download2');
     Route::get('wiki/{id}/file/{fid}/download', 'WikiController@download');
