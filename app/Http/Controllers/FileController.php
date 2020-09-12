@@ -149,7 +149,14 @@ class FileController extends Controller
             throw new \UnexpectedValueException('file does not exist.', -15100);
         }
 
-        FileUtil::download($filename, $file->name);
+        if ($file->type == 'application/pdf')
+        {
+            FileUtil::pdfPreview($filename, $file->name);
+        }
+        else
+        {
+            FileUtil::download($filename, $file->name);
+        }
     }
 
     /**

@@ -777,7 +777,7 @@ class DocumentController extends Controller
      * @param  String  $id
      * @return \Illuminate\Http\Response
      */
-    public function download(Request $request, $project_key, $id)
+    public function download(Request $request, $project_key, $id, $name='')
     {
         set_time_limit(0);
 
@@ -795,7 +795,7 @@ class DocumentController extends Controller
         }
         else
         {
-            $this->downloadFile($document['name'], $document['index']);
+            $this->downloadFile($document['name'], $document['index'], !!$name);
         }
     }
 
@@ -865,7 +865,7 @@ class DocumentController extends Controller
      * @param  String  $index
      * @return \Illuminate\Http\Response
      */
-    public function downloadFile($name, $index)
+    public function downloadFile($name, $index, $isPdfPreview)
     {
         $filepath = config('filesystems.disks.local.root', '/tmp') . '/' . substr($index, 0, 2);
         $filename = $filepath . '/' . $index;
@@ -874,7 +874,15 @@ class DocumentController extends Controller
             throw new \UnexpectedValueException('file does not exist.', -11904);
         }
 
-        File::download($filename, $name);
+        $fileData = pathinfo($name);
+        if (strtolower($fileData['extension']) == 'pdf' && $isPdfPreview)
+        {
+            File::pdfPreview($filename, $name);
+        }
+        else
+        {
+            File::download($filename, $name);
+        }
     }
 
     /**
