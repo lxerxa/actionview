@@ -216,12 +216,12 @@ Route::group([ 'prefix' => $api_prefix . '/project/{project_key}', 'middleware' 
 
     Route::post('file', [ 'middleware' => 'privilege:upload_file', 'uses' => 'FileController@upload' ]);
     Route::get('file/{id}/thumbnail', 'FileController@downloadThumbnail');
-    Route::get('file/{id}', [ 'middleware' => 'privilege:download_file', 'uses' => 'FileController@download' ]);
+    Route::get('file/{id}/{name?}', [ 'middleware' => 'privilege:download_file', 'uses' => 'FileController@download' ]);
     Route::delete('file/{id}', 'FileController@delete');
 
     Route::post('document/{id}/favorite', 'DocumentController@favorite');
     Route::post('document/{id}/upload', 'DocumentController@upload');
-    Route::get('document/{id}/download', 'DocumentController@download');
+    Route::get('document/{id}/download/{name?}', 'DocumentController@download');
     Route::get('document/{id}/downloadthumbnails', 'DocumentController@downloadThumbnails');
     Route::get('document/options', 'DocumentController@getOptions');
     Route::get('document/directory/{id}', 'DocumentController@index');
