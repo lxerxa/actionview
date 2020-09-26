@@ -31,7 +31,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('email:send')
                  ->everyMinute();
         $schedule->command('sprint:snap')
-                 ->hourly();
+                 ->dailyAt('23:20');
         $schedule->command('ldap:sync')
                  ->daily();
         $schedule->command('logs:remove')

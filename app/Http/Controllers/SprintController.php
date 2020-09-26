@@ -611,12 +611,19 @@ class SprintController extends Controller
             ->orderBy('day', 'asc')
             ->get();
 
+        $today = date('Y/m/d');
         $issue_count_remaining = [];
         $story_points_remaining = [];
-	$issue_count_remaining[] = [ 'day' => '', 'value' => $origin_issue_count ];
-	$story_points_remaining[] = [ 'day' => '', 'value' => $origin_story_points ];
+        $issue_count_remaining[] = [ 'day' => '', 'value' => $origin_issue_count ];
+        $story_points_remaining[] = [ 'day' => '', 'value' => $origin_story_points ];
+
         foreach($sprint_day_log as $daylog)
         {
+            if ($daylog->day == $today)
+            {
+                continue;
+            }
+
             $incompleted_issue_num = 0;
             $incompleted_story_points = 0;
             $issues = isset($daylog->issues) ? $daylog->issues : []; 
@@ -631,7 +638,29 @@ class SprintController extends Controller
             $issue_count_remaining[] = [ 'day' => substr($daylog->day, 5), 'value' => $incompleted_issue_num, 'notWorking' => isset($workingDays[$daylog->day]) ? ($workingDays[$daylog->day] + 1) % 2 : 0 ]; 
             $story_points_remaining[] = [ 'day' => substr($daylog->day, 5), 'value' => $incompleted_story_points, 'notWorking' => isset($workingDays[$daylog->day]) ? ($workingDays[$daylog->day] + 1) % 2 : 0 ]; 
         }
-        // remaining start
+
+        if ($sprint->complete_time > time())
+        {
+            $incompleted_issue_num = 0;
+            $incompleted_story_points = 0;
+
+            $issue_nos = isset($sprint->issues) ? $sprint->issues : [];
+            $issues = DB::collection('issue_' . $project_key)
+                ->where([ 'no' => [ '$in' => $issue_nos ] ])
+                ->get();
+            foreach ($issues as $issue)
+            {
+                $tmp_state = isset($issue['state']) ? $issue['state'] : '';
+                $tmp_story_points = isset($issue['story_points']) ? $issue['story_points'] : 0;
+                if (!in_array($tmp_state , $last_column_states))
+                {
+                    $incompleted_issue_num++;
+                    $incompleted_story_points += $tmp_story_points;
+                }
+            }
+            $issue_count_remaining[] = [ 'day' => substr($today, 5), 'value' => $incompleted_issue_num, 'notWorking' => isset($workingDays[$today]) ? ($workingDays[$today] + 1) % 2 : 0 ]; 
+            $story_points_remaining[] = [ 'day' => substr($today, 5), 'value' => $incompleted_story_points, 'notWorking' => isset($workingDays[$today]) ? ($workingDays[$today] + 1) % 2 : 0 ]; 
+        }
 
         return Response()->json([ 'ecode' => 0, 'data' => [ 'issue_count' => [ 'guideline' => $issue_count_guideline, 'remaining' => $issue_count_remaining ], 'story_points' => [ 'guideline' => $story_points_guideline, 'remaining' => $story_points_remaining ] ] ]);
     }
