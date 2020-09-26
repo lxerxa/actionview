@@ -91,6 +91,82 @@ class ProjectController extends Controller
 
         $pkeys = array_values(array_unique(array_column($user_projects, 'project_key')));
 
+        $sortkey = $request->input('sortkey');
+        if (isset($sortkey) && $sortkey)
+        {
+            $pkey_cnts = [];
+            if ($sortkey == 'all_issues_cnt')
+            {
+                foreach($pkeys as $pkey)
+                {
+                    $pkey_cnts[$pkey] = DB::collection('issue_' . $pkey)
+                        ->where('del_flg', '<>', 1)
+                        ->count();
+                }
+            }
+            else if ($sortkey == 'unresolved_issues_cnt')
+            {
+                foreach($pkeys as $pkey)
+                {
+                    $pkey_cnts[$pkey] = DB::collection('issue_' . $pkey)
+                        ->where('del_flg', '<>', 1)
+                        ->where('resolution', 'Unresolved')
+                        ->count();
+                }
+            }
+            else if ($sortkey == 'assigntome_issues_cnt')
+            {
+                foreach($pkeys as $pkey)
+                {
+                    $pkey_cnts[$pkey] = DB::collection('issue_' . $pkey)
+                        ->where('del_flg', '<>', 1)
+                        ->where('resolution', 'Unresolved')
+                        ->where('assignee.id', $this->user->id)
+                        ->count();
+                }
+            }
+            else if ($sortkey == 'activity')
+            {
+                $twoWeeksAgo = strtotime(date('Ymd', strtotime('-2 week')));
+                foreach($pkeys as $pkey)
+                {
+                    $pkey_cnts[$pkey] = DB::collection('activity_' . $pkey)
+                        ->where('created_at', '>=', $twoWeeksAgo)
+                        ->count();
+                }
+            }
+            else if ($sortkey == 'key_asc')
+            {
+                sort($pkeys);
+            }
+            else if ($sortkey == 'key_desc')
+            {
+                rsort($pkeys);
+            }
+            else if ($sortkey == 'create_time_asc')
+            {
+                $project_keys = Project::whereIn('key', $pkeys)
+                    ->orderBy('created_at', 'asc')
+                    ->get([ 'key' ])
+                    ->toArray();
+                $pkeys = array_column($project_keys, 'key');
+            }
+            else if ($sortkey == 'create_time_desc')
+            {
+                $project_keys = Project::whereIn('key', $pkeys)
+                    ->orderBy('created_at', 'desc')
+                    ->get([ 'key' ])
+                    ->toArray();
+                $pkeys = array_column($project_keys, 'key');
+            }
+
+            if ($pkey_cnts) 
+            {
+                arsort($pkey_cnts);
+                $pkeys = array_keys($pkey_cnts);
+            }
+        }
+
         $offset_key = $request->input('offset_key');
         if (isset($offset_key))
         {
@@ -108,7 +184,7 @@ class ProjectController extends Controller
         $limit = $request->input('limit');
         if (!isset($limit))
         {
-            $limit = 36;
+            $limit = 24;
         }
         $limit = intval($limit);
 
@@ -157,6 +233,76 @@ class ProjectController extends Controller
         $allow_create_project = isset($syssetting->properties['allow_create_project']) ? $syssetting->properties['allow_create_project'] : 0;
 
         return Response()->json([ 'ecode' => 0, 'data' => $projects, 'options' => [ 'limit' => $limit, 'allow_create_project' => $allow_create_project ] ]);
+    }
+
+    /**
+     * get the stats of the projects.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function stats(Request $request)
+    {
+    	$keys = $request->input('keys');
+
+        $trend = [];
+        $t = strtotime('-2 week');
+        while ($t <= time())
+        {
+            $ymd = date('Y/m/d', $t);
+            $trend[$ymd] = [ 'new' => 0 ];
+            $t += 24 * 3600;
+        }
+
+        $twoWeeksAgo = strtotime(date('Ymd', strtotime('-2 week')));
+
+    	$stats = [];
+
+    	$pkeys = explode(',', $keys);
+    	foreach ($pkeys as $pkey) 
+    	{
+    	    $all_cnt = DB::collection('issue_' . $pkey)
+    	        ->where('del_flg', '<>', 1)
+    	        ->count();
+
+    	    $unresolved_cnt = DB::collection('issue_' . $pkey)
+    	        ->where('del_flg', '<>', 1)
+    	        ->where('resolution', 'Unresolved')
+    	        ->count();
+
+    	    $assigntome_cnt = DB::collection('issue_' . $pkey)
+    	        ->where('del_flg', '<>', 1)
+    	        ->where('resolution', 'Unresolved')
+    	        ->where('assignee.id', $this->user->id)
+    	        ->count(); 
+
+    	    $trend_issues = DB::collection('issue_' . $pkey)
+    	        ->where('created_at', '>=', $twoWeeksAgo)
+    	        ->where('del_flg', '<>', 1)
+    	        ->get([ 'created_at' ]);
+
+    	    $tmp_trend = $trend;
+    	    foreach ($trend_issues as $issue) 
+    	    {
+                $created_date = date('Y/m/d', $issue['created_at']);
+                $tmp_trend[$created_date]['new'] += 1;
+    	    }
+
+    	    $new_trend = [];
+    	    foreach($tmp_trend as $day => $new_cnt)
+    	    {
+    	    	$new_trend[] = [ 'day' => $day, 'new' => $new_cnt['new'] ];
+    	    }
+
+    	    $stats[$pkey] = [ 'all' => $all_cnt, 'unresolved' => $unresolved_cnt, 'assigntome' => $assigntome_cnt, 'trend' => $new_trend ];
+        }
+
+        $new_stats = [];
+        foreach ($stats as $key => $val) 
+        {
+            $new_stats[] = [ 'key' => $key, 'stats' => $val ];
+        }
+
+        return  Response()->json([ 'ecode' => 0, 'data' => $new_stats ]);
     }
 
     /**

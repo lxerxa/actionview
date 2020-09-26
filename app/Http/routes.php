@@ -37,6 +37,7 @@ Route::group([ 'prefix' => $api_prefix, 'middleware' => 'can' ], function () {
     // project route
     Route::get('myproject', 'ProjectController@myproject');
     Route::get('project/recent', 'ProjectController@recent');
+    Route::get('project/stats', 'ProjectController@stats');
     Route::get('project', 'ProjectController@index');
     Route::get('project/checkkey/{key}', 'ProjectController@checkKey');
     Route::get('project/options', 'ProjectController@getOptions');
