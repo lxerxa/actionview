@@ -363,10 +363,15 @@ class SendEmails extends Command
 
         $uids = Acl::getUserIdsByPermission('view_project', $project->key);
 
-        $to_users = EloquentUser::find(array_unique($uids));
+        $to_users = EloquentUser::find(array_values(array_unique($uids)));
 
         foreach ($to_users as $to_user)
         {
+            if ($to_user->invalid_flag == 1)
+            {
+                continue;
+            }
+
             $from = $activity['user']['name'];
             $to = $to_user['email'];
             try {
