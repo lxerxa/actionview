@@ -568,18 +568,25 @@ class ProjectController extends Controller
         $insValues['key'] = $key;
 
         $principal = $request->input('principal');
-        if (!isset($principal) || !$principal)
-        {
-            $insValues['principal'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        if (isset($principal) && $principal)
+        { 
+            if ($principal == 'self')
+            {
+                $insValues['principal'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+            }
+            else
+            {
+                $principal_info = Sentinel::findById($principal);
+                if (!$principal_info)
+                {
+                    throw new \InvalidArgumentException('the user is not exists.', -14003);
+                }
+                $insValues['principal'] = [ 'id' => $principal_info->id, 'name' => $principal_info->first_name, 'email' => $principal_info->email ];
+            }
         }
         else
         {
-            $principal_info = Sentinel::findById($principal);
-            if (!$principal_info)
-            {
-                throw new \InvalidArgumentException('the user is not exists.', -14003);
-            }
-            $insValues['principal'] = [ 'id' => $principal_info->id, 'name' => $principal_info->first_name, 'email' => $principal_info->email ];
+            $insValues['principal'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
         }
 
         $description = $request->input('description');
