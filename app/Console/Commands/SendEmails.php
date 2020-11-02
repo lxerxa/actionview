@@ -520,6 +520,11 @@ class SendEmails extends Command
         $to_users = EloquentUser::find(array_values(array_unique(array_filter($uids))));
         foreach ($to_users as $to_user)
         {
+            if ($to_user->invalid_flag == 1)
+            {
+                continue;
+            }
+
             $new_data = $data;
             if (in_array($to_user->id, $atWho))
             {
