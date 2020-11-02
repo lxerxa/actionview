@@ -65,6 +65,7 @@ Route::group([ 'prefix' => $api_prefix, 'middleware' => 'can' ], function () {
     Route::post('calendar/sync', 'CalendarController@sync');
 
     Route::get('group/search', 'GroupController@search');
+    Route::get('mygroup', 'GroupController@mygroup');
     Route::post('group/batch/delete', 'GroupController@delMultiGroups');
     Route::resource('group', 'GroupController');
 
