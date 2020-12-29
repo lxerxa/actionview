@@ -28,82 +28,105 @@ class FileController extends Controller
         {
             throw new \UnexpectedValueException('the user has not the writable permission to the directory.', -15103);
         }
-
-        $thumbnail_size = 190;
-
-        $fields = array_keys($_FILES); 
-        $field = array_pop($fields);
-        if (empty($_FILES) || $_FILES[$field]['error'] > 0)
+        if (empty($_FILES))
         {
             throw new \UnexpectedValueException('upload file errors.', -15101);
         }
 
-        $basename = md5(microtime() . $_FILES[$field]['name']);
-        $sub_save_path = config('filesystems.disks.local.root', '/tmp') . '/' . substr($basename, 0, 2) . '/';
-        if (!is_dir($sub_save_path))
+        $thumbnail_size = 190;
+        $uploaded_files = [];
+        foreach ($_FILES as $field => $tmpfile)
         {
-            @mkdir($sub_save_path);
-        }
-        $filename = '/tmp/' . $basename;
-        move_uploaded_file($_FILES[$field]['tmp_name'], $filename);
-        $data = [];
-        $data['name']    = $_FILES[$field]['name'];
-        $data['size']    = $_FILES[$field]['size'];
-        $data['type']    = $_FILES[$field]['type'];
-        $data['index']   = $basename; 
-        if (in_array($_FILES[$field]['type'], [ 'image/jpeg', 'image/jpg', 'image/png', 'image/gif' ]))
-        {
-            $size = getimagesize($filename);
-            $width = $size[0]; $height = $size[1];
-            $scale = $width < $height ? $height : $width;
-            $thumbnails_width = floor($thumbnail_size * $width / $scale);
-            $thumbnails_height = floor($thumbnail_size * $height / $scale);
-            $thumbnails_filename = $filename . '_thumbnails';
-            if ($scale <= $thumbnail_size)
+            if ($tmpfile['error'] > 0)
             {
-                @copy($filename, $thumbnails_filename);
+                continue;
             }
-            else if ($_FILES[$field]['type'] == 'image/jpeg' || $_FILES[$field]['type'] == 'image/jpg')
-            {
-                $src_image = imagecreatefromjpeg($filename);
-                $dst_image = imagecreatetruecolor($thumbnails_width, $thumbnails_height);
-                imagecopyresized($dst_image, $src_image, 0, 0, 0, 0, $thumbnails_width, $thumbnails_height, $width, $height);
-                imagejpeg($dst_image, $thumbnails_filename);
-            }
-            else if ($_FILES[$field]['type'] == 'image/png')
-            {
-                $src_image = imagecreatefrompng($filename);
-                $dst_image = imagecreatetruecolor($thumbnails_width, $thumbnails_height);
-                imagecopyresized($dst_image, $src_image, 0, 0, 0, 0, $thumbnails_width, $thumbnails_height, $width, $height);
-                imagepng($dst_image, $thumbnails_filename);
-            }
-            else if ($_FILES[$field]['type'] == 'image/gif')
-            {
-                $src_image = imagecreatefromgif($filename);
-                $dst_image = imagecreatetruecolor($thumbnails_width, $thumbnails_height);
-                imagecopyresized($dst_image, $src_image, 0, 0, 0, 0, $thumbnails_width, $thumbnails_height, $width, $height);
-                imagegif($dst_image, $thumbnails_filename);
-            }
-            else 
-            {
-                @copy($filename, $thumbnails_filename);
-            }
-            $data['thumbnails_index'] = $basename . '_thumbnails';
-            // move the thumbnails
-            @rename($thumbnails_filename, $sub_save_path . $data['thumbnails_index']);
-        }
-        // move original file
-        @rename($filename, $sub_save_path . $basename);
-        $data['uploader'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
-        $file = File::create($data);
 
-        $issue_id = $request->input('issue_id');
-        if (isset($issue_id) && $issue_id)
-        {
-            Event::fire(new FileUploadEvent($project_key, $issue_id, $field, $file->id, $data['uploader']));
+            $basename = md5(microtime() . $tmpfile['name']);
+            $sub_save_path = config('filesystems.disks.local.root', '/tmp') . '/' . substr($basename, 0, 2) . '/';
+            if (!is_dir($sub_save_path))
+            {
+                @mkdir($sub_save_path);
+            }
+            $filename = '/tmp/' . $basename;
+            move_uploaded_file($tmpfile['tmp_name'], $filename);
+
+            $data = [];
+            $data['name']    = $tmpfile['name'];
+            $data['size']    = $tmpfile['size'];
+            $data['type']    = $tmpfile['type'];
+            $data['index']   = $basename; 
+            if (in_array($tmpfile['type'], [ 'image/jpeg', 'image/jpg', 'image/png', 'image/gif' ]))
+            {
+                $size = getimagesize($filename);
+                $width = $size[0]; $height = $size[1];
+                $scale = $width < $height ? $height : $width;
+                $thumbnails_width = floor($thumbnail_size * $width / $scale);
+                $thumbnails_height = floor($thumbnail_size * $height / $scale);
+                $thumbnails_filename = $filename . '_thumbnails';
+                if ($scale <= $thumbnail_size)
+                {
+                    @copy($filename, $thumbnails_filename);
+                }
+                else if ($tmpfile['type'] == 'image/jpeg' || $tmpfile['type'] == 'image/jpg')
+                {
+                    $src_image = imagecreatefromjpeg($filename);
+                    $dst_image = imagecreatetruecolor($thumbnails_width, $thumbnails_height);
+                    imagecopyresized($dst_image, $src_image, 0, 0, 0, 0, $thumbnails_width, $thumbnails_height, $width, $height);
+                    imagejpeg($dst_image, $thumbnails_filename);
+                }
+                else if ($tmpfile['type'] == 'image/png')
+                {
+                    $src_image = imagecreatefrompng($filename);
+                    $dst_image = imagecreatetruecolor($thumbnails_width, $thumbnails_height);
+                    imagecopyresized($dst_image, $src_image, 0, 0, 0, 0, $thumbnails_width, $thumbnails_height, $width, $height);
+                    imagepng($dst_image, $thumbnails_filename);
+                }
+                else if ($tmpfile['type'] == 'image/gif')
+                { 
+                    $src_image = imagecreatefromgif($filename);
+                    $dst_image = imagecreatetruecolor($thumbnails_width, $thumbnails_height);
+                    imagecopyresized($dst_image, $src_image, 0, 0, 0, 0, $thumbnails_width, $thumbnails_height, $width, $height);
+                    imagegif($dst_image, $thumbnails_filename);
+                }
+                else 
+                {
+                    @copy($filename, $thumbnails_filename);
+                }
+                $data['thumbnails_index'] = $basename . '_thumbnails';
+                // move the thumbnails
+                @rename($thumbnails_filename, $sub_save_path . $data['thumbnails_index']);
+            }
+
+            // move original file
+            @rename($filename, $sub_save_path . $basename);
+            $data['uploader'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+            $file = File::create($data);
+
+            $uploaded_files[] = $file;
+
+            $issue_id = $request->input('issue_id');
+            if (isset($issue_id) && $issue_id)
+            {
+                Event::fire(new FileUploadEvent($project_key, $issue_id, $field, $file->id, $data['uploader']));
+            }
         }
 
-        return Response()->json([ 'ecode' => 0, 'data' => [ 'field' => $field, 'file' => File::find($file->id), 'filename' => '/actionview/api/project/' . $project_key . '/file/' . $file->id ] ]);
+        if (count($uploaded_files) > 1) 
+        {
+            $data = [];
+            foreach ($uploaded_files as $file) 
+            {
+                $data[] = [ 'file' => $file, 'filename' => '/actionview/api/project/' . $project_key . '/file/' . $file->id ];
+            }
+            return Response()->json([ 'ecode' => 0, 'data' => $data ]);
+        }
+        else 
+        {
+            $file = array_pop($uploaded_files);
+            $data = [ 'field' => $field, 'file' => $file, 'filename' => '/actionview/api/project/' . $project_key . '/file/' . $file->id ];
+            return Response()->json([ 'ecode' => 0, 'data' => $data ]);
+        }
     }
 
     /**
