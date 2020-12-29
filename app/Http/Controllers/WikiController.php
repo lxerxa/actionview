@@ -209,6 +209,13 @@ class WikiController extends Controller
             $query = $query->where('name', 'like', '%' . $name . '%');
         }
 
+        $contents = $request->input('contents');
+        if (isset($contents) && $contents)
+        {
+            $mode = 'search';
+            $query = $query->where('contents', 'like', '%' . $contents . '%');
+        }
+
         $updated_at = $request->input('updated_at');
         if (isset($updated_at) && $updated_at)
         {
