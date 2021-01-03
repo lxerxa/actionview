@@ -91,7 +91,7 @@ Route::group([ 'prefix' => $api_prefix, 'middleware' => 'can' ], function () {
 });
 
 // project config
-Route::group([ 'prefix' => $api_prefix . '/project/{project_key}', 'middleware' => [ 'can', 'privilege:manage_project' ] ], function () {
+Route::group([ 'prefix' => $api_prefix . '/project/{project_key}', 'middleware' => [ 'can', 'checkProjectStatus', 'privilege:manage_project' ] ], function () {
     // project type config
     Route::resource('type', 'TypeController');
     Route::post('type/batch', 'TypeController@handle');
@@ -137,7 +137,7 @@ Route::group([ 'prefix' => $api_prefix . '/project/{project_key}', 'middleware' 
     Route::resource('labels', 'LabelsController');
 });
 
-Route::group([ 'prefix' => $api_prefix . '/project/{project_key}', 'middleware' => [ 'can', 'privilege:view_project' ] ], function () {
+Route::group([ 'prefix' => $api_prefix . '/project/{project_key}', 'middleware' => [ 'can', 'checkProjectStatus', 'privilege:view_project' ] ], function () {
     // project summary 
     Route::get('summary', 'SummaryController@index');
     // config summary 
