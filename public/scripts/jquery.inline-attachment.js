@@ -305,7 +305,7 @@
     if (this.settings.onFileUploadResponse.call(this, xhr) !== false) {
       var res = JSON.parse(xhr.responseText), result = {};
 
-      result[this.settings.jsonFieldName] = document.location.protocol + '//' + window.location.host + res['data'][this.settings.jsonFieldName];
+      result[this.settings.jsonFieldName] = res['data'][this.settings.jsonFieldName];
       result['error'] = res['data']['errmsg'];
 
       var filename = result[this.settings.jsonFieldName];
