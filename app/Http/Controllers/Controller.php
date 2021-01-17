@@ -308,7 +308,7 @@ class Controller extends BaseController
                     }
                 }
             }
-            else if (in_array($key_type_fields[$key], [ 'Text', 'TextArea', 'Url' ]))
+            else if (in_array($key_type_fields[$key], [ 'Text', 'TextArea', 'RichTextEditor', 'Url' ]))
             {
                 $and[] = [ $key => [ '$regex' => $val ] ];
             }
