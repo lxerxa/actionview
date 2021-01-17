@@ -656,7 +656,7 @@ class DocumentController extends Controller
 
         $data = [];
 
-        $thumbnail_size = 190;
+        $thumbnail_size = 200;
         if (in_array($_FILES[$field]['type'], [ 'image/jpeg', 'image/jpg', 'image/png', 'image/gif' ]))
         {
             $size = getimagesize($filename);

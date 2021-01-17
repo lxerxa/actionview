@@ -33,7 +33,7 @@ class FileController extends Controller
             throw new \UnexpectedValueException('upload file errors.', -15101);
         }
 
-        $thumbnail_size = 190;
+        $thumbnail_size = 200;
         $uploaded_files = [];
         foreach ($_FILES as $field => $tmpfile)
         {
