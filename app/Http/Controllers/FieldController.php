@@ -52,6 +52,13 @@ class FieldController extends Controller
         'orderBy',
         'stat_x',
         'stat_y',
+        'stat_time',
+        'stat_dimension',
+        'is_accu',
+        'interval',
+        'recorded_at',
+        'scale',
+        'requested_at',
     ];
 
     private $sys_fields = [
@@ -81,6 +88,7 @@ class FieldController extends Controller
         'Number', 
         'Text', 
         'TextArea', 
+        'RichTextEditor',
         'Select', 
         'MultiSelect', 
         'RadioGroup', 
@@ -320,7 +328,7 @@ class FieldController extends Controller
             }
         }
 
-        $mlTypes = [ 'Text', 'TextArea' ];
+        $mlTypes = [ 'Text', 'TextArea', 'RichTextEditor' ];
         if (in_array($field->type, $mlTypes))
         {
             $maxLength = $request->input('maxLength');
