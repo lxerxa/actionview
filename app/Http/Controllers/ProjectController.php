@@ -61,7 +61,7 @@ class ProjectController extends Controller
         foreach ($new_accessed_pkeys as $pkey)
         {
             $project = Project::where('key', $pkey)->first();
-            if (!$project || $project->status === 'closed') 
+            if (!$project || $project->status != 'active') 
             {
                 continue;
             }
@@ -644,10 +644,10 @@ class ProjectController extends Controller
             return Response()->json(['ecode' => -14004, 'emsg' => 'the project does not exist.']);
         }
 
-        if ($project->status !== 'active')
-        {
-            return Response()->json(['ecode' => -14009, 'emsg' => 'the project has been closed.']);
-        }
+        //if ($project->status !== 'active')
+        //{
+        //    return Response()->json(['ecode' => -14009, 'emsg' => 'the project has been archived.']);
+        //}
 
         // get action allow of the project.
         $permissions = Acl::getPermissions($this->user->id, $project->key);
@@ -655,6 +655,11 @@ class ProjectController extends Controller
         {
             !in_array('view_project', $permissions) && $permissions[] = 'view_project';
             !in_array('manage_project', $permissions) && $permissions[] = 'manage_project';
+        }
+
+        if ($project->status != 'active')
+        {
+            $permissions = array_values(array_intersect($permissions, [ 'view_project', 'download_file' ]));
         }
 
         //if (!$permissions)
@@ -686,7 +691,7 @@ class ProjectController extends Controller
         //$types = Provider::getTypeListExt($project->key, [ 'assignee' => $users, 'state' => $states, 'resolution' => $resolutions, 'priority' => $priorities, 'version' => $versions, 'module' => $modules ]);
 
         // record the project access date
-        if (in_array('view_project', $permissions))
+        if (in_array('view_project', $permissions) && $project->status == 'active')
         {
             AccessProjectLog::where('project_key', $key)
                 ->where('user_id', $this->user->id)
@@ -740,7 +745,7 @@ class ProjectController extends Controller
         }
 
         $status = $request->input('status');
-        if (isset($status) && in_array($status, [ 'active', 'closed' ]))
+        if (isset($status) && in_array($status, [ 'active', 'archived' ]))
         {
             $updValues['status'] = $status;
         }
@@ -767,7 +772,9 @@ class ProjectController extends Controller
             }
         }
 
-        return Response()->json([ 'ecode' => 0, 'data' => Project::find($id) ]);
+        return $this->show($project->key);
+
+        //return Response()->json([ 'ecode' => 0, 'data' => Project::find($id) ]);
     }
 
     /**
