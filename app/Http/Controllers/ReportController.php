@@ -25,7 +25,7 @@ class ReportController extends Controller
     private $default_filters = [
         'issues' => [
             [ 'id' => 'all_by_type', 'name' => '全部问题/按类型', 'query' => [ 'stat_x' => 'type', 'stat_y' => 'type' ] ], 
-            [ 'id' => 'unresolved_by_assignee', 'name' => '未解决的/按经办人', 'query' => [ 'stat_x' => 'assignee', 'stat_y' => 'assignee', 'resolution' => 'Unresolved' ] ], 
+            [ 'id' => 'unresolved_by_assignee', 'name' => '未解决的/按负责人', 'query' => [ 'stat_x' => 'assignee', 'stat_y' => 'assignee', 'resolution' => 'Unresolved' ] ], 
             [ 'id' => 'unresolved_by_priority', 'name' => '未解决的/按优先级', 'query' => [ 'stat_x' => 'priority', 'stat_y' => 'priority', 'resolution' => 'Unresolved' ] ], 
             [ 'id' => 'unresolved_by_module', 'name' => '未解决的/按模块', 'query' => [ 'stat_x' => 'module', 'stat_y' => 'module', 'resolution' => 'Unresolved' ] ] 
         ], 

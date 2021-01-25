@@ -1254,12 +1254,12 @@ class Provider {
             {
                 if (in_array('assignee', $change_fields) || !isset($snap_data['assignee']))
                 {
-                    $snap_data['assignee'] = [ 'value' => $issue['assignee']['name'], 'name' => '经办人' ];
+                    $snap_data['assignee'] = [ 'value' => $issue['assignee']['name'], 'name' => '负责人' ];
                 }
             }
             else
             {
-                $snap_data['assignee'] = [ 'value' => '', 'name' => '经办人' ];
+                $snap_data['assignee'] = [ 'value' => '', 'name' => '负责人' ];
             }
         }
         // labels
