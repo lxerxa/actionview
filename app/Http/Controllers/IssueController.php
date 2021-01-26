@@ -205,6 +205,12 @@ class IssueController extends Controller
             $options['today'] = date('Y/m/d');
         }
 
+        $requested_at = $request->input('requested_at');
+        if (isset($requested_at) && $requested_at)
+        {
+            $options['requested_at'] = intval($requested_at);
+        }
+
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($issues), 'options' => $options ]);
     }
 
@@ -1058,6 +1064,8 @@ class IssueController extends Controller
 
         // delete linked relation
         DB::collection('linked')->where('src', $id)->orWhere('dest', $id)->delete();
+        // delete watch
+        Watch::where('issue_id', $id)->delete();
         // delete this issue
         DB::collection($table)->where('_id', $id)->update([ 'del_flg' => 1 ]);
         // trigger event of issue deleted 
@@ -2404,7 +2412,7 @@ class IssueController extends Controller
                     }
                 }
 
-                $user_relate_fields = [ 'assignee' => '经办人', 'reporter' => '报告者', 'resolver' => '解决者', 'closer' => '关闭时间' ];
+                $user_relate_fields = [ 'assignee' => '负责人', 'reporter' => '报告者', 'resolver' => '解决者', 'closer' => '关闭时间' ];
                 foreach ($user_relate_fields as $uk => $uv)
                 {
                     if (isset($value[$uk]) && $value[$uk])
@@ -3124,6 +3132,9 @@ class IssueController extends Controller
 
             // delete this issue
             DB::collection($table)->where('_id', $id)->update([ 'del_flg' => 1 ]);
+
+            // delete watch
+            Watch::where('issue_id', $id)->delete();
 
             // trigger event of issue deleted 
             Event::fire(new IssueEvent($project_key, $id, $user, [ 'event_key' => 'del_issue' ]));
