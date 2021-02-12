@@ -1106,7 +1106,7 @@ class Provider {
             $schema = [];
             if ($change_fields)
             {
-                $out_schema_fields = [ 'type', 'state', 'resolution', 'priority', 'assignee', 'labels', 'parent_id', 'progress', 'expect_start_time', 'expect_complete_time' ];
+                $out_schema_fields = [ 'type', 'state', 'resolution', 'priority', 'assignee', 'descriptions', 'labels', 'parent_id', 'progress', 'expect_start_time', 'expect_complete_time' ];
                 if (array_diff($change_fields, $out_schema_fields))
                 {
                     $schema = self::getSchemaByType($issue['type']);
@@ -1120,77 +1120,73 @@ class Provider {
 
         foreach ($schema as $field)
         {
-            if (in_array($field['key'], [ 'assignee', 'progress' ]) || ($change_fields && !in_array($field['key'], $change_fields)))
+            if (!isset($issue[$field['key']]) || ($change_fields && !in_array($field['key'], $change_fields)))
             {
                 continue;
             }
 
-            if (isset($issue[$field['key']]))
-            {
-                $val = [];
-                $val['name'] = $field['name'];
+            $val = [];
+            $val['name'] = $field['name'];
                 
-                if ($field['type'] === 'SingleUser' || $field['type'] === 'MultiUser')
+            if ($field['type'] === 'SingleUser' || $field['type'] === 'MultiUser')
+            {
+                if ($field['type'] === 'SingleUser')
                 {
-                    if ($field['type'] === 'SingleUser')
-                    {
-                        $val['value'] = $issue[$field['key']] ? $issue[$field['key']]['name'] : $issue[$field['key']];
-                    }
-                    else
-                    {
-                        $tmp_users = [];
-                        if ($issue[$field['key']])
-                        {
-                            foreach ($issue[$field['key']] as $tmp_user)
-                            {
-                                $tmp_users[] = $tmp_user['name'];
-                            }
-                        }
-                        $val['value'] = implode(',', $tmp_users);
-                    }
-                }
-                else if (isset($field['optionValues']) && $field['optionValues'])
-                {
-                    $opv = [];
-                    
-                    if (!is_array($issue[$field['key']]))
-                    {
-                        $fieldValues = explode(',', $issue[$field['key']]);
-                    }
-                    else
-                    {
-                        $fieldValues = $issue[$field['key']];
-                    }
-                    foreach ($field['optionValues'] as $ov)
-                    {
-                        if (in_array($ov['id'], $fieldValues))
-                        {
-                            $opv[] = $ov['name'];
-                        }
-                    }
-                    $val['value'] = implode(',', $opv);
-                }
-                else if ($field['type'] == 'File')
-                {
-                    $val['value'] = [];
-                    foreach ($issue[$field['key']] as $fid)
-                    {
-                        $file = File::find($fid);
-                        array_push($val['value'], $file->name);
-                    }
-                }
-                else if ($field['type'] == 'DatePicker' || $field['type'] == 'DateTimePicker')
-                {
-                    $val['value'] = $issue[$field['key']] ? date($field['type'] == 'DatePicker' ? 'Y/m/d' : 'Y/m/d H:i:s', $issue[$field['key']]) : $issue[$field['key']];
+                    $val['value'] = $issue[$field['key']] ? $issue[$field['key']]['name'] : $issue[$field['key']];
                 }
                 else
                 {
-                    $val['value'] = $issue[$field['key']];
+                    $tmp_users = [];
+                    if ($issue[$field['key']])
+                    {
+                        foreach ($issue[$field['key']] as $tmp_user)
+                        {
+                            $tmp_users[] = $tmp_user['name'];
+                        }
+                    }
+                    $val['value'] = implode(',', $tmp_users);
                 }
-                //$val['type'] = $field['type']; 
-
-                $snap_data[$field['key']] = $val;
             }
+            else if (isset($field['optionValues']) && $field['optionValues'])
+            {
+                $opv = [];
+                    
+                if (!is_array($issue[$field['key']]))
+                {
+                    $fieldValues = explode(',', $issue[$field['key']]);
+                }
+                else
+                {
+                    $fieldValues = $issue[$field['key']];
+                }
+                foreach ($field['optionValues'] as $ov)
+                {
+                    if (in_array($ov['id'], $fieldValues))
+                    {
+                        $opv[] = $ov['name'];
+                    }
+                }
+                $val['value'] = implode(',', $opv);
+            }
+            else if ($field['type'] == 'File')
+            {
+                $val['value'] = [];
+                foreach ($issue[$field['key']] as $fid)
+                {
+                    $file = File::find($fid);
+                    array_push($val['value'], $file->name);
+                }
+            }
+            else if ($field['type'] == 'DatePicker' || $field['type'] == 'DateTimePicker')
+            {
+                $val['value'] = $issue[$field['key']] ? date($field['type'] == 'DatePicker' ? 'Y/m/d' : 'Y/m/d H:i:s', $issue[$field['key']]) : $issue[$field['key']];
+            }
+            else
+            {
+                $val['value'] = $issue[$field['key']];
+            }
+
+            $snap_data[$field['key']] = $val;
         }
 
         // special fields handle
@@ -1262,6 +1258,22 @@ class Provider {
                 $snap_data['assignee'] = [ 'value' => '', 'name' => '负责人' ];
             }
         }
+
+        if (isset($issue['descriptions']))
+        {
+            if ($issue['descriptions'])
+            {
+                if (in_array('descriptions', $change_fields) || !isset($snap_data['descriptions']))
+                {
+                    $snap_data['descriptions'] = [ 'value' => $issue['descriptions'], 'name' => '描述' ];
+                }
+            }
+            else
+            {
+                $snap_data['descriptions'] = [ 'value' => '', 'name' => '描述' ];
+            }
+        }
+
         // labels
         if (isset($issue['labels']))
         {
@@ -1299,7 +1311,7 @@ class Provider {
         {
             if ($issue['progress'] || $issue['progress'] === 0)
             {
-                if (in_array('progress', $change_fields) || !isset($snap_data['progress']))
+                if (in_array('progress', $change_fields))
                 {
                     $snap_data['progress'] = [ 'value' => $issue['progress'] . '%', 'name' => '进度' ];
                 }
