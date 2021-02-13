@@ -401,7 +401,7 @@ class IssueController extends Controller
 
         // get reporter(creator)
         $insValues['reporter'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
-        $insValues['created_at'] = time();
+        $insValues['updated_at'] = $insValues['created_at'] = time();
 
         $table = 'issue_' . $project_key;
         $max_no = DB::collection($table)->count() + 1;
