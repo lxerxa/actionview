@@ -258,19 +258,7 @@ class Controller extends BaseController
             }
             else if (in_array($key_type_fields[$key], [ 'Duration', 'DatePicker', 'DateTimePicker' ]))
             {
-                if (strpos($val, '~') !== false)
-                {
-                    $sections = explode('~', $val);
-                    if ($sections[0])
-                    {
-                        $and[] = [ $key => [ '$gte' => strtotime($sections[0]) ] ];
-                    }
-                    if ($sections[1])
-                    {
-                        $and[] = [ $key => [ '$lte' => strtotime($sections[1] . ' 23:59:59') ] ];
-                    }
-                }
-                else if (in_array($val, [ '0d', '0w', '0m', '0y' ]))
+                if (in_array($val, [ '0d', '0w', '0m', '0y' ]))
                 {
                     if ($val == '0d')
                     {
@@ -291,21 +279,41 @@ class Controller extends BaseController
                 }
                 else
                 {
-                    $unitMap = [ 'w' => 'week', 'm' => 'month', 'y' => 'year' ];
-                    $unit = substr($val, -1);
-                    if (in_array($unit, [ 'w', 'm', 'y' ]))
+                    $date_conds = [];
+                    $unitMap = [ 'd' => 'day', 'w' => 'week', 'm' => 'month', 'y' => 'year' ];
+                    $sections = explode('~', $val);
+                    if ($sections[0])
                     {
-                        $direct = substr($val, 0, 1);
-                        $val = abs(substr($val, 0, -1));
-                        if ($direct === '-')
+                        $v = $sections[0];
+                        $unit = substr($v, -1);
+                        if (in_array($unit, [ 'd', 'w', 'm', 'y' ]))
                         {
-                            $and[] = [ $key => [ '$lt' => strtotime(date('Ymd', strtotime('-' . $val . ' ' . $unitMap[$unit]))) ] ];
+                            $direct = substr($v, 0, 1);
+                            $vv = abs(substr($v, 0, -1));
+                            $date_conds['$gte'] = strtotime(date('Ymd', strtotime(($direct === '-' ? '-' : '+') . $vv . ' ' . $unitMap[$unit])));
                         }
                         else
                         {
-                            $and[] = [ $key => [ '$gte' => strtotime(date('Ymd', strtotime('-' . $val . ' ' . $unitMap[$unit]))) ] ];
+                            $date_conds['$gte'] = strtotime($v);
                         }
                     }
+
+                    if (isset($sections[1]) && $sections[1])
+                    {
+                        $v = $sections[1];
+                        $unit = substr($v, -1);
+                        if (in_array($unit, [ 'd', 'w', 'm', 'y' ]))
+                        {
+                            $direct = substr($v, 0, 1);
+                            $vv = abs(substr($v, 0, -1));
+                            $date_conds['$lte'] = strtotime(date('Y-m-d', strtotime(($direct === '-' ? '-' : '+') . $vv . ' ' . $unitMap[$unit])) . ' 23:59:59');
+                        }
+                        else
+                        {
+                            $date_conds['$lte'] = strtotime($v . ' 23:59:59');
+                        }
+                    }
+                    $and[] = [ $key => $date_conds ];
                 }
             }
             else if (in_array($key_type_fields[$key], [ 'Text', 'TextArea', 'RichTextEditor', 'Url' ]))
