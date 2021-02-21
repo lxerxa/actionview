@@ -11,6 +11,7 @@ use App\Http\Controllers\Controller;
 use App\Project\Provider;
 use App\Project\Eloquent\File;
 use App\Project\Eloquent\Watch;
+use App\Project\Eloquent\IssueFilters;
 use App\Project\Eloquent\UserIssueFilters;
 use App\Project\Eloquent\UserIssueListColumns;
 use App\Project\Eloquent\ProjectIssueListColumns;
@@ -1099,43 +1100,18 @@ class IssueController extends Controller
             throw new \UnexpectedValueException('the name can not be empty.', -11105);
         }
 
-        if (UserIssueFilters::whereRaw([ 'name' => $name, 'user' => $this->user->id, 'project_key' => $project_key ])->exists())
-        {
-            throw new \UnexpectedValueException('filter name cannot be repeated', -11106);
-        }
-
         $query = $request->input('query') ?: [];
+
+        $scope = 'private';
+        if ($this->isPermissionAllowed($project_key, 'manage_project'))
+        {
+            $scope = $request->input('scope') ?: 'private';
+        }
         
-        $res = UserIssueFilters::where('project_key', $project_key)
-            ->where('user', $this->user->id)
-            ->first();
-        if ($res)
-        {
-            $filters = isset($res['filters']) ? $res['filters'] : [];
-            foreach($filters as $filter)
-            {
-                if (isset($filter['name']) && $filter['name'] === $name)
-                {
-                    throw new \UnexpectedValueException('filter name cannot be repeated', -11106);
-                }
-            }
-            array_push($filters, [ 'id' => md5(microtime()), 'name' => $name, 'query' => $query ]);
-            $res->filters = $filters;
-            $res->save();
-        }
-        else
-        {
-            $filters = Provider::getDefaultIssueFilters();
-            foreach($filters as $filter)
-            {
-                if (isset($filter['name']) && $filter['name'] === $name)
-                {
-                    throw new \UnexpectedValueException('filter name cannot be repeated', -11106);
-                }
-            }
-            array_push($filters, [ 'id' => md5(microtime()), 'name' => $name, 'query' => $query ]);
-            UserIssueFilters::create([ 'project_key' => $project_key, 'user' => $this->user->id, 'filters' => $filters ]); 
-        }
+        $creator = $this->user->id;
+
+        IssueFilters::create([ 'project_key' => $project_key, 'name' => $name, 'query' => $query, 'scope' => $scope, 'creator' => $creator ]);
+        
         return $this->getIssueFilters($project_key);
     }
 
@@ -1246,47 +1222,47 @@ class IssueController extends Controller
     }
 
     /**
-     * edit the mode filters.
+     * edit or delete the batch filters.
      *
      * @param  string $project_key
      * @return \Illuminate\Http\Response
      */
-    public function editFilters(Request $request, $project_key)
+    public function batchHandleFilters(Request $request, $project_key)
     {
-        $sequence = $request->input('sequence');
-        if (isset($sequence))
+        $mode = $request->input('mode');
+        if ($mode === 'sort')
         {
-            $old_filters = Provider::getDefaultIssueFilters();
+            $sequence = $request->input('sequence');
+            if (!isset($sequence) || !$sequence)
+            {
+                return $this->getIssueFilters($project_key);
+            }
+
             $res = UserIssueFilters::where('project_key', $project_key)
                 ->where('user', $this->user->id)
                 ->first();
             if ($res)
             {
-                $old_filters = isset($res->filters) ? $res->filters : [];
-            }
-            
-            $new_filters = [];
-            foreach ($sequence as $id)
-            {
-                foreach ($old_filters as $filter)
-                {
-                    if ($filter['id'] === $id)
-                    {
-                        $new_filters[] = $filter;
-                        break;
-                    }
-                }
-            }
-            if ($res)
-            {
-                $res->filters = $new_filters;
+                $res->sequence = $sequence;
                 $res->save();
             }
             else
             {
-                UserIssueFilters::create([ 'project_key' => $project_key, 'user' => $this->user->id, 'filters' => $new_filters ]); 
+                UserIssueFilters::create([ 'project_key' => $project_key, 'user' => $this->user->id, 'sequence' => $sequence ]); 
             }
         }
+        else if ($mode === 'del')
+        {
+            $ids = $request->input('ids');
+            if (isset($ids) && $ids)
+            {
+                IssueFilters::where('project_key', $project_key)
+                    ->where('creator', $this->user->id)
+                    ->whereIn('_id', $ids)
+                    ->delete();
+            }
+        }
+
         return $this->getIssueFilters($project_key);
     }
 

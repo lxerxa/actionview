@@ -177,7 +177,7 @@ Route::group([ 'prefix' => $api_prefix . '/project/{project_key}', 'middleware' 
     Route::post('issue/filter', 'IssueController@saveIssueFilter');
     Route::get('issue/filters', 'IssueController@getIssueFilters');
     Route::get('issue/filters/reset', 'IssueController@resetIssueFilters');
-    Route::post('issue/filters', 'IssueController@editFilters');
+    Route::post('issue/filters', 'IssueController@batchHandleFilters');
 
     Route::post('issue/columns', 'IssueController@setDisplayColumns');
     Route::post('issue/columns/reset', 'IssueController@resetDisplayColumns');
