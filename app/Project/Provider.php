@@ -23,6 +23,7 @@ use App\Project\Eloquent\Module;
 use App\Project\Eloquent\Epic;
 use App\Project\Eloquent\Sprint;
 use App\Project\Eloquent\Labels;
+use App\Project\Eloquent\IssueFilters;
 use App\Project\Eloquent\UserIssueFilters;
 use App\Project\Eloquent\UserIssueListColumns;
 use App\Project\Eloquent\ProjectIssueListColumns;
@@ -59,10 +60,10 @@ class Provider {
             [ 'id' => 'assigned_to_me', 'name' => '分配给我的', 'query' => [ 'assignee' => 'me', 'resolution' => 'Unresolved' ] ],
             [ 'id' => 'watched', 'name' => '我关注的', 'query' => [ 'watcher' => 'me' ] ],
             [ 'id' => 'reported', 'name' => '我报告的', 'query' => [ 'reporter' => 'me' ] ],
-            [ 'id' => 'recent_created', 'name' => '最近增加的', 'query' => [ 'created_at' => '2w' ] ],
-            [ 'id' => 'recent_updated', 'name' => '最近更新的', 'query' => [ 'updated_at' => '2w' ] ],
-            [ 'id' => 'recent_resolved', 'name' => '最近解决的', 'query' => [ 'resolved_at' => '2w' ] ],
-            [ 'id' => 'recent_closed', 'name' => '最近关闭的', 'query' => [ 'closed_at' => '2w' ] ],
+            [ 'id' => 'recent_created', 'name' => '最近新建的', 'query' => [ 'created_at' => '-14d~' ] ],
+            [ 'id' => 'recent_updated', 'name' => '最近更新的', 'query' => [ 'updated_at' => '-14d~' ] ],
+            [ 'id' => 'recent_resolved', 'name' => '最近解决的', 'query' => [ 'resolved_at' => '-14d~' ] ],
+            [ 'id' => 'recent_closed', 'name' => '最近关闭的', 'query' => [ 'closed_at' => '-14d~' ] ],
         ];
     }
 
@@ -78,13 +79,35 @@ class Provider {
         // default issue filters
         $filters = self::getDefaultIssueFilters();
 
+        // customize the filter
+        $customize_filters = IssueFilters::where('project_key', $project_key)
+            ->where(function ($query) use ($user_id) {
+                $query->where('creator', $user_id)
+                    ->orWhere('scope', 'public');
+                })
+            ->get();
+        foreach ($customize_filters as $val) 
+        {
+            $filters[] = [ 'id' => $val->id, 'name' => $val->name ?: '', 'query' => $val->query ?: [], 'creator' => $val->creator ];
+        }
+
+        $sequence = [];
         $res = UserIssueFilters::where('project_key', $project_key)
             ->where('user', $user_id)
-            ->first(); 
+            ->first();
         if ($res)
         {
-            $filters = isset($res->filters) ? $res->filters : [];
+            $sequence = isset($res->sequence) ? $res->sequence : [];
+            $func = function($v1, $v2) use ($sequence) {
+                $i1 = array_search($v1['id'], $sequence);
+                $i1 = $i1 !== false ? $i1 : 998;
+                $i2 = array_search($v2['id'], $sequence);
+                $i2 = $i2 !== false ? $i2 : 999;
+                return $i1 >= $i2 ? 1 : -1;
+            };
+            usort($filters, $func);
         }
+
         return $filters;
     }
 
