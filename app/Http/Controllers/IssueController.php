@@ -753,11 +753,6 @@ class IssueController extends Controller
      */
     public function setLabels(Request $request, $project_key, $id)
     {
-        if (!$this->isPermissionAllowed($project_key, 'edit_issue'))
-        {
-            return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
-        }
-
         $labels = $request->input('labels');
         if (!isset($labels))
         {
@@ -769,6 +764,11 @@ class IssueController extends Controller
         if (!$issue)
         {
             throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -11103);
+        }
+
+        if (!$this->isPermissionAllowed($project_key, 'edit_issue') && !($this->isPermissionAllowed($project_key, 'edit_self_issue') && $issue['reporter']['id'] == $this->user->id))
+        {
+            return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
         }
 
         $updValues['labels'] = $labels;
@@ -902,11 +902,6 @@ class IssueController extends Controller
      */
     public function update(Request $request, $project_key, $id)
     {
-        if (!$this->isPermissionAllowed($project_key, 'edit_issue') && !$this->isPermissionAllowed($project_key, 'exec_workflow'))
-        {
-            return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
-        }
-
         if (!$request->all())
         {
             return $this->show($project_key, $id); 
@@ -917,6 +912,11 @@ class IssueController extends Controller
         if (!$issue)
         {
             throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -11103);
+        }
+
+        if (!$this->isPermissionAllowed($project_key, 'edit_issue') && !($this->isPermissionAllowed($project_key, 'edit_self_issue') && $issue['reporter']['id'] == $this->user->id) && !$this->isPermissionAllowed($project_key, 'exec_workflow'))
+        {
+            return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
         }
 
         $schema = Provider::getSchemaByType($request->input('type') ?: $issue['type']);
@@ -1041,6 +1041,11 @@ class IssueController extends Controller
         if (!$issue)
         {
             throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -11103);
+        }
+
+        if (!$this->isPermissionAllowed($project_key, 'delete_issue') && !($this->isPermissionAllowed($project_key, 'delete_self_issue') && $issue['reporter']['id'] == $this->user->id))
+        {
+            return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
         }
 
         $user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];

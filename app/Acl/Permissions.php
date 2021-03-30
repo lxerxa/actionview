@@ -14,6 +14,7 @@ class Permissions {
     const EDIT_ISSUE          = 'edit_issue';
     const EDIT_SELF_ISSUE     = 'edit_self_issue';
     const DELETE_ISSUE        = 'delete_issue';
+    const DELETE_SELF_ISSUE   = 'delete_self_issue';
     const LINK_ISSUE          = 'link_issue';
     const MOVE_ISSUE          = 'move_issue';
     const RESOLVE_ISSUE       = 'resolve_issue';
@@ -58,6 +59,7 @@ class Permissions {
             static::EDIT_ISSUE,
             static::EDIT_SELF_ISSUE,
             static::DELETE_ISSUE,
+            static::DELETE_SELF_ISSUE,
             static::LINK_ISSUE,
             static::MOVE_ISSUE,
             static::RESOLVE_ISSUE,
