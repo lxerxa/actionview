@@ -1204,6 +1204,10 @@ class Provider {
             {
                 $val['value'] = $issue[$field['key']] ? date($field['type'] == 'DatePicker' ? 'Y/m/d' : 'Y/m/d H:i:s', $issue[$field['key']]) : $issue[$field['key']];
             }
+            else if ($field['key'] == 'progress')
+            {
+                $val['value'] = $issue[$field['key']] . '%';
+            }
             else
             {
                 $val['value'] = $issue[$field['key']];
@@ -1334,7 +1338,7 @@ class Provider {
         {
             if ($issue['progress'] || $issue['progress'] === 0)
             {
-                if (in_array('progress', $change_fields))
+                if (in_array('progress', $change_fields) || !isset($snap_data['progress']))
                 {
                     $snap_data['progress'] = [ 'value' => $issue['progress'] . '%', 'name' => '进度' ];
                 }
