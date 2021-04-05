@@ -191,7 +191,7 @@ Route::group([ 'prefix' => $api_prefix . '/project/{project_key}', 'middleware' 
     Route::post('issue', [ 'middleware' => 'privilege:create_issue', 'uses' => 'IssueController@store' ]);
     // this middleware is put into action
     Route::put('issue/{id}', 'IssueController@update');
-    Route::delete('issue/{id}', [ 'middleware' => 'privilege:delete_issue', 'uses' => 'IssueController@destroy' ]);
+    Route::delete('issue/{id}', 'IssueController@destroy');
 
     Route::get('issue/{id}/history', 'IssueController@getHistory');
     Route::post('issue/{id}/watching', 'IssueController@watch');
