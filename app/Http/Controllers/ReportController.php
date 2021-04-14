@@ -25,13 +25,13 @@ class ReportController extends Controller
     private $default_filters = [
         'issues' => [
             [ 'id' => 'all_by_type', 'name' => '全部问题/按类型', 'query' => [ 'stat_x' => 'type', 'stat_y' => 'type' ] ], 
-            [ 'id' => 'unresolved_by_assignee', 'name' => '未解决的/按经办人', 'query' => [ 'stat_x' => 'assignee', 'stat_y' => 'assignee', 'resolution' => 'Unresolved' ] ], 
+            [ 'id' => 'unresolved_by_assignee', 'name' => '未解决的/按负责人', 'query' => [ 'stat_x' => 'assignee', 'stat_y' => 'assignee', 'resolution' => 'Unresolved' ] ], 
             [ 'id' => 'unresolved_by_priority', 'name' => '未解决的/按优先级', 'query' => [ 'stat_x' => 'priority', 'stat_y' => 'priority', 'resolution' => 'Unresolved' ] ], 
             [ 'id' => 'unresolved_by_module', 'name' => '未解决的/按模块', 'query' => [ 'stat_x' => 'module', 'stat_y' => 'module', 'resolution' => 'Unresolved' ] ] 
         ], 
         'worklog' => [
             [ 'id' => 'all', 'name' => '全部填报', 'query' => [] ], 
-            [ 'id' => 'in_one_month', 'name' => '过去一个月的', 'query' => [ 'recorded_at' => '1m' ] ], 
+            [ 'id' => 'in_one_month', 'name' => '过去一个月的', 'query' => [ 'recorded_at' => '-30d~' ] ], 
             [ 'id' => 'active_sprint', 'name' => '当前活动Sprint', 'query' => [] ], 
             [ 'id' => 'latest_completed_sprint', 'name' => '最近已完成Sprint', 'query' => [] ], 
             //[ 'id' => 'will_release_version', 'name' => '最近要发布版本', 'query' => [] ], 
@@ -51,8 +51,8 @@ class ReportController extends Controller
             [ 'id' => 'latest_completed_sprint', 'name' => '最近已完成Sprint', 'query' => [] ], 
         ],
         'trend' => [
-            [ 'id' => 'day_in_one_month', 'name' => '问题每日变化趋势', 'query' => [ 'stat_time' => '1m' ] ], 
-            [ 'id' => 'week_in_two_months', 'name' => '问题每周变化趋势', 'query' => [ 'stat_time' => '2m', 'interval' => 'week' ] ], 
+            [ 'id' => 'day_in_one_month', 'name' => '问题每日变化趋势', 'query' => [ 'stat_time' => '-30d~' ] ], 
+            [ 'id' => 'week_in_two_months', 'name' => '问题每周变化趋势', 'query' => [ 'stat_time' => '-60d~', 'interval' => 'week' ] ], 
         ]
     ];
 
@@ -341,48 +341,45 @@ class ReportController extends Controller
 
         $cond = [];
         $recorded_at = isset($options['recorded_at']) ? $options['recorded_at'] : '';
-        if ($recorded_at)
+
+        $date_conds = [];
+        $unitMap = [ 'd' => 'day', 'w' => 'week', 'm' => 'month', 'y' => 'year' ];
+        $sections = explode('~', $recorded_at);
+        if ($sections[0])
         {
-            if (strpos($recorded_at, '~') !== false)
+            $v = $sections[0];
+            $unit = substr($v, -1);
+            if (in_array($unit, [ 'd', 'w', 'm', 'y' ]))
             {
-                $sections = explode('~', $recorded_at);
-                if ($sections[0])
-                {
-                    $cond['$gte'] = strtotime($sections[0]);
-                }
-                if ($sections[1])
-                {
-                    $cond['$lte'] = strtotime($sections[1] . ' 23:59:59');
-                }
-                if ($cond)
-                {
-                    $where['recorded_at'] = $cond;
-                }
+                $direct = substr($v, 0, 1);
+                $vv = abs(substr($v, 0, -1));
+                $date_conds['$gte'] = strtotime(date('Ymd', strtotime(($direct === '-' ? '-' : '+') . $vv . ' ' . $unitMap[$unit])));
             }
             else
             {
-                $unitMap = [ 'w' => 'week', 'm' => 'month', 'y' => 'year' ];
-                $unit = substr($recorded_at, -1);
-                if (in_array($unit, [ 'w', 'm', 'y' ]))
-                {
-                    $direct = substr($recorded_at, 0, 1);
-                    $val = abs(substr($recorded_at, 0, -1));
-                    $time_val = strtotime(date('Ymd', strtotime('-' . $val . ' ' . $unitMap[$unit])));
-
-                    if ($direct === '-')
-                    {
-                        $cond['$lt'] = $time_val;
-                    }
-                    else
-                    {
-                        $cond['$gte'] = $time_val;
-                    }
-                    if ($cond)
-                    {
-                        $where['recorded_at'] = $cond;
-                    }
-                }
+                $date_conds['$gte'] = strtotime($v);
             }
+        }
+
+        if (isset($sections[1]) && $sections[1])
+        {
+            $v = $sections[1];
+            $unit = substr($v, -1);
+            if (in_array($unit, [ 'd', 'w', 'm', 'y' ]))
+            {
+               $direct = substr($v, 0, 1);
+               $vv = abs(substr($v, 0, -1));
+               $date_conds['$lte'] = strtotime(date('Y-m-d', strtotime(($direct === '-' ? '-' : '+') . $vv . ' ' . $unitMap[$unit])) . ' 23:59:59');
+            }
+            else
+            {
+                $date_conds['$lte'] = strtotime($v . ' 23:59:59');
+            }
+        }
+
+        if ($date_conds)
+        {
+            $where['recorded_at'] = $date_conds;
         }
 
         $recorder = isset($options['recorder']) ? $options['recorder'] : '';
@@ -684,7 +681,10 @@ class ReportController extends Controller
             $singulars = CalendarSingular::where([ 'date' => [ '$in' => $days ] ])->get();
             foreach ($singulars as $singular)
             {
-                $results[$singular->day]['notWorking'] = $singular->type == 'holiday' ? 1 : 0;
+                if (isset($results[$singular->day]))
+                {
+                    $results[$singular->day]['notWorking'] = $singular->type == 'holiday' ? 1 : 0;
+                }
             }
         }
 
@@ -723,54 +723,48 @@ class ReportController extends Controller
         if (isset($stat_time) && $stat_time)
         {
             $or = [];
-            if (strpos($stat_time, '~') !== false)
+            $date_conds = [];
+            $unitMap = [ 'd' => 'day', 'w' => 'week', 'm' => 'month', 'y' => 'year' ];
+            $sections = explode('~', $stat_time);
+            if ($sections[0])
             {
-                $cond = [];
-                $sections = explode('~', $stat_time);
-                if ($sections[0])
+                $v = $sections[0];
+                $unit = substr($v, -1);
+                if (in_array($unit, [ 'd', 'w', 'm', 'y' ]))
                 {
-                    $cond['$gte'] = strtotime($sections[0]);
-                    $start_stat_time = max([ $start_stat_time, $cond['$gte'] ]);
+                    $direct = substr($v, 0, 1);
+                    $vv = abs(substr($v, 0, -1));
+                    $date_conds['$gte'] = strtotime(date('Ymd', strtotime(($direct === '-' ? '-' : '+') . $vv . ' ' . $unitMap[$unit])));
                 }
-                if ($sections[1])
+                else
                 {
-                    $cond['$lte'] = strtotime($sections[1] . ' 23:59:59');
-                    $end_stat_time = min([ $end_stat_time, $cond['$lte'] ]);
+                    $date_conds['$gte'] = strtotime($v);
                 }
-                if ($cond)
-                {
-                    $or[] = [ 'created_at' =>  $cond ];
-                    $or[] = [ 'resolved_at' =>  $cond ];
-                    $or[] = [ 'closed_at' => $cond ];
-                }
+                $start_stat_time = max([ $start_stat_time, $date_conds['$gte'] ]);
             }
-            else
+
+            if (isset($sections[1]) && $sections[1])
             {
-                $unitMap = [ 'w' => 'week', 'm' => 'month', 'y' => 'year' ];
-                $unit = substr($stat_time, -1);
-                if (in_array($unit, [ 'w', 'm', 'y' ]))
+                $v = $sections[1];
+                $unit = substr($v, -1);
+                if (in_array($unit, [ 'd', 'w', 'm', 'y' ]))
                 {
-                    $direct = substr($stat_time, 0, 1);
-                    $val = abs(substr($stat_time, 0, -1));
-                    $time_val = strtotime(date('Ymd', strtotime('-' . $val . ' ' . $unitMap[$unit])));
-                    $cond = [];
-                    if ($direct === '-')
-                    {
-                        $cond['$lt'] = $time_val;
-                        $end_stat_time = min([ $end_stat_time, $cond['$lt'] ]);
-                    }
-                    else
-                    {
-                        $cond['$gte'] = $time_val;
-                        $start_stat_time = max([ $start_stat_time, $cond['$gte'] ]);
-                    }
-                    if ($cond)
-                    {
-                        $or[] = [ 'created_at' =>  $cond ];
-                        $or[] = [ 'resolved_at' =>  $cond ];
-                        $or[] = [ 'closed_at' => $cond ];
-                    }
+                   $direct = substr($v, 0, 1);
+                   $vv = abs(substr($v, 0, -1));
+                   $date_conds['$lte'] = strtotime(date('Y-m-d', strtotime(($direct === '-' ? '-' : '+') . $vv . ' ' . $unitMap[$unit])) . ' 23:59:59');
                 }
+                else
+                {
+                    $date_conds['$lte'] = strtotime($v . ' 23:59:59');
+                }
+                $end_stat_time = min([ $end_stat_time, $date_conds['$lte'] ]);
+            }
+
+            if ($date_conds)
+            {
+                $or[] = [ 'created_at' =>  $date_conds ];
+                $or[] = [ 'resolved_at' =>  $date_conds ];
+                $or[] = [ 'closed_at' => $date_conds ];
             }
 
             if (!$is_accu && $or)

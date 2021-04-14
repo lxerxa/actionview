@@ -33,7 +33,7 @@ class VersionController extends Controller
         $query = Version::where('project_key', $project_key);
         $total = $query->count();
 
-        $query = $query->orderBy('status', 'asc')
+        $query = $query->orderBy('status', 'desc')
             ->orderBy('released_time', 'desc')
             ->orderBy('end_time', 'desc')
             ->orderBy('created_at', 'desc');
@@ -116,7 +116,7 @@ class VersionController extends Controller
         $version = Version::create([ 'project_key' => $project_key, 'creator' => $creator, 'status' => 'unreleased' ] + $request->all());
 
         // trigger event of version added
-        Event::fire(new VersionEvent($project_key, $creator, [ 'event_key' => 'create_version', 'data' => $version->toArray() ]));
+        Event::dispatch(new VersionEvent($project_key, $creator, [ 'event_key' => 'create_version', 'data' => $version->toArray() ]));
 
         return Response()->json([ 'ecode' => 0, 'data' => $version ]);
     }
@@ -203,7 +203,7 @@ class VersionController extends Controller
         {
             $isSendMsg = $request->input('isSendMsg') && true;
             $cur_user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
-            Event::fire(new VersionEvent($project_key, $cur_user, [ 'event_key' => 'release_version', 'isSendMsg' => $isSendMsg, 'data' => Version::find($id)->toArray() ]));
+            Event::dispatch(new VersionEvent($project_key, $cur_user, [ 'event_key' => 'release_version', 'isSendMsg' => $isSendMsg, 'data' => Version::find($id)->toArray() ]));
         }
 
         return $this->show($project_key, $id);
@@ -257,7 +257,7 @@ class VersionController extends Controller
 
         $version->fill($updValues)->save();
 
-        Event::fire(new VersionEvent($project_key, $updValues['modifier'], [ 'event_key' => 'edit_version', 'data' => Version::find($id)->toArray() ]));
+        Event::dispatch(new VersionEvent($project_key, $updValues['modifier'], [ 'event_key' => 'edit_version', 'data' => Version::find($id)->toArray() ]));
 
         return $this->show($project_key, $id);
     }
@@ -300,7 +300,7 @@ class VersionController extends Controller
 
         // trigger event of version edited
         $cur_user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
-        Event::fire(new VersionEvent($project_key, $cur_user, [ 'event_key' => 'merge_version', 'data' => [ 'source' => $source_version->toArray(), 'dest' => $dest_version->toArray() ] ]));
+        Event::dispatch(new VersionEvent($project_key, $cur_user, [ 'event_key' => 'merge_version', 'data' => [ 'source' => $source_version->toArray(), 'dest' => $dest_version->toArray() ] ]));
 
         return $this->show($project_key, $dest);
     }
@@ -316,7 +316,8 @@ class VersionController extends Controller
     public function updIssueResolveVersion($project_key, $source, $dest)
     {
         $issues = DB::collection('issue_' . $project_key)
-            ->where('resolve_version', 'Unresolved')
+            ->where('resolution', 'Unresolved')
+            ->where('resolve_version', $source)
             ->where('del_flg', '<>', 1)
             ->get();
         foreach ($issues as $issue)
@@ -331,7 +332,7 @@ class VersionController extends Controller
             // add to histroy table
             $snap_id = Provider::snap2His($project_key, $issue_id, [], [ 'resolve_version' ]);
             // trigger event of issue edited
-            Event::fire(new IssueEvent($project_key, $issue_id, $updValues['modifier'], [ 'event_key' => 'edit_issue', 'snap_id' => $snap_id ]));
+            Event::dispatch(new IssueEvent($project_key, $issue_id, $updValues['modifier'], [ 'event_key' => 'edit_issue', 'snap_id' => $snap_id ]));
         }
     }
 
@@ -391,7 +392,7 @@ class VersionController extends Controller
                 // add to histroy table
                 $snap_id = Provider::snap2His($project_key, $issue_id, [], $updFields);
                 // trigger event of issue edited
-                Event::fire(new IssueEvent($project_key, $issue_id, $updValues['modifier'], [ 'event_key' => 'edit_issue', 'snap_id' => $snap_id ]));
+                Event::dispatch(new IssueEvent($project_key, $issue_id, $updValues['modifier'], [ 'event_key' => 'edit_issue', 'snap_id' => $snap_id ]));
             }
         }
     }
@@ -451,7 +452,7 @@ class VersionController extends Controller
 
         // trigger event of version edited
         $cur_user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
-        Event::fire(new VersionEvent($project_key, $cur_user, [ 'event_key' => 'del_version', 'data' => $version->toArray() ]));
+        Event::dispatch(new VersionEvent($project_key, $cur_user, [ 'event_key' => 'del_version', 'data' => $version->toArray() ]));
 
         if ($operate_flg === '1')
         {

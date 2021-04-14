@@ -52,7 +52,7 @@ class ResolutionController extends Controller
 
         $resolution = Resolution::create([ 'project_key' => $project_key, 'sn' => time() ] + $request->all());
         // trigger to change resolution field config
-        //Event::fire(new ResolutionConfigChangeEvent($project_key));
+        //Event::dispatch(new ResolutionConfigChangeEvent($project_key));
         return Response()->json(['ecode' => 0, 'data' => $resolution]);
     }
 
@@ -107,7 +107,7 @@ class ResolutionController extends Controller
 
         $resolution->fill($request->except(['project_key']))->save();
         // trigger to change resolution field config
-        //Event::fire(new ResolutionConfigChangeEvent($project_key));
+        //Event::dispatch(new ResolutionConfigChangeEvent($project_key));
         return Response()->json(['ecode' => 0, 'data' => Resolution::find($id)]);
     }
 
@@ -162,7 +162,7 @@ class ResolutionController extends Controller
         }
 
         // trigger to change resolution field config
-        // Event::fire(new ResolutionConfigChangeEvent($project_key));
+        // Event::dispatch(new ResolutionConfigChangeEvent($project_key));
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }
 

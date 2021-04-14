@@ -11,6 +11,8 @@ class Group extends Model
     protected $fillable = array(
         'name',
         'users',
+        'principal',
+        'public_scope',
         'description',
         'directory',
         'ldap_dn',

@@ -38,7 +38,7 @@ class ActivityController extends Controller
 
         $query->whereRaw([ 'issue_id' => [ '$exists' => 1 ] ]);
 
-        $query->orderBy('_id', 'desc');
+        $query->orderBy('created_at', 'desc');
 
         $limit = $request->input('limit');
         if (!isset($limit))
@@ -49,8 +49,13 @@ class ActivityController extends Controller
 
         $avatars = [];
         $activities = $query->get();
+        // $activities = $query->get();
+        $activities = $this->arr_fix($activities);
         foreach ($activities as $key => $activity)
         {
+            // $r = $activity;
+            // dump($r);
+            $activity = $this->arr_fix($activity);
             if (!array_key_exists($activity['user']['id'], $avatars))
             {
                 $user = Sentinel::findById($activity['user']['id']);
@@ -86,6 +91,8 @@ class ActivityController extends Controller
                 {
                     $issue = DB::collection('issue_' . $project_key)->where('_id', $activity['data']['dest'])->first();
                 }
+                if(!$issue) continue;
+                $issue = $this->arr_fix($issue);
                 $activities[$key]['issue_link']['dest'] = [ 
                     'id' => $activity['data']['dest'], 
                     'no' => $issue['no'], 
@@ -103,6 +110,11 @@ class ActivityController extends Controller
                 {
                     $issue = DB::collection('issue_' . $project_key)->where('_id', $activity['issue_id'])->first();
                 }
+                // dump($activity['issue_id']);
+                // dump($issue);
+                // exit;
+                if(!$issue) continue;
+                $issue = $this->arr_fix($issue);
                 $activities[$key]['issue'] = [ 
                     'id' => $activity['issue_id'], 
                     'no' => $issue['no'], 

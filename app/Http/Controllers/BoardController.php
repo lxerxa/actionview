@@ -71,6 +71,14 @@ class BoardController extends Controller
             ->whereIn('status', [ 'active', 'waiting' ])
             ->orderBy('no', 'asc')
             ->get();
+        // compatible with old data
+        foreach ($sprints as $sprint)
+        {
+            if (!$sprint->name)
+            {
+                $sprint->name = 'Sprint ' . $sprint->no;
+            }
+        }
 
         $epics = Epic::where('project_key', $project_key)
             ->orderBy('sn', 'asc')

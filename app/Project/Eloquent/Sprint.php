@@ -12,6 +12,7 @@ class Sprint extends Model
     protected $fillable = array(
         'project_key',
         'no',
+        'name',
         'status',
         'start_time',
         'complete_time',

@@ -3,13 +3,18 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Event;
 
 use App\Http\Requests;
+
 use App\Http\Controllers\Controller;
 use App\Events\WikiEvent;
+use App\Project\Eloquent\WikiFavorites;
 use App\Utils\File;
+use App\Models\Files as FilesModel;
 use DB;
+use MongoDB\BSON\ObjectID;
 use Zipper;
 
 class WikiController extends Controller
@@ -23,14 +28,12 @@ class WikiController extends Controller
     public function searchPath(Request $request, $project_key)
     {
         $s =  $request->input('s');
-        if (!$s)
-        {
+        if (!$s) {
             return Response()->json(['ecode' => 0, 'data' => []]);
         }
 
-        if ($s === '/')
-        {
-            return Response()->json(['ecode' => 0, 'data' => [ [ 'id' => '0', 'name' => '/' ] ] ]);
+        if ($s === '/') {
+            return Response()->json(['ecode' => 0, 'data' => [['id' => '0', 'name' => '/']]]);
         }
 
         $query = DB::collection('wiki_' . $project_key)
@@ -39,8 +42,7 @@ class WikiController extends Controller
             ->where('name', 'like', '%' . $s . '%');
 
         $moved_path = $request->input('moved_path');
-        if (isset($moved_path) && $moved_path)
-        {
+        if (isset($moved_path) && $moved_path) {
             $query->where('pt', '<>', $moved_path);
             $query->where('_id', '<>', $moved_path);
         }
@@ -48,29 +50,128 @@ class WikiController extends Controller
         $directories = $query->take(20)->get(['name', 'pt']);
 
         $ret = [];
-        foreach ($directories as $d)
-        {
+        foreach ($directories as $d) {
             $parents = [];
             $path = '';
             $ps = DB::collection('wiki_' . $project_key)
                 ->whereIn('_id', $d['pt'])
-                ->get([ 'name' ]);
-            foreach ($ps as $val)
-            {
+                ->get(['name']);
+            foreach ($ps as $val) {
                 $parents[$val['_id']->__toString()] = $val['name'];
             }
 
-            foreach ($d['pt'] as $pid)
-            {
-                if (isset($parents[$pid]))
-                {
+            foreach ($d['pt'] as $pid) {
+                if (isset($parents[$pid])) {
                     $path .= '/' . $parents[$pid];
                 }
             }
             $path .= '/' . $d['name'];
-            $ret[] = [ 'id' => $d['_id']->__toString(), 'name' => $path ];
+            $ret[] = ['id' => $d['_id']->__toString(), 'name' => $path];
         }
         return Response()->json(['ecode' => 0, 'data' => parent::arrange($ret)]);
+    }
+
+    /**
+     * get the directory children.
+     * @param  string  $project_key
+     * @param  string  $directory
+     * @return \Illuminate\Http\Response
+     */
+    public function getDirChildren(Request $request, $project_key, $directory)
+    {
+        $sub_dirs = DB::collection('wiki_' . $project_key)
+            ->where('parent', $directory)
+            ->where('del_flag', '<>', 1)
+            ->get();
+
+        $res = [];
+        foreach ($sub_dirs as $val) {
+            $res[] = [
+                'id' => $val['_id']->__toString(),
+                'name' => $val['name'],
+                'd' => isset($val['d']) ? $val['d'] : 0,
+                'parent' => isset($val['parent']) ? $val['parent'] : ''
+            ];
+        }
+
+        return Response()->json(['ecode' => 0, 'data' => $res]);
+    }
+
+    /**
+     * get the directory tree.
+     * @param  string  $project_key
+     * @return \Illuminate\Http\Response
+     */
+    public function getDirTree(Request $request, $project_key)
+    {
+        $dt = ['id' => '0', 'name' => '根目录', 'd' => 1];
+
+        $curnode = $request->input('currentnode');
+        if (!$curnode) {
+            $curnode = '0';
+        }
+
+        $pt = ['0'];
+        if ($curnode !== '0') {
+            $node = DB::collection('wiki_' . $project_key)
+                ->where('_id', $curnode)
+                ->first();
+
+            if ($node) {
+                $pt = $node['pt'];
+                if (isset($node['d']) && $node['d'] == 1) {
+                    array_push($pt, $curnode);
+                }
+            }
+        }
+
+        foreach ($pt as $val) {
+            $sub_dirs = DB::collection('wiki_' . $project_key)
+                ->where('parent', $val)
+                ->where('del_flag', '<>', 1)
+                ->get();
+
+            $this->addChildren2Tree($dt, $val, $sub_dirs);
+        }
+
+        return Response()->json(['ecode' => 0, 'data' => $dt]);
+    }
+
+    /**
+     * add children to tree.
+     *
+     * @param  array  $dt
+     * @param  string $parent_id
+     * @param  array  $sub_dirs
+     * @return void
+     */
+    public function addChildren2Tree(&$dt, $parent_id, $sub_dirs)
+    {
+        $new_dirs = [];
+        foreach ($sub_dirs as $val) {
+            $new_dirs[] = [
+                'id' => $val['_id']->__toString(),
+                'name' => $val['name'],
+                'd' => isset($val['d']) ? $val['d'] : 0,
+                'parent' => isset($val['parent']) ? $val['parent'] : ''
+            ];
+        }
+
+        if ($dt['id'] == $parent_id) {
+            $dt['children'] = $new_dirs;
+            return true;
+        } else {
+            if (isset($dt['children']) && $dt['children']) {
+                $children_num = count($dt['children']);
+                for ($i = 0; $i < $children_num; $i++) {
+                    $res = $this->addChildren2Tree($dt['children'][$i], $parent_id, $sub_dirs);
+                    if ($res === true) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
     }
 
     /**
@@ -85,18 +186,22 @@ class WikiController extends Controller
         $query = DB::collection('wiki_' . $project_key);
 
         $name = $request->input('name');
-        if (isset($name) && $name)
-        {
+        if (isset($name) && $name) {
             $mode = 'search';
             $query = $query->where('name', 'like', '%' . $name . '%');
         }
 
+        $contents = $request->input('contents');
+        if (isset($contents) && $contents) {
+            $mode = 'search';
+            $query = $query->where('contents', 'like', '%' . $contents . '%');
+        }
+
         $updated_at = $request->input('updated_at');
-        if (isset($updated_at) && $updated_at)
-        {
+        if (isset($updated_at) && $updated_at) {
             $mode = 'search';
             $query->where(function ($query) use ($updated_at) {
-                $unitMap = [ 'w' => 'week', 'm' => 'month', 'y' => 'year' ];
+                $unitMap = ['w' => 'week', 'm' => 'month', 'y' => 'year'];
                 $unit = substr($updated_at, -1);
                 $val = abs(substr($updated_at, 0, -1));
                 $query->where('created_at', '>=', strtotime(date('Ymd', strtotime('-' . $val . ' ' . $unitMap[$unit]))))
@@ -104,14 +209,27 @@ class WikiController extends Controller
             });
         }
 
-        if ($directory !== '0')
-        {
-            $query = $query->where($mode === 'search' ? 'pt' : 'parent', $directory);
+        $favorite_wikis = WikiFavorites::where('project_key', $project_key)
+            ->where('user.id', $this->user->id)
+            ->get()
+            ->toArray();
+        $favorite_dids = array_column($favorite_wikis, 'wid');
+
+        $myfavorite = $request->input('myfavorite');
+        if (isset($myfavorite) && $myfavorite == '1') {
+            $mode = 'search';
+            $favoritedIds = [];
+            foreach ($favorite_dids as $did) {
+                $favoritedIds[] = new ObjectID($did);
+            }
+
+            $query->whereIn('_id', $favoritedIds);
         }
-        else
-        {
-            if ($mode === 'list')
-            {
+
+        if ($directory !== '0') {
+            $query = $query->where($mode === 'search' ? 'pt' : 'parent', $directory);
+        } else {
+            if ($mode === 'list') {
                 $query = $query->where('parent', $directory);
             }
         }
@@ -123,35 +241,40 @@ class WikiController extends Controller
         $query->take($limit);
         $documents = $query->get();
 
+        $favorite_wikis = WikiFavorites::where('project_key', $project_key)
+            ->where('user.id', $this->user->id)
+            ->get()
+            ->toArray();
+        $favorite_wids = array_column($favorite_wikis, 'wid');
+
+        foreach ($documents as $k => $d) {
+            if (in_array($d['_id']->__toString(), $favorite_wids)) {
+                $documents[$k]['favorited'] = true;
+            }
+        }
+
         $path = [];
         $home = [];
-        if ($directory === '0')
-        {
-            $path[] = [ 'id' => '0', 'name' => 'root' ];
-            if ($mode === 'list')
-            {
-                foreach ($documents as $doc)
-                {
-                    if ((!isset($doc['d']) || $doc['d'] != 1) && strtolower($doc['name']) === 'home')
-                    {
+        if ($directory === '0') {
+            $path[] = ['id' => '0', 'name' => 'root'];
+            if ($mode === 'list') {
+                foreach ($documents as $doc) {
+                    if ((!isset($doc['d']) || $doc['d'] != 1) && strtolower($doc['name']) === 'home') {
                         $home = $doc;
                     }
                 }
             }
-        }
-        else
-        {
+        } else {
             $d = DB::collection('wiki_' . $project_key)
                 ->where('_id', $directory)
                 ->first();
-            if ($d && isset($d['pt']))
-            {
+            if ($d && isset($d['pt'])) {
                 $path = $this->getPathTreeDetail($project_key, $d['pt']);
             }
-            $path[] = [ 'id' => $directory, 'name' => $d['name'] ];
+            $path[] = ['id' => $directory, 'name' => $d['name']];
         }
 
-        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($documents), 'options' => [ 'path' => $path, 'home' => parent::arrange($home) ] ]);
+        return Response()->json(['ecode' => 0, 'data' => parent::arrange($documents), 'options' => ['path' => $path, 'home' => parent::arrange($home)]]);
     }
 
     /**
@@ -164,16 +287,12 @@ class WikiController extends Controller
     public function create(Request $request, $project_key)
     {
         $d =  $request->input('d');
-        if (isset($d) && $d == 1)
-        {
-            if (!$this->isPermissionAllowed($project_key, 'manage_project'))
-            {
+        if (isset($d) && $d == 1) {
+            if (!$this->isPermissionAllowed($project_key, 'manage_project')) {
                 return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
             }
             return $this->createFolder($request, $project_key);
-        }
-        else
-        {
+        } else {
             return $this->createDoc($request, $project_key);
         }
     }
@@ -190,28 +309,24 @@ class WikiController extends Controller
         $insValues = [];
 
         $parent = $request->input('parent');
-        if (!isset($parent))
-        {
+        if (!isset($parent)) {
             throw new \UnexpectedValueException('the parent directory can not be empty.', -11950);
         }
         $insValues['parent'] = $parent;
 
-        if ($parent !== '0')
-        {
+        if ($parent !== '0') {
             $isExists = DB::collection('wiki_' . $project_key)
                 ->where('_id', $parent)
                 ->where('d', 1)
                 ->where('del_flag', '<>', 1)
                 ->exists();
-            if (!$isExists)
-            {
+            if (!$isExists) {
                 throw new \UnexpectedValueException('the parent directory does not exist.', -11951);
             }
         }
 
         $name = $request->input('name');
-        if (!isset($name) || !$name)
-        {
+        if (!isset($name) || !$name) {
             throw new \UnexpectedValueException('the name can not be empty.', -11952);
         }
         $insValues['name'] = $name;
@@ -222,25 +337,23 @@ class WikiController extends Controller
             ->where('d', '<>', 1)
             ->where('del_flag', '<>', 1)
             ->exists();
-        if ($isExists)
-        {
+        if ($isExists) {
             throw new \UnexpectedValueException('the name cannot be repeated.', -11953);
         }
 
         $contents = $request->input('contents');
-        if (isset($contents) && $contents)
-        {
+        if (isset($contents) && $contents) {
             $insValues['contents'] = $contents;
         }
 
         $insValues['pt'] = $this->getPathTree($project_key, $parent);
         $insValues['version'] = 1;
-        $insValues['creator'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        $insValues['creator'] = ['id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email];
         $insValues['created_at'] = time();
         $id = DB::collection('wiki_' . $project_key)->insertGetId($insValues);
 
         $isSendMsg = $request->input('isSendMsg') && true;
-        Event::fire(new WikiEvent($project_key, $insValues['creator'], [ 'event_key' => 'create_wiki', 'isSendMsg' => $isSendMsg, 'data' => [ 'wiki_id' => $id->__toString() ] ]));
+        Event::dispatch(new WikiEvent($project_key, $insValues['creator'], ['event_key' => 'create_wiki', 'isSendMsg' => $isSendMsg, 'data' => ['wiki_id' => $id->__toString()]]));
 
         return $this->show($request, $project_key, $id);
     }
@@ -257,28 +370,24 @@ class WikiController extends Controller
         $insValues = [];
 
         $parent = $request->input('parent');
-        if (!isset($parent))
-        {
+        if (!isset($parent)) {
             throw new \UnexpectedValueException('the parent directory can not be empty.', -11950);
         }
         $insValues['parent'] = $parent;
 
-        if ($parent !== '0')
-        {
+        if ($parent !== '0') {
             $isExists = DB::collection('wiki_' . $project_key)
                 ->where('_id', $parent)
                 ->where('d', 1)
                 ->where('del_flag', '<>', 1)
                 ->exists();
-            if (!$isExists)
-            {
+            if (!$isExists) {
                 throw new \UnexpectedValueException('the parent directory does not exist.', -11951);
             }
         }
 
         $name =  $request->input('name');
-        if (!isset($name) || !$name)
-        {
+        if (!isset($name) || !$name) {
             throw new \UnexpectedValueException('the name can not be empty.', -11952);
         }
         $insValues['name'] = $name;
@@ -289,14 +398,13 @@ class WikiController extends Controller
             ->where('d', 1)
             ->where('del_flag', '<>', 1)
             ->exists();
-        if ($isExists)
-        {
+        if ($isExists) {
             throw new \UnexpectedValueException('the name cannot be repeated.', -11953);
         }
 
         $insValues['pt'] = $this->getPathTree($project_key, $parent);
         $insValues['d'] = 1;
-        $insValues['creator'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        $insValues['creator'] = ['id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email];
         $insValues['created_at'] = time();
 
         $id = DB::collection('wiki_' . $project_key)->insertGetId($insValues);
@@ -317,18 +425,16 @@ class WikiController extends Controller
             ->where('_id', $id)
             ->where('del_flag', '<>', 1)
             ->first();
-        if (!$document)
-        {
+        if (!$document) {
             throw new \UnexpectedValueException('the object does not exist.', -11954);
         }
 
-        if (isset($document['checkin']) && $document['checkin'])
-        {
+        if (isset($document['checkin']) && $document['checkin']) {
             throw new \UnexpectedValueException('the object has been locked.', -11955);
         }
 
-        $checkin = []; 
-        $checkin['user'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        $checkin = [];
+        $checkin['user'] = ['id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email];
         $checkin['at'] = time();
 
         DB::collection('wiki_' . $project_key)->where('_id', $id)->update(['checkin' => $checkin]);
@@ -348,13 +454,11 @@ class WikiController extends Controller
             ->where('_id', $id)
             ->where('del_flag', '<>', 1)
             ->first();
-        if (!$document)
-        {
+        if (!$document) {
             throw new \UnexpectedValueException('the object does not exist.', -11954);
         }
 
-        if (isset($document['checkin']) && !((isset($document['checkin']['user']) && $document['checkin']['user']['id'] == $this->user->id) || $this->isPermissionAllowed($project_key, 'manage_project')))
-        {
+        if (isset($document['checkin']) && !((isset($document['checkin']['user']) && $document['checkin']['user']['id'] == $this->user->id) || $this->isPermissionAllowed($project_key, 'manage_project'))) {
             throw new \UnexpectedValueException('the object cannot been unlocked.', -11956);
         }
 
@@ -374,22 +478,17 @@ class WikiController extends Controller
         $parents = [];
         $ps = DB::collection('wiki_' . $project_key)
             ->whereIn('_id', $pt)
-            ->get([ 'name' ]);
-        foreach ($ps as $val)
-        {
+            ->get(['name']);
+        foreach ($ps as $val) {
             $parents[$val['_id']->__toString()] = $val['name'];
         }
 
         $path = [];
-        foreach ($pt as $pid)
-        {
-            if ($pid === '0')
-            {
-                $path[] = [ 'id' => '0', 'name' => 'root' ];
-            }
-            else if (isset($parents[$pid]))
-            {
-                $path[] = [ 'id' => $pid, 'name' => $parents[$pid] ];
+        foreach ($pt as $pid) {
+            if ($pid === '0') {
+                $path[] = ['id' => '0', 'name' => 'root'];
+            } else if (isset($parents[$pid])) {
+                $path[] = ['id' => $pid, 'name' => $parents[$pid]];
             }
         }
         return $path;
@@ -404,16 +503,13 @@ class WikiController extends Controller
     public function getPathTree($project_key, $directory)
     {
         $pt = [];
-        if ($directory === '0')
-        {
-            $pt = [ '0' ];
-        }
-        else
-        {
+        if ($directory === '0') {
+            $pt = ['0'];
+        } else {
             $d = DB::collection('wiki_' . $project_key)
                 ->where('_id', $directory)
                 ->first();
-            $pt = array_merge($d['pt'], [ $directory ]);
+            $pt = array_merge($d['pt'], [$directory]);
         }
         return $pt;
     }
@@ -432,9 +528,12 @@ class WikiController extends Controller
             ->where('_id', $id)
             ->where('del_flag', '<>', 1)
             ->first();
-        if (!$document)
-        {
+        if (!$document) {
             throw new \UnexpectedValueException('the object does not exist.', -11954);
+        }
+
+        if (WikiFavorites::where('wid', $id)->where('user.id', $this->user->id)->exists()) {
+            $document['favorited'] = true;
         }
 
         $newest = [];
@@ -444,14 +543,12 @@ class WikiController extends Controller
         $newest['version']    = $document['version'];
 
         $v =  $request->input('v');
-        if (isset($v) && intval($v) != $document['version'])
-        {
+        if (isset($v) && intval($v) != $document['version']) {
             $w = DB::collection('wiki_version_' . $project_key)
                 ->where('wid', $id)
-                ->where('version', intval($v)) 
+                ->where('version', intval($v))
                 ->first();
-            if (!$w)
-            {
+            if (!$w) {
                 throw new \UnexpectedValueException('the version does not exist.', -11957);
             }
 
@@ -461,16 +558,19 @@ class WikiController extends Controller
             $document['updated_at'] = $w['updated_at'];
             $document['version']    = $w['version'];
         }
-        
+
         $document['versions'] = DB::collection('wiki_version_' . $project_key)
             ->where('wid', $id)
             ->orderBy('_id', 'desc')
             ->get(['name', 'editor', 'updated_at', 'version']);
-        array_unshift($document['versions'], $newest);
+        $document['versions'] =  $this->arr_fix($document['versions']);
+
+        if ($document['versions']) array_unshift($document['versions'], $newest);
+        else $document['versions'] = $newest;
 
         $path = $this->getPathTreeDetail($project_key, $document['pt']);
 
-        return Response()->json(['ecode' => 0, 'data' => parent::arrange($document), 'options' => [ 'path' => $path ]]);
+        return Response()->json(['ecode' => 0, 'data' => parent::arrange($document), 'options' => ['path' => $path]]);
     }
 
     /**
@@ -484,8 +584,7 @@ class WikiController extends Controller
     public function update(Request $request, $project_key, $id)
     {
         $name =  $request->input('name');
-        if (!isset($name) || !$name)
-        {
+        if (!isset($name) || !$name) {
             throw new \UnexpectedValueException('the name can not be empty.', -11952);
         }
 
@@ -493,89 +592,70 @@ class WikiController extends Controller
             ->where('_id', $id)
             ->where('del_flag', '<>', 1)
             ->first();
-        if (!$old_document)
-        {
+        if (!$old_document) {
             throw new \UnexpectedValueException('the object does not exist.', -11954);
         }
 
-        if (isset($old_document['d']) && $old_document['d'] === 1)
-        {
-            if (!$this->isPermissionAllowed($project_key, 'manage_project')) 
-            {
+        if (isset($old_document['d']) && $old_document['d'] === 1) {
+            if (!$this->isPermissionAllowed($project_key, 'manage_project')) {
                 return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
             }
-        }
-        else
-        {
-            if (isset($old_document['checkin']) && isset($old_document['checkin']['user']) && $old_document['checkin']['user']['id'] !== $this->user->id)
-            {
+        } else {
+            if (isset($old_document['checkin']) && isset($old_document['checkin']['user']) && $old_document['checkin']['user']['id'] !== $this->user->id) {
                 throw new \UnexpectedValueException('the object has been locked.', -11955);
             }
         }
 
         $updValues = [];
-        if ($old_document['name'] !== $name)
-        {
+        if ($old_document['name'] !== $name) {
             $query = DB::collection('wiki_' . $project_key)
                 ->where('parent', $old_document['parent'])
                 ->where('name', $name)
                 ->where('del_flag', '<>', 1);
 
-            if (isset($old_document['d']) && $old_document['d'] === 1)
-            {
+            if (isset($old_document['d']) && $old_document['d'] === 1) {
                 $query->where('d', 1);
-            }
-            else
-            {
+            } else {
                 $query->where('d', '<>', 1);
             }
 
             $isExists = $query->exists();
-            if ($isExists)
-            {
+            if ($isExists) {
                 throw new \UnexpectedValueException('the name cannot be repeated.', -11953);
             }
 
             $updValues['name'] = $name;
         }
 
-        if (!isset($old_document['d']) || $old_document['d'] !== 1)
-        {
+        if (!isset($old_document['d']) || $old_document['d'] !== 1) {
             $contents = $request->input('contents');
-            if (isset($contents) && $contents)
-            {
+            if (isset($contents) && $contents) {
                 $updValues['contents'] = $contents;
             }
 
-            if (isset($old_document['version']) && $old_document['version'])
-            {
+            if (isset($old_document['version']) && $old_document['version']) {
                 $updValues['version'] = $old_document['version'] + 1;
-            }
-            else
-            {
+            } else {
                 $updValues['version'] = 2;
             }
         }
-        
-        $updValues['editor'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+
+        $updValues['editor'] = ['id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email];
         $updValues['updated_at'] = time();
         DB::collection('wiki_' . $project_key)->where('_id', $id)->update($updValues);
 
         // record the version
-        if (!isset($old_document['d']) || $old_document['d'] !== 1)
-        {
+        if (!isset($old_document['d']) || $old_document['d'] !== 1) {
             // unlock the wiki
-            DB::collection('wiki_' . $project_key)->where('_id', $id)->unset('checkin'); 
+            DB::collection('wiki_' . $project_key)->where('_id', $id)->unset('checkin');
             // record versions 
             $this->recordVersion($project_key, $old_document);
 
             $isSendMsg = $request->input('isSendMsg') && true;
-            Event::fire(new WikiEvent($project_key, $updValues['editor'], [ 'event_key' => 'edit_wiki', 'isSendMsg' => $isSendMsg, 'data' => [ 'wiki_id' => $id ] ]));
+            Event::dispatch(new WikiEvent($project_key, $updValues['editor'], ['event_key' => 'edit_wiki', 'isSendMsg' => $isSendMsg, 'data' => ['wiki_id' => $id]]));
 
             return $this->show($request, $project_key, $id);
-        }
-        else
-        {
+        } else {
             $document = DB::collection('wiki_' . $project_key)->where('_id', $id)->first();
             return Response()->json(['ecode' => 0, 'data' => parent::arrange($document)]);
         }
@@ -610,20 +690,17 @@ class WikiController extends Controller
     public function copy(Request $request, $project_key)
     {
         $id =  $request->input('id');
-        if (!isset($id) || !$id)
-        {
+        if (!isset($id) || !$id) {
             throw new \UnexpectedValueException('the copy object can not be empty.', -11960);
         }
 
         $name =  $request->input('name');
-        if (!isset($name) || !$name)
-        {
+        if (!isset($name) || !$name) {
             throw new \UnexpectedValueException('the name can not be empty.', -11952);
         }
 
         $dest_path =  $request->input('dest_path');
-        if (!isset($dest_path))
-        {
+        if (!isset($dest_path)) {
             throw new \UnexpectedValueException('the dest directory can not be empty.', -11961);
         }
 
@@ -632,21 +709,18 @@ class WikiController extends Controller
             ->where('d', '<>', 1)
             ->where('del_flag', '<>', 1)
             ->first();
-        if (!$document)
-        {
+        if (!$document) {
             throw new \UnexpectedValueException('the copy object does not exist.', -11962);
         }
 
         $dest_directory = [];
-        if ($dest_path !== '0')
-        {
+        if ($dest_path !== '0') {
             $dest_directory = DB::collection('wiki_' . $project_key)
                 ->where('_id', $dest_path)
                 ->where('d', 1)
                 ->where('del_flag', '<>', 1)
                 ->first();
-            if (!$dest_directory)
-            {
+            if (!$dest_directory) {
                 throw new \UnexpectedValueException('the dest directory does not exist.', -11963);
             }
         }
@@ -657,8 +731,7 @@ class WikiController extends Controller
             ->where('d', '<>', 1)
             ->where('del_flag', '<>', 1)
             ->exists();
-        if ($isExists)
-        {
+        if ($isExists) {
             throw new \UnexpectedValueException('the name cannot be repeated.', -11953);
         }
 
@@ -674,11 +747,11 @@ class WikiController extends Controller
         $insValues['version'] = 1;
         $insValues['contents'] = isset($document['contents']) ? $document['contents'] : '';
         $insValues['attachments'] = isset($document['attachments']) ? $document['attachments'] : [];
-            
-        $insValues['creator'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+
+        $insValues['creator'] = ['id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email];
         $insValues['created_at'] = time();
 
-        $new_id = DB::collection('wiki_' . $project_key)->insertGetId($insValues);         
+        $new_id = DB::collection('wiki_' . $project_key)->insertGetId($insValues);
 
         $document = DB::collection('wiki_' . $project_key)->where('_id', $new_id)->first();
         return Response()->json(['ecode' => 0, 'data' => parent::arrange($document)]);
@@ -694,14 +767,12 @@ class WikiController extends Controller
     public function move(Request $request, $project_key)
     {
         $id =  $request->input('id');
-        if (!isset($id) || !$id)
-        {
+        if (!isset($id) || !$id) {
             throw new \UnexpectedValueException('the move object can not be empty.', -11964);
         }
 
         $dest_path =  $request->input('dest_path');
-        if (!isset($dest_path))
-        {
+        if (!isset($dest_path)) {
             throw new \UnexpectedValueException('the dest directory can not be empty.', -11965);
         }
 
@@ -709,29 +780,24 @@ class WikiController extends Controller
             ->where('_id', $id)
             ->where('del_flag', '<>', 1)
             ->first();
-        if (!$document)
-        {
+        if (!$document) {
             throw new \UnexpectedValueException('the move object does not exist.', -11966);
         }
 
-        if (isset($document['d']) && $document['d'] === 1)
-        {
-            if (!$this->isPermissionAllowed($project_key, 'manage_project'))
-            {
+        if (isset($document['d']) && $document['d'] === 1) {
+            if (!$this->isPermissionAllowed($project_key, 'manage_project')) {
                 return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
             }
         }
 
         $dest_directory = [];
-        if ($dest_path !== '0')
-        {
+        if ($dest_path !== '0') {
             $dest_directory = DB::collection('wiki_' . $project_key)
                 ->where('_id', $dest_path)
                 ->where('d', 1)
                 ->where('del_flag', '<>', 1)
                 ->first();
-            if (!$dest_directory)
-            {
+            if (!$dest_directory) {
                 throw new \UnexpectedValueException('the dest directory does not exist.', -11967);
             }
         }
@@ -742,8 +808,7 @@ class WikiController extends Controller
             ->where('d', isset($document['d']) && $document['d'] === 1 ? '=' : '<>', 1)
             ->where('del_flag', '<>', 1)
             ->exists();
-        if ($isExists)
-        {
+        if ($isExists) {
             throw new \UnexpectedValueException('the name cannot be repeated.', -11953);
         }
 
@@ -752,23 +817,20 @@ class WikiController extends Controller
         $updValues['pt'] = array_merge(isset($dest_directory['pt']) ? $dest_directory['pt'] : [], [$dest_path]);
         DB::collection('wiki_' . $project_key)->where('_id', $id)->update($updValues);
 
-        if (isset($document['d']) && $document['d'] === 1)
-        {
+        if (isset($document['d']) && $document['d'] === 1) {
             $subs = DB::collection('wiki_' . $project_key)
                 ->where('pt', $id)
                 ->where('del_flag', '<>', 1)
                 ->get();
-             foreach ($subs as $sub)
-             {
-                 $pt = isset($sub['pt']) ? $sub['pt'] : [];
-                 $pind = array_search($id, $pt);
-                 if ($pind !== false)
-                 {
-                     $tail = array_slice($pt, $pind);
-                     $pt = array_merge($updValues['pt'], $tail);
-                     DB::collection('wiki_' . $project_key)->where('_id', $sub['_id']->__toString())->update(['pt' => $pt]);
-                 }
-             }
+            foreach ($subs as $sub) {
+                $pt = isset($sub['pt']) ? $sub['pt'] : [];
+                $pind = array_search($id, $pt);
+                if ($pind !== false) {
+                    $tail = array_slice($pt, $pind);
+                    $pt = array_merge($updValues['pt'], $tail);
+                    DB::collection('wiki_' . $project_key)->where('_id', $sub['_id']->__toString())->update(['pt' => $pt]);
+                }
+            }
         }
 
         $document = DB::collection('wiki_' . $project_key)->where('_id', $id)->first();
@@ -787,30 +849,26 @@ class WikiController extends Controller
         $document = DB::collection('wiki_' . $project_key)
             ->where('_id', $id)
             ->first();
-        if (!$document)
-        {
+        if (!$document) {
             throw new \UnexpectedValueException('the object does not exist.', -11954);
         }
 
-        if (isset($document['d']) && $document['d'] === 1)
-        {
-            if (!$this->isPermissionAllowed($project_key, 'manage_project'))
-            {
+        if (isset($document['d']) && $document['d'] === 1) {
+            if (!$this->isPermissionAllowed($project_key, 'manage_project')) {
                 return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
             }
         }
 
-        DB::collection('wiki_' . $project_key)->where('_id', $id)->update([ 'del_flag' => 1 ]);
+        DB::collection('wiki_' . $project_key)->where('_id', $id)->update(['del_flag' => 1]);
 
-        if (isset($document['d']) && $document['d'] === 1)
-        {
-            DB::collection('wiki_' . $project_key)->whereRaw([ 'pt' => $id ])->update([ 'del_flag' => 1 ]);
+        if (isset($document['d']) && $document['d'] === 1) {
+            DB::collection('wiki_' . $project_key)->whereRaw(['pt' => $id])->update(['del_flag' => 1]);
         }
 
-        $user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
-        Event::fire(new WikiEvent($project_key, $user, [ 'event_key' => 'delete_wiki', 'wiki_id' => $id ]));
+        $user = ['id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email];
+        Event::dispatch(new WikiEvent($project_key, $user, ['event_key' => 'delete_wiki', 'wiki_id' => $id]));
 
-        return Response()->json(['ecode' => 0, 'data' => [ 'id' => $id ]]);
+        return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }
 
     /**
@@ -824,56 +882,56 @@ class WikiController extends Controller
      */
     public function upload(Request $request, $project_key, $wid)
     {
-        set_time_limit(0);
-
-        if (!is_writable(config('filesystems.disks.local.root', '/tmp')))
-        {
-            throw new \UnexpectedValueException('the user has not the writable permission to the directory.', -15103);
-        }
-
-        $fields = array_keys($_FILES);
-        $field = array_pop($fields);
-        if (empty($_FILES) || $_FILES[$field]['error'] > 0)
-        {
-            throw new \UnexpectedValueException('upload file errors.', -11959);
-        }
+        @ini_set('max_execution_time', '0');
+        ignore_user_abort(true);
 
         $document = DB::collection('wiki_' . $project_key)
             ->where('_id', $wid)
             ->where('del_flag', '<>', 1)
             ->first();
-        if (!$document)
-        {
+        if (!$document) {
             throw new \UnexpectedValueException('the object does not exist.', -11954);
         }
 
-        $basename = md5(microtime() . $_FILES[$field]['name']);
-        $sub_save_path = config('filesystems.disks.local.root', '/tmp') . '/' . substr($basename, 0, 2) . '/';
-        if (!is_dir($sub_save_path))
-        {
-            @mkdir($sub_save_path);
+
+        $fields = array_keys($_FILES);
+        $field = array_pop($fields);
+        FilesModel::setProjectKey($project_key);
+        $file = $request->file($field);
+        if (!$file->isValid()) {
+            throw new \UnexpectedValueException('upload file errors.', -11959);
         }
-        move_uploaded_file($_FILES[$field]['tmp_name'], $sub_save_path . $basename);
+
+        // $content = file_get_contents($file->getPathname());
+        // if (!$content) {
+        //     throw new \UnexpectedValueException('upload file errors.', -11959);
+        // }
+
+
+        $basename = FilesModel::basePath($file->getClientOriginalName());
+        $sub_save_path = FilesModel::absPath(null);
+        $filename = $sub_save_path . $basename;
 
         $data = [];
-
-        $data['name'] = $_FILES[$field]['name'];;
-        $data['size']    = $_FILES[$field]['size'];
-        $data['type']    = $_FILES[$field]['type'];
-        $data['id'] = $data['index']   = $basename;
-
-        $data['uploader'] = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        $data['name']    = $file->getClientOriginalName();
+        $data['size']    = $file->getSize();
+        $data['type']    = $file->getClientMimeType();
+        $data['index']   = $basename;
+        $data['id'] = substr(md5($basename . "_" . time()), 8, 16);
+        $data['uploader'] = ['id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email];
         $data['uploaded_at'] = time();
 
-        $attachments = [];
-        if (isset($document['attachments']) && $document['attachments'])
-        {
-            $attachments = $document['attachments'];
+        $uploaded = FilesModel::saveTo($file, $filename);
+        if (!$uploaded) {
+            throw new \UnexpectedValueException('save file with error.', -11959);
         }
 
+        $attachments = [];
+        if (isset($document['attachments']) && $document['attachments']) {
+            $attachments = $document['attachments'];
+        }
         $attachments[] = $data;
-        DB::collection('wiki_' . $project_key)->where('_id', $wid)->update([ 'attachments' => $attachments ]);
-
+        DB::collection('wiki_' . $project_key)->where('_id', $wid)->update(['attachments' => $attachments]);
         return Response()->json(['ecode' => 0, 'data' => $data]);
     }
 
@@ -891,27 +949,23 @@ class WikiController extends Controller
             ->where('_id', $wid)
             ->where('del_flag', '<>', 1)
             ->first();
-        if (!$document)
-        {
+        if (!$document) {
             throw new \UnexpectedValueException('the object does not exist.', -11954);
         }
 
-        if (!isset($document['attachments']) || !$document['attachments'])
-        {
+        if (!isset($document['attachments']) || !$document['attachments']) {
             throw new \UnexpectedValueException('the file does not exist.', -11958);
         }
 
         $new_attachments = [];
-        foreach ($document['attachments'] as $a)
-        {
-            if ($a['id'] !== $fid)
-            {
+        foreach ($document['attachments'] as $a) {
+            if ($a['id'] !== $fid) {
                 $new_attachments[] = $a;
             }
         }
 
-        DB::collection('wiki_' . $project_key)->where('_id', $wid)->update([ 'attachments' => $new_attachments ]);
-        return Response()->json(['ecode' => 0, 'data' => [ 'id' => $fid ]]);
+        DB::collection('wiki_' . $project_key)->where('_id', $wid)->update(['attachments' => $new_attachments]);
+        return Response()->json(['ecode' => 0, 'data' => ['id' => $fid]]);
     }
 
     /**
@@ -930,16 +984,13 @@ class WikiController extends Controller
             ->where('_id', $wid)
             ->where('del_flag', '<>', 1)
             ->first();
-        if (!$document)
-        {
+        if (!$document) {
             throw new \UnexpectedValueException('the object does not exist.', -11954);
         }
 
-        if (!isset($document['attachments']) || !$document['attachments'])
-        {
+        if (!isset($document['attachments']) || !$document['attachments']) {
             throw new \UnexpectedValueException('the file does not exist.', -11958);
         }
-
         $this->downloadFolder($document['name'], $document['attachments']);
     }
 
@@ -960,32 +1011,26 @@ class WikiController extends Controller
             ->where('_id', $wid)
             ->where('del_flag', '<>', 1)
             ->first();
-        if (!$document)
-        {
+        if (!$document) {
             throw new \UnexpectedValueException('the object does not exist.', -11954);
         }
 
-        if (!isset($document['attachments']) || !$document['attachments'])
-        {
+        if (!isset($document['attachments']) || !$document['attachments']) {
             throw new \UnexpectedValueException('the file does not exist.', -11958);
         }
 
         $isExists = false;
-        foreach ($document['attachments'] as $file)
-        {
-            if (isset($file['id']) && $file['id'] === $fid) 
-            {
+        foreach ($document['attachments'] as $file) {
+            if (isset($file['id']) && $file['id'] === $fid) {
                 $isExists = true;
                 break;
             }
         }
-
-        if (!$isExists)
-        {
+        if (!$isExists) {
             throw new \UnexpectedValueException('the file does not exist.', -11958);
         }
 
-        $this->downloadFile($file['name'], $file['index']);
+        return $this->downloadFile($file['name'], $file['index']);
     }
 
     /**
@@ -997,31 +1042,38 @@ class WikiController extends Controller
      */
     public function downloadFolder($name, $attachments)
     {
-        setlocale(LC_ALL, 'zh_CN.UTF-8'); 
+        setlocale(LC_ALL, 'zh_CN.UTF-8');
 
         $basepath = '/tmp/' . md5($this->user->id . microtime());
         @mkdir($basepath);
-
         $fullpath = $basepath . '/' . $name;
         @mkdir($fullpath);
 
-        foreach ($attachments as $attachment)
-        {
-            $filepath = config('filesystems.disks.local.root', '/tmp') . '/' . substr($attachment['index'], 0, 2);
-            $filename = $filepath . '/' . $attachment['index'];
-            if (file_exists($filename))
-            {
-                @copy($filename, $fullpath . '/' . $attachment['name']);
+
+        foreach ($attachments as $doc) {
+
+            $filename = FilesModel::absPath($doc['index']);
+            if (FilesModel::defaultDisk() == 'local') {
+                if (file_exists($filename)) {
+                    @copy($filename, $fullpath . '/' . $doc['name']);
+                }
+            } else {
+                $disk = FilesModel::disk();
+                $exists = $disk->has($filename);
+                if ($exists) {
+                    $contents = $disk->read($filename);
+                    file_put_contents(FilesModel::absPath($fullpath . '/' . $doc['name'], true), $contents);
+                }
             }
         }
 
-        $fname = $basepath . '/' . $name . '.zip';
-        Zipper::make($fname)->folder($name)->add($basepath . '/' . $name);
-        Zipper::close();
 
-        File::download($fname, $name . '.zip');
-
-        exec('rm -rf ' . $basepath);
+        $filename = $basepath . '/' . $name . '.zip';
+        $zipper = new Zipper();
+        $zipper->make($filename)->folder($name)->add($basepath . '/' . $name);
+        $zipper->close();
+        File::download($filename, $name . '.zip');
+        FilesModel::rmdir($basepath);
     }
 
     /**
@@ -1033,13 +1085,44 @@ class WikiController extends Controller
      */
     public function downloadFile($name, $index)
     {
-        $filepath = config('filesystems.disks.local.root', '/tmp') . '/' . substr($index, 0, 2);
-        $filename = $filepath . '/' . $index;
-        if (!file_exists($filename))
-        {
-            throw new \UnexpectedValueException('file does not exist.', -11958);
+        $filename = FilesModel::absPath($index);
+        if (FilesModel::defaultDisk() == 'local') {
+            if (!file_exists($filename)) {
+                throw new \UnexpectedValueException('file does not exist.', -11958);
+            }
+            File::download($filename, $name);
+        } else {
+            $url = FilesModel::disk()->getUrl($index);
+            return redirect()->away($url);
+        }
+    }
+
+    /**
+     * favorite action.
+     *
+     * @param  string  $project_key
+     * @param  string  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function favorite(Request $request, $project_key, $id)
+    {
+        $document = DB::collection('wiki_' . $project_key)
+            ->where('_id', $id)
+            ->where('del_flag', '<>', 1)
+            ->first();
+        if (!$document) {
+            throw new \UnexpectedValueException('the object does not exist.', -11954);
         }
 
-        File::download($filename, $name);
+        WikiFavorites::where('wid', $id)->where('user.id', $this->user->id)->delete();
+
+        $cur_user = ['id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email];
+
+        $flag = $request->input('flag');
+        if (isset($flag) && $flag) {
+            WikiFavorites::create(['project_key' => $project_key, 'wid' => $id, 'user' => $cur_user]);
+        }
+
+        return Response()->json(['ecode' => 0, 'data' => ['id' => $id, 'user' => $cur_user, 'favorited' => $flag]]);
     }
 }

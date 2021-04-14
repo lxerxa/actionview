@@ -52,7 +52,7 @@ class PriorityController extends Controller
 
         $priority = Priority::create([ 'project_key' => $project_key, 'sn' => time() ] + $request->all());
         // trigger to change priority field config
-        // Event::fire(new PriorityConfigChangeEvent($project_key));
+        // Event::dispatch(new PriorityConfigChangeEvent($project_key));
         return Response()->json(['ecode' => 0, 'data' => $priority]);
     }
 
@@ -107,7 +107,7 @@ class PriorityController extends Controller
 
         $priority->fill($request->except(['project_key']))->save();
         // trigger to change priority field config
-        // Event::fire(new PriorityConfigChangeEvent($project_key));
+        // Event::dispatch(new PriorityConfigChangeEvent($project_key));
         return Response()->json(['ecode' => 0, 'data' => Priority::find($id)]);
     }
 
@@ -162,7 +162,7 @@ class PriorityController extends Controller
         }
 
         // trigger to change priority field config
-        // Event::fire(new PriorityConfigChangeEvent($project_key));
+        // Event::dispatch(new PriorityConfigChangeEvent($project_key));
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }
 

@@ -6,7 +6,6 @@ use Illuminate\Foundation\Bus\DispatchesJobs;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Foundation\Auth\Access\AuthorizesResources;
 
 use App\Project\Eloquent\Project;
 use App\Project\Eloquent\Watch;
@@ -19,15 +18,36 @@ use MongoDB\BSON\ObjectID;
 
 class Controller extends BaseController
 {
-    use AuthorizesRequests, AuthorizesResources, DispatchesJobs, ValidatesRequests;
+    use AuthorizesRequests, DispatchesJobs, ValidatesRequests;
+    public $user;
 
     public function __construct()
     {
-        $this->user = Sentinel::getUser(); 
+
+        $this->middleware(function ($request, $next) {
+            $this->user = Sentinel::getUser();
+            return $next($request);
+        }); 
+
+    }
+
+    /**
+     * fix object to array
+     */
+    public function arr_fix($data){
+        if (!is_array($data)){
+            $newdata = json_decode(json_encode($data), true);
+            if($newdata===false) return $data;
+            $data= $newdata;
+        }
+        return $data; 
     }
 
     public function arrange($data)
     {
+
+        $data = $this->arr_fix($data);
+
         if (!is_array($data))
         {
             return $data;
@@ -35,7 +55,7 @@ class Controller extends BaseController
 
         if (array_key_exists('_id', $data))
         {
-            $data['_id'] = $data['_id'] instanceof ObjectID ? $data['_id']->__toString() : $data['_id'];
+            $data['_id'] = $data['_id'] instanceof ObjectID ? $data['_id']->__toString() : (isset($data['_id']) && isset($data['_id']['$oid']) ? $data['_id']['$oid'] :$data['_id']);
         }
 
         foreach ($data as $k => $val)
@@ -146,6 +166,11 @@ class Controller extends BaseController
                         })
                         ->where('del_flg', '<>', 1)
                         ->exists();
+                case 'labels':
+                    return DB::collection('issue_' . $project_key)
+                        ->where($field_key, $field['name'])
+                        ->where('del_flg', '<>', 1)
+                        ->exists();
                 default:
                     return true;
             }
@@ -233,7 +258,7 @@ class Controller extends BaseController
                 $vals = explode(',', $val);
                 foreach ($vals as $v)
                 {
-                    $or[] = [ $key . '_ids' => $v ];
+                    $or[] = [ $key . '_ids' => $v == 'me' ? $this->user->id : $v ];
                 }
                 $and[] = [ '$or' => $or ];
             }
@@ -253,42 +278,69 @@ class Controller extends BaseController
             }
             else if (in_array($key_type_fields[$key], [ 'Duration', 'DatePicker', 'DateTimePicker' ]))
             {
-                if (strpos($val, '~') !== false)
+                if (in_array($val, [ '0d', '0w', '0m', '0y' ]))
                 {
-                    $sections = explode('~', $val);
-                    if ($sections[0])
+                    if ($val == '0d')
                     {
-                        $and[] = [ $key => [ '$gte' => strtotime($sections[0]) ] ];
+                        $and[] = [ $key => [ '$gte' => strtotime(date('Y-m-d')), '$lte' => strtotime(date('Y-m-d') . ' 23:59:59') ] ];
                     }
-                    if ($sections[1])
+                    else if ($val == '0w')
                     {
-                        $and[] = [ $key => [ '$lte' => strtotime($sections[1] . ' 23:59:59') ] ];
+                        $and[] = [ $key => [ '$gte' => mktime(0, 0, 0, date('m'), date('d') - date('w') + 1, date('Y')), '$lte' => mktime(23, 59, 59, date('m'), date('d') - date('w') + 7, date('Y')) ] ];
+                    } 
+                    else if ($val == '0m')
+                    {
+                        $and[] = [ $key => [ '$gte' => mktime(0, 0, 0, date('m'), 1, date('Y')), '$lte' => mktime(23, 59, 59, date('m'), date('t'), date('Y')) ] ];
+                    }
+                    else
+                    {
+                        $and[] = [ $key => [ '$gte' => mktime(0, 0, 0, 1, 1, date('Y')), '$lte' => mktime(23, 59, 59, 12, 31, date('Y')) ] ];
                     }
                 }
                 else
                 {
-                    $unitMap = [ 'w' => 'week', 'm' => 'month', 'y' => 'year' ];
-                    $unit = substr($val, -1);
-                    if (in_array($unit, [ 'w', 'm', 'y' ]))
+                    $date_conds = [];
+                    $unitMap = [ 'd' => 'day', 'w' => 'week', 'm' => 'month', 'y' => 'year' ];
+                    $sections = explode('~', $val);
+                    if ($sections[0])
                     {
-                        $direct = substr($val, 0, 1);
-                        $val = abs(substr($val, 0, -1));
-                        if ($direct === '-')
+                        $v = $sections[0];
+                        $unit = substr($v, -1);
+                        if (in_array($unit, [ 'd', 'w', 'm', 'y' ]))
                         {
-                            $and[] = [ $key => [ '$lt' => strtotime(date('Ymd', strtotime('-' . $val . ' ' . $unitMap[$unit]))) ] ];
+                            $direct = substr($v, 0, 1);
+                            $vv = abs(substr($v, 0, -1));
+                            $date_conds['$gte'] = strtotime(date('Ymd', strtotime(($direct === '-' ? '-' : '+') . $vv . ' ' . $unitMap[$unit])));
                         }
                         else
                         {
-                            $and[] = [ $key => [ '$gte' => strtotime(date('Ymd', strtotime('-' . $val . ' ' . $unitMap[$unit]))) ] ];
+                            $date_conds['$gte'] = strtotime($v);
                         }
                     }
+
+                    if (isset($sections[1]) && $sections[1])
+                    {
+                        $v = $sections[1];
+                        $unit = substr($v, -1);
+                        if (in_array($unit, [ 'd', 'w', 'm', 'y' ]))
+                        {
+                            $direct = substr($v, 0, 1);
+                            $vv = abs(substr($v, 0, -1));
+                            $date_conds['$lte'] = strtotime(date('Y-m-d', strtotime(($direct === '-' ? '-' : '+') . $vv . ' ' . $unitMap[$unit])) . ' 23:59:59');
+                        }
+                        else
+                        {
+                            $date_conds['$lte'] = strtotime($v . ' 23:59:59');
+                        }
+                    }
+                    $and[] = [ $key => $date_conds ];
                 }
             }
-            else if (in_array($key_type_fields[$key], [ 'Text', 'TextArea', 'Url' ]))
+            else if (in_array($key_type_fields[$key], [ 'Text', 'TextArea', 'RichTextEditor', 'Url' ]))
             {
                 $and[] = [ $key => [ '$regex' => $val ] ];
             }
-            else if ($key_type_fields[$key] === 'Number')
+            else if (in_array($key_type_fields[$key],  [ 'Number', 'Integer' ]))
             {
                 if (strpos($val, '~') !== false)
                 {

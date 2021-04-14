@@ -23,6 +23,7 @@ use App\Project\Eloquent\Module;
 use App\Project\Eloquent\Epic;
 use App\Project\Eloquent\Sprint;
 use App\Project\Eloquent\Labels;
+use App\Project\Eloquent\IssueFilters;
 use App\Project\Eloquent\UserIssueFilters;
 use App\Project\Eloquent\UserIssueListColumns;
 use App\Project\Eloquent\ProjectIssueListColumns;
@@ -59,10 +60,10 @@ class Provider {
             [ 'id' => 'assigned_to_me', 'name' => '分配给我的', 'query' => [ 'assignee' => 'me', 'resolution' => 'Unresolved' ] ],
             [ 'id' => 'watched', 'name' => '我关注的', 'query' => [ 'watcher' => 'me' ] ],
             [ 'id' => 'reported', 'name' => '我报告的', 'query' => [ 'reporter' => 'me' ] ],
-            [ 'id' => 'recent_created', 'name' => '最近增加的', 'query' => [ 'created_at' => '2w' ] ],
-            [ 'id' => 'recent_updated', 'name' => '最近更新的', 'query' => [ 'updated_at' => '2w' ] ],
-            [ 'id' => 'recent_resolved', 'name' => '最近解决的', 'query' => [ 'resolved_at' => '2w' ] ],
-            [ 'id' => 'recent_closed', 'name' => '最近关闭的', 'query' => [ 'closed_at' => '2w' ] ],
+            [ 'id' => 'recent_created', 'name' => '最近新建的', 'query' => [ 'created_at' => '-14d~' ] ],
+            [ 'id' => 'recent_updated', 'name' => '最近更新的', 'query' => [ 'updated_at' => '-14d~' ] ],
+            [ 'id' => 'recent_resolved', 'name' => '最近解决的', 'query' => [ 'resolved_at' => '-14d~' ] ],
+            [ 'id' => 'recent_closed', 'name' => '最近关闭的', 'query' => [ 'closed_at' => '-14d~' ] ],
         ];
     }
 
@@ -78,13 +79,35 @@ class Provider {
         // default issue filters
         $filters = self::getDefaultIssueFilters();
 
+        // customize the filter
+        $customize_filters = IssueFilters::where('project_key', $project_key)
+            ->where(function ($query) use ($user_id) {
+                $query->where('creator', $user_id)
+                    ->orWhere('scope', 'public');
+                })
+            ->get();
+        foreach ($customize_filters as $val) 
+        {
+            $filters[] = [ 'id' => $val->id, 'name' => $val->name ?: '', 'query' => $val->query ?: [], 'creator' => $val->creator ];
+        }
+
+        $sequence = [];
         $res = UserIssueFilters::where('project_key', $project_key)
             ->where('user', $user_id)
-            ->first(); 
+            ->first();
         if ($res)
         {
-            $filters = isset($res->filters) ? $res->filters : [];
+            $sequence = isset($res->sequence) ? $res->sequence : [];
+            $func = function($v1, $v2) use ($sequence) {
+                $i1 = array_search($v1['id'], $sequence);
+                $i1 = $i1 !== false ? $i1 : 998;
+                $i2 = array_search($v2['id'], $sequence);
+                $i2 = $i2 !== false ? $i2 : 999;
+                return $i1 >= $i2 ? 1 : -1;
+            };
+            usort($filters, $func);
         }
+
         return $filters;
     }
 
@@ -205,7 +228,7 @@ class Provider {
             ->get();
         foreach ($labels as $label)
         {
-            $options[] = $label->name;
+            $options[] = [ 'name' => $label->name, 'bgColor' => $label->bgColor ?: '' ];
         }
 
         return $options;
@@ -632,7 +655,7 @@ class Provider {
     public static function getVersionList($project_key, $fields=[])
     {
         $versions = Version::where([ 'project_key' => $project_key ])
-            ->orderBy('status', 'asc')
+            ->orderBy('status', 'desc')
             ->orderBy('released_time', 'desc')
             ->orderBy('end_time', 'desc')
             ->orderBy('created_at', 'desc')
@@ -855,7 +878,7 @@ class Provider {
                 $couple_labels = [];
                 foreach ($options['labels'] as $label)
                 {
-                    $couple_labels[] = [ 'id' => $label, 'name' => $label ];
+                    $couple_labels[] = [ 'id' => $label['name'], 'name' => $label['name'] ];
                 }
                 $val['optionValues'] = $couple_labels;
             }
@@ -1046,7 +1069,7 @@ class Provider {
                 $couple_labels = [];
                 foreach ($labels as $label)
                 {
-                    $couple_labels[] = [ 'id' => $label, 'name' => $label ];
+                    $couple_labels[] = [ 'id' => $label['name'], 'name' => $label['name'] ];
                 }
                 $val['optionValues'] = $couple_labels;
             }
@@ -1106,7 +1129,7 @@ class Provider {
             $schema = [];
             if ($change_fields)
             {
-                $out_schema_fields = [ 'type', 'state', 'resolution', 'priority', 'assignee', 'labels', 'parent_id', 'progress', 'expect_start_time', 'expect_complete_time' ];
+                $out_schema_fields = [ 'type', 'state', 'resolution', 'priority', 'assignee', 'descriptions', 'labels', 'parent_id', 'progress', 'expect_start_time', 'expect_complete_time' ];
                 if (array_diff($change_fields, $out_schema_fields))
                 {
                     $schema = self::getSchemaByType($issue['type']);
@@ -1120,77 +1143,77 @@ class Provider {
 
         foreach ($schema as $field)
         {
-            if (in_array($field['key'], [ 'assignee', 'progress' ]) || ($change_fields && !in_array($field['key'], $change_fields)))
+            if (!isset($issue[$field['key']]) || ($change_fields && !in_array($field['key'], $change_fields)))
             {
                 continue;
             }
 
-            if (isset($issue[$field['key']]))
-            {
-                $val = [];
-                $val['name'] = $field['name'];
+            $val = [];
+            $val['name'] = $field['name'];
                 
-                if ($field['type'] === 'SingleUser' || $field['type'] === 'MultiUser')
+            if ($field['type'] === 'SingleUser' || $field['type'] === 'MultiUser')
+            {
+                if ($field['type'] === 'SingleUser')
                 {
-                    if ($field['type'] === 'SingleUser')
-                    {
-                        $val['value'] = $issue[$field['key']] ? $issue[$field['key']]['name'] : $issue[$field['key']];
-                    }
-                    else
-                    {
-                        $tmp_users = [];
-                        if ($issue[$field['key']])
-                        {
-                            foreach ($issue[$field['key']] as $tmp_user)
-                            {
-                                $tmp_users[] = $tmp_user['name'];
-                            }
-                        }
-                        $val['value'] = implode(',', $tmp_users);
-                    }
-                }
-                else if (isset($field['optionValues']) && $field['optionValues'])
-                {
-                    $opv = [];
-                    
-                    if (!is_array($issue[$field['key']]))
-                    {
-                        $fieldValues = explode(',', $issue[$field['key']]);
-                    }
-                    else
-                    {
-                        $fieldValues = $issue[$field['key']];
-                    }
-                    foreach ($field['optionValues'] as $ov)
-                    {
-                        if (in_array($ov['id'], $fieldValues))
-                        {
-                            $opv[] = $ov['name'];
-                        }
-                    }
-                    $val['value'] = implode(',', $opv);
-                }
-                else if ($field['type'] == 'File')
-                {
-                    $val['value'] = [];
-                    foreach ($issue[$field['key']] as $fid)
-                    {
-                        $file = File::find($fid);
-                        array_push($val['value'], $file->name);
-                    }
-                }
-                else if ($field['type'] == 'DatePicker' || $field['type'] == 'DateTimePicker')
-                {
-                    $val['value'] = $issue[$field['key']] ? date($field['type'] == 'DatePicker' ? 'Y/m/d' : 'Y/m/d H:i:s', $issue[$field['key']]) : $issue[$field['key']];
+                    $val['value'] = $issue[$field['key']] ? $issue[$field['key']]['name'] : $issue[$field['key']];
                 }
                 else
                 {
-                    $val['value'] = $issue[$field['key']];
+                    $tmp_users = [];
+                    if ($issue[$field['key']])
+                    {
+                        foreach ($issue[$field['key']] as $tmp_user)
+                        {
+                            $tmp_users[] = $tmp_user['name'];
+                        }
+                    }
+                    $val['value'] = implode(',', $tmp_users);
                 }
-                //$val['type'] = $field['type']; 
-
-                $snap_data[$field['key']] = $val;
             }
+            else if (isset($field['optionValues']) && $field['optionValues'])
+            {
+                $opv = [];
+                    
+                if (!is_array($issue[$field['key']]))
+                {
+                    $fieldValues = explode(',', $issue[$field['key']]);
+                }
+                else
+                {
+                    $fieldValues = $issue[$field['key']];
+                }
+                foreach ($field['optionValues'] as $ov)
+                {
+                    if (in_array($ov['id'], $fieldValues))
+                    {
+                        $opv[] = $ov['name'];
+                    }
+                }
+                $val['value'] = implode(',', $opv);
+            }
+            else if ($field['type'] == 'File')
+            {
+                $val['value'] = [];
+                foreach ($issue[$field['key']] as $fid)
+                {
+                    $file = File::find($fid);
+                    array_push($val['value'], $file->name);
+                }
+            }
+            else if ($field['type'] == 'DatePicker' || $field['type'] == 'DateTimePicker')
+            {
+                $val['value'] = $issue[$field['key']] ? date($field['type'] == 'DatePicker' ? 'Y/m/d' : 'Y/m/d H:i:s', $issue[$field['key']]) : $issue[$field['key']];
+            }
+            else if ($field['key'] == 'progress')
+            {
+                $val['value'] = $issue[$field['key']] . '%';
+            }
+            else
+            {
+                $val['value'] = $issue[$field['key']];
+            }
+
+            $snap_data[$field['key']] = $val;
         }
 
         // special fields handle
@@ -1254,14 +1277,30 @@ class Provider {
             {
                 if (in_array('assignee', $change_fields) || !isset($snap_data['assignee']))
                 {
-                    $snap_data['assignee'] = [ 'value' => $issue['assignee']['name'], 'name' => '经办人' ];
+                    $snap_data['assignee'] = [ 'value' => $issue['assignee']['name'], 'name' => '负责人' ];
                 }
             }
             else
             {
-                $snap_data['assignee'] = [ 'value' => '', 'name' => '经办人' ];
+                $snap_data['assignee'] = [ 'value' => '', 'name' => '负责人' ];
             }
         }
+
+        if (isset($issue['descriptions']))
+        {
+            if ($issue['descriptions'])
+            {
+                if (in_array('descriptions', $change_fields) || !isset($snap_data['descriptions']))
+                {
+                    $snap_data['descriptions'] = [ 'value' => $issue['descriptions'], 'name' => '描述' ];
+                }
+            }
+            else
+            {
+                $snap_data['descriptions'] = [ 'value' => '', 'name' => '描述' ];
+            }
+        }
+
         // labels
         if (isset($issue['labels']))
         {
@@ -1321,7 +1360,7 @@ class Provider {
             }
             else
             {
-                $snap_data['expect_start_time'] = [ 'value' => date('Y/m/d', $issue['expect_start_time']), 'name' => '期望开始时间' ];
+                $snap_data['expect_start_time'] = [ 'value' => '', 'name' => '期望开始时间' ];
             }
         }
 
@@ -1433,13 +1472,37 @@ class Provider {
      */
     public static function getSprintList($project_key, $fields=[])
     {
-        $epics = Sprint::Where('project_key', $project_key)
+        $sprints = Sprint::Where('project_key', $project_key)
             ->WhereIn('status', [ 'active', 'completed' ])
             ->orderBy('no', 'desc')
             ->get($fields)
             ->toArray();
 
-        return $epics;
+        foreach($sprints as $key => $sprint)
+        {
+            if (!isset($sprint['name']))
+            {
+                $sprints[$key]['name'] = 'Sprint ' . $sprint['no'];
+            }
+        }
+
+        return $sprints;
+    }
+
+    /**
+     * check if Label has existed.
+     *
+     * @param string $project_key
+     * @param string $name
+     * @return bool
+     */
+    public static function isLabelExisted($project_key, $name)
+    {
+        $isExisted = Labels::Where('project_key', $project_key)
+            ->Where('name', $name)
+            ->exists();
+
+        return $isExisted;
     }
 }
 

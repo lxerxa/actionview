@@ -17,6 +17,7 @@ class Kernel extends ConsoleKernel
         'App\Console\Commands\SyncLdap',
         'App\Console\Commands\SnapSprint',
         'App\Console\Commands\RemoveLogs',
+        'App\Console\Commands\ImportFile',
         // Commands\Inspire::class,
     ];
 
@@ -31,7 +32,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('email:send')
                  ->everyMinute();
         $schedule->command('sprint:snap')
-                 ->hourly();
+                 ->dailyAt('23:20');
         $schedule->command('ldap:sync')
                  ->daily();
         $schedule->command('logs:remove')

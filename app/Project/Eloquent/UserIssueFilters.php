@@ -12,6 +12,6 @@ class UserIssueFilters extends Model
     protected $fillable = array(
         'project_key',
         'user',
-        'filters'
+        'sequence'
     );
 }

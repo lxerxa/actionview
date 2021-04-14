@@ -11,6 +11,7 @@ class Labels extends Model
 
     protected $fillable = array(
         'name',
+        'bgColor',
         'project_key'
     );
 }

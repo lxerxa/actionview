@@ -13,6 +13,28 @@ class VerifyCsrfToken extends BaseVerifier
      */
     protected $except = [
         //
-        '/*'
+        // '/*'
     ];
+ 
+
+    /**
+     * Get the CSRF token from the request.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return string
+     */
+    protected function getTokenFromRequest($request)
+    {
+        $token = $request->input('_token') ?: $request->header('X-CSRF-TOKEN', $request->cookie('XSRF-TOKEN'));
+
+        if (!$token && $header = $request->header('X-XSRF-TOKEN')) {
+            try {
+                $token = CookieValuePrefix::remove($this->encrypter->decrypt($header, static::serialized()));
+            } catch (DecryptException $e) {
+                $token = '';
+            }
+        }
+
+        return $token;
+    }
 }

@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
-
+use Illuminate\Support\Arr;
 //use App\Events\ModuleEvent;
 use App\Events\IssueEvent;
 use App\Http\Requests;
@@ -74,7 +74,7 @@ class ModuleController extends Controller
             'creator' => $creator ] + $request->all());
 
         // trigger event of version added
-        //Event::fire(new ModuleEvent($project_key, $creator, [ 'event_key' => 'create_module', 'data' => $module->name ]));
+        //Event::dispatch(new ModuleEvent($project_key, $creator, [ 'event_key' => 'create_module', 'data' => $module->name ]));
 
         return Response()->json([ 'ecode' => 0, 'data' => $module ]);
     }
@@ -139,11 +139,11 @@ class ModuleController extends Controller
             $principal = isset($module['principal']) ? $module['principal'] : [];
         }
 
-        $module->fill([ 'principal' => $principal ] + array_except($request->all(), [ 'creator', 'project_key' ]))->save();
+        $module->fill([ 'principal' => $principal ] + Arr::except($request->all(), [ 'creator', 'project_key' ]))->save();
 
         // trigger event of module edited
         //$cur_user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
-        //Event::fire(new ModuleEvent($project_key, $cur_user, [ 'event_key' => 'edit_module', 'data' => $request->all() ]));
+        //Event::dispatch(new ModuleEvent($project_key, $cur_user, [ 'event_key' => 'edit_module', 'data' => $request->all() ]));
 
         return Response()->json([ 'ecode' => 0, 'data' => Module::find($id) ]);
     }
@@ -201,7 +201,7 @@ class ModuleController extends Controller
 
         // trigger event of module deleted 
         //$cur_user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
-        //Event::fire(new ModuleEvent($project_key, $cur_user, [ 'event_key' => 'del_module', 'data' => $module->name ]));
+        //Event::dispatch(new ModuleEvent($project_key, $cur_user, [ 'event_key' => 'del_module', 'data' => $module->name ]));
 
         if ($operate_flg === '1')
         {
@@ -255,7 +255,7 @@ class ModuleController extends Controller
                 // add to histroy table
                 $snap_id = Provider::snap2His($project_key, $issue_id, [], [ 'module' ]);
                 // trigger event of issue edited
-                Event::fire(new IssueEvent($project_key, $issue_id, $updValues['modifier'], [ 'event_key' => 'edit_issue', 'snap_id' => $snap_id ]));
+                Event::dispatch(new IssueEvent($project_key, $issue_id, $updValues['modifier'], [ 'event_key' => 'edit_issue', 'snap_id' => $snap_id ]));
             }
         }
     }

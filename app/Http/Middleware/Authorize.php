@@ -18,6 +18,7 @@ class Authorize
      */
     public function handle($request, Closure $next)
     {
+
         $setting = SysSetting::first();
         if (!($setting && isset($setting->properties) && isset($setting->properties['enable_login_protection']) && $setting->properties['enable_login_protection'] === 1))
         {

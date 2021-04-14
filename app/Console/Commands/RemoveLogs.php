@@ -39,6 +39,7 @@ class RemoveLogs extends Command
     public function handle()
     {
         $durations = [ 
+            '0d' => 'now',
             '3m' => '3 months', 
             '6m' => '6 months', 
             '1y' => '1 year', 
@@ -56,7 +57,14 @@ class RemoveLogs extends Command
             }
         }
 
-        $removed_at = strtotime('-' . $log_save_duration);
+        if ($log_save_duration == 'now')
+        {
+            $removed_at = strtotime($log_save_duration) * 1000;
+        }
+        else
+        {
+            $removed_at = strtotime('-' . $log_save_duration) * 1000;
+        }
 
         ApiAccessLogs::where('requested_start_at', '<', $removed_at)->delete();
     }

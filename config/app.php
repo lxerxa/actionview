@@ -163,7 +163,14 @@ return [
 
         Maatwebsite\Excel\ExcelServiceProvider::class,
 
-        Chumper\Zipper\ZipperServiceProvider::class,
+        /**
+         * cos,oss
+         */
+        Iidestiny\LaravelFilesystemOss\OssStorageServiceProvider::class,
+        Overtrue\LaravelFilesystem\Cos\CosStorageServiceProvider::class,
+
+        //ziper
+        Madnest\Madzipper\MadzipperServiceProvider::class
     ],
 
     /*
@@ -214,7 +221,7 @@ return [
         'Reminder'   => Cartalyst\Sentinel\Laravel\Facades\Reminder::class,
         'Sentinel'   => Cartalyst\Sentinel\Laravel\Facades\Sentinel::class,
 
-        'Zipper' => Chumper\Zipper\Zipper::class,
+        'Zipper' => Madnest\Madzipper\Madzipper::class,
     ],
 
 ];

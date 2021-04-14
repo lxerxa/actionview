@@ -58,7 +58,7 @@ class CommentsController extends Controller
         $id = DB::collection($table)->insertGetId(array_only($request->all(), [ 'contents', 'atWho' ]) + [ 'issue_id' => $issue_id, 'creator' => $creator, 'created_at' => time() ]);
 
         // trigger event of comments added
-        Event::fire(new IssueEvent($project_key, $issue_id, $creator, [ 'event_key' => 'add_comments', 'data' => array_only($request->all(), [ 'contents', 'atWho' ]) ])); 
+        Event::dispatch(new IssueEvent($project_key, $issue_id, $creator, [ 'event_key' => 'add_comments', 'data' => array_only($request->all(), [ 'contents', 'atWho' ]) ])); 
 
         $comments = DB::collection($table)->find($id);
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($comments) ]);
@@ -198,7 +198,7 @@ class CommentsController extends Controller
         {
             $event_key = 'edit_comments';
         }
-        Event::fire(new IssueEvent($project_key, $issue_id, $user, [ 'event_key' => $event_key, 'data' => $changedComments ]));
+        Event::dispatch(new IssueEvent($project_key, $issue_id, $user, [ 'event_key' => $event_key, 'data' => $changedComments ]));
 
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange(DB::collection($table)->find($id)) ]);
     }
@@ -227,7 +227,7 @@ class CommentsController extends Controller
 
         $user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
         // trigger the event of del comments
-        Event::fire(new IssueEvent($project_key, $issue_id, $user, [ 'event_key' => 'del_comments', 'data' => array_only($comments, [ 'contents', 'atWho' ]) ])); 
+        Event::dispatch(new IssueEvent($project_key, $issue_id, $user, [ 'event_key' => 'del_comments', 'data' => array_only($comments, [ 'contents', 'atWho' ]) ])); 
 
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }

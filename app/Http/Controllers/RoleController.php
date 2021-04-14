@@ -130,8 +130,8 @@ class RoleController extends Controller
             $add_user_ids = array_diff($new_user_ids, $old_user_ids);
             $del_user_ids = array_diff($old_user_ids, $new_user_ids);
 
-            Event::fire(new AddUserToRoleEvent($add_user_ids, $project_key));
-            Event::fire(new DelUserFromRoleEvent($del_user_ids, $project_key));
+            Event::dispatch(new AddUserToRoleEvent($add_user_ids, $project_key));
+            Event::dispatch(new DelUserFromRoleEvent($del_user_ids, $project_key));
         }
 
         $data = Role::find($id);
@@ -162,8 +162,8 @@ class RoleController extends Controller
             $add_group_ids = array_diff($new_group_ids, $old_group_ids);
             $del_group_ids = array_diff($old_group_ids, $new_group_ids);
 
-            Event::fire(new AddGroupToRoleEvent($add_group_ids, $project_key));
-            Event::fire(new DelGroupFromRoleEvent($del_group_ids, $project_key));
+            Event::dispatch(new AddGroupToRoleEvent($add_group_ids, $project_key));
+            Event::dispatch(new DelGroupFromRoleEvent($del_group_ids, $project_key));
         }
 
         $data = Role::find($id);
@@ -248,9 +248,9 @@ class RoleController extends Controller
             if ($actor)
             {
                 $user_ids = isset($actor->user_ids) ? $actor->user_ids : []; 
-                $user_ids && Event::fire(new DelUserFromRoleEvent($user_ids, $project_key));
+                $user_ids && Event::dispatch(new DelUserFromRoleEvent($user_ids, $project_key));
                 $group_ids = isset($actor->group_ids) ? $actor->group_ids : [];
-                $group_ids && Event::fire(new DelGroupFromRoleEvent($group_ids, $project_key));
+                $group_ids && Event::dispatch(new DelGroupFromRoleEvent($group_ids, $project_key));
                 $actor->delete();
             }
         }

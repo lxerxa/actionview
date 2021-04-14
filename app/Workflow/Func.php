@@ -227,7 +227,7 @@ class Func
         DB::collection($table)->insert([ 'contents' => $comments, 'atWho' => [], 'issue_id' => $issue_id, 'creator' => $creator, 'created_at' => time() ]);
 
         // trigger event of comments added
-        Event::fire(new IssueEvent($project_key, $issue_id, $creator, [ 'event_key' => 'add_comments', 'data' => [ 'contents' => $comments, 'atWho' => [] ] ]));
+        Event::dispatch(new IssueEvent($project_key, $issue_id, $creator, [ 'event_key' => 'add_comments', 'data' => [ 'contents' => $comments, 'atWho' => [] ] ]));
     }
 
     /**
@@ -254,10 +254,10 @@ class Func
             // snap to history
             $snap_id = Provider::snap2His($project_key, $issue_id, null, array_keys(self::$issue_properties));
 
-            if (!isset($param['eventParam']) || !$param['eventParam'])
-            {
-                Event::fire(new IssueEvent($project_key, $issue_id, $updValues['modifier'], [ 'event_key' => 'normal', 'snap_id' => $snap_id ]));
-            }
+            //if (!isset($param['eventParam']) || !$param['eventParam'])
+            //{
+            //    Event::dispatch(new IssueEvent($project_key, $issue_id, $updValues['modifier'], [ 'event_key' => 'normal', 'snap_id' => $snap_id ]));
+            //}
 
             self::$snap_id = $snap_id;
         }
@@ -273,17 +273,18 @@ class Func
     {
         $issue_id = $param['issue_id'];
         $project_key = $param['project_key'];
+        $event_key = array_get($param, 'eventParam', 'normal'); 
 
         $user_info = Sentinel::findById($param['caller']);
         $caller = [ 'id' => $user_info->id, 'name' => $user_info->first_name, 'email' => $user_info->email ];
 
-        if (isset(self::$snap_id) && self::$snap_id)
+        if (self::$snap_id) 
         {
-            Event::fire(new IssueEvent($project_key, $issue_id, $caller, [ 'event_key' => $param['eventParam'], 'snap_id' => self::$snap_id ]));
+            Event::dispatch(new IssueEvent($project_key, $issue_id, $caller, [ 'event_key' => $event_key, 'snap_id' => self::$snap_id ]));
         }
 
         $updValues = [];
-        if ($param['eventParam'] === 'resolve_issue')
+        if ($event_key === 'resolve_issue')
         {
             $updValues['resolved_at'] = time();
             $updValues['resolver'] = $caller;
@@ -316,7 +317,7 @@ class Func
             }
             $updValues['his_resolvers'] = array_unique($his_resolvers);
         }
-        else if ($param['eventParam'] === 'close_issue')
+        else if ($event_key === 'close_issue')
         {
             $updValues['closed_at'] = time();
             $updValues['closer'] = $caller;

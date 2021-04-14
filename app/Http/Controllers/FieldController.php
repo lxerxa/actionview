@@ -52,6 +52,13 @@ class FieldController extends Controller
         'orderBy',
         'stat_x',
         'stat_y',
+        'stat_time',
+        'stat_dimension',
+        'is_accu',
+        'interval',
+        'recorded_at',
+        'scale',
+        'requested_at',
     ];
 
     private $sys_fields = [
@@ -77,9 +84,11 @@ class FieldController extends Controller
 
     private $all_types = [
         'Tags', 
+        'Integer', 
         'Number', 
         'Text', 
         'TextArea', 
+        'RichTextEditor',
         'Select', 
         'MultiSelect', 
         'RadioGroup', 
@@ -303,9 +312,35 @@ class FieldController extends Controller
             }
         }
 
+        $mmTypes = [ 'Number', 'Integer' ];
+        if (in_array($field->type, $mmTypes))
+        {
+            $maxValue = $request->input('maxValue');
+            if (isset($maxValue))
+            {
+                $updValues['maxValue'] = ($maxValue === '' ? '' : ($maxValue + 0));
+            }
+
+            $minValue = $request->input('minValue');
+            if (isset($minValue))
+            {
+                $updValues['minValue'] = ($minValue === '' ? '' : ($minValue + 0));
+            }
+        }
+
+        $mlTypes = [ 'Text', 'TextArea', 'RichTextEditor' ];
+        if (in_array($field->type, $mlTypes))
+        {
+            $maxLength = $request->input('maxLength');
+            if (isset($maxLength))
+            {
+                $updValues['maxLength'] = ($maxLength === '' ? '' : intval($maxLength));
+            }
+        }
+
         $field->fill($updValues + $request->except(['project_key', 'key', 'type']))->save();
 
-        Event::fire(new FieldChangeEvent($id));
+        Event::dispatch(new FieldChangeEvent($id));
 
         return Response()->json(['ecode' => 0, 'data' => Field::find($id)]);
     }
@@ -337,7 +372,7 @@ class FieldController extends Controller
 
         Field::destroy($id);
 
-        Event::fire(new FieldDeleteEvent($project_key, $id, $field->key, $field->type));
+        Event::dispatch(new FieldDeleteEvent($project_key, $id, $field->key, $field->type));
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id]]);
     }
 

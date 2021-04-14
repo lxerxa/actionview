@@ -282,7 +282,7 @@ class EpicController extends Controller
             // add to histroy table
             $snap_id = Provider::snap2His($project_key, $issue_id, [], [ 'epic' ]);
             // trigger event of issue edited
-            Event::fire(new IssueEvent($project_key, $issue_id, $updValues['modifier'], [ 'event_key' => 'edit_issue', 'snap_id' => $snap_id ]));
+            Event::dispatch(new IssueEvent($project_key, $issue_id, $updValues['modifier'], [ 'event_key' => 'edit_issue', 'snap_id' => $snap_id ]));
         }
     }
 }

@@ -12,6 +12,11 @@ export eloquentpersistencefile=vendor/cartalyst/sentinel/src/Persistences/Eloque
 export eloquentthrottlefile=vendor/cartalyst/sentinel/src/Throttling/EloquentThrottle.php 
 export eloquentrolefile=vendor/cartalyst/sentinel/src/Roles/EloquentRole.php 
 export eloquentreminderfile=vendor/cartalyst/sentinel/src/Reminders/EloquentReminder.php 
+export eloquentreminderrepositoryinterfacefile=vendor/cartalyst/sentinel/src/Reminders/ReminderRepositoryInterface.php
+export cartalystsentinelusersuserinterface=vendor/cartalyst/sentinel/src/Users/UserInterface.php
+export cartalystsentineluserseloquentuser=vendor/cartalyst/sentinel/src/Users/EloquentUser.php
+export cartalystsentinelusersilluminateuserrepository=vendor/cartalyst/sentinel/src/Users/IlluminateUserRepository.php
+export cartalystsentinelrolesilluminaterolerepository=vendor/cartalyst/sentinel/src/Roles/IlluminateRoleRepository.php
 
 sed -i 's/Illuminate\\Database\\Eloquent\\Model/Jenssegers\\Mongodb\\Eloquent\\Model/g' $eloquentuserfile 
 sed -i 's/Illuminate\\Database\\Eloquent\\Model/Jenssegers\\Mongodb\\Eloquent\\Model/g' $eloquentactivationfile 
@@ -19,11 +24,23 @@ sed -i 's/Illuminate\\Database\\Eloquent\\Model/Jenssegers\\Mongodb\\Eloquent\\M
 sed -i 's/Illuminate\\Database\\Eloquent\\Model/Jenssegers\\Mongodb\\Eloquent\\Model/g' $eloquentthrottlefile 
 sed -i 's/Illuminate\\Database\\Eloquent\\Model/Jenssegers\\Mongodb\\Eloquent\\Model/g' $eloquentrolefile 
 sed -i 's/Illuminate\\Database\\Eloquent\\Model/Jenssegers\\Mongodb\\Eloquent\\Model/g' $eloquentreminderfile 
+sed -i 's/Illuminate\\Database\\Eloquent\\Model/Jenssegers\\Mongodb\\Eloquent\\Model/g' $eloquentreminderrepositoryinterfacefile 
+sed -i 's/getUserId(): int/getUserId(): string/g' $cartalystsentinelusersuserinterface 
+sed -i 's/getUserId(): int/getUserId(): string/g' $cartalystsentineluserseloquentuser 
+sed -i 's/findById(int /findById(/g' $cartalystsentinelusersilluminateuserrepository 
+sed -i 's/findById(int /findById(/g' $cartalystsentinelrolesilluminaterolerepository 
+
+
 
 #initialize activition's completed
 export activationrepofile=vendor/cartalyst/sentinel/src/Activations/IlluminateActivationRepository.php
 if [ `grep -c '$activation->completed = false;' $activationrepofile` -eq 0 ]; then
   sed -i '/$activation->user_id = $user->getUserId();/a\        $activation->completed = false;' $activationrepofile
+fi
+
+#fix getAuthIdentifier function 
+if [ `grep -c 'function getAuthIdentifier()' $cartalystsentineluserseloquentuser` -eq 0 ]; then
+  sed -i '/public function getPersistableId(): string/c\        public function getAuthIdentifier(){return $this->getUserId();}\r\n \      public function getPersistableId(): string' $cartalystsentineluserseloquentuser
 fi
  
 #add avatar field to fillable

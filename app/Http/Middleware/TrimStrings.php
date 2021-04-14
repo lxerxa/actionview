@@ -2,28 +2,18 @@
 
 namespace App\Http\Middleware;
 
-use Illuminate\Http\JsonResponse;
-use Closure;
+use Illuminate\Foundation\Http\Middleware\TrimStrings as Middleware;
 
-class TrimStrings 
+class TrimStrings extends Middleware
 {
     /**
-     * Handle an incoming request.
+     * The names of the attributes that should not be trimmed.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @return mixed
+     * @var array
      */
-    public function handle($request, Closure $next)
-    {
-        $params = $request->all();
-        foreach ($params as $k => $v)
-        {
-            if (is_string($v)) 
-            {
-                $request->offsetSet($k, trim($v));
-            }
-        }
-        return $next($request);
-    }
+    protected $except = [
+        'current_password',
+        'password',
+        'password_confirmation',
+    ];
 }

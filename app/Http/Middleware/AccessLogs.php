@@ -7,6 +7,7 @@ use Closure;
 
 use Sentinel;
 use App\System\Eloquent\ApiAccessLogs;
+use Illuminate\Support\Arr;
 
 class AccessLogs 
 {
@@ -34,12 +35,12 @@ class AccessLogs
     	$request_url = $request->getRequestUri();
         $module = $project_key = '';
         $matches = [];
-    	if (preg_match("/^\/api\/project\/([^\/]+)\/([^\/\?]+)(.*)/i", $request_url, $matches))
+    	if (preg_match("/^\/actionview\/api\/project\/([^\/]+)\/([^\/\?]+)(.*)/i", $request_url, $matches))
     	{
     	    $project_key = $matches[1];
     	    $module = $matches[2];
     	}
-        else if ($request_method == 'POST' && strpos($request_url, '/api/session') !== false)
+        else if ($request_method == 'POST' && strpos($request_url, '/actionview/api/session') !== false)
         {
             $module = 'login';
         }
@@ -55,7 +56,7 @@ class AccessLogs
     	    'request_url' => $request_url,
     	    'request_user_agent' => $request->header('USER_AGENT'),
     	    'request_method' => $request_method,
-    	    'request_body' => in_array($request_method, [ 'PUT', 'POST' ]) ? array_except($request->all(), [ 'password', 'new_password', 'token', 'pwd', 'admin_password' ]) : [],
+    	    'request_body' => in_array($request_method, [ 'PUT', 'POST' ]) ? Arr::except($request->all(), [ 'password', 'new_password', 'token', 'pwd', 'admin_password' ]) : [],
     	    'response_status' => $response->getstatusCode(),
     	]);
 

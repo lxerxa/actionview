@@ -380,14 +380,14 @@ class DirectoryController extends Controller
         foreach ($groups as $group)
         {
             $group->delete();
-            Event::fire(new DelGroupEvent($group->id));
+            Event::dispatch(new DelGroupEvent($group->id));
         }
 
         $users = EloquentUser::where('directory', $id)->get();
         foreach ($users as $user)
         {
             $user->delete();
-            Event::fire(new DelUserEvent($user->id));
+            Event::dispatch(new DelUserEvent($user->id));
         }
 
         Directory::destroy($id);

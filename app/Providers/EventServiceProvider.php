@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
-use Illuminate\Contracts\Events\Dispatcher as DispatcherContract;
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
+use Illuminate\Support\Facades\Event;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -13,74 +15,21 @@ class EventServiceProvider extends ServiceProvider
      * @var array
      */
     protected $listen = [
-       'App\Events\FieldChangeEvent' => [
-            'App\Listeners\FieldConfigChangeListener',
+        Registered::class => [
+            SendEmailVerificationNotification::class,
         ],
-       'App\Events\FieldDeleteEvent' => [
-            'App\Listeners\FieldConfigChangeListener',
-        ],
-       'App\Events\ResolutionConfigChangeEvent' => [
-            'App\Listeners\PropertyConfigChangeListener',
-        ],
-       'App\Events\PriorityConfigChangeEvent' => [
-            'App\Listeners\PropertyConfigChangeListener',
-        ],
-       'App\Events\AddUserToRoleEvent' => [
-            'App\Listeners\UserRoleSetListener',
-        ],
-       'App\Events\DelUserFromRoleEvent' => [
-            'App\Listeners\UserRoleSetListener',
-        ],
-       'App\Events\DelUserEvent' => [
-            'App\Listeners\UserDelListener'
-        ],
-       'App\Events\AddGroupToRoleEvent' => [
-            'App\Listeners\GroupRoleSetListener',
-        ],
-       'App\Events\DelGroupFromRoleEvent' => [
-            'App\Listeners\GroupRoleSetListener',
-        ],
-       'App\Events\DelGroupEvent' => [
-            'App\Listeners\GroupDelListener'
-        ],
-       'App\Events\FileUploadEvent' => [
-            'App\Listeners\FileChangeListener',
+        'App\Events\IssueEvent' => [
             'App\Listeners\ActivityAddListener',
-        ],
-       'App\Events\FileDelEvent' => [
-            'App\Listeners\FileChangeListener',
-            'App\Listeners\ActivityAddListener',
-        ],
-       'App\Events\IssueEvent' => [
-            'App\Listeners\ActivityAddListener',
-            'App\Listeners\WebhooksRequestListener',
-        ],
-       'App\Events\VersionEvent' => [
-            'App\Listeners\ActivityAddListener',
-            'App\Listeners\WebhooksRequestListener',
-        ],
-       'App\Events\SprintEvent' => [
-            'App\Listeners\ActivityAddListener',
-        ],
-       'App\Events\WikiEvent' => [
-            'App\Listeners\ActivityAddListener',
-        ],
-       'App\Events\ModuleEvent' => [
-            'App\Listeners\ActivityAddListener',
-            //'App\Listeners\WebhooksRequestListener',
         ],
     ];
 
     /**
-     * Register any other events for your application.
+     * Register any events for your application.
      *
-     * @param  \Illuminate\Contracts\Events\Dispatcher  $events
      * @return void
      */
-    public function boot(DispatcherContract $events)
+    public function boot()
     {
-        parent::boot($events);
-
         //
     }
 }

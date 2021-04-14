@@ -5,22 +5,42 @@
     "license": "Apache-2.0",
     "type": "project",
     "require": {
-        "php": ">=5.5.9",
-        "laravel/framework": "5.2.*",
-        "jenssegers/mongodb": "^3.0",
-        "cartalyst/sentinel": "^2.0",
-        "maatwebsite/excel": "^2.1",
-        "adldap2/adldap2": "^8.1",
-        "chumper/zipper": "^1.0"
+        "php": "^7.3.0",
+        "laravel/framework": "^8.5",
+        "jenssegers/mongodb": "^3.8",
+        "cartalyst/sentinel": "^5.1",
+        "maatwebsite/excel": "^3.1",
+        "adldap2/adldap2": "^10.3",
+        "madnest/madzipper": "^1.0",
+        "phpoffice/phpspreadsheet": "^1.17",
+        "guzzlehttp/guzzle": ">=7.2",
+        "hprose/hprose": ">=2.0",
+        "catfan/medoo": ">=1.7",
+        "jaeger/querylist-curl-multi": "^4.0",
+        "jaeger/querylist": "4.1.1",
+        "league/html-to-markdown": "^5.0",
+        "lyhiving/quickio": "^1.0",
+        "overtrue/laravel-filesystem-cos": "^2.0",
+        "iidestiny/laravel-filesystem-oss": "^2.1",
+        "fideloper/proxy": "^4.4",
+        "barryvdh/laravel-cors": "^2.0",
+        "nunomaduro/collision": "^5.3",
+        "facade/ignition": "^2.8",
+        "laravel/ui": "^3.2",
+        "phpunit/phpunit": "^9.5",
+        "laravel/legacy-factories": "^1.1"
     },
     "require-dev": {
-        "fzaninotto/faker": "~1.4",
-        "mockery/mockery": "0.9.*",
-        "phpunit/phpunit": "~4.0",
-        "symfony/css-selector": "2.8.*|3.0.*",
-        "symfony/dom-crawler": "2.8.*|3.0.*"
+        "fzaninotto/faker": "^1.4",
+        "mockery/mockery": "^0.9",
+        "symfony/css-selector": "^3.0",
+        "symfony/dom-crawler": "^3.0"
     },
     "autoload": {
+        "files": [
+            "app/laravel.helper.php",
+            "app/ext.helper.php"
+        ],
         "classmap": [
             "database"
         ],
