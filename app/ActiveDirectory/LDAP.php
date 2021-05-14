@@ -32,8 +32,8 @@ class LDAP {
                 $ret[$key] =  [ 
                     'server_connect'   => false, 
                     'user_count'       => 0, 
-                    'group_count'      => 0, 
-                    'group_membership' => false ];
+                    'group_count'      => 0
+                ];
                 continue;
             }
 
@@ -69,6 +69,7 @@ class LDAP {
                 $tmp['group_count'] = count($groups);
             }
 
+            /*
             if (!isset($config['group_object_class']) || !isset($config['group_membership_attr']))
             {
                 $tmp['group_memebership'] = false;
@@ -82,6 +83,7 @@ class LDAP {
                     ->first();
                 $tmp['group_membership'] = $group ? $group->hasAttribute(strtolower($config['group_membership_attr'])) : false;
             }
+            */
 
             $ret[$key] = $tmp;
         }
@@ -252,7 +254,8 @@ class LDAP {
                     'first_name' => $cn,
                     'email' => $email,
                     'invalid_flag' => 0,
-                    'sync_flag' => 0 ]);
+                    'sync_flag' => 0 
+                ]);
             }
             else
             {
@@ -261,8 +264,8 @@ class LDAP {
                     'ldap_dn' => $dn,
                     'first_name' => $cn,
                     'email' => $email,
-                    'password' => md5(rand(10000, 99999)) ],
-                    true);
+                    'password' => md5(rand(10000, 99999)) 
+                ], true);
             }
         }
         // disable the users
@@ -297,7 +300,20 @@ class LDAP {
         {
             $dn = $group->getDn();
             $cn = $group->getFirstAttribute(strtolower($config['group_name_attr']));
-            $members = $group->getAttribute(strtolower($config['group_membership_attr']));
+            $members = $group->getAttribute(strtolower($config['groupuser_attr']));
+
+            $group_users = $provider
+                ->search()
+                ->setDn(self::getUserDN($config))
+                ->rawFilter(isset($config['user_object_filter']) ? $config['user_object_filter'] : ('(objectClass=' . $config['user_object_class'] . ')'))
+                ->where('objectClass', $config['user_object_class'])
+                ->where(strtolower($config['usergroup_attr']), $dn)
+                ->get();
+            foreach ($group_users as $user) {
+                $members[] = $user->getDn();
+            }
+
+            $members = array_values(array_unique($members));
 
             $users = EloquentUser::where('directory', $directory)
                 ->whereIn('ldap_dn', $members)
@@ -325,7 +341,8 @@ class LDAP {
                     'name' => $cn, 
                     'users' => $user_ids, 
                     'ldap_dn' => $dn, 
-                    'directory' => $directory ]);
+                    'directory' => $directory 
+                ]);
             }
         }
 
