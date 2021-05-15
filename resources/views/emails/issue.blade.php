@@ -115,21 +115,21 @@
               @endif
               <tr>
                 <td class='cell-title' width='70pt'>
-                  @if ($key == 'assignee') 经办人：
+                  @if ($key == 'assignee') 负责人：
                   @elseif ($key == 'type') 类型：
                   @elseif ($key == 'priority') 优先级：
                   @elseif ($key == 'descriptions') 描述：
                   @endif
                 </td>
                 <td class='cell'>
-                {!! is_array($field) && isset($field['name']) ? $field['name'] : str_replace(["\r\n", "\n", "\r"], '<br/>', $field) !!}
+                {!! is_array($field) && isset($field['name']) ? $field['name'] : str_replace(["\r\n", "\n", "\r"], '<br/>', $field ?: "-") !!}
                 </td>
               </tr>
             @endforeach
           @elseif ($event_key == 'assign_issue')
             <tr>
               <td class='cell-title' width='70pt'>
-                经办人：
+                负责人：
               </td>
               <td class='cell'>
                 @if(isset($data['old_user']) && isset($data['old_user']['name']) && $data['old_user']['name'])
