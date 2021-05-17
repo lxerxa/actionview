@@ -29,10 +29,10 @@ class LDAP {
             try {
                 $provider = $ad->connect($key);
             } catch (Exception $e) {
-                $ret[$key] =  [ 
-                    'server_connect'   => false, 
-                    'user_count'       => 0, 
-                    'group_count'      => 0
+                $ret[$key] = [ 
+                    'server_connect'    => false, 
+                    'user_count'        => 0, 
+                    'group_count'       => 0
                 ];
                 continue;
             }
@@ -83,7 +83,7 @@ class LDAP {
                     ->first();
                 $tmp['group_membership'] = $group ? $group->hasAttribute(strtolower($config['group_membership_attr'])) : false;
             }
-            */
+            */ 
 
             $ret[$key] = $tmp;
         }
@@ -302,25 +302,11 @@ class LDAP {
             $cn = $group->getFirstAttribute(strtolower($config['group_name_attr']));
             $members = $group->getAttribute(strtolower($config['groupuser_attr']));
 
-            $group_users = $provider
-                ->search()
-                ->setDn(self::getUserDN($config))
-                ->rawFilter(isset($config['user_object_filter']) ? $config['user_object_filter'] : ('(objectClass=' . $config['user_object_class'] . ')'))
-                ->where('objectClass', $config['user_object_class'])
-                ->where(strtolower($config['usergroup_attr']), $dn)
-                ->get();
-            foreach ($group_users as $user) {
-                $members[] = $user->getDn();
-            }
-
-            $members = array_values(array_unique($members));
-
+            $user_ids = [];
             $users = EloquentUser::where('directory', $directory)
                 ->whereIn('ldap_dn', $members)
                 ->get([ 'name' ])
                 ->toArray();
-
-            $user_ids = [];
             if ($users)
             {
                 $user_ids = array_column($users, '_id');
