@@ -134,11 +134,17 @@ class DirectoryController extends Controller
         }
         $configs['group_name_attr'] = $group_name_attr;
 
-        if (!($group_membership_attr = $request->input('group_membership_attr')))
+        if (!($groupuser_attr = $request->input('groupuser_attr')))
         {
-            throw new \UnexpectedValueException('the group membership attributte can not be empty.', -10313);
+            throw new \UnexpectedValueException('the group user attributte can not be empty.', -10313);
         }
-        $configs['group_membership_attr'] = $group_membership_attr;
+        $configs['groupuser_attr'] = $groupuser_attr;
+
+        if (!($usergroup_attr = $request->input('usergroup_attr')))
+        {
+            throw new \UnexpectedValueException('the user group attributte can not be empty.', -10318);
+        }
+        $configs['usergroup_attr'] = $usergroup_attr;
 
         $directory = Directory::create([ 'name' => $name, 'type' => 'OpenLDAP', 'invalid_flag' => 0, 'configs' => $configs ]);
         return Response()->json([ 'ecode' => 0, 'data' => $directory ]);
@@ -327,14 +333,24 @@ class DirectoryController extends Controller
             $configs['group_name_attr'] = $group_name_attr;
         }
 
-        $group_membership_attr = $request->input('group_membership_attr');
-        if (isset($group_membership_attr))
+        $groupuser_attr = $request->input('groupuser_attr');
+        if (isset($groupuser_attr))
         {
-            if (!$group_membership_attr)
+            if (!$groupuser_attr)
             {
-                throw new \UnexpectedValueException('the group membership attributte can not be empty.', -10313);
+                throw new \UnexpectedValueException('the group user attributte can not be empty.', -10313);
             }
-            $configs['group_membership_attr'] = $group_membership_attr;
+            $configs['groupuser_attr'] = $groupuser_attr;
+        }
+
+        $usergroup_attr = $request->input('usergroup_attr');
+        if (isset($usergroup_attr))
+        {
+            if (!$usergroup_attr)
+            {
+                throw new \UnexpectedValueException('the user group attributte can not be empty.', -10318);
+            }
+            $configs['usergroup_attr'] = $usergroup_attr;
         }
 
         if ($configs)
