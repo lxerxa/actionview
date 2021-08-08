@@ -1442,13 +1442,13 @@ class IssueController extends Controller
         {
             Watch::create([ 'project_key' => $project_key, 'issue_id' => $id, 'user' => $cur_user ]);
             // trigger event of issue watched 
-            Event::fire(new IssueEvent($project_key, $id, $cur_user, [ 'event_key' => 'watched_issue' ]));
+            //Event::fire(new IssueEvent($project_key, $id, $cur_user, [ 'event_key' => 'watched_issue' ]));
         }
         else
         {
             $flag = false;
             // trigger event of issue watched 
-            Event::fire(new IssueEvent($project_key, $id, $cur_user, [ 'event_key' => 'unwatched_issue' ]));
+            //Event::fire(new IssueEvent($project_key, $id, $cur_user, [ 'event_key' => 'unwatched_issue' ]));
         }
         
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id, 'user' => $cur_user, 'watching' => $flag]]);
