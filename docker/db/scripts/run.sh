@@ -8,4 +8,4 @@ if [[ -e /.initdb && ! -e /data/mongod.lock ]]; then
   /scripts/initdb.sh
 fi
 
-/usr/bin/mongod --dbpath /data --smallfiles --auth $@
+/usr/bin/mongod --dbpath /data --repair --smallfiles --auth $@
