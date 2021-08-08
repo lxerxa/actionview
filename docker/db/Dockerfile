@@ -1,6 +1,6 @@
 FROM ubuntu:16.04
 
-MAINTAINER lxerxa <lxerxa@126.com>
+MAINTAINER lxerxa <actionview@126.com>
 
 RUN apt-get update && \
     apt-get -yq install \
