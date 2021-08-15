@@ -166,7 +166,7 @@ class IssueController extends Controller
 
             if (!isset($from))
             {
-                $issues[$key]['hasSubtasks'] = DB::collection('issue_' . $project_key)->where('parent_id', $issue['_id']->__toString())->exists();
+                $issues[$key]['hasSubtasks'] = DB::collection('issue_' . $project_key)->where('parent_id', $issue['_id']->__toString())->where('del_flg', '<>', 1)->exists();
             }
         }
 
@@ -514,7 +514,7 @@ class IssueController extends Controller
         }
         else
         {
-            $issue['hasSubtasks'] = DB::collection('issue_' . $project_key)->where('parent_id', $id)->exists();
+            $issue['hasSubtasks'] = DB::collection('issue_' . $project_key)->where('parent_id', $id)->where('del_flg', '<>', 1)->exists();
         }
 
         $issue['subtasks'] = DB::collection('issue_' . $project_key)->where('parent_id', $id)->where('del_flg', '<>', 1)->orderBy('created_at', 'asc')->get(['no', 'type', 'title', 'state']);
@@ -1635,17 +1635,28 @@ class IssueController extends Controller
             throw new \UnexpectedValueException('the issue type cannot be empty.', -11100);
         }
 
-        $parent_id = $request->input('parent_id');
-        if (!isset($parent_id))
+        $issue_types = [];
+        $type_list = Provider::getTypeList($project_key);
+        foreach ($type_list as $val)
         {
-            $parent_id = '';
+            $issue_types[$val->id] = $val->type;
+        }
+        if (!array_key_exists($type, $issue_types))
+        {
+            throw new \UnexpectedValueException('the issue type does not exist.', -11100);
+        }
+
+        $parent_id = $request->input('parent_id') ?: '';
+        if ($issue_types[$type] == 'subtask' && !$parent_id) 
+        {
+            throw new \UnexpectedValueException('the parent issue cannot be empty.', -11126);
         }
  
         $updValues = [];
         if ($parent_id)
         {
             // standard convert to subtask 
-            $hasSubtasks = DB::collection($table)->where('parent_id', $id)->exists();
+            $hasSubtasks = DB::collection($table)->where('parent_id', $id)->where('del_flg', '<>', 1)->exists();
             if ($hasSubtasks)
             {
                 throw new \UnexpectedValueException('the issue can not convert to subtask.', -11114);
