@@ -766,6 +766,10 @@ class IssueController extends Controller
             throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -11103);
         }
 
+        if ($issue['labels'] == $labels) {
+            return $this->show($project_key, $id);
+        }
+
         if (!$this->isPermissionAllowed($project_key, 'edit_issue') && !($this->isPermissionAllowed($project_key, 'edit_self_issue') && $issue['reporter']['id'] == $this->user->id))
         {
             return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
