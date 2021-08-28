@@ -29,7 +29,8 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         $schedule->command('email:send')
-                 ->everyMinute();
+                 ->everyMinute()
+                 ->withoutOverlapping();
         $schedule->command('sprint:snap')
                  ->dailyAt('23:20');
         $schedule->command('ldap:sync')
