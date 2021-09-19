@@ -490,7 +490,7 @@ class IssueController extends Controller
         }
 
         // get avaliable actions for wf
-        if (isset($issue['entry_id']) && $issue['entry_id'])
+        if (isset($issue['entry_id']) && $issue['entry_id'] && $this->isPermissionAllowed($project_key, 'exec_workflow'))
         {
             try {
                 $wf = new Workflow($issue['entry_id']);
@@ -587,6 +587,10 @@ class IssueController extends Controller
      */
     public function wfactions($project_key, $id)
     {
+        if (!$this->isPermissionAllowed($project_key, 'exec_workflow')) {
+            return Response()->json(['ecode' => 0, 'data' => []]);
+        }
+
         $issue = DB::collection('issue_' . $project_key)->where('_id', $id)->first();
 
         $wf = new Workflow($issue['entry_id']);
