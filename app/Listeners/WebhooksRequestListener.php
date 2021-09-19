@@ -39,6 +39,11 @@ class WebhooksRequestListener
         foreach ($webhooks as $webhook)
         {
             $events = isset($webhook->events) && $webhook->events ? $webhook->events : [];
+            if (in_array('edit_issue', $events))
+            {
+                $events = array_merge($events, ['assign_issue', 'move_issue', 'reset_issue']);
+            }
+
             if (in_array($event_key, $events) && $webhook->request_url)
             {
                 $this->push2WebhookEvents($event, $webhook->request_url, $webhook->token ?: '');
