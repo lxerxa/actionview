@@ -66,7 +66,7 @@ class ProjectController extends Controller
                 continue;
             }
 
-            $projects[] = [ 'key' => $project->key, 'name' => $project->name ];
+            $projects[] = [ 'key' => $project->key, 'name' => $project->name, 'principal' => $project->principal ];
             if (count($projects) >= 5) { break; }
         }
 
