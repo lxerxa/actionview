@@ -115,7 +115,7 @@ class ModuleController extends Controller
             {
                 throw new \UnexpectedValueException('the name can not be empty.', -11400);
             }
-            if ($module->name !== $name && Module::whereRaw([ 'name' => $name ])->exists())
+            if ($module->name !== $name && Module::whereRaw([ 'name' => $name, 'project_key' => $project_key ])->exists())
             {
                 throw new \UnexpectedValueException('module name cannot be repeated', -11401);
             }
