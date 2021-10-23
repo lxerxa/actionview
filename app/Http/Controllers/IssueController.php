@@ -52,7 +52,7 @@ class IssueController extends Controller
 
         $from = $request->input('from');
         $from_kanban_id = $request->input('from_kanban_id');
-        if (isset($from) && in_array($from, [ 'kanban', 'active_sprint', 'backlog' ]) && isset($from_kanban_id) && $from_kanban_id) 
+        if (in_array($from, [ 'kanban', 'active_sprint', 'backlog' ]) && $from_kanban_id) 
         {
             $board = Board::find($from_kanban_id);
             if ($board && isset($board->query) && $board->query)
@@ -121,7 +121,7 @@ class IssueController extends Controller
         $query = $query->skip($page_size * ($page - 1))->take($page_size);
         $issues = $query->get();
 
-        if (isset($from) && $from == 'export')
+        if ($from == 'export')
         {
             $export_fields = $request->input('export_fields');
             $this->export($project_key, isset($export_fields) ? explode(',', $export_fields) : [], $issues);
@@ -129,7 +129,7 @@ class IssueController extends Controller
         }
 
         $watched_issue_ids = [];
-        if (!isset($from) || !$from)
+        if (!isset($from))
         {
             $watched_issues = Watch::where('project_key', $project_key)
                 ->where('user.id', $this->user->id)
@@ -166,11 +166,14 @@ class IssueController extends Controller
 
             if (!isset($from))
             {
-                $issues[$key]['hasSubtasks'] = DB::collection('issue_' . $project_key)->where('parent_id', $issue['_id']->__toString())->where('del_flg', '<>', 1)->exists();
+                $issues[$key]['hasSubtasks'] = DB::collection('issue_' . $project_key)
+                    ->where('parent_id', $issue['_id']->__toString())
+                    ->where('del_flg', '<>', 1)
+                    ->exists();
             }
         }
 
-        if ($issues && isset($from) && in_array($from, [ 'kanban', 'active_sprint', 'backlog', 'his_sprint' ]))
+        if ($issues && in_array($from, [ 'kanban', 'active_sprint', 'backlog', 'his_sprint' ]))
         {
             $filter = $request->input('filter') ?: '';
             $issues = $this->arrangeIssues($project_key, $issues, $from, $from_kanban_id, $filter === 'all');
@@ -178,10 +181,11 @@ class IssueController extends Controller
 
         $options = [ 'total' => $total, 'sizePerPage' => $page_size ];
 
-        if (isset($from) && $from == 'gantt')
+        if ($from == 'gantt')
         {
             foreach ($issues as $key => $issue) 
             {
+                $issues[$key]['links'] = $this->getLinks($project_key, $issue); 
                 if (!isset($issue['parent_id']) || !$issue['parent_id'] || in_array($issue['parent_id'], $issue_ids)) 
                 {
                     continue;
@@ -207,7 +211,7 @@ class IssueController extends Controller
         }
 
         $requested_at = $request->input('requested_at');
-        if (isset($requested_at) && $requested_at)
+        if ($requested_at)
         {
             $options['requested_at'] = intval($requested_at);
         }
@@ -510,41 +514,25 @@ class IssueController extends Controller
 
         if (isset($issue['parent_id']) && $issue['parent_id']) 
         {
-            $issue['parent'] = DB::collection('issue_' . $project_key)->where('_id', $issue['parent_id'])->first(['no', 'type', 'title', 'state']);
+            $issue['parent'] = DB::collection('issue_' . $project_key)
+                ->where('_id', $issue['parent_id'])
+                ->first(['no', 'type', 'title', 'state']);
         }
         else
         {
-            $issue['hasSubtasks'] = DB::collection('issue_' . $project_key)->where('parent_id', $id)->where('del_flg', '<>', 1)->exists();
+            $issue['hasSubtasks'] = DB::collection('issue_' . $project_key)
+                ->where('parent_id', $id)
+                ->where('del_flg', '<>', 1)
+                ->exists();
         }
 
-        $issue['subtasks'] = DB::collection('issue_' . $project_key)->where('parent_id', $id)->where('del_flg', '<>', 1)->orderBy('created_at', 'asc')->get(['no', 'type', 'title', 'state']);
+        $issue['subtasks'] = DB::collection('issue_' . $project_key)
+            ->where('parent_id', $id)
+            ->where('del_flg', '<>', 1)
+            ->orderBy('created_at', 'asc')
+            ->get(['no', 'type', 'title', 'state']);
 
-        $issue['links'] = [];
-        $links = DB::collection('linked')->where('src', $id)->orWhere('dest', $id)->where('del_flg', '<>', 1)->orderBy('created_at', 'asc')->get();
-        $link_fields = ['_id', 'no', 'type', 'title', 'state'];
-        foreach ($links as $link)
-        {
-            if ($link['src'] == $id)
-            {
-                $link['src'] = array_only($issue, $link_fields);
-            }
-            else
-            {
-                $src_issue = DB::collection('issue_' . $project_key)->where('_id', $link['src'])->first();
-                $link['src'] = array_only($src_issue, $link_fields);
-            }
-
-            if ($link['dest'] == $id)
-            {
-                $link['dest'] = array_only($issue, $link_fields);
-            }
-            else
-            {
-                $dest_issue = DB::collection('issue_' . $project_key)->where('_id', $link['dest'])->first();
-                $link['dest'] = array_only($dest_issue, $link_fields);
-            }
-            array_push($issue['links'], $link);
-        }
+        $issue['links'] = $this->getLinks($project_key, $issue);
 
         $issue['watchers'] = array_column(Watch::where('issue_id', $id)->orderBy('_id', 'desc')->get()->toArray(), 'user');
         
@@ -576,6 +564,46 @@ class IssueController extends Controller
             ->count();
 
         return Response()->json(['ecode' => 0, 'data' => parent::arrange($issue)]);
+    }
+
+    public function getLinks($project_key, $issue)
+    {
+        $id = $issue['_id']->__toString();
+
+        $linked_issues = [];
+        $links = DB::collection('linked')
+            ->where(function ($query) use ($id) {
+                $query->where('src', $id)->orWhere('dest', $id);
+            })
+            ->where('del_flg', '<>', 1)
+            ->orderBy('created_at', 'asc')
+            ->get();
+        $link_fields = ['_id', 'no', 'type', 'title', 'state'];
+        foreach ($links as $link)
+        {
+            if ($link['src'] == $id)
+            {
+                $link['src'] = array_only($issue, $link_fields);
+            }
+            else
+            {
+                $src_issue = DB::collection('issue_' . $project_key)->where('_id', $link['src'])->first();
+                $link['src'] = array_only($src_issue, $link_fields);
+            }
+
+            if ($link['dest'] == $id)
+            {
+                $link['dest'] = array_only($issue, $link_fields);
+            }
+            else
+            {
+                $dest_issue = DB::collection('issue_' . $project_key)->where('_id', $link['dest'])->first();
+                $link['dest'] = array_only($dest_issue, $link_fields);
+            }
+            array_push($linked_issues, $link);
+        }
+
+        return $linked_issues;
     }
 
     /**
