@@ -911,7 +911,7 @@ class IssueController extends Controller
      */
     public function getValidKeysBySchema($schema=[])
     {
-        $valid_keys = array_merge(array_column($schema, 'key'), [ 'type', 'assignee', 'descriptions', 'labels', 'parent_id', 'resolution', 'priority', 'progress', 'expect_start_time', 'expect_compete_time' ]);
+        $valid_keys = array_merge(array_column($schema, 'key'), [ 'type', 'assignee', 'descriptions', 'labels', 'parent_id', 'resolution', 'priority', 'progress', 'expect_start_time', 'expect_complete_time' ]);
 
         foreach ($schema as $field)
         {
