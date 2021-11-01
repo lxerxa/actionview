@@ -535,6 +535,14 @@ class IssueController extends Controller
         $issue['links'] = $this->getLinks($project_key, $issue);
 
         $issue['watchers'] = array_column(Watch::where('issue_id', $id)->orderBy('_id', 'desc')->get()->toArray(), 'user');
+        foreach ($issue['watchers'] as $key => $watch)
+        {
+            $user = EloquentUser::find($watch['id']);
+            if (isset($user->avatar) && $user->avatar)
+            {
+                $issue['watchers'][$key]['avatar'] = $user->avatar; 
+            }
+        }
         
         if (Watch::where('issue_id', $id)->where('user.id', $this->user->id)->exists())
         {
@@ -798,7 +806,7 @@ class IssueController extends Controller
             throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -11103);
         }
 
-        if ($issue['labels'] == $labels) {
+        if (array_get($issue, 'labels') == $labels) {
             return $this->show($project_key, $id);
         }
 
@@ -1487,7 +1495,7 @@ class IssueController extends Controller
             //Event::fire(new IssueEvent($project_key, $id, $cur_user, [ 'event_key' => 'unwatched_issue' ]));
         }
         
-        return Response()->json(['ecode' => 0, 'data' => ['id' => $id, 'user' => $cur_user, 'watching' => $flag]]);
+        return Response()->json(['ecode' => 0, 'data' => ['id' => $id, 'user' => $cur_user + [ 'avatar' => $this->user->avatar ], 'watching' => $flag]]);
     }
 
     /**
