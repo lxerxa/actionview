@@ -206,7 +206,23 @@ class GroupController extends Controller
             $insValues['description'] = $description;
         }
 
+        $source_id = $request->input('source_id');
+        if ($source_id)
+        {
+            $source_group = Group::find($source_id);
+            if (!$source_group)
+            {
+                throw new \UnexpectedValueException('the group does not exist.', -10201);
+            }
+            $insValues['users'] = isset($source_group->users) && $source_group->users ? $source_group->users : [];
+        }
+
         $group = Group::create($insValues);
+        if ($group->users)
+        {
+            $group->users = EloquentUser::find($group->users ?: []);
+        }
+
         return Response()->json([ 'ecode' => 0, 'data' => $group ]);
     }
 
