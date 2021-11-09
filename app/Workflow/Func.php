@@ -134,7 +134,21 @@ class Func
     {
         if (isset($param['resolutionParam']) && $param['resolutionParam'])
         {
-            self::$issue_properties[ 'resolution'] = $param['resolutionParam'];
+            self::$issue_properties['resolution'] = $param['resolutionParam'];
+        }
+    }
+
+    /**
+     * set progress value to issue_properties.
+     *
+     * @param  array $param
+     * @return void
+     */
+    public static function setProgress($param)
+    {
+        if (isset($param['progressParam']) && $param['progressParam'])
+        {
+            self::$issue_properties['progress'] = intval($param['progressParam']);
         }
     }
 
