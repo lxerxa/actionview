@@ -855,6 +855,13 @@ class Provider {
                 }
                 $val['optionValues'] = self::pluckFields($options['version'], ['_id', 'name']);
             }
+            else if ($val['type'] == 'DatePicker')
+            {
+                if (isset($val['defaultValue']) && $val['defaultValue'])
+                {
+                    $val['defaultValue'] = self::getDefaultValueForDatePicker($val['defaultValue']);
+                }
+            }
             else if ($val['type'] == 'SingleUser' || $val['type'] == 'MultiUser')
             {
                 $val['optionValues'] = self::pluckFields($options['user'], ['id', 'name', 'email']);
@@ -1355,12 +1362,12 @@ class Provider {
             {
                 if (in_array('expect_start_time', $change_fields) || !isset($snap_data['expect_start_time']))
                 {
-                    $snap_data['expect_start_time'] = [ 'value' => date('Y/m/d', $issue['expect_start_time']), 'name' => '期望开始时间' ];
+                    $snap_data['expect_start_time'] = [ 'value' => date('Y/m/d', $issue['expect_start_time']), 'name' => '计划开始时间' ];
                 }
             }
             else
             {
-                $snap_data['expect_start_time'] = [ 'value' => '', 'name' => '期望开始时间' ];
+                $snap_data['expect_start_time'] = [ 'value' => '', 'name' => '计划开始时间' ];
             }
         }
 
@@ -1370,12 +1377,12 @@ class Provider {
             {
                 if (in_array('expect_complete_time', $change_fields) || !isset($snap_data['expect_complete_time']))
                 {
-                    $snap_data['expect_complete_time'] = [ 'value' => date('Y/m/d', $issue['expect_complete_time']), 'name' => '期望完成时间' ];
+                    $snap_data['expect_complete_time'] = [ 'value' => date('Y/m/d', $issue['expect_complete_time']), 'name' => '计划完成时间' ];
                 }
             }
             else
             {
-                $snap_data['expect_complete_time'] = [ 'value' => '', 'name' => '期望完成时间' ];
+                $snap_data['expect_complete_time'] = [ 'value' => '', 'name' => '计划完成时间' ];
             }
         }
 
@@ -1503,6 +1510,26 @@ class Provider {
             ->exists();
 
         return $isExisted;
+    }
+
+    /**
+     * get default value for datepicker.
+     *
+     * @param string $v
+     * @return timestamp
+     */
+    public static function getDefaultValueForDatePicker($v)
+    {
+        if (is_numeric($v))
+        {
+            if (strtotime(date('Y-m-d H:i:s', $v)) === $timestamp)
+            {
+                return $v;
+            }
+            return strtotime(date('Y-m-d', strtotime($v . ' day')));
+        }
+
+        return strtotime(date('Y-m-d', strtotime(intval($v) . ' day')));
     }
 }
 
