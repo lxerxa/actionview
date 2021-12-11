@@ -563,7 +563,7 @@ class ReportController extends Controller
         }
 
         $query = DB::collection('issue_' . $project_key)->whereRaw($where);
-        $issues = $query->orderBy('no', 'desc')->take(10000)->get();
+        $issues = $query->orderBy('no', 'desc')->take(1000)->get();
 
         $new_issues = [];
         foreach($issues as $issue)
