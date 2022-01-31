@@ -27,8 +27,8 @@ class CurlRequest {
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $await);
         curl_setopt($ch, CURLOPT_TIMEOUT, $await);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         $res = curl_exec($ch);
         curl_close($ch);
         
