@@ -10,7 +10,7 @@ We are using Jira to do the task management and bug tracking, but found that the
 
 # Demo
 
-http://www.actionview.cn  
+https://actionview.cn  
 
 ![image](http://actionview.cn/images/summary.png)
 
