@@ -10,7 +10,7 @@
 
 # Demo
 
-http://www.actionview.cn  
+https://actionview.cn  
 
 ![image](http://actionview.cn/images/summary.png)
 
