@@ -12,21 +12,21 @@ We are using Jira to do the task management and bug tracking, but found that the
 
 https://actionview.cn  
 
-![image](http://actionview.cn/images/summary.png)
+![image](https://actionview.cn/images/summary.png)
 
-![image](http://actionview.cn/images/issues.png)
+![image](https://actionview.cn/images/issues.png)
 
-![image](http://actionview.cn/images/workflow.png)
+![image](https://actionview.cn/images/workflow.png)
 
-![image](http://actionview.cn/images/kanban.png)
+![image](https://actionview.cn/images/kanban.png)
 
-![image](http://actionview.cn/images/kanban-drag.png)
+![image](https://actionview.cn/images/kanban-drag.png)
 
-![image](http://actionview.cn/images/kanban-backlog.png)
+![image](https://actionview.cn/images/kanban-backlog.png)
 
-![image](http://actionview.cn/images/report.png)
+![image](https://actionview.cn/images/report.png)
 
-![image](http://actionview.cn/images/gantt.png)
+![image](https://actionview.cn/images/gantt.png)
 
 # Installation
 
