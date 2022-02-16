@@ -18,6 +18,8 @@ use App\Project\Provider;
 use App\Project\Eloquent\Sprint;
 use App\Project\Eloquent\Version;
 
+use Maatwebsite\Excel\Facades\Excel;
+
 class ReportController extends Controller
 {
     use TimeTrackTrait;
@@ -520,6 +522,71 @@ class ReportController extends Controller
         }
 
         return Response()->json([ 'ecode' => 0, 'data' => $new_results ]);
+    }
+
+    /**
+     * export worklog report by member.
+     *
+     * @param  string $project_key
+     * @return \Illuminate\Http\Response
+     */
+    public function exportWorklog(Request $request, $project_key)
+    {
+        set_time_limit(0);
+
+        $optTypes = [];
+        $types = Provider::getTypeList($project_key);
+        foreach ($types as $type)
+        {
+            $optTypes[$type->id] = $type->name;
+        }
+
+
+        $optStates = [];
+        $states = Provider::getStateList($project_key);
+        foreach ($states as $state)
+        {
+            $optStates[isset($state['key']) ? $state['key'] : $state['_id']] = $state['name'];
+        }
+
+        $where = $this->getWorklogWhere($project_key, $request->all());
+
+        $results = DB::collection('worklog')
+            ->whereRaw($where)
+            ->orderBy('started_at', 'desc')
+            ->get();
+
+        $new_results = [];
+        foreach ($results as $k => $r)
+        {
+            $tmp = [];
+            $issue = DB::collection('issue_' . $project_key)
+                ->where('_id', $r['issue_id'])
+                ->first();
+
+            $tmp[] = isset($r['recorder']) && isset($r['recorder']['name']) ? $r['recorder']['name'] : '';
+            $tmp[] = isset($r['started_at']) ? date('Y-m-d H:i:s', $r['started_at']) : '';
+            $tmp[] = isset($r['spend']) ? $r['spend'] : '';   
+            $tmp[] = isset($r['comments']) ? $r['comments'] : '';
+            $tmp[] = isset($optTypes[$issue['type']]) ? $optTypes[$issue['type']] : '';
+            $tmp[] = $issue['no'] . '-' . $issue['title'];
+            $tmp[] = isset($optStates[$issue['state']]) ? $optStates[$issue['state']] : '';
+
+            $new_results[] = $tmp;
+        }
+
+        $headers = [ '填报者', '开始时间', '耗费时间', '备注', '问题类型', '问题名称', '问题状态' ];
+
+        $file_name = $project_key . '-worklogs';
+        Excel::create($file_name, function ($excel) use($headers, $new_results) {
+            $excel->sheet('Sheetname', function ($sheet) use($headers, $new_results) {
+                $sheet->appendRow($headers);
+                foreach ($new_results as $worklog)
+                {
+                    $sheet->appendRow($worklog);
+                }
+            });
+        })->download('xls');
     }
 
     /**
