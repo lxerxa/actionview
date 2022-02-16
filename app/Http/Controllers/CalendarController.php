@@ -223,7 +223,7 @@ class CalendarController extends Controller
 
         $year = intval($year);
 
-        $url = 'http://www.actionview.cn:8080/actionview/api/holiday/' . $year;
+        $url = 'https://actionview.cn/actionview/api/holiday/' . $year;
 
         $res = CurlRequest::get($url);
         if (!isset($res['ecode']) || $res['ecode'] != 0)
