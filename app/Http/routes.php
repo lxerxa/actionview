@@ -159,6 +159,7 @@ Route::group([ 'prefix' => $api_prefix . '/project/{project_key}', 'middleware' 
     Route::get('report/worklog', 'ReportController@getWorklogs');
     Route::get('report/worklog/list', 'ReportController@getWorklogList');
     Route::get('report/worklog/issue/{issue_id}', 'ReportController@getWorklogDetail');
+    Route::get('report/worklog/export', 'ReportController@exportWorklog');
     Route::get('report/timetracks', 'ReportController@getTimetracks');
     Route::get('report/timetracks/issue/{issue_id}', 'ReportController@getTimetracksDetail');
     Route::get('report/regressions', 'ReportController@getRegressions');
