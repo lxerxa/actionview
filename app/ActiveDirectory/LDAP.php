@@ -357,6 +357,7 @@ class LDAP {
 
                 $user = EloquentUser::where('directory', $key)
                     ->where('email', $username)
+                    ->where('invalid_flag', '<>', 1)
                     ->first(); 
 
                 if (!$user || !$user->ldap_dn)
