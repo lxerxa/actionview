@@ -28,7 +28,7 @@ class UserController extends Controller
 
     public function __construct()
     {
-        $this->middleware('privilege:sys_admin', [ 'except' => [ 'login', 'register', 'search', 'show', 'sendMailForResetpwd', 'showResetpwd', 'doResetpwd' ] ]);
+        $this->middleware('privilege:sys_admin', [ 'except' => [ 'login', 'register', 'getCurrentUser', 'search', 'show', 'sendMailForResetpwd', 'showResetpwd', 'doResetpwd' ] ]);
         parent::__construct();
     }
 
@@ -64,6 +64,11 @@ class UserController extends Controller
         {
             return Response()->json([ 'ecode' => -10000, 'data' => [] ]);
         }
+    }
+
+    public function getCurrentUser()
+    {
+        return Response()->json([ 'ecode' => 0, 'data' => $this->user ]);
     }
 
     /**
@@ -129,6 +134,17 @@ class UserController extends Controller
         if ($directory = $request->input('directory'))
         {
             $query->where('directory', $directory);
+        }
+
+        if ($status = $request->input('status')) {
+            if ($status === 'invalid') 
+            {
+                $query->where('invalid_flag', 1);
+            } 
+            else if ($status === 'active') 
+            {
+                $query->where('invalid_flag', '<>', 1);
+            }
         }
 
         // get total
