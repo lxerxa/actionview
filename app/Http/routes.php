@@ -34,6 +34,12 @@ Route::get($api_prefix . '/holiday/{year}', 'HolidayController@index');
 Route::post($api_prefix . '/webhook/{type}/project/{key}', 'WebhookController@exec');
 
 Route::group([ 'prefix' => $api_prefix, 'middleware' => 'can' ], function () {
+
+    // message route
+    Route::get('mymessage', 'MessageController@index');
+    Route::get('message/check', 'MessageController@check');
+    Route::post('message/status', 'MessageController@setStatus');
+    
     // project route
     Route::get('myproject', 'ProjectController@myproject');
     Route::get('project/recent', 'ProjectController@recent');
@@ -50,6 +56,7 @@ Route::group([ 'prefix' => $api_prefix, 'middleware' => 'can' ], function () {
     Route::post('project/batch/createindex', 'ProjectController@createMultiIndex');
     Route::delete('project/{id}', 'ProjectController@destroy');
 
+    Route::get('user/current', 'UserController@getCurrentUser');
     Route::get('user/search', 'UserController@search');
     Route::get('user/{id}/renewpwd', 'UserController@renewPwd');
     Route::post('user/batch/delete', 'UserController@delMultiUsers');
@@ -140,6 +147,8 @@ Route::group([ 'prefix' => $api_prefix . '/project/{project_key}', 'middleware' 
 Route::group([ 'prefix' => $api_prefix . '/project/{project_key}', 'middleware' => [ 'can', 'checkProjectStatus', 'privilege:view_project' ] ], function () {
     // project summary 
     Route::get('summary', 'SummaryController@index');
+    // project summary 
+    Route::get('summary/filters', 'SummaryController@getTopFilters');
     // config summary 
     Route::get('config', 'ConfigController@index');
     // project activity
