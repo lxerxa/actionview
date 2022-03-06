@@ -178,6 +178,8 @@ class IssueController extends Controller
             $filter = $request->input('filter') ?: '';
             $issues = $this->arrangeIssues($project_key, $issues, $from, $from_kanban_id, $filter === 'all');
         }
+        // add avatar
+        $this->addAvatar($issues);
 
         $options = [ 'total' => $total, 'sizePerPage' => $page_size ];
 
@@ -262,7 +264,7 @@ class IssueController extends Controller
 
         if ($limit = $request->input('limit'))
         {
-            $limit = intval($limit) < 10 ? 10 : intval($limit);
+            $limit = intval($limit);
         }
         else
         {
@@ -530,7 +532,8 @@ class IssueController extends Controller
             ->where('parent_id', $id)
             ->where('del_flg', '<>', 1)
             ->orderBy('created_at', 'asc')
-            ->get(['no', 'type', 'title', 'state']);
+            ->get(['no', 'type', 'title', 'state', 'assignee']);
+        $this->addAvatar($issues['subtasks']);
 
         $issue['links'] = $this->getLinks($project_key, $issue);
 
@@ -586,7 +589,7 @@ class IssueController extends Controller
             ->where('del_flg', '<>', 1)
             ->orderBy('created_at', 'asc')
             ->get();
-        $link_fields = ['_id', 'no', 'type', 'title', 'state'];
+        $link_fields = ['_id', 'no', 'type', 'title', 'state', 'assignee'];
         foreach ($links as $link)
         {
             if ($link['src'] == $id)
@@ -597,6 +600,14 @@ class IssueController extends Controller
             {
                 $src_issue = DB::collection('issue_' . $project_key)->where('_id', $link['src'])->first();
                 $link['src'] = array_only($src_issue, $link_fields);
+                // add avatar for weapp
+                if (isset($link['src']['assignee']['id']) && $link['src']['assignee']['id']) { 
+                    $user = EloquentUser::find($link['src']['assignee']['id']);
+                    if (isset($user->avatar) && $user->avatar)
+                    {
+                        $link['src']['assignee']['avatar'] = $user->avatar;
+                    }
+                }
             }
 
             if ($link['dest'] == $id)
@@ -607,6 +618,14 @@ class IssueController extends Controller
             {
                 $dest_issue = DB::collection('issue_' . $project_key)->where('_id', $link['dest'])->first();
                 $link['dest'] = array_only($dest_issue, $link_fields);
+                // add avatar for weapp
+                if (isset($link['dest']['assignee']['id']) && $link['dest']['assignee']['id']) {
+                    $user = EloquentUser::find($link['dest']['assignee']['id']);
+                    if (isset($user->avatar) && $user->avatar)
+                    {
+                        $link['dest']['assignee']['avatar'] = $user->avatar;
+                    }
+                }
             }
             array_push($linked_issues, $link);
         }
@@ -687,6 +706,8 @@ class IssueController extends Controller
         $timetrack = $this->getTimeTrackSetting();
         // get issue link relations
         $relations = $this->getLinkRelations();
+        // get project kanbans
+        $kanbans = Provider::getKanbans($project_key);
 
         return Response()->json([ 
             'ecode' => 0, 
@@ -706,7 +727,8 @@ class IssueController extends Controller
                 'display_columns' => $display_columns, 
                 'timetrack' => $timetrack, 
                 'relations' => $relations, 
-                'fields' => $fields 
+                'fields' => $fields, 
+                'kanbans' => $kanbans, 
             ]) 
         ]);
     }
@@ -1910,6 +1932,11 @@ class IssueController extends Controller
      */
     public function addAvatar(&$issues)
     {
+        if (!$issues) 
+        {
+            return;
+        }
+
         $cache_avatars = [];
         foreach ($issues as $key => $issue)
         {
@@ -1959,12 +1986,6 @@ class IssueController extends Controller
      */
     public function arrangeIssues($project_key, $issues, $from, $from_board_id, $isUpdRank=false)
     {
-        if ($from === 'his_sprint')
-        {
-            $this->addAvatar($issues);
-            return $issues;
-        }
-
         // classify the issues
         $classified_issues = $this->classifyIssues($issues);
 
@@ -1987,7 +2008,6 @@ class IssueController extends Controller
                 $issues = $this->sprintFilter($project_key, $issues);
             }
 
-            $this->addAvatar($issues);
             return $issues;
         }
  
@@ -2098,7 +2118,6 @@ class IssueController extends Controller
             $issues = $this->sprintFilter($project_key, $issues);
         }
 
-        $this->addAvatar($issues);
         return $issues;
     }
 
