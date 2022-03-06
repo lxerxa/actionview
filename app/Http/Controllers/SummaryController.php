@@ -15,15 +15,32 @@ use App\Project\Provider;
 class SummaryController extends Controller
 {
     /**
-     * get the top four filters info.
+     * get the top filters info.
      *
      * @param  string $project_key
+     * @return \Illuminate\Http\Response
+     */
+    public function getTopFilters($project_key)
+    {
+        // the top four filters
+        $filters = $this->getTopFiltersEx($project_key);
+        return Response()->json([
+            'ecode' => 0,
+            'data' => $filters
+        ]);
+    }
+
+    /**
+     * get the top filters extend info.
+     *
+     * @param  string $project_key
+     * @param  number $num
      * @return array
      */
-    public function getTopFourFilters($project_key)
+    public function getTopFiltersEx($project_key, $num=4)
     {
         $filters = Provider::getIssueFilters($project_key, $this->user->id);
-        $filters = array_slice($filters, 0, 4);
+        $filters = array_slice($filters, 0, $num);
         foreach ($filters as $key => $filter)
         {
             $query = [];
