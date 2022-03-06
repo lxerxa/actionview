@@ -20,6 +20,7 @@ use App\Project\Eloquent\UserGroupProject;
 use App\Project\Eloquent\File;
 use App\Project\Eloquent\Version;
 use App\Project\Eloquent\Module;
+use App\Project\Eloquent\Board;
 use App\Project\Eloquent\Epic;
 use App\Project\Eloquent\Sprint;
 use App\Project\Eloquent\Labels;
@@ -1530,6 +1531,22 @@ class Provider {
         }
 
         return strtotime(date('Y-m-d', strtotime(intval($v) . ' day')));
+    }
+
+    /**
+     * get the project kanbans.
+     *
+     * @param  string $project_key
+     * @return array
+     */
+    public static function getKanbans($project_key)
+    {
+        // get all boards
+        $boards = Board::Where('project_key', $project_key)
+            ->orderBy('_id', 'asc')
+            ->get();
+
+         return $boards;
     }
 }
 
