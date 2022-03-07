@@ -55,7 +55,12 @@ class MessageController extends Controller
             $messages[$key]['body']['user']['avatar'] = $avatars[$user_id];
         }
 
-        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($messages), 'options' => [ 'current_time' => time() ] ]);
+        $unReadCount = DB::collection('message')
+            ->where('receiver', $this->user->id)
+            ->where('status', 'unRead')
+            ->count();
+
+        return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($messages), 'options' => [ 'current_time' => time(), 'unReadCount' => $unReadCount ] ]);
     }
 
     /**
@@ -69,7 +74,7 @@ class MessageController extends Controller
         $table = 'message';
 
         $id = $request->input('id');
-        $messge = DB::collection($table)->find($id);
+        $message = DB::collection($table)->find($id);
         if (!$message)
         {
             throw new \UnexpectedValueException('the message does not exist.', -11103);
@@ -81,15 +86,23 @@ class MessageController extends Controller
         }
 
         $status = $request->input('status');
-        if (!in_array($status, ['hasRead' , 'pending']))
+        if (!in_array($status, ['read' , 'pending']))
         {
             throw new \UnexpectedValueException('the message does not exist.', -11103);
         }
 
         $updValues = [ 'status' => $status, 'updated_at' => time() ];
-        DB::collection($table)->where('_id', $id)->update($updValues);
+        DB::collection($table)
+            ->where('_id', $id)
+            ->where('receiver', $this->user->id)
+            ->update($updValues);
 
-        return Response()->json([ 'ecode' => 0 ]);
+        $unReadCount = DB::collection('message')
+            ->where('receiver', $this->user->id)
+            ->where('status', 'unRead')
+            ->count();
+
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'id' => $id, 'status' => $status, 'unReadCount' => $unReadCount ] ]);
     }
 
     /**
@@ -103,8 +116,35 @@ class MessageController extends Controller
         $hasUnread = DB::collection('message')
             ->where('receiver', $this->user->id)
             ->where('status', 'unRead')
-            ->exists();
+            ->count();
 
-        return Response()->json([ 'ecode' => 0, 'data' => [ 'hasUnread' => $hasUnread ] ]);
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'unReadCount' => $unReadCount ] ]);
+    }
+
+    /**
+     * set all issues status.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function setAllStatus(Request $request)
+    {
+        $status = $request->input('status');
+        if (!in_array($status, ['read' , 'pending']))
+        {
+            throw new \UnexpectedValueException('the message does not exist.', -11103);
+        }
+
+        $updValues = [ 'status' => $status, 'updated_at' => time() ];
+        DB::collection('message')
+            ->where('receiver', $this->user->id)
+            ->update($updValues);
+
+        $unReadCount = DB::collection('message')
+            ->where('receiver', $this->user->id)
+            ->where('status', 'unRead')
+            ->count();
+
+        return Response()->json([ 'ecode' => 0, 'data' => [ 'unReadCount' => $unReadCount ] ]);
     }
 }
