@@ -19,7 +19,7 @@ class VersionController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('privilege:manage_project', [ 'except' => [ 'index' ] ]);
+        $this->middleware('privilege:manage_project', [ 'except' => [ 'index', 'show' ] ]);
         parent::__construct();
     }
 
@@ -130,6 +130,10 @@ class VersionController extends Controller
     public function show($project_key, $id)
     {
         $version = Version::find($id);
+        if (!$version || $version->project_key != $project_key)
+        {
+            throw new \UnexpectedValueException('the version does not exist or is not in the project.', -11503);
+        }
 
         $unresolved_cnt = DB::collection('issue_' . $project_key)
             ->where('resolution', 'Unresolved')
