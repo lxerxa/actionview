@@ -6,7 +6,6 @@ use Illuminate\Http\Request;
 
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
-use App\Project\Provider;
 use DB;
 
 use Sentinel;
@@ -74,7 +73,8 @@ class ActivityController extends Controller
                     'no' => $issue['no'], 
                     'title' => isset($issue['title']) ? $issue['title'] : '', 
                     'state' => isset($issue['state']) ? $issue['state'] : '', 
-                    'del_flg' => isset($issue['del_flg']) ? $issue['del_flg'] : 0 ];
+                    'del_flg' => isset($issue['del_flg']) ? $issue['del_flg'] : 0 
+                ];
 
                 $activities[$key]['issue_link']['relation'] = $activity['data']['relation'];
 
@@ -91,7 +91,8 @@ class ActivityController extends Controller
                     'no' => $issue['no'], 
                     'title' => isset($issue['title']) ? $issue['title'] : '', 
                     'state' => isset($issue['state']) ? $issue['state'] : '', 
-                    'del_flg' => isset($issue['del_flg']) ? $issue['del_flg'] : 0 ];
+                    'del_flg' => isset($issue['del_flg']) ? $issue['del_flg'] : 0 
+                ];
             }
             else if (isset($activity['issue_id']))
             {
@@ -108,7 +109,8 @@ class ActivityController extends Controller
                     'no' => $issue['no'], 
                     'title' => isset($issue['title']) ? $issue['title'] : '', 
                     'state' => isset($issue['state']) ? $issue['state'] : '', 
-                    'del_flg' => isset($issue['del_flg']) ? $issue['del_flg'] : 0 ];
+                    'del_flg' => isset($issue['del_flg']) ? $issue['del_flg'] : 0 
+                ];
                 $cache_issues[$activity['issue_id']] = $issue;
             }
         }
