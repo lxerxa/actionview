@@ -77,18 +77,18 @@ class MessageController extends Controller
         $message = DB::collection($table)->find($id);
         if (!$message)
         {
-            throw new \UnexpectedValueException('the message does not exist.', -11103);
+            throw new \UnexpectedValueException('the message does not exist.', -16200);
         }
 
         if ($this->user->id != $message['receiver'])
         {
-            throw new \UnexpectedValueException('the message does not exist.', -11103);
+            throw new \UnexpectedValueException('the message does not belong to this user.', -16201);
         }
 
         $status = $request->input('status');
         if (!in_array($status, ['read' , 'pending']))
         {
-            throw new \UnexpectedValueException('the message does not exist.', -11103);
+            throw new \UnexpectedValueException('the message status has error.', -16202);
         }
 
         $updValues = [ 'status' => $status, 'updated_at' => time() ];
@@ -113,7 +113,7 @@ class MessageController extends Controller
      */
     public function check(Request $request)
     {
-        $hasUnread = DB::collection('message')
+        $unReadCount = DB::collection('message')
             ->where('receiver', $this->user->id)
             ->where('status', 'unRead')
             ->count();
@@ -132,12 +132,13 @@ class MessageController extends Controller
         $status = $request->input('status');
         if (!in_array($status, ['read' , 'pending']))
         {
-            throw new \UnexpectedValueException('the message does not exist.', -11103);
+            throw new \UnexpectedValueException('the message status has error.', -16202);
         }
 
         $updValues = [ 'status' => $status, 'updated_at' => time() ];
         DB::collection('message')
             ->where('receiver', $this->user->id)
+            ->where('status', 'unRead')
             ->update($updValues);
 
         $unReadCount = DB::collection('message')
