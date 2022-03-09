@@ -10,6 +10,8 @@ use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Project\Eloquent\Linked;
 
+use Cartalyst\Sentinel\Users\EloquentUser;
+
 use DB;
 
 class LinkController extends Controller
@@ -65,10 +67,28 @@ class LinkController extends Controller
         $link['relation'] = $ret->relation;
 
         $src_issue = DB::collection('issue_' . $project_key)->where('_id', $src)->first();
-        $link['src'] = array_only($src_issue, ['_id', 'no', 'type', 'title', 'state']);
+        $link['src'] = array_only($src_issue, ['_id', 'no', 'type', 'title', 'state', 'assignee']);
+        // add avatar for weapp
+        if (isset($link['src']['assignee']['id']) && $link['src']['assignee']['id'])
+        {
+            $user = EloquentUser::find($link['src']['assignee']['id']);
+            if (isset($user->avatar) && $user->avatar)
+            {
+                $link['src']['assignee']['avatar'] = $user->avatar;
+            }
+        }
 
         $dest_issue = DB::collection('issue_' . $project_key)->where('_id', $dest)->first();
-        $link['dest'] = array_only($dest_issue, ['_id', 'no', 'type', 'title', 'state']); 
+        $link['dest'] = array_only($dest_issue, ['_id', 'no', 'type', 'title', 'state', 'assignee']); 
+        // add avatar for weapp
+        if (isset($link['dest']['assignee']['id']) && $link['dest']['assignee']['id']) 
+        {
+            $user = EloquentUser::find($link['dest']['assignee']['id']);
+            if (isset($user->avatar) && $user->avatar)
+            {
+                $link['dest']['assignee']['avatar'] = $user->avatar;
+            }
+        }
 
         // trigger event of issue linked
         Event::fire(new IssueEvent($project_key, $src, $values['creator'], [ 'event_key' => 'create_link', 'data' => [ 'dest' => $dest, 'relation' => $relation ]]));
