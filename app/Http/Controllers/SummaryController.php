@@ -135,7 +135,7 @@ class SummaryController extends Controller
     public function index($project_key)
     {
         // the top four filters
-        $filters = $this->getTopFourFilters($project_key);
+        $filters = $this->getTopFiltersEx($project_key);
         // the two weeks issuepulse
         $trend = $this->getPulseData($project_key);
 
