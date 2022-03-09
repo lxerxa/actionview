@@ -36,9 +36,10 @@ Route::post($api_prefix . '/webhook/{type}/project/{key}', 'WebhookController@ex
 Route::group([ 'prefix' => $api_prefix, 'middleware' => 'can' ], function () {
 
     // message route
-    Route::get('mymessage', 'MessageController@index');
+    Route::get('message', 'MessageController@index');
     Route::get('message/check', 'MessageController@check');
     Route::post('message/status', 'MessageController@setStatus');
+    Route::post('message/all/status', 'MessageController@setAllStatus');
     
     // project route
     Route::get('myproject', 'ProjectController@myproject');
