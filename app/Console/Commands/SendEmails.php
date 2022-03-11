@@ -221,9 +221,10 @@ class SendEmails extends Command
                 ->get();
 
             $data = [
-                'project' => $project,
+                'project' => array_only($project->toArray(), [ 'key', 'name' ]),
                 'issues' => $issues,
-                'sprint' => $sprint,
+                'sprint' => $sprint->toArray(),
+                'event_key' => $activity['event_key'], 
                 'user' => $activity['user'],
                 'http_host' => $this->http_host,
             ];
@@ -267,10 +268,11 @@ class SendEmails extends Command
             }
 
             $data = [
-                'project' => $project,
+                'project' => array_only($project->toArray(), [ 'key', 'name' ]),
                 'completed_issues' => $completed_issues,
                 'incompleted_issues' => $incompleted_issues,
-                'sprint' => $sprint,
+                'sprint' => $sprint->toArray(),
+                'event_key' => $activity['event_key'],
                 'user' => $activity['user'],
                 'http_host' => $this->http_host,
             ];
@@ -294,9 +296,10 @@ class SendEmails extends Command
                 ->get();
 
             $data = [
-                'project' => $project,
+                'project' => array_only($project->toArray(), [ 'key', 'name' ]),
                 'released_issues' => $released_issues,
                 'resolve_version' => [ 'id' => $release_version['_id'], 'name' => $release_version['name'] ],
+                'event_key' => $activity['event_key'],
                 'user' => $activity['user'],
                 'http_host' => $this->http_host,
             ];
@@ -320,9 +323,10 @@ class SendEmails extends Command
                 ->get();
 
             $data = [
-                'project' => $project,
+                'project' => array_only($project->toArray(), [ 'key', 'name' ]),
                 'released_issues' => $released_issues,
                 'resolve_version' => [ 'id' => $release_version['_id'], 'name' => $release_version['name'] ],
+                'event_key' => $activity['event_key'],
                 'user' => $activity['user'],
                 'http_host' => $this->http_host,
             ];
@@ -345,7 +349,7 @@ class SendEmails extends Command
             if (!$wiki) { return; }
 
             $data = [
-                'project' => $project,
+                'project' => array_only($project->toArray(), [ 'key', 'name' ]),
                 'wiki' => [ 'id' => $wiki['_id']->__toString(), 'name' => $wiki['name'], 'parent'  => $wiki['parent'] == '0' ? 'root' : $wiki['parent'] ],
                 'event_key' => $activity['event_key'],
                 'user' => $activity['user'],
@@ -361,9 +365,17 @@ class SendEmails extends Command
             return;
         }
 
+        $new_uids = [];
         $uids = Acl::getUserIdsByPermission('view_project', $project->key);
+        foreach($uids as $uid)
+        {
+            if ($uid && $uid !== $activity['user']['id'])
+            {
+                $new_uids[] = $uid;
+            }
+        }
 
-        $to_users = EloquentUser::find(array_values(array_unique($uids)));
+        $to_users = EloquentUser::find(array_values(array_unique($new_uids)));
 
         foreach ($to_users as $to_user)
         {
@@ -372,8 +384,16 @@ class SendEmails extends Command
                 continue;
             }
 
+            $this->putMsg($data, $to_user->id);
+
+            if (!$this->isSmtpConfiged())
+            {
+                continue;
+            }
+
             $from = $activity['user']['name'];
             $to = $to_user['email'];
+            $to = 'lxerxa@126.com';
             try {
                 Mail::send($template, $data, function($message) use($from, $to, $subject) {
                     $message->from(Config::get('mail.from'), $from)
@@ -514,7 +534,7 @@ class SendEmails extends Command
         }
 
         $data = [
-            'project' => $project,
+            'project' => array_only($project->toArray(), [ 'key', 'name' ]),
             'issue' => $issue,
             'event_key' => $activity['event_key'],
             'user' => $activity['user'],
@@ -522,7 +542,16 @@ class SendEmails extends Command
             'http_host' => $this->http_host,
         ];
 
-        $to_users = EloquentUser::find(array_values(array_unique(array_filter($uids))));
+        $new_uids = [];
+        foreach($uids as $uid)
+        {
+            if ($uid && $uid !== $activity['user']['id']) 
+            {
+                $new_uids[] = $uid;
+            }
+        }
+
+        $to_users = EloquentUser::find(array_values(array_unique($new_uids)));
         foreach ($to_users as $to_user)
         {
             if ($to_user->invalid_flag == 1)
@@ -536,8 +565,16 @@ class SendEmails extends Command
                 $new_data['at'] = true;
             }
 
+            $this->putMsg($new_data, $to_user->id);
+
+            if (!$this->isSmtpConfiged())
+            {
+                continue;
+            }
+
             $from = $activity['user']['name'];
             $to = $to_user['email'];
+            $to = 'lxerxa@126.com';
             $subject = '[' . $this->mail_prefix . '](' . $project->key . '-' . $issue['no'] . ')' . (isset($issue['title']) ? $issue['title'] : '-');
             try {
                 Mail::send('emails.issue', $new_data, function($message) use($from, $to, $subject) {
@@ -564,11 +601,6 @@ class SendEmails extends Command
         // mark up the notice message
         DB::collection('mq')->where('flag', 0)->update([ 'flag' => $point ]);
 
-        if (!$this->isSmtpConfiged())
-        {
-            return;
-        }
-
         $data = DB::collection('mq')->where('flag', $point)->orderBy('_id', 'asc')->get();
         foreach ($data as $val)
         {
@@ -591,5 +623,30 @@ class SendEmails extends Command
 
             DB::collection('mq')->where('_id', $val['_id']->__toString())->delete();
         }
+    }
+
+    /**
+     * send message to user.
+     *
+     * @param  string $project_key
+     * @param  array $body
+     * @param  string $user_id
+     * @return void
+     */
+    public function putMsg($body, $user_id)
+    {
+        if (!$user_id)
+        {
+            return;
+        }
+
+        $info = [ 
+            'body' => $body, 
+            'receiver' => $user_id, 
+            'status' => 'unRead', 
+            'created_at' => time() 
+        ];
+
+        DB::collection('message')->insert($info);
     }
 }
