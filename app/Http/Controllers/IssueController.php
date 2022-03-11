@@ -471,7 +471,15 @@ class IssueController extends Controller
      */
     public function show($project_key, $id)
     {
-        $issue = DB::collection('issue_' . $project_key)->where('_id', $id)->first();
+        $issue = DB::collection('issue_' . $project_key)
+            ->where('_id', $id)
+            ->where('del_flg', '<>', 1)
+            ->first();
+        if (!$issue)
+        {
+            throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -11103);
+        }
+
         $schema = Provider::getSchemaByType($issue['type']);
         if (!$schema)
         {
@@ -533,7 +541,7 @@ class IssueController extends Controller
             ->where('del_flg', '<>', 1)
             ->orderBy('created_at', 'asc')
             ->get(['no', 'type', 'title', 'state', 'assignee']);
-        $this->addAvatar($issues['subtasks']);
+        $this->addAvatar($issue['subtasks']);
 
         $issue['links'] = $this->getLinks($project_key, $issue);
 
@@ -745,7 +753,7 @@ class IssueController extends Controller
     {
         $table = 'issue_' . $project_key;
         $issue = DB::collection($table)->find($id);
-        if (!$issue)
+        if (!$issue || (isset($issue['del_flg']) && $issue['del_flg'] == 1))
         {
             throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -11103);
         }
@@ -823,7 +831,7 @@ class IssueController extends Controller
 
         $table = 'issue_' . $project_key;
         $issue = DB::collection($table)->find($id);
-        if (!$issue)
+        if (!$issue || (isset($issue['del_flg']) && $issue['del_flg'] == 1))
         {
             throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -11103);
         }
@@ -975,7 +983,7 @@ class IssueController extends Controller
 
         $table = 'issue_' . $project_key;
         $issue = DB::collection($table)->find($id);
-        if (!$issue)
+        if (!$issue || (isset($issue['del_flg']) && $issue['del_flg'] == 1))
         {
             throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -11103);
         }
@@ -1560,7 +1568,10 @@ class IssueController extends Controller
             $updValues['resolution'] = $resolution;
         }
 
-        $issue = DB::collection('issue_' . $project_key)->where('_id', $id)->first();
+        $issue = DB::collection('issue_' . $project_key)
+            ->where('_id', $id)
+            ->where('del_flg', '<>', 1)
+            ->first();
         if (!$issue)
         {
             throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -11103);
@@ -1605,7 +1616,10 @@ class IssueController extends Controller
             throw new \UnexpectedValueException('the copied issue id cannot be empty.', -11109);
         }
 
-        $src_issue = DB::collection('issue_' . $project_key)->where('_id', $src_id)->first();
+        $src_issue = DB::collection('issue_' . $project_key)
+            ->where('_id', $src_id)
+            ->where('del_flg', '<>', 1)
+            ->first();
         if (!$src_issue )
         {
             throw new \UnexpectedValueException('the copied issue does not exist or is not in the project.', -11103);
@@ -1690,7 +1704,7 @@ class IssueController extends Controller
     {
         $table = 'issue_' . $project_key;
         $issue = DB::collection($table)->find($id);
-        if (!$issue)
+        if (!$issue || (isset($issue['del_flg']) && $issue['del_flg'] == 1))
         {
             throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -11103);
         }
@@ -1729,7 +1743,7 @@ class IssueController extends Controller
             }
 
             $parent_issue = DB::collection($table)->find($parent_id);
-            if (!$parent_issue)
+            if (!$parent_issue || (isset($parent_issue['del_flg']) && $parent_issue['del_flg'] == 1))
             {
                 throw new \UnexpectedValueException('the dest parent issue does not exist or is not in the project.', -11110);
             }
@@ -1762,7 +1776,7 @@ class IssueController extends Controller
     {
         $table = 'issue_' . $project_key;
         $issue = DB::collection($table)->find($id);
-        if (!$issue)
+        if (!$issue  || (isset($issue['del_flg']) && $issue['del_flg'] == 1))
         {
             throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -11103);
         }
@@ -1773,7 +1787,7 @@ class IssueController extends Controller
             throw new \UnexpectedValueException('the dest parent cannot be empty.', -11111);
         }
         $parent_issue = DB::collection($table)->find($parent_id);
-        if (!$parent_issue)
+        if (!$parent_issue || (isset($parent_issue['del_flg']) && $parent_issue['del_flg'] == 1))
         {
             throw new \UnexpectedValueException('the dest parent issue does not exist or is not in the project.', -11110);
         }
@@ -1952,7 +1966,6 @@ class IssueController extends Controller
             }
             $issues[$key]['assignee']['avatar'] = $cache_avatars[$issue['assignee']['id']];
         }
-        return;
     }
 
     /**
