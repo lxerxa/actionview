@@ -33,39 +33,10 @@ class UserController extends Controller
     }
 
     /**
-     * user login.
+     * get current user info.
      *
      * @return \Illuminate\Http\Response
      */
-    public function login(Request $request)
-    {
-        $email = $request->input('email');
-        $password = $request->input('password');
-        if (!$email || !$password)
-        {
-            throw new \UnexpectedValueException('email or password cannot be empty.', -10003);
-        }
-
-        if (strpos($email, '@') === false)
-        {
-            $setting = SysSetting::first();
-            if ($setting && isset($setting->properties) && isset($setting->properties['login_mail_domain']))
-            {
-                $email = $email . '@' . $setting->properties['login_mail_domain'];
-            }
-        }
-
-        $user = Sentinel::authenticate([ 'email' => $email, 'password' => $password ]);
-        if ($user)
-        {
-            return Response()->json([ 'ecode' => 0, 'data' => $user ]);
-        }
-        else
-        {
-            return Response()->json([ 'ecode' => -10000, 'data' => [] ]);
-        }
-    }
-
     public function getCurrentUser()
     {
         return Response()->json([ 'ecode' => 0, 'data' => $this->user ]);
