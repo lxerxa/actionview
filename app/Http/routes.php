@@ -22,7 +22,6 @@ Route::post($api_prefix . '/session', 'SessionController@create');
 Route::get($api_prefix . '/session', 'SessionController@getSess');
 Route::delete($api_prefix . '/session', 'SessionController@destroy');
 
-Route::post($api_prefix . '/user/login', 'UserController@login');
 Route::post($api_prefix . '/user/register', 'UserController@register');
 
 Route::post($api_prefix .'/user/resetpwdsendmail', 'UserController@sendMailForResetpwd');
