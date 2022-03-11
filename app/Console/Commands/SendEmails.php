@@ -393,7 +393,6 @@ class SendEmails extends Command
 
             $from = $activity['user']['name'];
             $to = $to_user['email'];
-            $to = 'lxerxa@126.com';
             try {
                 Mail::send($template, $data, function($message) use($from, $to, $subject) {
                     $message->from(Config::get('mail.from'), $from)
@@ -574,7 +573,6 @@ class SendEmails extends Command
 
             $from = $activity['user']['name'];
             $to = $to_user['email'];
-            $to = 'lxerxa@126.com';
             $subject = '[' . $this->mail_prefix . '](' . $project->key . '-' . $issue['no'] . ')' . (isset($issue['title']) ? $issue['title'] : '-');
             try {
                 Mail::send('emails.issue', $new_data, function($message) use($from, $to, $subject) {
