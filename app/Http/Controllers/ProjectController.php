@@ -299,7 +299,7 @@ class ProjectController extends Controller
         $new_stats = [];
         foreach ($stats as $key => $val) 
         {
-            $new_stats[] = [ 'key' => $key, 'stats' => $val ];
+            $new_stats[] = [ 'key' => strval($key), 'stats' => $val ];
         }
 
         return  Response()->json([ 'ecode' => 0, 'data' => $new_stats ]);
