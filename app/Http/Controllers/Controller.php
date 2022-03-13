@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request;
 use Illuminate\Foundation\Bus\DispatchesJobs;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Foundation\Validation\ValidatesRequests;
@@ -23,7 +24,7 @@ class Controller extends BaseController
 
     public function __construct()
     {
-        $this->user = Sentinel::getUser(); 
+        $this->user = Request()->input('currentUser'); 
     }
 
     public function arrange($data)
