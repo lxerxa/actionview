@@ -28,7 +28,7 @@ https://actionview.cn
 
 ![image](https://actionview.cn/www/images/gantt.png)
 
-# Mini apps
+# 微信小程序
 
 ![image](https://actionview.cn/www/images/mini1.jpeg)
 
