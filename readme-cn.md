@@ -28,6 +28,12 @@ https://actionview.cn
 
 ![image](https://actionview.cn/www/images/gantt.png)
 
+# Mini apps
+
+![image](https://actionview.cn/www/images/mini1.jpeg)
+
+![image](https://actionview.cn/www/images/mini2.jpeg)
+
 # 安装手册
 
 [Ubuntu Installation - Apache](https://github.com/lxerxa/actionview/wiki/Ubuntu-Installation(Apache))  
