@@ -1236,4 +1236,29 @@ class WikiController extends Controller
 
         return Response()->json(['ecode' => 0, 'data' => ['id' => $id, 'user' => $cur_user, 'favorited' => $flag]]);
     }
+
+
+    /**
+     * get my favorite.
+     *
+     * @param  string  $project_key
+     * @return \Illuminate\Http\Response
+     */
+    public function getMyFavorites(Request $request, $project_key)
+    {
+        $favorite_wikis = WikiFavorites::where('project_key', $project_key)
+            ->where('user.id', $this->user->id)
+            ->get()
+            ->toArray();
+        $favorite_wids = array_column($favorite_wikis, 'wid');
+
+
+        $documents = DB::collection('wiki_' . $project_key) 
+            ->where('d', '<>', 1)
+            ->whereIn('_id', $favorite_wids)
+            ->where('del_flag', '<>', 1)
+            ->get();
+
+        return Response()->json([ 'ecode' => 0, 'data' => $documents ]);
+    }
 }
