@@ -26,6 +26,10 @@ if [ `grep -c '$activation->completed = false;' $activationrepofile` -eq 0 ]; th
   sed -i '/$activation->user_id = $user->getUserId();/a\        $activation->completed = false;' $activationrepofile
 fi
  
+#add phone field to fillable
+if [ `grep -c "'phone'," $eloquentuserfile` -eq 0 ]; then
+  sed -i "/fillable/a\        'phone'," $eloquentuserfile
+fi
 #add avatar field to fillable
 if [ `grep -c "'avatar'," $eloquentuserfile` -eq 0 ]; then
   sed -i "/fillable/a\        'avatar'," $eloquentuserfile 
