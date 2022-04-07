@@ -4,6 +4,9 @@ namespace App\Http\Middleware;
 
 use App\System\Eloquent\SysSetting;
 
+use App\ActiveDirectory\Eloquent\Directory;
+use App\ActiveDirectory\LDAP;
+
 use Closure;
 use Sentinel;
 
@@ -45,8 +48,26 @@ class Authorize
                 $user = Sentinel::authenticate([ 'email' => $email, 'password' => $password ]);
                 if (!$user)
                 {
+                    $configs = [];
+                    $directories = Directory::where('type', 'OpenLDAP')
+                        ->where('invalid_flag', '<>', 1)
+                        ->get();
+                    foreach ($directories as $d)
+                    {
+                        $configs[$d->id] = $d->configs ?: [];
+                    }
+
+                    if ($configs)
+                    {
+                        $user = LDAP::attempt($configs, $email, $password);
+                    }
+                }
+
+                if (!$user) 
+                {
                     return Response()->json([ 'ecode' => -10000, 'data' => '' ]);
                 }
+
                 $request->merge([ 'currentUser' => $user ]);
             }
         }
