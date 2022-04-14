@@ -639,7 +639,7 @@ class ReportController extends Controller
 
             $tmp['id']        = $issue_id;
             $tmp['no']        = $issue['no'];
-            $tmp['title']     = $issue['title'];
+            $tmp['title']     = isset($issue['title']) ? $issue['title'] : '-';
             $tmp['state']     = $issue['state'];
             $tmp['type']      = $issue['type'];
             $tmp['origin']    = isset($issue['original_estimate']) ? $issue['original_estimate'] : '';
