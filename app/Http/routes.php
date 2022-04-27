@@ -248,6 +248,7 @@ Route::group([ 'prefix' => $api_prefix . '/project/{project_key}', 'middleware' 
     Route::get('wiki/dirtree', 'WikiController@getDirTree');
     Route::get('wiki/{id}/dirs', 'WikiController@getDirChildren');
     Route::post('wiki/{id}/favorite', 'WikiController@favorite');
+    Route::get('wiki/myfavorites', 'WikiController@getMyFavorites');
     Route::post('wiki/{id}/upload', 'WikiController@upload');
     Route::get('wiki/{id}/download', 'WikiController@download2');
     Route::get('wiki/{id}/file/{fid}/download', 'WikiController@download');
