@@ -1495,7 +1495,35 @@ class IssueController extends Controller
         } catch (Exception $e) {
           throw new Exception('the executed action has error.', -11115);
         }
+
+        // record the issue transactor.
+        $this->appendTransactor($project_key, $id);
+
         return $this->show($project_key, $id); 
+    }
+
+    /**
+     * record the issue transactor.
+     *
+     * @param  string  $project_key
+     * @param  string  $issue_id
+     * @return void 
+     */
+    public function appendTransactor($project_key, $issue_id)
+    {
+        $table = 'issue_' . $project_key;
+        $issue = DB::collection($table)->find($issue_id);
+        if (!$issue || (isset($issue['del_flg']) && $issue['del_flg'] == 1))
+        {
+            throw new \UnexpectedValueException('the issue does not exist or is not in the project.', -11103);
+        }
+
+        $transactors = array_get($issue, 'transactors', []);
+	if (!in_array($this->user->id, $transactors))
+        {
+            $transactors[] = $this->user->id; 
+            DB::collection($table)->where('_id', $issue_id)->update([ 'transactors' => $transactors ]);
+        }
     }
 
     /**

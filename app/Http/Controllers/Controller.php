@@ -168,6 +168,7 @@ class Controller extends BaseController
             [ 'key' => 'reporter', 'type' => 'SingleUser' ],
             [ 'key' => 'resolver', 'type' => 'SingleUser' ],
             [ 'key' => 'closer', 'type' => 'SingleUser' ],
+            [ 'key' => 'transactors', 'type' => 'MultiUser' ],
 
             [ 'key' => 'created_at', 'type' => 'Duration' ],
             [ 'key' => 'updated_at', 'type' => 'Duration' ],
@@ -239,7 +240,7 @@ class Controller extends BaseController
                 $vals = explode(',', $val);
                 foreach ($vals as $v)
                 {
-                    $or[] = [ $key . '_ids' => $v == 'me' ? $this->user->id : $v ];
+                    $or[] = [ $key . ($key == 'transactors' ? '' : '_ids') => $v == 'me' ? $this->user->id : $v ];
                 }
                 $and[] = [ '$or' => $or ];
             }
