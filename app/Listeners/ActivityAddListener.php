@@ -30,6 +30,7 @@ class ActivityAddListener
     {
         //
     }
+
     /**
      * Handle the event.
      *
@@ -57,7 +58,23 @@ class ActivityAddListener
         }
         else if ($event instanceof VersionEvent || $event instanceof SprintEvent || $event instanceof WikiEvent)
         {
-            $activity_id = $this->addProjectActivity($event->project_key, $event->user, $event->param);
+            if ($event instanceof VersionEvent)
+            {
+                if (array_get($event->param, 'event_key', '') !== 'release_version')
+                {
+                    return;
+                }
+                $activity_id = $this->addVersionActivity($event->project_key, $event->version_id, $event->user, $event->param);
+            }
+            else if ($event instanceof SprintEvent)
+            {
+                $activity_id = $this->addSprintActivity($event->project_key, $event->sprint_no, $event->user, $event->param);
+            }
+            else if ($event instanceof WikiEvent)
+            {
+                $activity_id = $this->addWikiActivity($event->project_key, $event->wiki_id, $event->user, $event->param);
+            }
+
             if (isset($event->param['isSendMsg']) && $event->param['isSendMsg'])
             {
                 $this->putMQ($event->project_key, $activity_id);
@@ -84,7 +101,79 @@ class ActivityAddListener
         }
 
         // insert activity into db.
-        $info = [ 'issue_id' => $issue_id, 'event_key' => $event_key, 'user' => $user, 'data' => $file_info->name, 'created_at' => time() ];
+        $info = [ 
+            'issue_id' => $issue_id, 
+            'event_key' => $event_key, 
+            'user' => $user, 
+            'data' => $file_info->name, 
+            'created_at' => time() 
+        ];
+        return DB::collection('activity_' . $project_key)->insertGetId($info);
+    }
+
+    /**
+     * add version activities.
+     *
+     * @param  string $project_key
+     * @param  string $version_id
+     * @param  object $user
+     * @param  array $param
+     * @return void
+     */
+    public function addVersionActivity($project_key, $version_id, $user, $param)
+    {
+        $info = [
+            'event_key' => $param['event_key'],
+            'version_id' => $version_id,
+            'user' => $user,
+            'data' => isset($param['data']) ? $param['data'] : '',
+            'created_at' => time()
+        ];
+
+        return DB::collection('activity_' . $project_key)->insertGetId($info);
+    }
+
+    /**
+     * add wiki activities.
+     *
+     * @param  string $project_key
+     * @param  string $wiki_id
+     * @param  object $user
+     * @param  array $param
+     * @return void
+     */
+    public function addWikiActivity($project_key, $wiki_id, $user, $param)
+    {
+        $info = [
+            'event_key' => $param['event_key'],
+            'wiki_id' => $wiki_id,
+            'user' => $user,
+            'data' => isset($param['data']) ? $param['data'] : '',
+            'created_at' => time()
+        ];
+
+        return DB::collection('activity_' . $project_key)->insertGetId($info);
+    }
+
+    /**
+     * add sprint activities.
+     *
+     * @param  string $project_key
+     * @param  string $sprint_no
+     * @param  object $user
+     * @param  array $param
+     * @return void
+     */
+    public function addSprintActivity($project_key, $sprint_no, $user, $param)
+    {
+        $info = [
+            'event_key' => $param['event_key'],
+            'sprint_no' => $sprint_no,
+            'user' => $user,
+            'data' => isset($param['data']) ? $param['data'] : '',
+            'created_at' => time()
+        ];
+
         return DB::collection('activity_' . $project_key)->insertGetId($info);
     }
 
@@ -98,7 +187,30 @@ class ActivityAddListener
      */
     public function addProjectActivity($project_key, $user, $param)
     {
-        $info = [ 'event_key' => $param['event_key'], 'user' => $user, 'data' => isset($param['data']) ? $param['data'] : '', 'created_at' => time() ];
+        $info = [ 
+            'event_key' => $param['event_key'], 
+            'user' => $user, 
+            'data' => isset($param['data']) ? $param['data'] : '', 
+            'created_at' => time() 
+        ];
+
+        if (isset($param['wiki_id']))
+        {
+            $info['wiki_id'] = $param['wiki_id'];
+        }
+        else if (isset($param['version_id']))
+        {
+            $info['version_id'] = $param['version_id'];
+        }
+        else if (isset($param['file_id']))
+        {
+            $info['file_id'] = $param['file_id'];
+        }
+        else if (isset($param['sprint_no']))
+        {
+            $info['sprint_no'] = $param['sprint_no'];
+        }
+
         return DB::collection('activity_' . $project_key)->insertGetId($info);
     }
 
@@ -120,7 +232,10 @@ class ActivityAddListener
         {
             $diff_items = []; $diff_keys = [];
 
-            $snaps = DB::collection('issue_his_' . $project_key)->where('issue_id', $issue_id)->orderBy('_id', 'desc')->get();
+            $snaps = DB::collection('issue_his_' . $project_key)
+                ->where('issue_id', $issue_id)
+                ->orderBy('_id', 'desc')
+                ->get();
             foreach ($snaps as $i => $snap)
             {
                 if ($snap['_id']->__toString() != $param['snap_id'])
@@ -137,7 +252,7 @@ class ActivityAddListener
                         $tmp = [];
                         $tmp['field'] = isset($val['name']) ? $val['name'] : '';
                         $tmp['after_value'] = isset($val['value']) ? $val['value'] : '';
-                        $tmp['before_value'] = isset($before_data[$key]) && isset($before_data[$key]['value']) ? $before_data[$key]['value'] : '';
+                        $tmp['before_value'] = isset($before_data[$key]['value']) ? $before_data[$key]['value'] : '';
 
                         if (is_array($tmp['after_value']) && is_array($tmp['before_value']))
                         {
@@ -167,7 +282,7 @@ class ActivityAddListener
                         $tmp = [];
                         $tmp['field'] = isset($val['name']) ? $val['name'] : '';
                         $tmp['before_value'] = isset($val['value']) ? $val['value'] : '';
-                        $tmp['after_value'] = isset($after_data[$key]) && isset($after_data[$key]['value']) ? $after_data[$key]['value'] : '';
+                        $tmp['after_value'] = isset($after_data[$key]['value']) ? $after_data[$key]['value'] : '';
                         if (is_array($tmp['after_value']) && is_array($tmp['before_value']))
                         {
                             $diff1 = array_diff($tmp['after_value'], $tmp['before_value']);
@@ -188,13 +303,25 @@ class ActivityAddListener
             if ($diff_items) 
             {
                 // insert activity into db.
-                $info = [ 'issue_id' => $issue_id, 'event_key' => $param['event_key'], 'user' => $user, 'data' => $diff_items, 'created_at' => time() ];
+                $info = [ 
+                    'issue_id' => $issue_id, 
+                    'event_key' => $param['event_key'], 
+                    'user' => $user, 
+                    'data' => $diff_items, 
+                    'created_at' => time() 
+                ];
                 return DB::collection('activity_' . $project_key)->insertGetId($info);
             }
         }
         else
         {
-            $info = [ 'issue_id' => $issue_id, 'event_key' => $param['event_key'], 'user' => $user, 'data' => isset($param['data']) ? $param['data'] : '', 'created_at' => time() ];
+            $info = [ 
+                'issue_id' => $issue_id, 
+                'event_key' => $param['event_key'], 
+                'user' => $user, 
+                'data' => isset($param['data']) ? $param['data'] : '', 
+                'created_at' => time() 
+            ];
             return DB::collection('activity_' . $project_key)->insertGetId($info);
         }
         return '';
@@ -213,7 +340,13 @@ class ActivityAddListener
         {
             return;
         }
-        $info = [ 'project_key' => $project_key, 'activity_id' => $activity_id->__toString(), 'flag' => 0, 'created_at' => time() ];
+
+        $info = [ 
+            'project_key' => $project_key, 
+            'activity_id' => $activity_id->__toString(), 
+            'flag' => 0, 
+            'created_at' => time() 
+        ];
         DB::collection('mq')->insert($info);
     }
 }
