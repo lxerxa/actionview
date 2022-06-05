@@ -13,9 +13,10 @@ class VersionEvent extends Event
      *
      * @return void
      */
-    public function __construct($project_key, $user, $param=[])
+    public function __construct($project_key, $version_id, $user, $param=[])
     {
         $this->project_key   = $project_key;
+        $this->version_id    = $version_id;
         $this->user          = $user;
         $this->param         = $param;
     }

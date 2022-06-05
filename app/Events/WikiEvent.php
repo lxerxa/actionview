@@ -13,9 +13,10 @@ class WikiEvent extends Event
      *
      * @return void
      */
-    public function __construct($project_key, $user, $param=[])
+    public function __construct($project_key, $wiki_id, $user, $param=[])
     {
         $this->project_key   = $project_key;
+        $this->wiki_id       = $wiki_id;
         $this->user          = $user;
         $this->param         = $param;
     }

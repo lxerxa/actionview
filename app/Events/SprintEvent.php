@@ -13,9 +13,10 @@ class SprintEvent extends Event
      *
      * @return void
      */
-    public function __construct($project_key, $user, $param=[])
+    public function __construct($project_key, $sprint_no, $user, $param=[])
     {
         $this->project_key   = $project_key;
+        $this->sprint_no     = $sprint_no;
         $this->user          = $user;
         $this->param         = $param;
     }
