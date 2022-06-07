@@ -1395,7 +1395,11 @@ class IssueController extends Controller
                         $tmp = [];
                         $tmp['field'] = isset($val['name']) ? $val['name'] : '';
                         $tmp['after_value'] = isset($val['value']) ? $val['value'] : '';
-                        $tmp['before_value'] = isset($before_data[$key]) && isset($before_data[$key]['value']) ? $before_data[$key]['value'] : '';
+                        $tmp['before_value'] = isset($before_data[$key]['value']) ? $before_data[$key]['value'] : '';
+                        if ($tmp['after_value'] === $tmp['before_value']) 
+                        {
+                            continue;
+                        }
 
                         if (is_array($tmp['after_value']) && is_array($tmp['before_value']))
                         {
@@ -1432,7 +1436,11 @@ class IssueController extends Controller
                         $tmp = [];
                         $tmp['field'] = isset($val['name']) ? $val['name'] : '';
                         $tmp['before_value'] = isset($val['value']) ? $val['value'] : '';
-                        $tmp['after_value'] = isset($after_data[$key]) && isset($after_data[$key]['value']) ? $after_data[$key]['value'] : '';
+                        $tmp['after_value'] = isset($after_data[$key]['value']) ? $after_data[$key]['value'] : '';
+                        if ($tmp['after_value'] === $tmp['before_value']) 
+                        {
+                            continue;
+                        }
                         if (is_array($tmp['after_value']) && is_array($tmp['before_value']))
                         {
                             $diff1 = array_diff($tmp['after_value'], $tmp['before_value']);
@@ -1881,7 +1889,7 @@ class IssueController extends Controller
         }
 
         $isSendMsg = $request->input('isSendMsg') && true;
-        Event::fire(new VersionEvent($project_key, $user, [ 'event_key' => 'create_release_version', 'isSendMsg' => $isSendMsg, 'data' => [ 'released_issues' => $ids, 'release_version' => $version->toArray() ] ]));
+        Event::fire(new VersionEvent($project_key, $version->id, $user, [ 'event_key' => 'create_release_version', 'isSendMsg' => $isSendMsg, 'data' => [ 'released_issues' => $ids, 'release_version' => $version->toArray() ] ]));
 
         return Response()->json([ 'ecode' => 0, 'data' => [ 'ids' => $ids ] ]);
     }
