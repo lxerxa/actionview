@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Events\DocumentEvent;
+use Illuminate\Support\Facades\Event;
 use App\Project\Eloquent\DocumentFavorites;
 use App\Acl\Acl;
 use DB;
@@ -604,6 +605,10 @@ class DocumentController extends Controller
             DB::collection('document_' . $project_key)->whereRaw([ 'pt' => $id ])->update([ 'del_flag' => 1 ]);
         }
 
+        // trigger event of document delete 
+        $cur_user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
+        Event::fire(new DocumentEvent($project_key, $id, $cur_user, [ 'event_key' => 'delete_document' ]));
+
         return Response()->json(['ecode' => 0, 'data' => [ 'id' => $id ]]);
     }
 
@@ -735,6 +740,9 @@ class DocumentController extends Controller
 
         $id = DB::collection('document_' . $project_key)->insertGetId($data);
         $document = DB::collection('document_' . $project_key)->where('_id', $id)->first();
+
+        // trigger event of document upload 
+        Event::fire(new DocumentEvent($project_key, $id->__toString(), $data['uploader'], [ 'event_key' => 'upload_document' ]));
 
         return Response()->json(['ecode' => 0, 'data' => parent::arrange($document)]);
     }

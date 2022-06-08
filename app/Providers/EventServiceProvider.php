@@ -65,7 +65,7 @@ class EventServiceProvider extends ServiceProvider
        'App\Events\WikiEvent' => [
             'App\Listeners\ActivityAddListener',
         ],
-       'App\Events\ModuleEvent' => [
+       'App\Events\DocumentEvent' => [
             'App\Listeners\ActivityAddListener',
             //'App\Listeners\WebhooksRequestListener',
         ],

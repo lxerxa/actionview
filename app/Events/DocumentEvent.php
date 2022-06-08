@@ -13,9 +13,10 @@ class DocumentEvent extends Event
      *
      * @return void
      */
-    public function __construct($project_key, $user, $param=[])
+    public function __construct($project_key, $document_id, $user, $param=[])
     {
         $this->project_key   = $project_key;
+        $this->document_id       = $document_id;
         $this->user          = $user;
         $this->param         = $param;
     }
