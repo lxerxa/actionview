@@ -229,7 +229,7 @@ class SprintController extends Controller
 
         $isSendMsg = $request->input('isSendMsg') && true;
         $user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
-        Event::fire(new SprintEvent($project_key, $user, [ 'event_key' => 'start_sprint', 'isSendMsg' => $isSendMsg, 'data' => [ 'sprint_no' => $no ] ]));
+        Event::fire(new SprintEvent($project_key, $no, $user, [ 'event_key' => 'start_sprint', 'isSendMsg' => $isSendMsg, 'data' => [ 'sprint_no' => $no ] ]));
 
         return Response()->json([ 'ecode' => 0, 'data' => $this->getValidSprintList($project_key) ]);
     }
@@ -337,7 +337,7 @@ class SprintController extends Controller
 
         $isSendMsg = $request->input('isSendMsg') && true;
         $user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
-        Event::fire(new SprintEvent($project_key, $user, [ 'event_key' => 'complete_sprint', 'isSendMsg' => $isSendMsg, 'data' => [ 'sprint_no' => $no ] ]));
+        Event::fire(new SprintEvent($project_key, $no, $user, [ 'event_key' => 'complete_sprint', 'isSendMsg' => $isSendMsg, 'data' => [ 'sprint_no' => $no ] ]));
 
         return Response()->json([ 'ecode' => 0, 'data' => $this->getValidSprintList($project_key) ]);
     }

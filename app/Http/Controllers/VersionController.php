@@ -116,7 +116,7 @@ class VersionController extends Controller
         $version = Version::create([ 'project_key' => $project_key, 'creator' => $creator, 'status' => 'unreleased' ] + $request->all());
 
         // trigger event of version added
-        Event::fire(new VersionEvent($project_key, $creator, [ 'event_key' => 'create_version', 'data' => $version->toArray() ]));
+        Event::fire(new VersionEvent($project_key, $version->id, $creator, [ 'event_key' => 'create_version', 'data' => $version->toArray() ]));
 
         return Response()->json([ 'ecode' => 0, 'data' => $version ]);
     }
@@ -207,7 +207,7 @@ class VersionController extends Controller
         {
             $isSendMsg = $request->input('isSendMsg') && true;
             $cur_user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
-            Event::fire(new VersionEvent($project_key, $cur_user, [ 'event_key' => 'release_version', 'isSendMsg' => $isSendMsg, 'data' => Version::find($id)->toArray() ]));
+            Event::fire(new VersionEvent($project_key, $id, $cur_user, [ 'event_key' => 'release_version', 'isSendMsg' => $isSendMsg, 'data' => Version::find($id)->toArray() ]));
         }
 
         return $this->show($project_key, $id);
@@ -261,7 +261,7 @@ class VersionController extends Controller
 
         $version->fill($updValues)->save();
 
-        Event::fire(new VersionEvent($project_key, $updValues['modifier'], [ 'event_key' => 'edit_version', 'data' => Version::find($id)->toArray() ]));
+        Event::fire(new VersionEvent($project_key, $id, $updValues['modifier'], [ 'event_key' => 'edit_version', 'data' => Version::find($id)->toArray() ]));
 
         return $this->show($project_key, $id);
     }
@@ -304,7 +304,7 @@ class VersionController extends Controller
 
         // trigger event of version edited
         $cur_user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
-        Event::fire(new VersionEvent($project_key, $cur_user, [ 'event_key' => 'merge_version', 'data' => [ 'source' => $source_version->toArray(), 'dest' => $dest_version->toArray() ] ]));
+        Event::fire(new VersionEvent($project_key, $dest_version->id, $cur_user, [ 'event_key' => 'merge_version', 'data' => [ 'source' => $source_version->toArray(), 'dest' => $dest_version->toArray() ] ]));
 
         return $this->show($project_key, $dest);
     }
@@ -456,7 +456,7 @@ class VersionController extends Controller
 
         // trigger event of version edited
         $cur_user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
-        Event::fire(new VersionEvent($project_key, $cur_user, [ 'event_key' => 'del_version', 'data' => $version->toArray() ]));
+        Event::fire(new VersionEvent($project_key, $id, $cur_user, [ 'event_key' => 'del_version', 'data' => $version->toArray() ]));
 
         if ($operate_flg === '1')
         {

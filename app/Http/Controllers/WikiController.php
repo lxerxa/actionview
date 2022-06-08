@@ -398,7 +398,7 @@ class WikiController extends Controller
         $id = DB::collection('wiki_' . $project_key)->insertGetId($insValues);
 
         $isSendMsg = $request->input('isSendMsg') && true;
-        Event::fire(new WikiEvent($project_key, $insValues['creator'], [ 'event_key' => 'create_wiki', 'isSendMsg' => $isSendMsg, 'data' => [ 'wiki_id' => $id->__toString() ] ]));
+        Event::fire(new WikiEvent($project_key, $id->__toString(), $insValues['creator'], [ 'event_key' => 'create_wiki', 'isSendMsg' => $isSendMsg, 'data' => [ 'wiki_id' => $id->__toString() ] ]));
 
         return $this->show($request, $project_key, $id);
     }
@@ -733,7 +733,7 @@ class WikiController extends Controller
             $this->recordVersion($project_key, $old_document);
 
             $isSendMsg = $request->input('isSendMsg') && true;
-            Event::fire(new WikiEvent($project_key, $updValues['editor'], [ 'event_key' => 'edit_wiki', 'isSendMsg' => $isSendMsg, 'data' => [ 'wiki_id' => $id ] ]));
+            Event::fire(new WikiEvent($project_key, $id, $updValues['editor'], [ 'event_key' => 'edit_wiki', 'isSendMsg' => $isSendMsg, 'data' => [ 'wiki_id' => $id ] ]));
 
             return $this->show($request, $project_key, $id);
         }
@@ -971,7 +971,7 @@ class WikiController extends Controller
         }
 
         $user = [ 'id' => $this->user->id, 'name' => $this->user->first_name, 'email' => $this->user->email ];
-        Event::fire(new WikiEvent($project_key, $user, [ 'event_key' => 'delete_wiki', 'wiki_id' => $id ]));
+        Event::fire(new WikiEvent($project_key, $id, $user, [ 'event_key' => 'delete_wiki', 'wiki_id' => $id ]));
 
         return Response()->json(['ecode' => 0, 'data' => [ 'id' => $id ]]);
     }
