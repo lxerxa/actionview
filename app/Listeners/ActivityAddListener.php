@@ -8,6 +8,7 @@ use App\Events\IssueEvent;
 use App\Events\VersionEvent;
 use App\Events\SprintEvent;
 use App\Events\WikiEvent;
+use App\Events\DocumentEvent;
 use App\Events\DcoumentEvent;
 use App\Events\ModuleEvent;
 use App\Project\Provider;
@@ -56,11 +57,15 @@ class ActivityAddListener
             $activity_id = $this->addIssueActivity($event->project_key, $event->issue_id, $event->user, $event->param);
             $this->putMQ($event->project_key, $activity_id);
         }
+        else if ($event instanceof DocumentEvent)
+        {
+            $activity_id = $this->addDocumentActivity($event->project_key, $event->document_id, $event->user, $event->param);
+        }
         else if ($event instanceof VersionEvent || $event instanceof SprintEvent || $event instanceof WikiEvent)
         {
             if ($event instanceof VersionEvent)
             {
-                if (array_get($event->param, 'event_key', '') !== 'release_version')
+                if (!in_array(array_get($event->param, 'event_key', ''), [ 'release_version' , 'create_release_version' ]))
                 {
                     return;
                 }
@@ -125,6 +130,28 @@ class ActivityAddListener
         $info = [
             'event_key' => $param['event_key'],
             'version_id' => $version_id,
+            'user' => $user,
+            'data' => isset($param['data']) ? $param['data'] : '',
+            'created_at' => time()
+        ];
+
+        return DB::collection('activity_' . $project_key)->insertGetId($info);
+    }
+
+    /**
+     * add document activities.
+     *
+     * @param  string $project_key
+     * @param  string $document_id
+     * @param  object $user
+     * @param  array $param
+     * @return void
+     */
+    public function addDocumentActivity($project_key, $document_id, $user, $param)
+    {
+        $info = [
+            'event_key' => $param['event_key'],
+            'document_id' => $document_id,
             'user' => $user,
             'data' => isset($param['data']) ? $param['data'] : '',
             'created_at' => time()
@@ -253,6 +280,10 @@ class ActivityAddListener
                         $tmp['field'] = isset($val['name']) ? $val['name'] : '';
                         $tmp['after_value'] = isset($val['value']) ? $val['value'] : '';
                         $tmp['before_value'] = isset($before_data[$key]['value']) ? $before_data[$key]['value'] : '';
+			if ($tmp['after_value'] === $tmp['before_value'])
+                        {
+                            continue;
+                        }
 
                         if (is_array($tmp['after_value']) && is_array($tmp['before_value']))
                         {
@@ -283,6 +314,11 @@ class ActivityAddListener
                         $tmp['field'] = isset($val['name']) ? $val['name'] : '';
                         $tmp['before_value'] = isset($val['value']) ? $val['value'] : '';
                         $tmp['after_value'] = isset($after_data[$key]['value']) ? $after_data[$key]['value'] : '';
+			if ($tmp['after_value'] === $tmp['before_value'])
+                        {
+                            continue;
+                        }
+
                         if (is_array($tmp['after_value']) && is_array($tmp['before_value']))
                         {
                             $diff1 = array_diff($tmp['after_value'], $tmp['before_value']);
