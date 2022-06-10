@@ -7,8 +7,11 @@ use Illuminate\Http\Request;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use DB;
-
 use Sentinel;
+
+use App\Project\Eloquent\Version;
+use App\Project\Eloquent\Sprint;
+
 
 class ActivityController extends Controller
 {
@@ -20,13 +23,21 @@ class ActivityController extends Controller
     public function index(Request $request, $project_key)
     {
         $cache_issues = [];
+        $cache_wikis = [];
 
         $query = DB::collection('activity_' . $project_key);
 
         $category = $request->input('category');
         if (isset($category) && $category != 'all')
         {
-            $query->where('event_key', 'like', '%' . $category);
+            if ($category == 'issue')
+            {
+                $query->whereRaw([ 'issue_id' => [ '$exists' => 1 ] ]);
+            }
+            else
+            {
+                $query->where('event_key', 'like', '%' . $category);
+            }
         }
 
         $offset_id = $request->input('offset_id');
@@ -35,7 +46,15 @@ class ActivityController extends Controller
             $query = $query->where('_id', '<', $offset_id);
         }
 
-        $query->whereRaw([ 'issue_id' => [ '$exists' => 1 ] ]);
+        $query->whereRaw([ 
+            '$or' => [ 
+                [ 'issue_id' => [ '$exists' => 1 ] ], 
+                [ 'wiki_id' => [ '$exists' => 1 ] ], 
+                [ 'document_id' => [ '$exists' => 1 ] ], 
+                [ 'version_id' => [ '$exists' => 1 ] ], 
+                [ 'sprint_no' => [ '$exists' => 1 ] ]
+            ]
+        ]);
 
         $query->orderBy('_id', 'desc');
 
@@ -112,6 +131,59 @@ class ActivityController extends Controller
                     'del_flg' => isset($issue['del_flg']) ? $issue['del_flg'] : 0 
                 ];
                 $cache_issues[$activity['issue_id']] = $issue;
+            }
+            else if (isset($activity['version_id']))
+            {
+                $version = Version::find($activity['version_id']);
+
+                $activities[$key]['version'] = [
+                    'id' => $activity['version_id'],
+                    'name' => isset($version->name) ? $version->name : '',
+                    'del_flag' => $version ? 0 : 1 
+                ];
+            }
+            else if (isset($activity['document_id']))
+            {
+                $document = DB::collection('document_' . $project_key)->where('_id', $activity['document_id'])->first();
+
+                $activities[$key]['document'] = [
+                    'id' => $activity['document_id'],
+                    'name' => isset($document['name']) ? $document['name'] : '',
+                    'd' => isset($document['d']) ? $document['d'] : '',
+                    'del_flag' => isset($document['del_flag']) ? $document['del_flag'] : 0
+                ];
+            }
+            else if (isset($activity['wiki_id']))
+            {
+                $wiki_id = $activity['wiki_id'];
+                if (isset($cache_wikis[$wiki_id]))
+                {
+                    $wiki = $cache_wikis[$wiki_id];
+                }
+                else
+                {
+                    $wiki = DB::collection('wiki_' . $project_key)->where('_id', $wiki_id)->first();
+                }
+
+                $activities[$key]['wiki'] = [
+                    'id' => $wiki_id,
+                    'name' => array_get($wiki, 'name', ''),
+                    'parent' => array_get($wiki, 'parent', ''),
+                    'd' => isset($wiki['d']) ? $wiki['d'] : '',
+                    'del_flag' => array_get($wiki, 'del_flag', 0) 
+                ];
+                $cache_wikis[$wiki_id] = $wiki;
+            }
+            else if (isset($activity['sprint_no']))
+            {
+                $sprint = Sprint::where('project_key', $project_key)
+                    ->where('no', $activity['sprint_no'])
+                    ->first();
+
+                $activities[$key]['sprint'] = [
+                    'no' => $activity['sprint_no'],
+                    'name' => isset($sprint->name) ? $sprint->name : ('Sprint ' . $activity['sprint_no']),
+                ];
             }
         }
         return Response()->json([ 'ecode' => 0, 'data' => parent::arrange($activities), 'options' => [ 'current_time' => time() ] ]);
