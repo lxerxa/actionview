@@ -359,6 +359,7 @@ class ProjectController extends Controller
             $col->index('parent_id');
             $col->index('assignee.id');
             $col->index('reporter.id');
+            $col->index('del_flg');
         });
         Schema::collection('activity_' . $project->key, function($col) {
             $col->index('event_key');
@@ -414,6 +415,7 @@ class ProjectController extends Controller
                 $col->index('no');
                 $col->index('assignee.id');
                 $col->index('reporter.id');
+                $col->index('del_flg');
             });
             Schema::collection('activity_' . $project->key, function($col) {
                 $col->index('event_key');
