@@ -3138,6 +3138,19 @@ class IssueController extends Controller
                     $tmp[] = (string)$issue[$fk];
                 }
             }
+
+            // remove the emoji
+            foreach ($tmp as $tmpK => $tmpV)
+            {
+                $tmp[$tmpK] = preg_replace_callback(
+                    '/./u',
+                    function (array $match) {
+                        return strlen($match[0]) >= 4 ? '' : $match[0];
+                    },
+                    $tmpV
+                );
+            }
+
             $new_issues[] = $tmp;
         }
 
