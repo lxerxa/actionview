@@ -14,6 +14,7 @@ use App\Project\Provider;
 use App\Project\Eloquent\WebhookEvents;
 use App\Project\Eloquent\Webhooks;
 use App\Project\Eloquent\Version;
+use App\Project\Eloquent\Project;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use DB;
@@ -53,7 +54,7 @@ class WebhooksRequestListener
 
             if (in_array($event_key, $events) && $webhook->request_url)
             {
-                $this->push2WebhookEvents($event, $webhook->request_url, $webhook->token ?: '');
+                @$this->push2WebhookEvents($event, $webhook->request_url, $webhook->token ?: '');
             }
         }
     }
@@ -74,7 +75,11 @@ class WebhooksRequestListener
             $data = [];
             if ($event_key == 'add_worklog' || $event_key == 'edit_worklog')
             {
-                $data['worklog'] = $event->param['data'];
+                $data['worklog'] = array_only($event->param['data'], [ 'spend', 'started_at', 'adjust_type', 'comments' ]);
+                if (isset($data['worklog']['started_at'])) 
+                {
+                    $data['worklog']['started_at'] = date('Y-m-d H:i', $data['worklog']['started_at']); 
+                }
             }
 
             $issue = DB::collection('issue_' . $project_key)->where('_id', $event->issue_id)->first();
@@ -155,7 +160,7 @@ class WebhooksRequestListener
 
             if (isset($issue['state']) && !isset($new_issue['state']))
             {
-            	$state = State::find($issue['state']);
+            	$state = State::where('_id', $issue['state'])->orWhere('key', $issue['state'])->first();
             	if ($state)
             	{
                     $new_issue['state'] = $state->name;
@@ -164,7 +169,7 @@ class WebhooksRequestListener
 
             if (isset($issue['resolution']) && !isset($new_issue['resolution']))
             {
-            	$resolution = Resolution::find($issue['resolution']);
+            	$resolution = Resolution::where('_id', $issue['resolution'])->orWhere('key', $issue['resolution'])->first();
             	if ($resolution)
             	{
                     $new_issue['resolution'] = $resolution->name;
@@ -173,7 +178,7 @@ class WebhooksRequestListener
 
             if (isset($issue['priority']) && !isset($new_issue['priority']))
             {
-            	$priority = Priority::find($issue['priority']);
+            	$priority = Priority::where('_id', $issue['priority'])->orWhere('key', $issue['priority'])->first();
             	if ($priority)
             	{
                     $new_issue['priority'] = $priority->name;
@@ -212,7 +217,13 @@ class WebhooksRequestListener
 
             $data['issue'] = $new_issue;
             $data['event'] = $event_key;
-            $data['project_key'] = $project_key;
+
+            $project = Project::where('key', $project_key)->first();
+            if ($project)
+            {
+                $data['project'] = array_only($project->toArray(), [ 'key', 'name' ]);
+            }
+
             $data['user'] = $user;
 
             $header = [ 'Content-Type: application/json', 'Expect:', 'X-Actionview-Token: ' . ($token ?: '') ];
@@ -226,8 +237,27 @@ class WebhooksRequestListener
             }
 
             $data['version'] = $event->param['data'];
+            if (isset($data['version']['start_time']))
+            {
+                $data['version']['start_time'] = date('Y-m-d', $data['version']['start_time']);
+            }
+            if (isset($data['version']['end_time']))
+            {
+                $data['version']['end_time'] = date('Y-m-d', $data['version']['end_time']);
+            }
+            if (isset($data['version']['released_time']))
+            {
+                $data['version']['released_time'] = date('Y-m-d H:i:s', $data['version']['released_time']);
+            }
+
             $data['event'] = $event_key;
-            $data['project_key'] = $project_key;
+
+            $project = Project::where('key', $project_key)->first();
+            if ($project)
+            {
+                $data['project'] = array_only($project->toArray(), [ 'key', 'name' ]);
+            }
+
             $data['user'] = $user;
 
             $header = [ 'Content-Type: application/json', 'Expect:', 'X-Actionview-Token: ' . ($token ?: '') ];
