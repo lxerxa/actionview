@@ -215,6 +215,15 @@ class WebhooksRequestListener
             	$new_issue['expect_complete_time'] = $issue['expect_complete_time'] ? date('Y-m-d', $issue['expect_complete_time']) : '';
             }
 
+            if (isset($issue['parent_id']))
+            {
+                $parent = DB::collection('issue_' . $project_key)->where('_id', $issue['parent_id'])->first();
+                if ($parent)
+                {
+                    $new_issue['parent'] = array_only($parent, [ 'no', 'title' ]);
+                }
+            }
+
             $data['issue'] = $new_issue;
             $data['event'] = $event_key;
 
