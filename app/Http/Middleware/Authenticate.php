@@ -2,8 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Sentinel\Sentinel;
+
 use Closure;
-use Illuminate\Support\Facades\Auth;
 
 class Authenticate
 {
@@ -17,12 +18,17 @@ class Authenticate
      */
     public function handle($request, Closure $next, $guard = null)
     {
-        if (Auth::guard($guard)->guest()) {
-            if ($request->ajax() || $request->wantsJson()) {
-                return response('Unauthorized.', 401);
-            }
+        list($code, $user) = Sentinel::checkJWTToken();
+        if ($code < 0) {
+            return Response()->json([ 'ecode' => -10001, 'data' => '' ]);
+        } else {
+            $request->merge([ 'currentUser' => $user ]);
+        }
 
-            return redirect()->guest('login');
+        $expired_at = Sentinel::getTokenExpiredAt();
+        if ($expired_at - time() < 30 * 60) {
+            $newToken = Sentinel::createJWTToken($user); 
+            return $next($request)->withHeaders([ 'Authorization' => 'Bearer ' . $newToken ]);
         }
 
         return $next($request);

@@ -159,11 +159,12 @@ return [
         App\Providers\RouteServiceProvider::class,
 
         Jenssegers\Mongodb\MongodbServiceProvider::class,
-        Cartalyst\Sentinel\Laravel\SentinelServiceProvider::class,
 
         Maatwebsite\Excel\ExcelServiceProvider::class,
 
         Chumper\Zipper\ZipperServiceProvider::class,
+
+	Tymon\JWTAuth\Providers\LaravelServiceProvider::class,
     ],
 
     /*
@@ -209,10 +210,6 @@ return [
         'URL' => Illuminate\Support\Facades\URL::class,
         'Validator' => Illuminate\Support\Facades\Validator::class,
         'View' => Illuminate\Support\Facades\View::class,
-
-        'Activation' => Cartalyst\Sentinel\Laravel\Facades\Activation::class,
-        'Reminder'   => Cartalyst\Sentinel\Laravel\Facades\Reminder::class,
-        'Sentinel'   => Cartalyst\Sentinel\Laravel\Facades\Sentinel::class,
 
         'Zipper' => Chumper\Zipper\Zipper::class,
     ],

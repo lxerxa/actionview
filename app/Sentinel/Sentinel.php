@@ -11,10 +11,16 @@ use Tymon\JWTAuth\Exceptions\JWTException;
 class Sentinel {
 
     public static function register($data) {
+        if (isset($data['password']) && $data['password']) {
+            $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
+        }
         return User::create($data);
     }
 
     public static function update($user, $data) {
+        if (isset($data['password']) && $data['password']) {
+            $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
+        }
         return $user->fill($data)->save();
     }
 
@@ -24,14 +30,21 @@ class Sentinel {
         }
 
         $user = User::where('email', $credentials['email'])->first();
-
-        //password_hash($credentials['password'], PASSWORD_DEFAULT);
+        if (isset($user->permissions) && is_string($user->permissions))
+        {
+            $user->permissions = json_decode($user->permissions, true);
+        }
 
         return password_verify($credentials['password'], $user->password) ? $user : null;
     }
 
     public static function getUser() {
-        return \Auth::user();
+        $user = \Auth::user();
+        if (isset($user->permissions) && is_string($user->permissions))
+        {
+            $user->permissions = json_decode($user->permissions, true);
+        }
+        return $user;
     }
 
     public static function findById($uid) {
@@ -43,7 +56,9 @@ class Sentinel {
     }
 
     public static function findByCredentials($Credentials) {
-        return User::where($Credentials)->first();
+        return User::where($Credentials)
+            ->where('invalid_flag', '<>', 1)
+            ->first();
     }
 
     public static function validateCredentials($user, $Credentials) {
@@ -87,6 +102,16 @@ class Sentinel {
         return $payload->get('exp');
     }
 
+    public static function hasAccess($permission) {
+        $user = self::getUser();
+        if (isset($user->permissions) && $user->permissions) {
+            $permissions = $user->permissions;
+            return isset($permissions[$permission]) && $permissions[$permission];
+        } else {
+            return false;
+        }
+    }
+
     public static function logout() {
         try {
             if (JWTAuth::parseToken()->authenticate()) {
@@ -94,5 +119,29 @@ class Sentinel {
             }
         } catch (Exception $e) {
         }
+    }
+
+
+    public static function addPermission($user, $permission) {
+        $permissions = isset($user->permissions) ? $user->permissions : [];
+        if (is_string($permissions)) {
+            $permissions = json_decode($permissions, true);
+        }
+        $permissions[$permission] = true;
+        $user->permissions = $permissions; 
+        $user->save();
+    }
+
+    public static function removePermission($user, $permission) {
+        $permissions = isset($user->permissions) ? $user->permissions : [];
+        if (is_string($permissions)) {
+            $permissions = json_decode($permissions, true);
+        }
+
+        if (isset($permissions[$permission])) {
+            unset($permissions[$permission]);
+        }
+        $user->permissions = $permissions;
+        $user->save();
     }
 }

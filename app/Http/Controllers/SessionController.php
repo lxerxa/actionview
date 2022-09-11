@@ -15,10 +15,7 @@ use App\ActiveDirectory\Eloquent\Directory;
 use App\ActiveDirectory\LDAP;
 
 use Exception;
-use Cartalyst\Sentinel\Checkpoints\ThrottlingException;
-use Cartalyst\Sentinel\Checkpoints\NotActivatedException;
-
-use Sentinel;
+use App\Sentinel\Sentinel;
 
 class SessionController extends Controller
 {
@@ -47,17 +44,9 @@ class SessionController extends Controller
         }
 
         try {
-            if (!($setting && isset($setting->properties) && isset($setting->properties['enable_login_protection']) && $setting->properties['enable_login_protection'] === 1))
-            {
-                Sentinel::removeCheckpoint('throttle');
-            }
-
             $user = Sentinel::authenticate([ 'email' => $email, 'password' => $password ]);
-        } catch (ThrottlingException $e) {
-            // throttle error. 
-            throw new Exception($e->getMessage(), -10004);
-        } catch (NotActivatedException $e) {
-            throw new Exception('the user is not activated.', -10005);
+        } catch (Exception $e) {
+            return Response()->json([ 'ecode' => -10000, 'data' => [] ]);
         }
 
         // ldap authenticate
@@ -85,14 +74,14 @@ class SessionController extends Controller
                 throw new Exception('the user is disabed.', -10006);
             }
 
-            Sentinel::login($user);
             $latest_access_project = $this->getLatestAccessProject($user->id);
             if ($latest_access_project)
             {
                 $user->latest_access_project = $latest_access_project->key;
             }
 
-            return Response()->json([ 'ecode' => 0, 'data' => [ 'user' => $user ] ]);
+            $token = Sentinel::createJWTToken($user);
+            return Response()->json([ 'ecode' => 0, 'data' => [ 'user' => $user ] ])->withHeaders([ 'Authorization' => 'Bearer ' . $token ]);
         }
         else 
         {
