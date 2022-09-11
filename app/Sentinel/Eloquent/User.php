@@ -31,6 +31,8 @@ class User extends Model implements AuthenticatableContract, JWTSubject
         'ldap_dn',
         'password',
         'avatar',
+        'bind_email',
+        'permissions',
         'directory',
         'invalid_flag',
         'sync_flag',

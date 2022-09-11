@@ -13,9 +13,8 @@ use App\Acl\Eloquent\Group;
 use App\ActiveDirectory\Eloquent\Directory;
 
 use Maatwebsite\Excel\Facades\Excel;
-use Cartalyst\Sentinel\Users\EloquentUser;
-use Sentinel;
-use Activation; 
+use App\Sentinel\Eloquent\User;
+use App\Sentinel\Sentinel;
 
 use App\System\Eloquent\SysSetting;
 use App\System\Eloquent\ResetPwdCode;
@@ -28,7 +27,16 @@ class UserController extends Controller
 
     public function __construct()
     {
-        $this->middleware('privilege:sys_admin', [ 'except' => [ 'login', 'register', 'getCurrentUser', 'search', 'show', 'sendMailForResetpwd', 'showResetpwd', 'doResetpwd' ] ]);
+        $this->middleware('privilege:sys_admin', [ 'except' => [ 
+            'login', 
+            'register', 
+            'getCurrentUser', 
+            'search', 
+            'show', 
+            'sendMailForResetpwd', 
+            'showResetpwd', 
+            'doResetpwd' ] 
+        ]);
         parent::__construct();
     }
 
@@ -53,14 +61,14 @@ class UserController extends Controller
         $users = [];
         if ($s)
         {
-            $search_users = EloquentUser::Where('first_name', 'like', '%' . $s .  '%')
+            $search_users = User::Where('first_name', 'like', '%' . $s .  '%')
                                 ->orWhere('email', 'like', '%' . $s .  '%')
                                 ->get([ 'first_name', 'last_name', 'email', 'invalid_flag' ]);
 
             $i = 0;
             foreach ($search_users as $key => $user)
             {
-                if ((isset($user->invalid_flag) && $user->invalid_flag === 1) || Activation::completed($user) === false || $user->email === 'admin@action.view')
+                if ((isset($user->invalid_flag) && $user->invalid_flag === 1) || $user->email === 'admin@action.view')
                 {
                     continue;
                 }
@@ -84,7 +92,7 @@ class UserController extends Controller
      */
     public function index(Request $request)
     {
-        $query = EloquentUser::where('email', '<>', '')->where('email', '<>', 'admin@action.view');
+        $query = User::where('email', '<>', '')->where('email', '<>', 'admin@action.view');
 
         if ($name = $request->input('name'))
         {
@@ -126,7 +134,7 @@ class UserController extends Controller
         $page_size = 50;
         $page = $request->input('page') ?: 1;
         $query = $query->skip($page_size * ($page - 1))->take($page_size);
-        $all_users = $query->get([ 'first_name', 'last_name', 'email', 'phone', 'directory', 'invalid_flag' ]);
+        $all_users = $query->get([ 'first_name', 'last_name', 'email', 'mobile', 'directory', 'invalid_flag' ]);
 
         $users = [];
         foreach ($all_users as $user)
@@ -135,10 +143,10 @@ class UserController extends Controller
             $tmp['id'] = $user->id;
             $tmp['first_name'] = $user->first_name;
             $tmp['email'] = $user->email;
-            $tmp['phone'] = $user->phone ?: '';
+            $tmp['mobile'] = $user->mobile ?: '';
             $tmp['groups'] = array_column(Group::whereRaw([ 'users' => $user->id ])->get([ 'name' ])->toArray() ?: [], 'name');
             $tmp['directory'] = $user->directory ?: 'self';
-            $tmp['status'] = $user->invalid_flag === 1 ? 'invalid' : (Activation::completed($user) ? 'active' : 'unactivated');
+            $tmp['status'] = $user->invalid_flag === 1 ? 'invalid' : 'active';
 
             $users[] = $tmp;
         }
@@ -173,7 +181,7 @@ class UserController extends Controller
             throw new \UnexpectedValueException('the password can not be empty.', -10103);
         }
 
-        $user = Sentinel::register([ 'first_name' => $first_name, 'email' => $email, 'password' => $password ], true);
+        $user = Sentinel::register([ 'first_name' => $first_name, 'email' => $email, 'password' => $password ]);
         return Response()->json([ 'ecode' => 0, 'data' => $user ]);
     }
 
@@ -200,10 +208,15 @@ class UserController extends Controller
             throw new \InvalidArgumentException('email has already existed.', -10102);
         }
 
-        $phone = $request->input('phone') ? $request->input('phone') : '';
+        $mobile = $request->input('mobile') ? $request->input('mobile') : '';
 
-        $user = Sentinel::register([ 'first_name' => $first_name, 'email' => $email, 'password' => 'actionview', 'phone' => $phone ], true);
-        $user->status = Activation::completed($user) ? 'active' : 'unactivated';
+        $user = Sentinel::register([ 
+            'first_name' => $first_name, 
+            'email' => $email, 
+            'password' => 'actionview', 
+            'mobile' => $mobile,
+        ]);
+        $user->status = 'active'; 
 
         return Response()->json([ 'ecode' => 0, 'data' => $user ]);
     }
@@ -237,7 +250,7 @@ class UserController extends Controller
             $reader = $reader->getSheet(0);
             $data = $reader->toArray();
 
-            $fields = [ 'first_name' => '姓名', 'email' => '邮箱', 'phone' => '手机号' ];
+            $fields = [ 'first_name' => '姓名', 'email' => '邮箱', 'mobile' => '手机号' ];
             $data = $this->arrangeExcel($data, $fields);
 
             foreach ($data as $value) 
@@ -270,7 +283,7 @@ class UserController extends Controller
                 }
                 else
                 {
-                    Sentinel::register($value + [ 'password' => 'actionview' ], true);
+                    Sentinel::register($value + [ 'password' => 'actionview' ]);
                 }
             }
         });
@@ -332,14 +345,8 @@ class UserController extends Controller
             throw new \UnexpectedValueException('the user come from external directroy.', -10109);
         }
 
-        $valid = Sentinel::validForUpdate($user, array_only($request->all(), ['first_name', 'email', 'phone', 'invalid_flag']));
-        if (!$valid)
-        {
-            throw new \UnexpectedValueException('updating the user does fails.', -10107);
-        }
-
-        $user = Sentinel::update($user, array_only($request->all(), ['first_name', 'email', 'phone', 'invalid_flag']));
-        $user->status = $user->invalid_flag === 1 ? 'invalid' : (Activation::completed($user) ? 'active' : 'unactivated');
+        $user = Sentinel::update($user, array_only($request->all(), ['first_name', 'email', 'mobile', 'invalid_flag']));
+        $user->status = $user->invalid_flag === 1 ? 'invalid' : 'active';
 
         $user->groups = array_column(Group::whereRaw([ 'users' => $user->id ])->get([ 'name' ])->toArray() ?: [], 'name');
 
@@ -707,7 +714,7 @@ class UserController extends Controller
         header("Content-type:text/csv;charset=utf-8");
         header("Content-Disposition:attachment;filename=import-user-template.csv");
 
-        fputcsv($output, [ 'name', 'email', 'phone' ]);  
+        fputcsv($output, [ 'name', 'email', 'mobile' ]);  
         fputcsv($output, [ 'Tom', 'tom@actionview.cn', '13811111111' ]);  
         fputcsv($output, [ 'Alice', 'alice@actionview.cn', '13611111111' ]);  
         fclose($output) or die("can't close php://output"); 

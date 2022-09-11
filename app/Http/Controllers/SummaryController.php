@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Event;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 
-use Sentinel;
 use DB;
 use App\Project\Provider;
 

@@ -5,11 +5,10 @@ use App\Http\Requests;
 use App\Http\Controllers\Controller;
 
 use App\System\Eloquent\UserSetting;
-use Sentinel;
+use App\Sentinel\Sentinel;
 
 class MysettingController extends Controller
 {
-
     /**
      * Set user avatar.
      *

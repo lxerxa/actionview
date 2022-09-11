@@ -12,7 +12,7 @@ use App\System\Eloquent\CalendarSingular;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 
-use Sentinel;
+use App\Sentinel\Sentinel;
 use DB;
 use App\Project\Provider;
 use App\Project\Eloquent\Sprint;

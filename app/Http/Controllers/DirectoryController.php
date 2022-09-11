@@ -9,7 +9,7 @@ use App\Http\Requests;
 use App\Http\Controllers\Controller;
 
 use App\Acl\Eloquent\Group;
-use Cartalyst\Sentinel\Users\EloquentUser;
+use App\Sentinel\Eloquent\User;
 use App\ActiveDirectory\Eloquent\Directory;
 use App\ActiveDirectory\LDAP;
 
@@ -366,11 +366,6 @@ class DirectoryController extends Controller
         
         $directory->fill($updValues)->save();
 
-        //if (isset($invalid_flag))
-        //{
-        //    EloquentUser::where('directory', $id)->update([ 'invalid_flag' => intval($invalid_flag) ]);
-        //}
-
         return $this->show($id);
     }
 
@@ -399,7 +394,7 @@ class DirectoryController extends Controller
             Event::fire(new DelGroupEvent($group->id));
         }
 
-        $users = EloquentUser::where('directory', $id)->get();
+        $users = User::where('directory', $id)->get();
         foreach ($users as $user)
         {
             $user->delete();

@@ -10,8 +10,7 @@ use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Project\Eloquent\Linked;
 
-use Cartalyst\Sentinel\Users\EloquentUser;
-
+use App\Sentinel\Sentinel;
 use DB;
 
 class LinkController extends Controller
@@ -71,7 +70,7 @@ class LinkController extends Controller
         // add avatar for weapp
         if (isset($link['src']['assignee']['id']) && $link['src']['assignee']['id'])
         {
-            $user = EloquentUser::find($link['src']['assignee']['id']);
+            $user = Sentinel::findById($link['src']['assignee']['id']);
             if (isset($user->avatar) && $user->avatar)
             {
                 $link['src']['assignee']['avatar'] = $user->avatar;
@@ -83,7 +82,7 @@ class LinkController extends Controller
         // add avatar for weapp
         if (isset($link['dest']['assignee']['id']) && $link['dest']['assignee']['id']) 
         {
-            $user = EloquentUser::find($link['dest']['assignee']['id']);
+            $user = Sentinel::findById($link['dest']['assignee']['id']);
             if (isset($user->avatar) && $user->avatar)
             {
                 $link['dest']['assignee']['avatar'] = $user->avatar;

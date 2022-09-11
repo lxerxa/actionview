@@ -6,7 +6,7 @@ use App\Events\IssueEvent;
 
 use App\Project\Provider;
 use App\Acl\Acl;
-use Sentinel;
+use App\Sentinel\Sentinel;
 use DB;
 
 class Func 

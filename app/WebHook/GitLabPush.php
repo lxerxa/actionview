@@ -3,7 +3,7 @@
 namespace App\WebHook;
 
 use App\WebHook\GitPush;
-use Cartalyst\Sentinel\Users\EloquentUser;
+use App\Sentinel\Sentinel;
 
 class GitLabPush extends GitPush 
 {
@@ -29,7 +29,7 @@ class GitLabPush extends GitPush
         $user = [ 'name' => $user_name, 'email' => $user_email ];
         if ($user_email)
         {
-    	    $user2 = EloquentUser::where('email', $user_email)->first();
+    	    $user2 = Sentinel::findByCredentials([ 'email' => $user_email ]);
     	    if ($user2)
     	    {
     	        $user['id']     = $user2->id;
@@ -74,7 +74,7 @@ class GitLabPush extends GitPush
     	    $new_commit['author'] = $commit['author'];
     	    if (isset($commit['author']['email']) && $commit['author']['email'])
     	    {
-    	        $new_author = EloquentUser::where('email', $commit['author']['email'])->first();
+    	        $new_author = Sentinel::findByCredentials([ 'email' => $commit['author']['email'] ]);
     	        if ($new_author)
     	        {
     	            $new_commit['author']['id']     = $new_author->id;

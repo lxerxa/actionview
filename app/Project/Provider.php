@@ -29,8 +29,7 @@ use App\Project\Eloquent\UserIssueFilters;
 use App\Project\Eloquent\UserIssueListColumns;
 use App\Project\Eloquent\ProjectIssueListColumns;
 
-use Cartalyst\Sentinel\Users\EloquentUser;
-use Sentinel;
+use App\Sentinel\Sentinel;
 use MongoDB\BSON\ObjectID;
 use DB;
 
@@ -610,7 +609,7 @@ class Provider {
         $user_ids = array_unique($user_ids);
 
         $user_list = [];
-        $users = EloquentUser::find($user_ids);
+        $users = Sentinel::findByIds($user_ids);
         foreach ($users as $user)
         {
             if (isset($user->invalid_flag) && $user->invalid_flag === 1)
@@ -634,7 +633,7 @@ class Provider {
         $user_ids = Acl::getUserIdsByPermission('assigned_issue', $project_key);
 
         $user_list = [];
-        $users = EloquentUser::find($user_ids); 
+        $users = Sentinel::findByIds($user_ids); 
         foreach ($users as $user)
         {
             if (isset($user->invalid_flag) && $user->invalid_flag === 1)

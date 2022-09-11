@@ -6,7 +6,7 @@ use App\Project\Eloquent\Project;
 use App\Acl\Acl;
 
 use Closure;
-use Sentinel;
+use App\Sentinel\Sentinel;
 
 class Privilege
 {
@@ -58,8 +58,7 @@ class Privilege
      */
     public function globalCheck($permission)
     {
-        $user = Sentinel::getUser();
-        return $user->hasAccess($permission);
+        return Sentinel::hasAccess($permission);
 
         //if ($permission == 'manage_user' && $request->isMethod('put'))
         //{
@@ -87,14 +86,13 @@ class Privilege
      */
     public function projectCheck($request, $permission)
     {
-        $user = Sentinel::getUser();
         $project_key = $request->project_key;
-
         if ($project_key === '$_sys_$')
         {
-            return $user->hasAccess([ 'sys_admin' ]);
+            return Sentinel::hasAccess('sys_admin');
         }
 
+        $user = Sentinel::getUser();
         $isAllowed = Acl::isAllowed($user->id, $permission, $project_key);
         if (!$isAllowed)
         {

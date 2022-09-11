@@ -19,7 +19,7 @@ use App\Project\Provider;
 use App\Events\AddUserToRoleEvent;
 use App\Events\DelUserFromRoleEvent;
 use App\System\Eloquent\SysSetting;
-use Sentinel;
+use App\Sentinel\Sentinel;
 use DB;
 
 use MongoDB\BSON\ObjectID;
@@ -339,7 +339,7 @@ class ProjectController extends Controller
         {
             throw new \UnexpectedValueException('the project does not exist.', -14006);
         }
-        if ($project->principal['id'] !== $this->user->id && !$this->user->hasAccess('sys_admin'))
+        if ($project->principal['id'] !== $this->user->id && !Sentinel::hasAccess('sys_admin'))
         {
             return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
         }
@@ -544,7 +544,7 @@ class ProjectController extends Controller
     {
         $syssetting = SysSetting::first();
         $allow_create_project = isset($syssetting->properties['allow_create_project']) ? $syssetting->properties['allow_create_project'] : 0;        
-        if ($allow_create_project !== 1 && !$this->user->hasAccess('sys_admin'))
+        if ($allow_create_project !== 1 && !Sentinel::hasAccess('sys_admin'))
         {
             return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
         }
@@ -757,7 +757,7 @@ class ProjectController extends Controller
         {
             throw new \UnexpectedValueException('the project does not exist.', -14004);
         }
-        if ($project->principal['id'] !== $this->user->id && !$this->user->hasAccess('sys_admin'))
+        if ($project->principal['id'] !== $this->user->id && !Sentinel::hasAccess('sys_admin'))
         {
             return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
         }

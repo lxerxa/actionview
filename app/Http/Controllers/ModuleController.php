@@ -11,7 +11,7 @@ use App\Http\Requests;
 use App\Http\Controllers\Controller;
 
 use DB;
-use Sentinel;
+use App\Sentinel\Sentinel;
 use App\Project\Provider;
 use App\Project\Eloquent\Module;
 

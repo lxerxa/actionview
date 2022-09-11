@@ -5,7 +5,7 @@ namespace App\Http\Middleware;
 use Illuminate\Http\JsonResponse;
 use Closure;
 
-use Sentinel;
+use App\Sentinel\Sentinel;
 use App\System\Eloquent\ApiAccessLogs;
 
 class AccessLogs 

@@ -3,10 +3,9 @@ namespace App\ActiveDirectory;
 
 use Adldap\Adldap;
 
-use Cartalyst\Sentinel\Users\EloquentUser;
 use App\Acl\Eloquent\Group;
-
-use Sentinel;
+use App\Sentinel\Eloquent\User;
+use App\Sentinel\Sentinel;
 use DB;
 use Exception;
 
@@ -231,7 +230,7 @@ class LDAP {
         }
 
         // the user sync
-        DB::table('users')->where('directory', $directory)->update([ 'sync_flag' => 1 ]);
+        User::where('directory', $directory)->update([ 'sync_flag' => 1 ]);
 
         $users = $provider
             ->search()
@@ -245,7 +244,7 @@ class LDAP {
             $cn = $user->getFirstAttribute(strtolower($config['user_name_attr']));
             $email = $user->getFirstAttribute(strtolower($config['user_email_attr']));
 
-            $eloquent_user = EloquentUser::where('directory', $directory)
+            $eloquent_user = User::where('directory', $directory)
                 ->where('ldap_dn', $dn)
                 ->first();
             if ($eloquent_user)
@@ -269,8 +268,7 @@ class LDAP {
             }
         }
         // disable the users
-        DB::table('users')
-            ->where('directory', $directory)
+        User::where('directory', $directory)
             ->where('sync_flag', 1)
             ->update([ 'sync_flag' => 0, 'invalid_flag' => 1 ]);
 
@@ -303,7 +301,7 @@ class LDAP {
             $members = $group->getAttribute(strtolower($config['groupuser_attr']));
 
             $user_ids = [];
-            $users = EloquentUser::where('directory', $directory)
+            $users = User::where('directory', $directory)
                 ->whereIn('ldap_dn', $members)
                 ->get([ 'name' ])
                 ->toArray();
@@ -355,7 +353,7 @@ class LDAP {
             try {
                 $provider = $ad->connect($key);
 
-                $user = EloquentUser::where('directory', $key)
+                $user = User::where('directory', $key)
                     ->where('email', $username)
                     ->where('invalid_flag', '<>', 1)
                     ->first(); 

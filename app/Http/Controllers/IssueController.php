@@ -28,8 +28,7 @@ use App\Project\Eloquent\Labels;
 use App\Workflow\Workflow;
 use App\System\Eloquent\SysSetting;
 use App\System\Eloquent\CalendarSingular;
-use Cartalyst\Sentinel\Users\EloquentUser;
-use Sentinel;
+use App\Sentinel\Sentinel;
 use DB;
 use Exception;
 
@@ -548,7 +547,7 @@ class IssueController extends Controller
         $issue['watchers'] = array_column(Watch::where('issue_id', $id)->orderBy('_id', 'desc')->get()->toArray(), 'user');
         foreach ($issue['watchers'] as $key => $watch)
         {
-            $user = EloquentUser::find($watch['id']);
+            $user = Sentinel::findById($watch['id']);
             if (isset($user->avatar) && $user->avatar)
             {
                 $issue['watchers'][$key]['avatar'] = $user->avatar; 
@@ -610,7 +609,7 @@ class IssueController extends Controller
                 $link['src'] = array_only($src_issue, $link_fields);
                 // add avatar for weapp
                 if (isset($link['src']['assignee']['id']) && $link['src']['assignee']['id']) { 
-                    $user = EloquentUser::find($link['src']['assignee']['id']);
+                    $user = Sentinel::findById($link['src']['assignee']['id']);
                     if (isset($user->avatar) && $user->avatar)
                     {
                         $link['src']['assignee']['avatar'] = $user->avatar;
@@ -628,7 +627,7 @@ class IssueController extends Controller
                 $link['dest'] = array_only($dest_issue, $link_fields);
                 // add avatar for weapp
                 if (isset($link['dest']['assignee']['id']) && $link['dest']['assignee']['id']) {
-                    $user = EloquentUser::find($link['dest']['assignee']['id']);
+                    $user = Sentinel::findById($link['dest']['assignee']['id']);
                     if (isset($user->avatar) && $user->avatar)
                     {
                         $link['dest']['assignee']['avatar'] = $user->avatar;
@@ -2521,7 +2520,7 @@ class IssueController extends Controller
                 {
                     if (isset($value[$uk]) && $value[$uk])
                     {
-                        $tmp_user = EloquentUser::where('first_name', $value[$uk])->first();
+                        $tmp_user = Sentinel::findByCredentials([ 'first_name' => $value[$uk] ]);
                         if (!$tmp_user)
                         {
                             $err_msgs[$cur_title][] = $uv . '列用户不存在。';
@@ -2602,7 +2601,7 @@ class IssueController extends Controller
                     }
                     else if ($field['type'] === 'SingleUser' || $field_key === 'assignee')
                     {
-                        $tmp_user = EloquentUser::where('first_name', $field_value)->first();
+                        $tmp_user = Sentinel::findByCredentials([ 'first_name' => $field_value ]);
                         if (!$tmp_user)
                         {
                             $err_msgs[$cur_title][] = $fields[$field_key] . '列用户不存在。';
@@ -2623,7 +2622,7 @@ class IssueController extends Controller
                                 continue;
                             }
 
-                            $tmp_user = EloquentUser::where('first_name', trim($val))->first();
+                            $tmp_user = Sentinel::findByCredentials([ 'first_name' => trim($val) ]);
                             if (!$tmp_user)
                             {
                                 $err_msgs[$cur_title][] = $fields[$field_key] . '列用户不存在。';

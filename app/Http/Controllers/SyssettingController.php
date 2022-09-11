@@ -8,7 +8,7 @@ use App\Http\Requests;
 use App\Http\Controllers\Controller;
 
 use App\System\Eloquent\SysSetting;
-use Sentinel;
+use App\Sentinel\Sentinel;
 
 use Mail;
 use Config;
@@ -117,12 +117,12 @@ class SyssettingController extends Controller
         foreach($added_user_ids as $uid)
         {
             $user = Sentinel::findById($uid); 
-            $user->addPermission($permission)->save();
+            Sentinel::addPermission($user, $permission);
         }
         foreach($deleted_user_ids as $uid)
         {
             $user = Sentinel::findById($uid); 
-            $user->removePermission($permission)->save();
+            Sentinel::removePermission($user, $permission);
         }
     }
 

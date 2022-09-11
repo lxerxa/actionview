@@ -20,7 +20,7 @@ use App\Acl\Eloquent\RolePermissions;
 use App\Acl\Eloquent\Roleactor;
 use App\Acl\Acl;
 
-use Cartalyst\Sentinel\Users\EloquentUser;
+use App\Sentinel\Sentinel;
 
 class RoleController extends Controller
 {
@@ -304,10 +304,15 @@ class RoleController extends Controller
         $new_users = [];
         if (isset($actor->user_ids) && $actor->user_ids)
         {
-            $users = EloquentUser::find($actor->user_ids);
+            $users = Sentinel::findByIds($actor->user_ids);
             foreach ($users as $user)
             {
-                $new_users[] = [ 'id' => $user->id, 'name' => $user->first_name, 'email' => $user->email, 'nameAndEmail' => $user->first_name . '('. $user->email . ')' ];
+                $new_users[] = [ 
+                    'id' => $user->id, 
+                    'name' => $user->first_name, 
+                    'email' => $user->email, 
+                    'nameAndEmail' => $user->first_name . '('. $user->email . ')' 
+                ];
             }
         }
 

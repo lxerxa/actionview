@@ -12,8 +12,7 @@ use App\Acl\Eloquent\Group;
 
 use App\ActiveDirectory\Eloquent\Directory;
 
-use Sentinel;
-use Cartalyst\Sentinel\Users\EloquentUser;
+use App\Sentinel\Sentinel;
 
 class GroupController extends Controller
 {
@@ -97,7 +96,7 @@ class GroupController extends Controller
 
         foreach ($groups as $group)
         {
-            $group->users = EloquentUser::find($group->users ?: []);
+            $group->users = Sentinel::findByIds($group->users ?: []);
         }
 
         return Response()->json([ 'ecode' => 0, 'data' => $groups, 'options' => [ 'total' => $total, 'sizePerPage' => $page_size ] ]);
@@ -145,7 +144,7 @@ class GroupController extends Controller
 
         foreach ($groups as $group)
         {
-            $group->users = EloquentUser::find($group->users ?: []);
+            $group->users = Sentinel::findByIds($group->users ?: []);
         }
 
         return Response()->json([ 'ecode' => 0, 'data' => $groups, 'options' => [ 'total' => $total, 'sizePerPage' => $page_size, 'directories' => Directory::all() ] ]);
@@ -220,7 +219,7 @@ class GroupController extends Controller
         $group = Group::create($insValues);
         if ($group->users)
         {
-            $group->users = EloquentUser::find($group->users ?: []);
+            $group->users = Sentinel::findByIds($group->users ?: []);
         }
 
         return Response()->json([ 'ecode' => 0, 'data' => $group ]);
@@ -239,7 +238,7 @@ class GroupController extends Controller
         {
             throw new \UnexpectedValueException('the group does not exist.', -10201);
         }
-        $group->users = EloquentUser::find($group->users);
+        $group->users = Sentinel::findByIds($group->users);
 
         return Response()->json([ 'ecode' => 0, 'data' => $group ]);
     }
@@ -264,7 +263,7 @@ class GroupController extends Controller
             throw new \UnexpectedValueException('the group come from external directroy.', -10203);
         }
 
-        if (!(isset($group->principal) && isset($group->principal['id']) && $group->principal['id'] == $this->user->id) && !$this->user->hasAccess('sys_admin'))
+        if (!(isset($group->principal) && isset($group->principal['id']) && $group->principal['id'] == $this->user->id) && !Sentinel::hasAccess('sys_admin'))
         {
             return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
         }
@@ -344,7 +343,7 @@ class GroupController extends Controller
             throw new \UnexpectedValueException('the group come from external directroy.', -10203);
         }
 
-        if (!(isset($group->principal) && isset($group->principal['id']) && $group->principal['id'] == $this->user->id) && !$this->user->hasAccess('sys_admin'))
+        if (!(isset($group->principal) && isset($group->principal['id']) && $group->principal['id'] == $this->user->id) && !Sentinel::hasAccess('sys_admin'))
         {
             return Response()->json(['ecode' => -10002, 'emsg' => 'permission denied.']);
         }

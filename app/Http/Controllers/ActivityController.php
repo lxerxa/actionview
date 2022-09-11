@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use DB;
-use Sentinel;
+use App\Sentinel\Sentinel;
 
 use App\Project\Eloquent\Version;
 use App\Project\Eloquent\Sprint;

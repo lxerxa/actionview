@@ -13,7 +13,6 @@ use App\Project\Eloquent\Project;
 use App\Project\Eloquent\Watch;
 use App\Project\Provider;
 use App\Acl\Acl;
-use Sentinel;
 use DB;
 
 use MongoDB\BSON\ObjectID; 
