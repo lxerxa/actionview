@@ -6,18 +6,18 @@ use App\Workflow\Eloquent\Entry;
 use App\Workflow\Eloquent\CurrentStep;
 use App\Workflow\Eloquent\HistoryStep;
 
-use App\Workflow\StateNotActivatedException;
-use App\Workflow\StepNotFoundException;
-use App\Workflow\CurrentStepNotFoundException;
-use App\Workflow\ActionNotFoundException;
-use App\Workflow\ActionNotAvailableException;
-use App\Workflow\ResultNotFoundException;
-use App\Workflow\ResultNotAvailableException;
-use App\Workflow\FunctionNotFoundException;
-use App\Workflow\EntryNotFoundException;
-use App\Workflow\ConfigNotFoundException;
-use App\Workflow\SplitNotFoundException;
-use App\Workflow\JoinNotFoundException;
+use App\Workflow\Exceptions\StateNotActivatedException;
+use App\Workflow\Exceptions\StepNotFoundException;
+use App\Workflow\Exceptions\CurrentStepNotFoundException;
+use App\Workflow\Exceptions\ActionNotFoundException;
+use App\Workflow\Exceptions\ActionNotAvailableException;
+use App\Workflow\Exceptions\ResultNotFoundException;
+use App\Workflow\Exceptions\ResultNotAvailableException;
+use App\Workflow\Exceptions\FunctionNotFoundException;
+use App\Workflow\Exceptions\EntryNotFoundException;
+use App\Workflow\Exceptions\ConfigNotFoundException;
+use App\Workflow\Exceptions\SplitNotFoundException;
+use App\Workflow\Exceptions\JoinNotFoundException;
 
 class Workflow {
 
