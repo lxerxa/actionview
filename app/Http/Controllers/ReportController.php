@@ -569,8 +569,19 @@ class ReportController extends Controller
             $tmp[] = isset($r['spend']) ? $r['spend'] : '';   
             $tmp[] = isset($r['comments']) ? $r['comments'] : '';
             $tmp[] = isset($optTypes[$issue['type']]) ? $optTypes[$issue['type']] : '';
-            $tmp[] = $issue['no'] . '-' . $issue['title'];
+            $tmp[] = $issue['no'] . '-' . (isset($issue['title']) ? $issue['title'] : '');
             $tmp[] = isset($optStates[$issue['state']]) ? $optStates[$issue['state']] : '';
+
+            foreach ($tmp as $tmpK => $tmpV)
+            {
+                $tmp[$tmpK] = preg_replace_callback(
+                    '/./u',
+                    function (array $match) {
+                        return strlen($match[0]) >= 4 ? '' : $match[0];
+                    },
+                    $tmpV
+                );
+            }
 
             $new_results[] = $tmp;
         }
