@@ -78,18 +78,57 @@ class Sentinel {
         return JWTAuth::getToken();
     }
 
-    public static function checkJWTToken() {
+    public static function checkAndRefreshJWTTokenForWeb() {
         try {
             if (! $user = JWTAuth::parseToken()->authenticate()) {
-                return [ -1, null ];
+                return [ -1, null, null ];
             }
-            return [ 0, $user ];
+
+            $expiredAt = self::getTokenExpiredAt();
+            if ($expiredAt - time() < 3600) {
+                try {
+                    $refreshed = JWTAuth::refresh();
+                } catch (JWTException $e) {
+                    return [ -1, null, null ];
+                }
+            }
+
+            return [ 0, $user, null ];
         } catch (TokenExpiredException $e) {
-            return [ -2, null ];
+            return [ -2, null, null ];
         } catch (TokenInvalidException $e) {
-            return [ -3, null ];
+            return [ -3, null, null ];
         } catch (JWTException $e) {
-            return [ -9, null ];
+            return [ -9, null, null ];
+        }
+    }
+
+    public static function checkAndRefreshJWTTokenForMobile() {
+        try {
+            if (! $user = JWTAuth::parseToken()->authenticate()) {
+                return [ -1, null, null ];
+            }
+            return [ 0, $user, null ];
+        } catch (TokenExpiredException $e) {
+            try {
+                $refreshed = JWTAuth::refresh();
+                $user = JWTAuth::setToken($refreshed)->toUser();
+                return [ 0, $user, $refreshed ];
+            } catch (JWTException $e) {
+                return [ -2, null, null ];
+            }
+        } catch (TokenInvalidException $e) {
+            return [ -3, null, null ];
+        } catch (JWTException $e) {
+            return [ -9, null, null ];
+        }
+    }
+
+    public static function checkAndRefreshJWTToken($source='mobile') {
+        if ($source == 'mobile') {
+            return self::checkAndRefreshJWTTokenForMobile();
+        } else {
+            return self::checkAndRefreshJWTTokenForWeb();
         }
     }
 
@@ -114,9 +153,7 @@ class Sentinel {
 
     public static function logout() {
         try {
-            if (JWTAuth::parseToken()->authenticate()) {
-                self::refreshJWTToken();
-            }
+            JWTAuth::invalidate(JWTAuth::getToken());
         } catch (Exception $e) {
         }
     }

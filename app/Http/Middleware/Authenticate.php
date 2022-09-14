@@ -18,17 +18,15 @@ class Authenticate
      */
     public function handle($request, Closure $next, $guard = null)
     {
-        list($code, $user) = Sentinel::checkJWTToken();
+        list($code, $user, $refreshed) = Sentinel::checkAndRefreshJWTToken($request->header('source'));
         if ($code < 0) {
             return Response()->json([ 'ecode' => -10001, 'data' => '' ]);
         } else {
             $request->merge([ 'currentUser' => $user ]);
         }
 
-        $expired_at = Sentinel::getTokenExpiredAt();
-        if ($expired_at - time() < 30 * 60) {
-            $newToken = Sentinel::createJWTToken($user); 
-            return $next($request)->withHeaders([ 'Authorization' => 'Bearer ' . $newToken ]);
+        if ($refreshed) {
+            return $next($request)->withHeaders([ 'Authorization' => 'Bearer ' . $refreshed ]);
         }
 
         return $next($request);
