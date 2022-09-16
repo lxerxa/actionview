@@ -67,16 +67,11 @@ class Sentinel {
                 if (!password_verify($val, $user->password)) {
                     return false;
                 }
-            } else {
-                if (isset($user->{$key})) {
-                    if ($user->{$key} != $val) {
-                        return false;
-                    }
-                } else if ($val) {
-                    return false;
-                }
+            } else if ($user->{$key} != $val) {
+                return false;
             }
         }
+
         return true;
     }
 
