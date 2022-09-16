@@ -155,12 +155,6 @@ class MysettingController extends Controller
             throw new \UnexpectedValueException('the password can not be empty.', -15003);
         }
 
-        $valid = Sentinel::validForUpdate($user, [ 'password' => $new_password ]);
-        if (!$valid) 
-        {
-            throw new \UnexpectedValueException('resetting the password fails.', -15004);
-        }
-        //$user->password = password_hash($new_password, PASSWORD_DEFAULT);
         Sentinel::update($user, [ 'password' => $new_password ]);
 
         return Response()->json([ 'ecode' => 0, 'data' => [ 'accounts' => $user ] ]);

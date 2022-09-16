@@ -455,13 +455,8 @@ class UserController extends Controller
             throw new \UnexpectedValueException('the user does not exist.', -10106);
         }
 
-        $valid = Sentinel::validForUpdate($user, [ 'password' => 'actionview' ]);
-        if (!$valid)
-        {
-            throw new \UnexpectedValueException('updating the user does fails.', -10107);
-        }
-
         $user = Sentinel::update($user, [ 'password' => 'actionview' ]);
+
         return Response()->json([ 'ecode' => 0, 'data' => $user ]);
     }
 
@@ -686,12 +681,6 @@ class UserController extends Controller
         else if ($user->directory && $user->directory != 'self')
         {
             throw new \UnexpectedValueException('the user is external sync user.', -10012);
-        }
-
-        $valid = Sentinel::validForUpdate($user, [ 'password' => $password ]);
-        if (!$valid)
-        {
-            throw new \UnexpectedValueException('updating the user does fails.', -10107);
         }
 
         $user = Sentinel::update($user, [ 'password' => $password ]);
