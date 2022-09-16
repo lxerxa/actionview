@@ -62,12 +62,22 @@ class Sentinel {
     }
 
     public static function validateCredentials($user, $Credentials) {
-        $user2 = self::findByCredentials($Credentials);
-        if (!$user2) {
-            return false;
+        foreach ($Credentials as $key => $val) {
+            if ($key == 'password') {
+                if (!password_verify($val, $user->password)) {
+                    return false;
+                }
+            } else {
+                if (isset($user->{$key})) {
+                    if ($user->{$key} != $val) {
+                        return false;
+                    }
+                } else if ($val) {
+                    return false;
+                }
+            }
         }
-
-        return $user->id == $user2->id;
+        return true;
     }
 
     public static function createJWTToken($user) {
@@ -88,6 +98,7 @@ class Sentinel {
             if ($expiredAt - time() < 3600) {
                 try {
                     $refreshed = JWTAuth::refresh();
+                    return [ 0, $user, $refreshed ];
                 } catch (JWTException $e) {
                     return [ -1, null, null ];
                 }
@@ -153,7 +164,7 @@ class Sentinel {
 
     public static function logout() {
         try {
-            JWTAuth::invalidate(JWTAuth::getToken());
+            //JWTAuth::invalidate(JWTAuth::getToken());
         } catch (Exception $e) {
         }
     }
