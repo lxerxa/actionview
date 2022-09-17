@@ -21,7 +21,8 @@ class Sentinel {
         if (isset($data['password']) && $data['password']) {
             $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
         }
-        return $user->fill($data)->save();
+        $user->fill($data)->save();
+        return $user;
     }
 
     public static function authenticate($credentials) {
