@@ -112,7 +112,7 @@ class WebhooksRequestListener
             	}
 
             	$field_value = $issue[$field_key];
-            	if (!$field_value)
+            	if (!$field_value || in_array($field['type'], [ 'SingleUser', 'MultiUser' ]))
             	{
                     $new_issue[$field_key] = $field_value;
             	    continue;
