@@ -26,10 +26,6 @@ class Kernel extends HttpKernel
      */
     protected $middlewareGroups = [
         'web' => [
-            \App\Http\Middleware\EncryptCookies::class,
-            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
-            \Illuminate\Session\Middleware\StartSession::class,
-            \App\Http\Middleware\VerifyCsrfToken::class,
         ],
 
         'api' => [
@@ -46,11 +42,9 @@ class Kernel extends HttpKernel
      */
     protected $routeMiddleware = [
         'auth' => \App\Http\Middleware\Authenticate::class,
-        'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
         'can' => \App\Http\Middleware\Authorize::class,
         'privilege' => \App\Http\Middleware\Privilege::class,
         'checkProjectStatus' => \App\Http\Middleware\CheckProjectStatus::class,
-        'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
     ];
 }
