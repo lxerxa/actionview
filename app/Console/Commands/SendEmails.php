@@ -16,8 +16,7 @@ use App\Acl\Eloquent\Roleactor;
 use App\Acl\Eloquent\Group;
 
 use App\Project\Eloquent\Sprint;
-
-use Cartalyst\Sentinel\Users\EloquentUser;
+use App\Sentinel\Sentinel;
 
 use App\System\Eloquent\SysSetting;
 
@@ -375,8 +374,7 @@ class SendEmails extends Command
             }
         }
 
-        $to_users = EloquentUser::find(array_values(array_unique($new_uids)));
-
+        $to_users = Sentinel::findByIds(array_values(array_unique($new_uids)));
         foreach ($to_users as $to_user)
         {
             if ($to_user->invalid_flag == 1)
@@ -550,7 +548,7 @@ class SendEmails extends Command
             }
         }
 
-        $to_users = EloquentUser::find(array_values(array_unique($new_uids)));
+        $to_users = Sentinel::findByIds(array_values(array_unique($new_uids)));
         foreach ($to_users as $to_user)
         {
             if ($to_user->invalid_flag == 1)
