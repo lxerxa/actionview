@@ -91,7 +91,7 @@ class Sentinel {
             }
 
             $expiredAt = self::getTokenExpiredAt();
-            if ($expiredAt - time() < 3600) {
+            if ($expiredAt - time() < env('JWT_TTL', 120) * 60 / 2) {
                 try {
                     $refreshed = JWTAuth::refresh();
                     return [ 0, $user, $refreshed ];
