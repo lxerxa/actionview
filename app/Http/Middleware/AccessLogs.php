@@ -20,28 +20,42 @@ class AccessLogs
     public function handle($request, Closure $next)
     {
     	$start_at = floor(microtime(true) * 1000);
-
+        // request body
         $response = $next($request);
 
     	$current_at = floor(microtime(true) * 1000);
-    	$user = Sentinel::getUser();
-        if (!$user)
-        {
-            return $response;
-        }
 
+        $user = null;
         $request_method = $request->method();
     	$request_url = $request->getRequestUri();
         $module = $project_key = '';
         $matches = [];
-    	if (preg_match("/^\/actionview\/api\/project\/([^\/]+)\/([^\/\?]+)(.*)/i", $request_url, $matches))
-    	{
-    	    $project_key = $matches[1];
-    	    $module = $matches[2];
-    	}
-        else if ($request_method == 'POST' && strpos($request_url, '/actionview/api/session') !== false)
+        if ($request_method == 'POST' && strpos($request_url, '/actionview/api/session') !== false)
         {
             $module = 'login';
+            $res_body = $response->getData();
+            if (isset($res_body->data->user) && $res_body->data->user)
+            {
+                $user = $res_body->data->user; 
+            }
+            else
+            {
+                return $response;
+            }
+        }
+    	else 
+        {
+            $user = Sentinel::getUser();
+            if (!$user)
+            {
+                return $response;
+            }
+
+            if (preg_match("/^\/actionview\/api\/project\/([^\/]+)\/([^\/\?]+)(.*)/i", $request_url, $matches))
+    	    {
+    	        $project_key = $matches[1];
+    	        $module = $matches[2];
+    	    }
         }
 
     	ApiAccessLogs::create([
