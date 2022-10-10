@@ -35,12 +35,32 @@ class SessionController extends Controller
         }
 
         $setting = SysSetting::first();
-        if (strpos($email, '@') === false) 
+        if (strpos($email, '@') === false)
         {
             if ($setting && isset($setting->properties) && isset($setting->properties['login_mail_domain']))
             {
-                $email = $email . '@' . $setting->properties['login_mail_domain']; 
+                $email = $email . '@' . $setting->properties['login_mail_domain'];
             }
+        }
+
+        // verify the captcha
+        $random = $request->input('random');
+        $captcha = $request->input('captcha');
+        if ($random && $captcha)
+        {
+            $ret = Sentinel::verifyCaptcha($random, $captcha);
+            if ($ret === -1)
+            {
+                return Response()->json([ 'ecode' => -10008, 'data' => [] ]);
+            }
+            else if ($ret === -2)
+            {
+                return Response()->json([ 'ecode' => -10009, 'data' => [] ]);
+            }
+        }
+        else if (Sentinel::checkCaptchaRequired($email))
+        {
+            return Response()->json([ 'ecode' => -10007, 'data' => [ 'captcha_required' => true ] ]);
         }
 
         try {
@@ -81,11 +101,12 @@ class SessionController extends Controller
             }
 
             $token = Sentinel::createJWTToken($user);
-            return Response()->json([ 'ecode' => 0, 'data' => [ 'user' => $user ] ])->withHeaders([ 'Authorization' => 'Bearer ' . $token ]);
+            return Response()->json([ 'ecode' => 0, 'data' => [ 'user' => $user, 'captcha_required' => false ] ])->withHeaders([ 'Authorization' => 'Bearer ' . $token ]);
         }
         else 
         {
-            return Response()->json([ 'ecode' => -10000, 'data' => [] ]);
+            Sentinel::recordLoginError($email, $request->ip());
+            return Response()->json([ 'ecode' => -10000, 'data' => [ 'captcha_required' => Sentinel::checkCaptchaRequired($email) ] ]);
         }
     }
 
@@ -148,5 +169,22 @@ class SessionController extends Controller
     {
         Sentinel::logout();
         return Response()->json([ 'ecode' => 0, 'data' => [] ]);
+    }
+
+    /**
+     * generate the captche.
+     *
+     * @param  \Illuminate\Http\Request  $request 
+     * @return \Illuminate\Http\Response
+     */
+    public function getCaptcha(Request $request)
+    {
+        $random = $request->input('random');
+        if (!$random)
+        {
+            return;
+        }
+
+        Sentinel::generateCaptcha($random);
     }
 }
