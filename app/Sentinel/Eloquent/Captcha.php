@@ -19,8 +19,8 @@ class Captcha extends Model
      * @var array
      */
     protected $fillable = [
-        'code',
         'random',
-        'created_at',
+        'code',
+        'generated_at',
     ];
 }

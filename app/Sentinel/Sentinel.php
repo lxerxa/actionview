@@ -3,10 +3,15 @@ namespace App\Sentinel;
 
 use App\Sentinel\Hasher\Sha256Hasher;
 use App\Sentinel\Eloquent\User;
+use App\Sentinel\Eloquent\LoginErrLogs;
+use App\Sentinel\Eloquent\Captcha;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Exceptions\TokenExpiredException;
 use Tymon\JWTAuth\Exceptions\TokenInvalidException;
 use Tymon\JWTAuth\Exceptions\JWTException;
+
+use Gregwar\Captcha\CaptchaBuilder;
+use Gregwar\Captcha\PhraseBuilder;
 
 class Sentinel {
 
@@ -165,7 +170,6 @@ class Sentinel {
         }
     }
 
-
     public static function addPermission($user, $permission) {
         $permissions = isset($user->permissions) ? $user->permissions : [];
         if (is_string($permissions)) {
@@ -187,5 +191,84 @@ class Sentinel {
         }
         $user->permissions = $permissions;
         $user->save();
+    }
+
+    public static function generateCaptcha($random)
+    {
+        Captcha::where('random', $random)->delete();
+
+        $phrase = new PhraseBuilder;
+        // 设置验证码位数
+        $code = $phrase->build(4);
+        // 生成验证码图片的Builder对象,配置相应属性
+        $builder = new CaptchaBuilder($code, $phrase);
+        // 设置背景颜色25,25,112
+        $builder->setBackgroundColor(34, 0, 45);
+        // 设置倾斜角度
+        $builder->setMaxAngle(25);
+        // 设置验证码后面最大行数
+        $builder->setMaxBehindLines(5);
+        // 设置验证码前面最大行数
+        $builder->setMaxFrontLines(5);
+        // 设置验证码颜色
+        $builder->setTextColor(230, 81, 175);
+        // 可以设置图片宽高及字体
+        $builder->build($width = 100, $height = 40, $font = null);
+        // 获取验证码的内容
+        $phrase = $builder->getPhrase();
+        // 保存验证码
+	Captcha::create([ 
+            'random' => $random, 
+            'code' => strtolower($phrase), 
+            'generated_at' => time() 
+        ]);
+
+        // 生成图片
+        header('Cache-Control: no-cache, must-revalidate');
+        header('Content-Type:image/jpeg');
+
+        $builder->output();
+    }
+
+    public static function verifyCaptcha($random, $code)
+    {
+        $code = strtolower($code);
+
+        $captcha = Captcha::where('random', $random)
+            ->where('code', $code)
+	    ->first();
+        if (!$captcha)
+        {
+            return -1;
+        }
+
+        Captcha::where('random', $random)
+            ->where('code', $code)
+            ->delete();
+
+        if (time() - $captcha->generated_at > 60)
+        {
+            return -2;
+        }
+
+	return 0;
+    }
+
+    public static function checkCaptchaRequired($credential)
+    {
+        $count = LoginErrLogs::where('email', $credential)
+            ->where('recorded_at', '>', time() - 3600)
+	    ->count();
+
+	return $count >= 3;
+    }
+
+    public static function recordLoginError($email, $ip)
+    {
+        LoginErrLogs::create([ 
+            'email' => $email, 
+            'host' => $ip, 
+            'recorded_at' => time() 
+        ]);
     }
 }

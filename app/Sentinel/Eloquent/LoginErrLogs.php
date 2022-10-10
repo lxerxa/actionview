@@ -22,6 +22,6 @@ class LoginErrLogs extends Model
         'email',
         'mobile',
         'host',
-        'created_at',
+        'recorded_at',
     ];
 }
