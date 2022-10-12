@@ -149,6 +149,7 @@ class ActivityController extends Controller
                 $activities[$key]['document'] = [
                     'id' => $activity['document_id'],
                     'name' => isset($document['name']) ? $document['name'] : '',
+                    'parent' => isset($document['parent']) ? $document['parent'] : '',
                     'd' => isset($document['d']) ? $document['d'] : '',
                     'del_flag' => isset($document['del_flag']) ? $document['del_flag'] : 0
                 ];
