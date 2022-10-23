@@ -11,7 +11,8 @@
         "maatwebsite/excel": "^2.1",
         "adldap2/adldap2": "^8.1",
         "chumper/zipper": "^1.0",
-        "tymon/jwt-auth": "^1.0"
+        "tymon/jwt-auth": "^1.0",
+        "gregwar/captcha": "^1.1"
     },
     "autoload": {
         "classmap": [
