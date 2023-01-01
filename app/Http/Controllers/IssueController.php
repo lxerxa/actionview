@@ -1307,38 +1307,33 @@ class IssueController extends Controller
      */
     public function batchHandleFilters(Request $request, $project_key)
     {
-        $mode = $request->input('mode');
-        if ($mode === 'sort')
+        $sequence = $request->input('sequence');
+        if (!isset($sequence) || !$sequence)
         {
-            $sequence = $request->input('sequence');
-            if (!isset($sequence) || !$sequence)
-            {
-                return $this->getIssueFilters($project_key);
-            }
-
-            $res = UserIssueFilters::where('project_key', $project_key)
-                ->where('user', $this->user->id)
-                ->first();
-            if ($res)
-            {
-                $res->sequence = $sequence;
-                $res->save();
-            }
-            else
-            {
-                UserIssueFilters::create([ 'project_key' => $project_key, 'user' => $this->user->id, 'sequence' => $sequence ]); 
-            }
+            return $this->getIssueFilters($project_key);
         }
-        else if ($mode === 'del')
+
+        $res = UserIssueFilters::where('project_key', $project_key)
+            ->where('user', $this->user->id)
+            ->first();
+        if ($res)
         {
-            $ids = $request->input('ids');
-            if (isset($ids) && $ids)
+            $old_filter_ids = array_column(Provider::getIssueFilters($project_key, $this->user->id), 'id');
+            $del_ids = array_values(array_diff($old_filter_ids, $sequence));
+            if ($del_ids)
             {
                 IssueFilters::where('project_key', $project_key)
                     ->where('creator', $this->user->id)
-                    ->whereIn('_id', $ids)
+                    ->whereIn('_id', $del_ids)
                     ->delete();
             }
+
+            $res->sequence = $sequence;
+            $res->save();
+        }
+        else
+        {
+            UserIssueFilters::create([ 'project_key' => $project_key, 'user' => $this->user->id, 'sequence' => $sequence ]);
         }
 
         return $this->getIssueFilters($project_key);
